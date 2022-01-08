@@ -376,7 +376,7 @@ func (seg *IPv4AddressSegment) isJoinableTo(low *IPv4AddressSegment) bool {
 }
 
 // join joins with another IPv4 segment to produce a IPv6 segment.
-func (seg *IPv4AddressSegment) join(low *IPv4AddressSegment) (*IPv6AddressSegment, addrerr.IncompatibleAddressError) {
+func (seg *IPv4AddressSegment) Join(low *IPv4AddressSegment) (*IPv6AddressSegment, addrerr.IncompatibleAddressError) {
 	prefixLength := seg.getJoinedSegmentPrefixLen(low.GetSegmentPrefixLen())
 	if !seg.isJoinableTo(low) {
 		return nil, &incompatibleAddressError{addressError: addressError{key: "ipaddress.error.invalidMixedRange"}}

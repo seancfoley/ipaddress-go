@@ -1541,12 +1541,19 @@ func addrFromBytes(ip []byte) (addr *IPAddress, err addrerr.AddressValueError) {
 		var addr4 *IPv4Address
 		addr4, err = NewIPv4AddressFromBytes(ip)
 		addr = addr4.ToIP()
-	} else if addrLen <= IPv6ByteCount {
+	} else if addrLen <= IPv6ByteCount || isAllZeros(ip[len(ip)-IPv6ByteCount:]) {
 		var addr6 *IPv6Address
 		addr6, err = NewIPv6AddressFromBytes(ip)
 		addr = addr6.ToIP()
+	} else {
+		extraCount := len(ip) - IPv6ByteCount
+		if isAllZeros(ip[:extraCount]) {
+			var addr6 *IPv6Address
+			addr6, err = NewIPv6AddressFromBytes(ip[extraCount:])
+			addr = addr6.ToIP()
+		}
 	}
-	return
+	return nil, &addressValueError{addressError: addressError{key: "ipaddress.error.exceeds.size"}}
 }
 
 func addrFromPrefixedIP(ip net.IP, prefixLen PrefixLen) (addr *IPAddress, err addrerr.AddressValueError) {
@@ -1562,8 +1569,24 @@ func addrFromPrefixedIP(ip net.IP, prefixLen PrefixLen) (addr *IPAddress, err ad
 		var addr6 *IPv6Address
 		addr6, err = NewIPv6AddressFromPrefixedBytes(ip, prefixLen)
 		addr = addr6.ToIP()
+	} else {
+		extraCount := len(ip) - IPv6ByteCount
+		if isAllZeros(ip[:extraCount]) {
+			var addr6 *IPv6Address
+			addr6, err = NewIPv6AddressFromBytes(ip[extraCount:])
+			addr = addr6.ToIP()
+		}
 	}
-	return
+	return nil, &addressValueError{addressError: addressError{key: "ipaddress.error.exceeds.size"}}
+}
+
+func isAllZeros(byts []byte) bool {
+	for _, b := range byts {
+		if b != 0 {
+			return false
+		}
+	}
+	return true
 }
 
 // IPAddressCreator is a polymporphic type that provides constructor methods that construct IP addresses for its contained IP version

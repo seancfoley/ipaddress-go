@@ -915,10 +915,7 @@ func (rng *IPAddressSeqRange) SpanWithSequentialBlocks() []*IPAddress {
 // Joins the given ranges into the fewest number of ranges.
 // The returned array will be sorted by ascending lowest range value.
 func (rng *IPAddressSeqRange) Join(ranges ...*IPAddressSeqRange) []*IPAddressSeqRange {
-	//origLen := len(ranges)
 	ranges = append(append(make([]*IPAddressSeqRange, 0, len(ranges)+1), ranges...), rng)
-	//ranges[origLen] = rng
-	//fmt.Printf("about to join %v\n", ranges)
 	return join(ranges)
 }
 
@@ -1048,7 +1045,7 @@ func join(ranges []*IPAddressSeqRange) []*IPAddressSeqRange {
 				isMultiJoin = true
 			}
 			if doJoin {
-				//join them
+				//Join them
 				nextUpper := rng2.GetUpper()
 				if compareLowIPAddressValues(currentUpper, nextUpper) < 0 {
 					currentUpper = nextUpper

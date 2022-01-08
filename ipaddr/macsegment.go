@@ -323,13 +323,13 @@ func (seg *MACAddressSegment) ReverseBytes() (*MACAddressSegment, addrerr.Incomp
 	return seg, nil
 }
 
-// join joins with another MAC segment to produce a IPv6 segment.
-func (seg *MACAddressSegment) join(macSegment1 *MACAddressSegment, prefixLength PrefixLen) (*IPv6AddressSegment, addrerr.IncompatibleAddressError) {
+// Join joins with another MAC segment to produce a IPv6 segment.
+func (seg *MACAddressSegment) Join(macSegment1 *MACAddressSegment, prefixLength PrefixLen) (*IPv6AddressSegment, addrerr.IncompatibleAddressError) {
 	return seg.joinSegs(macSegment1, false, prefixLength)
 }
 
-// join joins with another MAC segment to produce a IPv6 segment with the second bit flipped from 1 to 0.
-func (seg *MACAddressSegment) joinAndFlip2ndBit(macSegment1 *MACAddressSegment, prefixLength PrefixLen) (*IPv6AddressSegment, addrerr.IncompatibleAddressError) {
+// JoinAndFlip2ndBit joins with another MAC segment to produce a IPv6 segment with the second bit flipped from 1 to 0.
+func (seg *MACAddressSegment) JoinAndFlip2ndBit(macSegment1 *MACAddressSegment, prefixLength PrefixLen) (*IPv6AddressSegment, addrerr.IncompatibleAddressError) {
 	return seg.joinSegs(macSegment1, true, prefixLength)
 }
 
