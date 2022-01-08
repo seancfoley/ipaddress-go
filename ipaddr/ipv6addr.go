@@ -454,11 +454,11 @@ func (addr *IPv6Address) GetHostSectionLen(prefLen BitCount) *IPv6AddressSection
 }
 
 func (addr *IPv6Address) GetNetworkMask() *IPv6Address {
-	return addr.getNetworkMask(IPv6Network).ToIPv6()
+	return addr.getNetworkMask(ipv6Network).ToIPv6()
 }
 
 func (addr *IPv6Address) GetHostMask() *IPv6Address {
-	return addr.getHostMask(IPv6Network).ToIPv6()
+	return addr.getHostMask(ipv6Network).ToIPv6()
 }
 
 func (addr *IPv6Address) GetMixedAddressGrouping() (*IPv6v4MixedAddressGrouping, addrerr.IncompatibleAddressError) {
@@ -1110,19 +1110,19 @@ func (addr *IPv6Address) SpanWithPrefixBlocks() []*IPv6Address {
 		if addr.IsSinglePrefixBlock() {
 			return []*IPv6Address{addr}
 		}
-		wrapped := WrapIPAddress(addr.ToIP())
+		wrapped := wrapIPAddress(addr.ToIP())
 		spanning := getSpanningPrefixBlocks(wrapped, wrapped)
 		return cloneToIPv6Addrs(spanning)
 	}
-	wrapped := WrapIPAddress(addr.ToIP())
+	wrapped := wrapIPAddress(addr.ToIP())
 	return cloneToIPv6Addrs(spanWithPrefixBlocks(wrapped))
 }
 
 func (addr *IPv6Address) SpanWithPrefixBlocksTo(other *IPv6Address) []*IPv6Address {
 	return cloneToIPv6Addrs(
 		getSpanningPrefixBlocks(
-			WrapIPAddress(addr.ToIP()),
-			WrapIPAddress(other.ToIP()),
+			wrapIPAddress(addr.ToIP()),
+			wrapIPAddress(other.ToIP()),
 		),
 	)
 }
@@ -1131,15 +1131,15 @@ func (addr *IPv6Address) SpanWithSequentialBlocks() []*IPv6Address {
 	if addr.IsSequential() {
 		return []*IPv6Address{addr}
 	}
-	wrapped := WrapIPAddress(addr.ToIP())
+	wrapped := wrapIPAddress(addr.ToIP())
 	return cloneToIPv6Addrs(spanWithSequentialBlocks(wrapped))
 }
 
 func (addr *IPv6Address) SpanWithSequentialBlocksTo(other *IPv6Address) []*IPv6Address {
 	return cloneToIPv6Addrs(
 		getSpanningSequentialBlocks(
-			WrapIPAddress(addr.ToIP()),
-			WrapIPAddress(other.ToIP()),
+			wrapIPAddress(addr.ToIP()),
+			wrapIPAddress(other.ToIP()),
 		),
 	)
 }
@@ -1218,7 +1218,7 @@ func (addr *IPv6Address) GetTrailingBitCount(ones bool) BitCount {
 }
 
 func (addr *IPv6Address) GetNetwork() IPAddressNetwork {
-	return IPv6Network
+	return ipv6Network
 }
 
 func (addr *IPv6Address) IsEUI64() bool {
@@ -1460,5 +1460,5 @@ func (addr *IPv6Address) ToIP() *IPAddress {
 }
 
 func (addr *IPv6Address) Wrap() WrappedIPAddress {
-	return WrapIPAddress(addr.ToIP())
+	return wrapIPAddress(addr.ToIP())
 }

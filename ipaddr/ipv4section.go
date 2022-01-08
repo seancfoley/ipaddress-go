@@ -104,7 +104,7 @@ func NewIPv4SectionFromPrefixedUint32(bytes uint32, segmentCount int, prefixLeng
 		uint64(bytes),
 		IPv4BytesPerSegment,
 		IPv4BitsPerSegment,
-		IPv4Network.getIPAddressCreator(),
+		ipv4Network.getIPAddressCreator(),
 		prefixLength)
 	res = createIPv4Section(segments)
 	if prefixLength != nil {
@@ -136,7 +136,7 @@ func newIPv4SectionFromBytes(bytes []byte, segmentCount int, prefixLength Prefix
 		segmentCount,
 		IPv4BytesPerSegment,
 		IPv4BitsPerSegment,
-		IPv4Network.getIPAddressCreator(),
+		ipv4Network.getIPAddressCreator(),
 		prefixLength)
 	if err == nil {
 		res = createIPv4Section(segments)
@@ -177,7 +177,7 @@ func NewIPv4SectionFromPrefixedRange(vals, upperVals IPv4SegmentValueProvider, s
 		WrappedIPv4SegmentValueProvider(upperVals),
 		segmentCount,
 		IPv4BitsPerSegment,
-		IPv4Network.getIPAddressCreator(),
+		ipv4Network.getIPAddressCreator(),
 		prefixLength)
 	res = createIPv4Section(segments)
 	res.isMult = isMultiple
@@ -340,11 +340,11 @@ func (section *IPv4AddressSection) GetHostSectionLen(prefLen BitCount) *IPv4Addr
 }
 
 func (section *IPv4AddressSection) GetNetworkMask() *IPv4AddressSection {
-	return section.getNetworkMask(IPv4Network).ToIPv4()
+	return section.getNetworkMask(ipv4Network).ToIPv4()
 }
 
 func (section *IPv4AddressSection) GetHostMask() *IPv4AddressSection {
-	return section.getHostMask(IPv4Network).ToIPv4()
+	return section.getHostMask(ipv4Network).ToIPv4()
 }
 
 // CopySubSegments copies the existing segments from the given start index until but not including the segment at the given end index,
@@ -612,7 +612,7 @@ func (section *IPv4AddressSection) Increment(inc int64) *IPv4AddressSection {
 	return increment(
 		section.ToSectionBase(),
 		inc,
-		IPv4Network.getIPAddressCreator(),
+		ipv4Network.getIPAddressCreator(),
 		count-1,
 		lowerValue,
 		upperValue,
@@ -626,11 +626,11 @@ func (section *IPv4AddressSection) SpanWithPrefixBlocks() []*IPv4AddressSection 
 		if section.IsSinglePrefixBlock() {
 			return []*IPv4AddressSection{section}
 		}
-		wrapped := WrapIPSection(section.ToIP())
+		wrapped := wrapIPSection(section.ToIP())
 		spanning := getSpanningPrefixBlocks(wrapped, wrapped)
 		return cloneToIPv4Sections(spanning)
 	}
-	wrapped := WrapIPSection(section.ToIP())
+	wrapped := wrapIPSection(section.ToIP())
 	return cloneToIPv4Sections(spanWithPrefixBlocks(wrapped))
 }
 
@@ -640,8 +640,8 @@ func (section *IPv4AddressSection) SpanWithPrefixBlocksTo(other *IPv4AddressSect
 	}
 	return cloneToIPv4Sections(
 		getSpanningPrefixBlocks(
-			WrapIPSection(section.ToIP()),
-			WrapIPSection(other.ToIP()),
+			wrapIPSection(section.ToIP()),
+			wrapIPSection(other.ToIP()),
 		),
 	), nil
 }
@@ -650,7 +650,7 @@ func (section *IPv4AddressSection) SpanWithSequentialBlocks() []*IPv4AddressSect
 	if section.IsSequential() {
 		return []*IPv4AddressSection{section}
 	}
-	wrapped := WrapIPSection(section.ToIP())
+	wrapped := wrapIPSection(section.ToIP())
 	return cloneToIPv4Sections(spanWithSequentialBlocks(wrapped))
 }
 
@@ -660,8 +660,8 @@ func (section *IPv4AddressSection) SpanWithSequentialBlocksTo(other *IPv4Address
 	}
 	return cloneToIPv4Sections(
 		getSpanningSequentialBlocks(
-			WrapIPSection(section.ToIP()),
-			WrapIPSection(other.ToIP()),
+			wrapIPSection(section.ToIP()),
+			wrapIPSection(other.ToIP()),
 		),
 	), nil
 }

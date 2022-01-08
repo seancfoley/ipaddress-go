@@ -868,7 +868,7 @@ func (section *ipAddressSectionInternal) createDiffSection(
 }
 
 func (section *ipAddressSectionInternal) spanWithPrefixBlocks() []ExtendedIPSegmentSeries {
-	wrapped := WrapIPSection(section.toIPAddressSection())
+	wrapped := wrapIPSection(section.toIPAddressSection())
 	if section.IsSequential() {
 		if section.IsSinglePrefixBlock() {
 			return []ExtendedIPSegmentSeries{wrapped}
@@ -879,7 +879,7 @@ func (section *ipAddressSectionInternal) spanWithPrefixBlocks() []ExtendedIPSegm
 }
 
 func (section *ipAddressSectionInternal) spanWithSequentialBlocks() []ExtendedIPSegmentSeries {
-	wrapped := WrapIPSection(section.toIPAddressSection())
+	wrapped := wrapIPSection(section.toIPAddressSection())
 	if section.IsSequential() {
 		return []ExtendedIPSegmentSeries{wrapped}
 	}
@@ -888,11 +888,11 @@ func (section *ipAddressSectionInternal) spanWithSequentialBlocks() []ExtendedIP
 
 func (section *ipAddressSectionInternal) coverSeriesWithPrefixBlock() ExtendedIPSegmentSeries {
 	if section.IsSinglePrefixBlock() {
-		return WrapIPSection(section.toIPAddressSection())
+		return wrapIPSection(section.toIPAddressSection())
 	}
 	return coverWithPrefixBlock(
-		WrapIPSection(section.getLower().ToIP()),
-		WrapIPSection(section.getUpper().ToIP()))
+		wrapIPSection(section.getLower().ToIP()),
+		wrapIPSection(section.getUpper().ToIP()))
 }
 
 func (section *ipAddressSectionInternal) coverWithPrefixBlock() *IPAddressSection {
@@ -900,8 +900,8 @@ func (section *ipAddressSectionInternal) coverWithPrefixBlock() *IPAddressSectio
 		return section.toIPAddressSection()
 	}
 	res := coverWithPrefixBlock(
-		WrapIPSection(section.getLower().ToIP()),
-		WrapIPSection(section.getUpper().ToIP()))
+		wrapIPSection(section.getLower().ToIP()),
+		wrapIPSection(section.getUpper().ToIP()))
 	return res.(WrappedIPAddressSection).IPAddressSection
 }
 
@@ -910,8 +910,8 @@ func (section *ipAddressSectionInternal) coverWithPrefixBlockTo(other *IPAddress
 		return nil, err
 	}
 	res := getCoveringPrefixBlock(
-		WrapIPSection(section.toIPAddressSection()),
-		WrapIPSection(other))
+		wrapIPSection(section.toIPAddressSection()),
+		wrapIPSection(other))
 	return res.(WrappedIPAddressSection).IPAddressSection, nil
 }
 
@@ -1091,9 +1091,9 @@ func (section *ipAddressSectionInternal) getOredSegments(
 
 func (section *ipAddressSectionInternal) getNetwork() IPAddressNetwork {
 	if addrType := section.getAddrType(); addrType.isIPv4() {
-		return IPv4Network
+		return ipv4Network
 	} else if addrType.isIPv6() {
-		return IPv6Network
+		return ipv6Network
 	}
 	return nil
 }
@@ -1324,7 +1324,7 @@ func (section *ipAddressSectionInternal) toCustomZonedString(stringOptions addrs
 }
 
 func (section *ipAddressSectionInternal) Wrap() WrappedIPAddressSection {
-	return WrapIPSection(section.toIPAddressSection())
+	return wrapIPSection(section.toIPAddressSection())
 }
 
 func (section *ipAddressSectionInternal) toIPAddressSection() *IPAddressSection {
@@ -1746,11 +1746,11 @@ func (section *IPAddressSection) SpanWithPrefixBlocks() []*IPAddressSection {
 		if section.IsSinglePrefixBlock() {
 			return []*IPAddressSection{section}
 		}
-		wrapped := WrapIPSection(section)
+		wrapped := wrapIPSection(section)
 		spanning := getSpanningPrefixBlocks(wrapped, wrapped)
 		return cloneToIPSections(spanning)
 	}
-	wrapped := WrapIPSection(section)
+	wrapped := wrapIPSection(section)
 	return cloneToIPSections(spanWithPrefixBlocks(wrapped))
 }
 
@@ -1758,7 +1758,7 @@ func (section *IPAddressSection) SpanWithSequentialBlocks() []*IPAddressSection 
 	if section.IsSequential() {
 		return []*IPAddressSection{section}
 	}
-	wrapped := WrapIPSection(section)
+	wrapped := wrapIPSection(section)
 	return cloneToIPSections(spanWithSequentialBlocks(wrapped))
 }
 

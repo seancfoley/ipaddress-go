@@ -79,9 +79,9 @@ func (version IPVersion) String() string {
 
 func (version IPVersion) getNetwork() (network IPAddressNetwork) {
 	if version.IsIPv6() {
-		network = IPv6Network
+		network = ipv6Network
 	} else if version.IsIPv4() {
-		network = IPv4Network
+		network = ipv4Network
 	}
 	return
 }
@@ -969,7 +969,7 @@ func (addr *IPAddress) ToIPv4() *IPv4Address {
 }
 
 func (addr *IPAddress) Wrap() WrappedIPAddress {
-	return WrapIPAddress(addr)
+	return wrapIPAddress(addr)
 }
 
 func (addr *IPAddress) GetMaxSegmentValue() SegInt {

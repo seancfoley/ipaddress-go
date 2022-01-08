@@ -2830,9 +2830,9 @@ func (t ipAddressTester) testMasksAndPrefixes() {
 	}
 	for i := ipaddr.BitCount(0); i <= ipaddr.IPv6BitCount; i++ {
 		bits := i
-		ipv6HostMask := ipv6Network.GetHostMask(bits)
+		ipv6HostMask := ipv6Network.GetHostMask(bits).ToIP()
 		if t.checkMask(ipv6HostMask, bits, false, false) {
-			ipv6NetworkMask := ipv6Network.GetPrefixedNetworkMask(bits)
+			ipv6NetworkMask := ipv6Network.GetPrefixedNetworkMask(bits).ToIP()
 			if t.checkMask(ipv6NetworkMask, bits, true, false) {
 				samplePrefixedIpv6 := sampleIpv6.SetPrefixLen(bits)
 				ipv6NetworkMask2 := samplePrefixedIpv6.GetNetworkMask()
@@ -2844,9 +2844,9 @@ func (t ipAddressTester) testMasksAndPrefixes() {
 					t.addFailure(newIPAddrFailure("mask mismatch between address "+ipv6HostMask2.String()+" and network "+ipv6HostMask.String(), samplePrefixedIpv6.ToIP()))
 				}
 				if i <= ipaddr.IPv4BitCount {
-					ipv4HostMask := ipv4Network.GetHostMask(bits)
+					ipv4HostMask := ipv4Network.GetHostMask(bits).ToIP()
 					if t.checkMask(ipv4HostMask, bits, false, false) {
-						ipv4NetworkMask := ipv4Network.GetPrefixedNetworkMask(bits)
+						ipv4NetworkMask := ipv4Network.GetPrefixedNetworkMask(bits).ToIP()
 						t.checkMask(ipv4NetworkMask, bits, true, false)
 
 						samplePrefixedIpv4 := sampleIpv4.SetPrefixLen(bits)

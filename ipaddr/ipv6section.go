@@ -145,7 +145,7 @@ func newIPv6SectionFromBytes(bytes []byte, segmentCount int, prefixLength Prefix
 		segmentCount,
 		IPv6BytesPerSegment,
 		IPv6BitsPerSegment,
-		IPv6Network.getIPAddressCreator(),
+		ipv6Network.getIPAddressCreator(),
 		prefixLength)
 	if err == nil {
 		res = createIPv6Section(segments)
@@ -248,7 +248,7 @@ func NewIPv6SectionFromPrefixedUint64(highBytes, lowBytes uint64, segmentCount i
 		lowBytes,
 		IPv6BytesPerSegment,
 		IPv6BitsPerSegment,
-		IPv6Network.getIPAddressCreator(),
+		ipv6Network.getIPAddressCreator(),
 		prefixLength)
 	res = createIPv6Section(segments)
 	if prefixLength != nil {
@@ -280,7 +280,7 @@ func NewIPv6SectionFromPrefixedRangeVals(vals, upperVals IPv6SegmentValueProvide
 		WrappedIPv6SegmentValueProvider(upperVals),
 		segmentCount,
 		IPv6BitsPerSegment,
-		IPv6Network.getIPAddressCreator(),
+		ipv6Network.getIPAddressCreator(),
 		prefixLength)
 	res = createIPv6Section(segments)
 	res.isMult = isMultiple
@@ -434,11 +434,11 @@ func (section *IPv6AddressSection) GetHostSectionLen(prefLen BitCount) *IPv6Addr
 }
 
 func (section *IPv6AddressSection) GetNetworkMask() *IPv6AddressSection {
-	return section.getNetworkMask(IPv6Network).ToIPv6()
+	return section.getNetworkMask(ipv6Network).ToIPv6()
 }
 
 func (section *IPv6AddressSection) GetHostMask() *IPv6AddressSection {
-	return section.getHostMask(IPv6Network).ToIPv6()
+	return section.getHostMask(ipv6Network).ToIPv6()
 }
 
 // CopySubSegments copies the existing segments from the given start index until but not including the segment at the given end index,
@@ -791,7 +791,7 @@ func (section *IPv6AddressSection) Increment(increment int64) *IPv6AddressSectio
 	result := fastIncrement(
 		section.ToSectionBase(),
 		increment,
-		IPv6Network.getIPAddressCreator(),
+		ipv6Network.getIPAddressCreator(),
 		section.getLower,
 		section.getUpper,
 		prefixLength)
@@ -803,7 +803,7 @@ func (section *IPv6AddressSection) Increment(increment int64) *IPv6AddressSectio
 		section.ToSectionBase(),
 		increment,
 		&bigIncrement,
-		IPv6Network.getIPAddressCreator(),
+		ipv6Network.getIPAddressCreator(),
 		section.getLower,
 		section.getUpper,
 		prefixLength).ToIPv6()
@@ -814,11 +814,11 @@ func (section *IPv6AddressSection) SpanWithPrefixBlocks() []*IPv6AddressSection 
 		if section.IsSinglePrefixBlock() {
 			return []*IPv6AddressSection{section}
 		}
-		wrapped := WrapIPSection(section.ToIP())
+		wrapped := wrapIPSection(section.ToIP())
 		spanning := getSpanningPrefixBlocks(wrapped, wrapped)
 		return cloneToIPv6Sections(spanning)
 	}
-	wrapped := WrapIPSection(section.ToIP())
+	wrapped := wrapIPSection(section.ToIP())
 	return cloneToIPv6Sections(spanWithPrefixBlocks(wrapped))
 }
 
@@ -828,8 +828,8 @@ func (section *IPv6AddressSection) SpanWithPrefixBlocksTo(other *IPv6AddressSect
 	}
 	return cloneToIPv6Sections(
 		getSpanningPrefixBlocks(
-			WrapIPSection(section.ToIP()),
-			WrapIPSection(other.ToIP()),
+			wrapIPSection(section.ToIP()),
+			wrapIPSection(other.ToIP()),
 		),
 	), nil
 }
@@ -838,7 +838,7 @@ func (section *IPv6AddressSection) SpanWithSequentialBlocks() []*IPv6AddressSect
 	if section.IsSequential() {
 		return []*IPv6AddressSection{section}
 	}
-	wrapped := WrapIPSection(section.ToIP())
+	wrapped := wrapIPSection(section.ToIP())
 	return cloneToIPv6Sections(spanWithSequentialBlocks(wrapped))
 }
 
@@ -848,8 +848,8 @@ func (section *IPv6AddressSection) SpanWithSequentialBlocksTo(other *IPv6Address
 	}
 	return cloneToIPv6Sections(
 		getSpanningSequentialBlocks(
-			WrapIPSection(section.ToIP()),
-			WrapIPSection(other.ToIP()),
+			wrapIPSection(section.ToIP()),
+			wrapIPSection(other.ToIP()),
 		),
 	), nil
 }

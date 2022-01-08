@@ -24,10 +24,10 @@ func cloneIPv4Sections(sect *IPv4AddressSection, orig []*IPv4AddressSection) []E
 	}
 	result := make([]ExtendedIPSegmentSeries, count)
 	if sect != nil {
-		result[origCount] = WrapIPSection(sect.ToIP())
+		result[origCount] = wrapIPSection(sect.ToIP())
 	}
 	for i := range orig {
-		result[i] = WrapIPSection(orig[i].ToIP()) // unlike Java, return types matter with interfaces - https://play.golang.org/p/HZR8FSp42a9 )
+		result[i] = wrapIPSection(orig[i].ToIP()) // unlike Java, return types matter with interfaces - https://play.golang.org/p/HZR8FSp42a9 )
 	}
 	return result
 }
@@ -40,10 +40,10 @@ func cloneIPv6Sections(sect *IPv6AddressSection, orig []*IPv6AddressSection) []E
 	}
 	result := make([]ExtendedIPSegmentSeries, count)
 	if sect != nil {
-		result[origCount] = WrapIPSection(sect.ToIP())
+		result[origCount] = wrapIPSection(sect.ToIP())
 	}
 	for i := range orig {
-		result[i] = WrapIPSection(orig[i].ToIP())
+		result[i] = wrapIPSection(orig[i].ToIP())
 	}
 	return result
 }
@@ -55,11 +55,11 @@ func filterCloneIPAddrs(addr *IPAddress, orig []*IPAddress) []ExtendedIPSegmentS
 	origCount := len(orig)
 	count := origCount + 1
 	result := make([]ExtendedIPSegmentSeries, 0, count)
-	result = append(result, WrapIPAddress(addr))
+	result = append(result, wrapIPAddress(addr))
 	version := addr.getIPVersion()
 	for _, a := range orig {
 		if version.Equal(a.GetIPVersion()) {
-			result = append(result, WrapIPAddress(a))
+			result = append(result, wrapIPAddress(a))
 		}
 	}
 	return result
@@ -73,10 +73,10 @@ func cloneIPv4Addrs(sect *IPv4Address, orig []*IPv4Address) []ExtendedIPSegmentS
 	}
 	result := make([]ExtendedIPSegmentSeries, count)
 	if sect != nil {
-		result[origCount] = WrapIPAddress(sect.ToIP())
+		result[origCount] = wrapIPAddress(sect.ToIP())
 	}
 	for i := range orig {
-		result[i] = WrapIPAddress(orig[i].ToIP())
+		result[i] = wrapIPAddress(orig[i].ToIP())
 	}
 	return result
 }
@@ -89,10 +89,10 @@ func cloneIPv6Addrs(sect *IPv6Address, orig []*IPv6Address) []ExtendedIPSegmentS
 	}
 	result := make([]ExtendedIPSegmentSeries, count)
 	if sect != nil {
-		result[origCount] = WrapIPAddress(sect.ToIP())
+		result[origCount] = wrapIPAddress(sect.ToIP())
 	}
 	for i := range orig {
-		result[i] = WrapIPAddress(orig[i].ToIP())
+		result[i] = wrapIPAddress(orig[i].ToIP())
 	}
 	return result
 }

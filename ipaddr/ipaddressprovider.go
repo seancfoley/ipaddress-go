@@ -527,7 +527,7 @@ func emptyAddressCreator(emptyStrOption addrstrparam.EmptyStrOption, version IPV
 		if preferIPv6 {
 			if len(zone) > 0 {
 				ipv6WithZoneLoop := func() *IPAddress {
-					network := IPv6Network
+					network := ipv6Network
 					creator := network.getIPAddressCreator()
 					return creator.createAddressInternalFromBytes(network.GetLoopback().Bytes(), zone)
 				}
@@ -535,14 +535,14 @@ func emptyAddressCreator(emptyStrOption addrstrparam.EmptyStrOption, version IPV
 				addrCreator = func() (*IPAddress, *IPAddress) { return double(ipv6WithZoneLoop()) }
 			} else {
 				ipv6Loop := func() *IPAddress {
-					return IPv6Network.GetLoopback()
+					return ipv6Network.GetLoopback()
 				}
 				versionedCreator = ipv6Loop
 				addrCreator = func() (*IPAddress, *IPAddress) { return double(ipv6Loop()) }
 			}
 		} else {
 			ipv4Loop := func() *IPAddress {
-				return IPv4Network.GetLoopback()
+				return ipv4Network.GetLoopback()
 			}
 			addrCreator = func() (*IPAddress, *IPAddress) { return double(ipv4Loop()) }
 			versionedCreator = ipv4Loop
@@ -551,7 +551,7 @@ func emptyAddressCreator(emptyStrOption addrstrparam.EmptyStrOption, version IPV
 		if preferIPv6 {
 			if len(zone) > 0 {
 				ipv6WithZoneZero := func() *IPAddress {
-					network := IPv6Network
+					network := ipv6Network
 					creator := network.getIPAddressCreator()
 					return creator.createAddressInternalFromBytes(zeroIPv6.Bytes(), zone)
 				}
@@ -660,10 +660,10 @@ func newMaskCreator(options addrstrparam.IPAddressStringParams, adjustedVersion 
 	}
 	createVersionedMask := func(version IPVersion, prefLen PrefixLen, withPrefixLength bool) *IPAddress {
 		if version == IPv4 {
-			network := IPv4Network
+			network := ipv4Network
 			return network.GetNetworkMask(prefLen.bitCount())
 		} else if version == IPv6 {
-			network := IPv6Network
+			network := ipv6Network
 			return network.GetNetworkMask(prefLen.bitCount())
 		}
 		return nil

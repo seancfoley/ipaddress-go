@@ -223,11 +223,11 @@ func (addr *IPv4Address) GetHostSectionLen(prefLen BitCount) *IPv4AddressSection
 }
 
 func (addr *IPv4Address) GetNetworkMask() *IPv4Address {
-	return addr.getNetworkMask(IPv4Network).ToIPv4()
+	return addr.getNetworkMask(ipv4Network).ToIPv4()
 }
 
 func (addr *IPv4Address) GetHostMask() *IPv4Address {
-	return addr.getHostMask(IPv4Network).ToIPv4()
+	return addr.getHostMask(ipv4Network).ToIPv4()
 }
 
 // CopySubSegments copies the existing segments from the given start index until but not including the segment at the given end index,
@@ -727,19 +727,19 @@ func (addr *IPv4Address) SpanWithPrefixBlocks() []*IPv4Address {
 		if addr.IsSinglePrefixBlock() {
 			return []*IPv4Address{addr}
 		}
-		wrapped := WrapIPAddress(addr.ToIP())
+		wrapped := wrapIPAddress(addr.ToIP())
 		spanning := getSpanningPrefixBlocks(wrapped, wrapped)
 		return cloneToIPv4Addrs(spanning)
 	}
-	wrapped := WrapIPAddress(addr.ToIP())
+	wrapped := wrapIPAddress(addr.ToIP())
 	return cloneToIPv4Addrs(spanWithPrefixBlocks(wrapped))
 }
 
 func (addr *IPv4Address) SpanWithPrefixBlocksTo(other *IPv4Address) []*IPv4Address {
 	return cloneToIPv4Addrs(
 		getSpanningPrefixBlocks(
-			WrapIPAddress(addr.ToIP()),
-			WrapIPAddress(other.ToIP()),
+			wrapIPAddress(addr.ToIP()),
+			wrapIPAddress(other.ToIP()),
 		),
 	)
 }
@@ -748,15 +748,15 @@ func (addr *IPv4Address) SpanWithSequentialBlocks() []*IPv4Address {
 	if addr.IsSequential() {
 		return []*IPv4Address{addr}
 	}
-	wrapped := WrapIPAddress(addr.ToIP())
+	wrapped := wrapIPAddress(addr.ToIP())
 	return cloneToIPv4Addrs(spanWithSequentialBlocks(wrapped))
 }
 
 func (addr *IPv4Address) SpanWithSequentialBlocksTo(other *IPv4Address) []*IPv4Address {
 	return cloneToIPv4Addrs(
 		getSpanningSequentialBlocks(
-			WrapIPAddress(addr.ToIP()),
-			WrapIPAddress(other.ToIP()),
+			wrapIPAddress(addr.ToIP()),
+			wrapIPAddress(other.ToIP()),
 		),
 	)
 }
@@ -840,7 +840,7 @@ func (addr *IPv4Address) GetTrailingBitCount(ones bool) BitCount {
 }
 
 func (addr *IPv4Address) GetNetwork() IPAddressNetwork {
-	return IPv4Network
+	return ipv4Network
 }
 
 // GetIPv6Address creates an IPv6 mixed address using the given ipv6 segments and using this address for the embedded IPv4 segments
@@ -1067,5 +1067,5 @@ func (addr *IPv4Address) ToIP() *IPAddress {
 }
 
 func (addr *IPv4Address) Wrap() WrappedIPAddress {
-	return WrapIPAddress(addr.ToIP())
+	return wrapIPAddress(addr.ToIP())
 }

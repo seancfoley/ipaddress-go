@@ -52,42 +52,66 @@ type ipAddressNetwork struct {
 //
 //
 //
-type IPv6AddressNetwork struct {
+type ipv6AddressNetwork struct {
 	ipAddressNetwork
 	creator ipv6AddressCreator
 }
 
-func (network *IPv6AddressNetwork) getIPAddressCreator() ipAddressCreator {
+func (network *ipv6AddressNetwork) getIPAddressCreator() ipAddressCreator {
 	return &network.creator
 }
 
-func (network *IPv6AddressNetwork) getAddressCreator() parsedAddressCreator {
+func (network *ipv6AddressNetwork) getAddressCreator() parsedAddressCreator {
 	return &network.creator
 }
 
-func (network *IPv6AddressNetwork) GetLoopback() *IPAddress {
-	return ipv6loopback
+func (network *ipv6AddressNetwork) GetLoopback() *IPAddress {
+	return ipv6loopback.ToIP()
 }
 
-func (network *IPv6AddressNetwork) GetNetworkMask(prefLen BitCount) *IPAddress {
+func (network *ipv6AddressNetwork) GetNetworkMask(prefLen BitCount) *IPAddress {
 	return getMask(IPv6, zeroIPv6Seg.ToDiv(), prefLen, network.subnetMasks, true, false)
 }
 
-func (network *IPv6AddressNetwork) GetPrefixedNetworkMask(prefLen BitCount) *IPAddress {
+func (network *ipv6AddressNetwork) GetPrefixedNetworkMask(prefLen BitCount) *IPAddress {
 	return getMask(IPv6, zeroIPv6Seg.ToDiv(), prefLen, network.subnetsMasksWithPrefix, true, true)
 }
 
-func (network *IPv6AddressNetwork) GetHostMask(prefLen BitCount) *IPAddress {
+func (network *ipv6AddressNetwork) GetHostMask(prefLen BitCount) *IPAddress {
 	return getMask(IPv6, zeroIPv6Seg.ToDiv(), prefLen, network.hostMasks, false, false)
 }
 
-func (network *IPv6AddressNetwork) GetPrefixedHostMask(prefLen BitCount) *IPAddress {
+func (network *ipv6AddressNetwork) GetPrefixedHostMask(prefLen BitCount) *IPAddress {
 	return getMask(IPv6, zeroIPv6Seg.ToDiv(), prefLen, network.hostMasksWithPrefix, false, true)
 }
 
-var _ IPAddressNetwork = &IPv6AddressNetwork{}
+var _ IPAddressNetwork = &ipv6AddressNetwork{}
 
-var IPv6Network = &IPv6AddressNetwork{
+type IPv6AddressNetwork struct {
+	*ipv6AddressNetwork
+}
+
+func (network IPv6AddressNetwork) GetLoopback() *IPv6Address {
+	return ipv6loopback
+}
+
+func (network IPv6AddressNetwork) GetNetworkMask(prefLen BitCount) *IPv6Address {
+	return network.ipv6AddressNetwork.GetNetworkMask(prefLen).ToIPv6()
+}
+
+func (network IPv6AddressNetwork) GetPrefixedNetworkMask(prefLen BitCount) *IPv6Address {
+	return network.ipv6AddressNetwork.GetPrefixedNetworkMask(prefLen).ToIPv6()
+}
+
+func (network IPv6AddressNetwork) GetHostMask(prefLen BitCount) *IPv6Address {
+	return network.ipv6AddressNetwork.GetHostMask(prefLen).ToIPv6()
+}
+
+func (network IPv6AddressNetwork) GetPrefixedHostMask(prefLen BitCount) *IPv6Address {
+	return network.ipv6AddressNetwork.GetPrefixedHostMask(prefLen).ToIPv6()
+}
+
+var ipv6Network = &ipv6AddressNetwork{
 	ipAddressNetwork: ipAddressNetwork{
 		make([]*IPAddress, IPv6BitCount+1),
 		make([]*IPAddress, IPv6BitCount+1),
@@ -96,48 +120,74 @@ var IPv6Network = &IPv6AddressNetwork{
 	},
 }
 
+var IPv6Network = &IPv6AddressNetwork{ipv6Network}
+
 //
 //
 //
 //
 //
 
-type IPv4AddressNetwork struct {
+type ipv4AddressNetwork struct {
 	ipAddressNetwork
 	creator ipv4AddressCreator
 }
 
-func (network *IPv4AddressNetwork) getIPAddressCreator() ipAddressCreator {
+func (network *ipv4AddressNetwork) getIPAddressCreator() ipAddressCreator {
 	return &network.creator
 }
 
-func (network *IPv4AddressNetwork) getAddressCreator() parsedAddressCreator {
+func (network *ipv4AddressNetwork) getAddressCreator() parsedAddressCreator {
 	return &network.creator
 }
 
-func (network *IPv4AddressNetwork) GetLoopback() *IPAddress {
-	return ipv4loopback
+func (network *ipv4AddressNetwork) GetLoopback() *IPAddress {
+	return ipv4loopback.ToIP()
 }
 
-func (network *IPv4AddressNetwork) GetNetworkMask(prefLen BitCount) *IPAddress {
+func (network *ipv4AddressNetwork) GetNetworkMask(prefLen BitCount) *IPAddress {
 	return getMask(IPv4, zeroIPv4Seg.ToDiv(), prefLen, network.subnetMasks, true, false)
 }
 
-func (network *IPv4AddressNetwork) GetPrefixedNetworkMask(prefLen BitCount) *IPAddress {
+func (network *ipv4AddressNetwork) GetPrefixedNetworkMask(prefLen BitCount) *IPAddress {
 	return getMask(IPv4, zeroIPv4Seg.ToDiv(), prefLen, network.subnetsMasksWithPrefix, true, true)
 }
 
-func (network *IPv4AddressNetwork) GetHostMask(prefLen BitCount) *IPAddress {
+func (network *ipv4AddressNetwork) GetHostMask(prefLen BitCount) *IPAddress {
 	return getMask(IPv4, zeroIPv4Seg.ToDiv(), prefLen, network.hostMasks, false, false)
 }
 
-func (network *IPv4AddressNetwork) GetPrefixedHostMask(prefLen BitCount) *IPAddress {
+func (network *ipv4AddressNetwork) GetPrefixedHostMask(prefLen BitCount) *IPAddress {
 	return getMask(IPv4, zeroIPv4Seg.ToDiv(), prefLen, network.hostMasksWithPrefix, false, true)
 }
 
-var _ IPAddressNetwork = &IPv4AddressNetwork{}
+var _ IPAddressNetwork = &ipv4AddressNetwork{}
 
-var IPv4Network = &IPv4AddressNetwork{
+type IPv4AddressNetwork struct {
+	*ipv4AddressNetwork
+}
+
+func (network IPv4AddressNetwork) GetLoopback() *IPv4Address {
+	return ipv4loopback
+}
+
+func (network IPv4AddressNetwork) GetNetworkMask(prefLen BitCount) *IPv4Address {
+	return network.ipv4AddressNetwork.GetNetworkMask(prefLen).ToIPv4()
+}
+
+func (network IPv4AddressNetwork) GetPrefixedNetworkMask(prefLen BitCount) *IPv4Address {
+	return network.ipv4AddressNetwork.GetPrefixedNetworkMask(prefLen).ToIPv4()
+}
+
+func (network IPv4AddressNetwork) GetHostMask(prefLen BitCount) *IPv4Address {
+	return network.ipv4AddressNetwork.GetHostMask(prefLen).ToIPv4()
+}
+
+func (network IPv4AddressNetwork) GetPrefixedHostMask(prefLen BitCount) *IPv4Address {
+	return network.ipv4AddressNetwork.GetPrefixedHostMask(prefLen).ToIPv4()
+}
+
+var ipv4Network = &ipv4AddressNetwork{
 	ipAddressNetwork: ipAddressNetwork{
 		make([]*IPAddress, IPv4BitCount+1),
 		make([]*IPAddress, IPv4BitCount+1),
@@ -145,6 +195,8 @@ var IPv4Network = &IPv4AddressNetwork{
 		make([]*IPAddress, IPv4BitCount+1),
 	},
 }
+
+var IPv4Network = &IPv4AddressNetwork{ipv4Network}
 
 var maskMutex sync.Mutex
 
@@ -301,20 +353,20 @@ func getMask(version IPVersion, zeroSeg *AddressDivision, networkPrefixLength Bi
 	return subnet
 }
 
-type MACAddressNetwork struct {
+type macAddressNetwork struct {
 	creator macAddressCreator
 }
 
-func (network *MACAddressNetwork) getAddressCreator() parsedAddressCreator {
+func (network *macAddressNetwork) getAddressCreator() parsedAddressCreator {
 	return &network.creator
 }
 
-var MACNetwork = &MACAddressNetwork{}
+var macNetwork = &macAddressNetwork{}
 
-var _ addressNetwork = &MACAddressNetwork{}
+var _ addressNetwork = &macAddressNetwork{}
 
-var ipv4loopback = createIPv4Loopback().ToIP()
-var ipv6loopback = createIPv6Loopback().ToIP()
+var ipv4loopback = createIPv4Loopback()
+var ipv6loopback = createIPv6Loopback()
 
 func createIPv6Loopback() *IPv6Address {
 	ipv6loopback, _ := NewIPv6AddressFromBytes(net.IPv6loopback)

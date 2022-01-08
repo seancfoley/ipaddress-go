@@ -238,7 +238,7 @@ type ipsectionSeriesIterator struct {
 }
 
 func (iter ipsectionSeriesIterator) Next() ExtendedIPSegmentSeries {
-	return WrapIPSection(iter.IPSectionIterator.Next())
+	return wrapIPSection(iter.IPSectionIterator.Next())
 }
 
 type UnwrappedIPAddressIterator struct {
