@@ -1551,9 +1551,11 @@ func addrFromBytes(ip []byte) (addr *IPAddress, err addrerr.AddressValueError) {
 			var addr6 *IPv6Address
 			addr6, err = NewIPv6AddressFromBytes(ip[extraCount:])
 			addr = addr6.ToIP()
+		} else {
+			err = &addressValueError{addressError: addressError{key: "ipaddress.error.exceeds.size"}}
 		}
 	}
-	return nil, &addressValueError{addressError: addressError{key: "ipaddress.error.exceeds.size"}}
+	return
 }
 
 func addrFromPrefixedIP(ip net.IP, prefixLen PrefixLen) (addr *IPAddress, err addrerr.AddressValueError) {
@@ -1575,9 +1577,11 @@ func addrFromPrefixedIP(ip net.IP, prefixLen PrefixLen) (addr *IPAddress, err ad
 			var addr6 *IPv6Address
 			addr6, err = NewIPv6AddressFromBytes(ip[extraCount:])
 			addr = addr6.ToIP()
+		} else {
+			err = &addressValueError{addressError: addressError{key: "ipaddress.error.exceeds.size"}}
 		}
 	}
-	return nil, &addressValueError{addressError: addressError{key: "ipaddress.error.exceeds.size"}}
+	return
 }
 
 func isAllZeros(byts []byte) bool {

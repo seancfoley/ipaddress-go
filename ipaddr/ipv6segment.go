@@ -24,7 +24,7 @@ import (
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
 )
 
-type IPv6SegInt uint16
+type IPv6SegInt = uint16
 type IPv6SegmentValueProvider func(segmentIndex int) IPv6SegInt
 
 func WrappedIPv6SegmentValueProvider(f IPv6SegmentValueProvider) SegmentValueProvider {

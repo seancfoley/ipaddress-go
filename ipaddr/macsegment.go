@@ -22,7 +22,7 @@ import (
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
 )
 
-type MACSegInt uint8
+type MACSegInt = uint8
 type MACSegmentValueProvider func(segmentIndex int) MACSegInt
 
 func WrappedMACSegmentValueProvider(f MACSegmentValueProvider) SegmentValueProvider {

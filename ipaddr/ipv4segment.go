@@ -24,7 +24,7 @@ import (
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
 )
 
-type IPv4SegInt uint8
+type IPv4SegInt = uint8
 type IPv4SegmentValueProvider func(segmentIndex int) IPv4SegInt
 
 func WrappedIPv4SegmentValueProvider(f IPv4SegmentValueProvider) SegmentValueProvider {
