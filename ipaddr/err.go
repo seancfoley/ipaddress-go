@@ -19,6 +19,7 @@ package ipaddr
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
@@ -106,6 +107,10 @@ type addressStringIndexError struct {
 	index int
 }
 
+func (a *addressStringIndexError) Error() string {
+	return lookupStr("ipaddress.address.error") + " " + lookupStr(a.key) + " " + strconv.Itoa(a.index)
+}
+
 type hostNameError struct {
 	addressError
 }
@@ -144,6 +149,10 @@ type hostNameIndexError struct {
 
 	// byte index location in string of the error
 	index int
+}
+
+func (a *hostNameIndexError) Error() string {
+	return lookupStr("ipaddress.host.error") + " " + lookupStr(a.key) + " " + strconv.Itoa(a.index)
 }
 
 type incompatibleAddressError struct {
