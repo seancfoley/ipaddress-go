@@ -64,7 +64,14 @@ type addressError struct {
 }
 
 func (a *addressError) Error() string {
-	return lookupStr("ipaddress.address.error") + " " + lookupStr(a.key)
+	return getStr(a.str) + lookupStr("ipaddress.address.error") + " " + lookupStr(a.key)
+}
+
+func getStr(str string) (res string) {
+	if len(str) > 0 {
+		res = str + " "
+	}
+	return
 }
 
 // GetKey can be used to internationalize the error strings in the IPAddress library.
@@ -120,7 +127,7 @@ func (a *hostNameError) GetAddrError() addrerr.AddressError {
 }
 
 func (a *hostNameError) Error() string {
-	return lookupStr("ipaddress.host.error") + " " + lookupStr(a.key)
+	return getStr(a.str) + lookupStr("ipaddress.host.error") + " " + lookupStr(a.key)
 }
 
 type hostNameNestedError struct {
@@ -139,9 +146,9 @@ func (a *hostAddressNestedError) GetAddrError() addrerr.AddressError {
 
 func (a *hostAddressNestedError) Error() string {
 	if a.hostNameIndexError.key != "" {
-		return lookupStr("ipaddress.host.error") + " " + a.hostNameIndexError.Error() + " " + a.nested.Error()
+		return getStr(a.str) + lookupStr("ipaddress.host.error") + " " + a.hostNameIndexError.Error() + " " + a.nested.Error()
 	}
-	return lookupStr("ipaddress.host.error") + " " + a.nested.Error()
+	return getStr(a.str) + lookupStr("ipaddress.host.error") + " " + a.nested.Error()
 }
 
 type hostNameIndexError struct {
@@ -152,7 +159,7 @@ type hostNameIndexError struct {
 }
 
 func (a *hostNameIndexError) Error() string {
-	return lookupStr("ipaddress.host.error") + " " + lookupStr(a.key) + " " + strconv.Itoa(a.index)
+	return getStr(a.str) + lookupStr("ipaddress.host.error") + " " + lookupStr(a.key) + " " + strconv.Itoa(a.index)
 }
 
 type incompatibleAddressError struct {
