@@ -18,8 +18,6 @@ Version | Notes         |
 
 ## Getting Started
 
-## Go
-
 starting with address or subnet strings
 ```go
 ipv6AddrStr := ipaddr.NewIPAddressString("a:b:c:d::a:b/64")
