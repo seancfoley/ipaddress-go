@@ -14,7 +14,7 @@ The IPAddress library is also [available for Java](https://github.com/seancfoley
 
 Version | Notes         |
 ------- | ------------- |
-[1.0.0](https://github.com/seancfoley/ipaddress-go/releases/tag/v1.0.0) | Requires Go 12.7 higher |
+[1.0.0](https://github.com/seancfoley/ipaddress-go/releases/tag/v1.0.0) | Requires Go 1.12 or higher |
 
 ## Getting Started
 
