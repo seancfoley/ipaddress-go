@@ -51,17 +51,17 @@ Benefits of this Library
 
 Design Overview
 
-This library is similar in design to the Java IPAddress library,
-mirroring the same functionality with a similar API,
-despite the differences between the Java and Go languages,
-such as the differences in error handling and the lack of inheritance in Go.
-
 This library allows you to scale down from more specific types to more generic types,
 and then to scale back up again.  This is analagous to the inheritance chains in the Java design.
 The polymorphism is useful for IP-version ambiguous code, while the most-specific types allow for methods sets tailored to address version.
 You can only scale up to a specific version or address type if the lower level instance was originally derived from an instance of the more-specific type.
 So, for instance, an IPv6Address can be converted to an IPAddress using ToIP(), or to an Address using ToAddressBase(), which can then be converted back to IPAddress or an IPv6Address using ToIPv6().
 But that IPv6Address cannot be scaled back to IPv4.  If you wish to covert that IPv6Address to IPv4, you would need to use an implementation of IPv4AddressConverter.
+
+This library is similar in design to the Java IPAddress library (https://github.com/seancfoley/IPAddress),
+with a similar API,
+despite the differences between the Java and Go languages,
+such as the differences in error handling and the lack of inheritance in Go.
 
 The core types are HostName, IPAddressString, and MACAddressString along with the Address base type and its associated types IPAddress, IPv4Address, IPv6Address, and MACAddress, as well as the sequential address type IPAddressSeqRange and its associated types IPv4AddressSeqRange and IPv6AddressSeqRange.
 If you have a textual representation of an IP address, then start with HostName or IPAddressString.  If you have a textual representation of a MAC address, then start with MACAddressString.
@@ -70,7 +70,7 @@ If you have numeric bytes or integers, then start with IPV4Address, IPV6Address,
 
 Code Examples
 
-For common use-cases, you may wish to go straight to the wiki code examples which cover a wide breadth of common use-cases: https://github.com/seancfoley/IPAddress/wiki/Code-Examples
+For common use-cases, you may wish to go straight to the wiki code examples which cover a wide breadth of common use-cases: https://github.com/seancfoley/ipaddress-go/wiki/Code-Examples
 
 Further Documentation
 
