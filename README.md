@@ -10,7 +10,7 @@ go get github.com/seancfoley/ipaddress-go/ipaddr
 
 [View Code Examples](https://github.com/seancfoley/ipaddress-go/wiki/Code-Examples)
 
-The library is also [available for Java](https://github.com/seancfoley/IPAddress).  The API is similar to the Go implementation, the primary differences being the nuances of the Go language in comparison to Java.
+Also available as a [Java](https://www.oracle.com/java/) library from the [IPAddress repository](https://github.com/seancfoley/IPAddress)
 
 Version | Notes         |
 ------- | ------------- |
