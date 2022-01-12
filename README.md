@@ -1,6 +1,6 @@
 # ipaddress-go
 
-The [**Go**](https://golang.org/) IPAddress library
+[Go](https://golang.org/) library for handling IP addresses and subnets, both IPv4 and IPv6
 
 go get github.com/seancfoley/ipaddress-go/ipaddr
 
@@ -10,7 +10,7 @@ View Godoc - coming soon
 
 [View Code Examples](https://github.com/seancfoley/ipaddress-go/wiki/Code-Examples)
 
-The IPAddress library is also [available for Java](https://github.com/seancfoley/IPAddress).  The API is similar to the Go implementation, the primary differences being the nuances of the Go language in comparison to Java.
+The library is also [available for Java](https://github.com/seancfoley/IPAddress).  The API is similar to the Go implementation, the primary differences being the nuances of the Go language in comparison to Java.
 
 Version | Notes         |
 ------- | ------------- |
