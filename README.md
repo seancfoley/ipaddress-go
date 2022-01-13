@@ -6,7 +6,7 @@ go get github.com/seancfoley/ipaddress-go/ipaddr
 
 [View Project Page](https://seancfoley.github.io/IPAddress/)
 
-[View Godoc](https://pkg.go.dev/github.com/seancfoley/ipaddress-go/ipaddr)
+[View Godoc](https://pkg.go.dev/github.com/seancfoley/ipaddress-go/ipaddr) [![Go Reference](https://pkg.go.dev/badge/github.com/seancfoley/ipaddress-go/ipaddr.svg)](https://pkg.go.dev/github.com/seancfoley/ipaddress-go/ipaddr)
 
 [View Code Examples](https://github.com/seancfoley/ipaddress-go/wiki/Code-Examples)
 
