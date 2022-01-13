@@ -16,6 +16,8 @@ Version | Notes         |
 ------- | ------------- |
 [1.0.0](https://github.com/seancfoley/ipaddress-go/releases/tag/v1.0.0) | Requires Go 1.12 or higher |
 
+go get github.com/seancfoley/ipaddress-go/ipaddr@v1.0.0
+
 ## Getting Started
 
 starting with address or subnet strings
