@@ -538,13 +538,76 @@ func (section *addressSectionInternal) createLowestHighestSections() (lower, upp
 	return
 }
 
+// Returns an address for which this address is converted to an address with a 0 as the first bit following the prefix, followed by all ones to the end, and with the prefix length then removed
+// Returns the same address if it has no prefix length
+func (section *addressSectionInternal) toMaxLower() *AddressSection {
+	return section.toAboveOrBelow(false)
+}
+
+// Returns an address for which this address is converted to an address with a 1 as the first bit following the prefix, followed by all zeros to the end, and with the prefix length then removed
+// Returns the same address if it has no prefix length
+func (section *addressSectionInternal) toMinUpper() *AddressSection {
+	return section.toAboveOrBelow(true)
+}
+
+func (section *addressSectionInternal) toAboveOrBelow(above bool) *AddressSection {
+	prefLen := section.GetPrefixLen()
+	if prefLen == nil {
+		return section.toAddressSection()
+	}
+	prefBits := prefLen.Len()
+	segmentCount := section.GetSegmentCount()
+	if prefBits == section.GetBitCount() || segmentCount == 0 {
+		return section.withoutPrefixLen()
+	}
+	segmentByteCount := section.GetBytesPerSegment()
+	segmentBitCount := section.GetBitsPerSegment()
+	newSegs := createSegmentArray(segmentCount)
+	if prefBits > 0 {
+		networkSegmentIndex := getNetworkSegmentIndex(prefBits, segmentByteCount, segmentBitCount)
+		section.copySubDivisions(0, networkSegmentIndex, newSegs)
+	}
+	hostSegmentIndex := getHostSegmentIndex(prefBits, segmentByteCount, segmentBitCount)
+	if hostSegmentIndex < segmentCount {
+		oldSeg := section.getDivision(hostSegmentIndex)
+		oldVal := oldSeg.getUpperSegmentValue()
+		segPrefBits := getPrefixedSegmentPrefixLength(segmentBitCount, prefBits, hostSegmentIndex).bitCount()
+		// 1 bit followed by zeros
+		allOnes := ^SegInt(0)
+		var newVal SegInt
+		if above {
+			hostBits := uint(segmentBitCount - segPrefBits)
+			networkMask := allOnes << (hostBits - 1)
+			hostMask := ^(allOnes << hostBits)
+			newVal = (oldVal | hostMask) & networkMask
+		} else {
+			hostBits := uint(segmentBitCount - segPrefBits)
+			networkMask := allOnes << hostBits
+			hostMask := ^(allOnes<<hostBits - 1)
+			newVal = (oldVal & networkMask) | hostMask
+		}
+		newSegs[hostSegmentIndex] = createAddressDivision(oldSeg.deriveNewSeg(newVal, nil))
+		if j := hostSegmentIndex + 1; j < segmentCount {
+			var endSeg *AddressDivision
+			if above {
+				endSeg = createAddressDivision(oldSeg.deriveNewSeg(0, nil))
+			} else {
+				maxSegVal := section.GetMaxSegmentValue()
+				endSeg = createAddressDivision(oldSeg.deriveNewSeg(maxSegVal, nil))
+			}
+			newSegs[j] = endSeg
+			for j++; j < segmentCount; j++ {
+				newSegs[j] = endSeg
+			}
+		}
+	}
+	return deriveAddressSectionPrefLen(section.toAddressSection(), newSegs, nil)
+}
+
 func (section *addressSectionInternal) reverseSegments(segProducer func(int) (*AddressSegment, addrerr.IncompatibleAddressError)) (res *AddressSection, err addrerr.IncompatibleAddressError) {
 	count := section.GetSegmentCount()
 	if count == 0 { // case count == 1 we cannot exit early, we need to apply segProducer to each segment
-		if section.isPrefixed() {
-			return section.withoutPrefixLen(), nil
-		}
-		return section.toAddressSection(), nil
+		return section.withoutPrefixLen(), nil
 	}
 	newSegs := createSegmentArray(count)
 	halfCount := count >> 1
@@ -1901,6 +1964,53 @@ func (section *addressSectionInternal) CopyUpperBytes(bytes []byte) []byte {
 
 func (section *addressSectionInternal) IsSequential() bool {
 	return section.addressDivisionGroupingInternal.IsSequential()
+}
+
+// GetLeadingBitCount returns the number of consecutive leading one or zero bits.
+// If ones is true, returns the number of consecutive leading one bits.
+// Otherwise, returns the number of consecutive leading zero bits.
+//
+// This method applies only to the lower value of the range if this division represents multiple values.
+func (section *addressSectionInternal) GetLeadingBitCount(ones bool) BitCount {
+	count := section.GetSegmentCount()
+	if count == 0 {
+		return 0
+	}
+	var front SegInt
+	if ones {
+		front = section.GetSegment(0).GetMaxValue()
+	}
+	var prefixLen BitCount
+	for i := 0; i < count; i++ {
+		seg := section.GetSegment(i)
+		value := seg.getSegmentValue()
+		if value != front {
+			return prefixLen + seg.GetLeadingBitCount(ones)
+		}
+		prefixLen += seg.getBitCount()
+	}
+	return prefixLen
+}
+
+func (section *addressSectionInternal) GetTrailingBitCount(ones bool) BitCount {
+	count := section.GetSegmentCount()
+	if count == 0 {
+		return 0
+	}
+	var back SegInt
+	if ones {
+		back = section.GetSegment(0).GetMaxValue()
+	}
+	var bitLen BitCount
+	for i := count - 1; i >= 0; i-- {
+		seg := section.GetSegment(i)
+		value := seg.getSegmentValue()
+		if value != back {
+			return bitLen + seg.GetTrailingBitCount(ones)
+		}
+		bitLen += seg.getBitCount()
+	}
+	return bitLen
 }
 
 //// end needed for godoc / pkgsite

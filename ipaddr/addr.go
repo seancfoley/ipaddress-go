@@ -302,6 +302,22 @@ func (addr *addressInternal) createLowestHighestAddrs() (lower, upper *Address) 
 	return
 }
 
+func (addr *addressInternal) toMaxLower() *Address {
+	section := addr.section
+	if section == nil {
+		return addr.toAddress()
+	}
+	return addr.checkIdentity(addr.section.toMaxLower())
+}
+
+func (addr *addressInternal) toMinUpper() *Address {
+	section := addr.section
+	if section == nil {
+		return addr.toAddress()
+	}
+	return addr.checkIdentity(addr.section.toMinUpper())
+}
+
 func (addr *addressInternal) IsZero() bool {
 	section := addr.section
 	if section == nil {
@@ -982,6 +998,10 @@ func (addr *Address) ToPrefixBlock() *Address {
 	return addr.init().toPrefixBlock()
 }
 
+func (addr *Address) ToPrefixBlockLen(prefLen BitCount) *Address {
+	return addr.init().toPrefixBlockLen(prefLen)
+}
+
 func (addr *Address) ToBlock(segmentIndex int, lower, upper SegInt) *Address {
 	return addr.init().toBlock(segmentIndex, lower, upper)
 }
@@ -1097,6 +1117,14 @@ func (addr *Address) IsLocal() bool {
 		return thisAddr.IsLocal()
 	}
 	return false
+}
+
+func (addr *Address) GetLeadingBitCount(ones bool) BitCount {
+	return addr.GetSection().GetLeadingBitCount(ones)
+}
+
+func (addr *Address) GetTrailingBitCount(ones bool) BitCount {
+	return addr.GetSection().GetTrailingBitCount(ones)
 }
 
 func (addr Address) Format(state fmt.State, verb rune) {

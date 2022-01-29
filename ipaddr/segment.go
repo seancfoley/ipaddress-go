@@ -18,6 +18,7 @@ package ipaddr
 
 import (
 	"math/big"
+	"math/bits"
 	"unsafe"
 
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
@@ -28,6 +29,15 @@ import (
 type SegInt = uint32      // must be at least uint16 to handle IPv6, at least 32 to handle single segment IPv4, and no larger than 64 because we use bits.TrailingZeros64.  IP address segment code uses bits.TrailingZeros32 and bits.LeadingZeros32, so it cannot be larger than 32.
 const SegIntSize = 32     // must match the bit count of SegInt
 type SegIntCount = uint64 // must be able to hold: (max value of SegInt) + 1
+
+func CompareSegInt(one, two SegInt) int {
+	if one < two {
+		return -1
+	} else if one > two {
+		return 1
+	}
+	return 0
+}
 
 func createAddressSegment(vals divisionValues) *AddressSegment {
 	return &AddressSegment{
@@ -262,6 +272,50 @@ func (seg *addressSegmentInternal) segmentIterator(segPrefLen PrefixLen, isPrefi
 		isPrefixIterator,
 		isBlockIterator,
 	)
+}
+
+// GetLeadingBitCount returns the number of consecutive leading one or zero bits.
+// If ones is true, returns the number of consecutive leading one bits.
+// Otherwise, returns the number of consecutive leading zero bits.
+//
+// This method applies only to the lower value of the range if this segment represents multiple values.
+func (seg *addressSegmentInternal) GetLeadingBitCount(ones bool) BitCount {
+	extraLeading := 32 - seg.GetBitCount()
+	val := seg.GetSegmentValue()
+	if ones {
+		//leading ones
+		return BitCount(bits.LeadingZeros32(uint32(^val&seg.GetMaxValue()))) - extraLeading
+	}
+	// leading zeros
+	return BitCount(bits.LeadingZeros32(uint32(val))) - extraLeading
+}
+
+// GetTrailingBitCount returns the number of consecutive trailing one or zero bits.
+// If ones is true, returns the number of consecutive trailing zero bits.
+// Otherwise, returns the number of consecutive trailing one bits.
+//
+// This method applies only to the lower value of the range if this segment represents multiple values.
+func (seg *addressSegmentInternal) GetTrailingBitCount(ones bool) BitCount {
+	val := seg.GetSegmentValue()
+	if ones {
+		// trailing ones
+		return BitCount(bits.TrailingZeros32(uint32(^val)))
+	}
+	//trailing zeros
+	bitCount := uint(seg.GetBitCount())
+	return BitCount(bits.TrailingZeros32(uint32(val | (1 << bitCount))))
+}
+
+func (seg *addressSegmentInternal) GetSegmentNetworkMask(networkBits BitCount) SegInt {
+	bitCount := seg.GetBitCount()
+	networkBits = checkBitCount(networkBits, bitCount)
+	return seg.GetMaxValue() & (^SegInt(0) << uint(bitCount-networkBits))
+}
+
+func (seg *addressSegmentInternal) GetSegmentHostMask(networkBits BitCount) SegInt {
+	bitCount := seg.GetBitCount()
+	networkBits = checkBitCount(networkBits, bitCount)
+	return ^(^SegInt(0) << uint(bitCount-networkBits))
 }
 
 var (

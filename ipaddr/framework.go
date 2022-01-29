@@ -78,7 +78,7 @@ type AddressItem interface {
 	// The count of the number of distinct values within the prefix part of the range of values for this item
 	GetPrefixCountLen(BitCount) *big.Int
 
-	// Any address item is comparable to any other
+	// Compare returns a negative integer, zero, or a positive integer if this instance is less than, equal, or greater than the give item.  Any address item is comparable to any other.
 	Compare(item AddressItem) int
 
 	fmt.Stringer

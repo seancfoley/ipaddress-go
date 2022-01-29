@@ -466,6 +466,9 @@ func main() {
 
 	fmt.Printf("\n\n")
 	//_ = getDoc()
+
+	bn := ipaddr.AddressTrieNode{}
+	_ = bn
 }
 
 func splitIntoBlocks(one, two string) {

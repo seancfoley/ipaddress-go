@@ -18,7 +18,6 @@ package ipaddr
 
 import (
 	"math/big"
-	"math/bits"
 	"strings"
 	"sync/atomic"
 	"unsafe"
@@ -145,38 +144,6 @@ func (seg *ipAddressSegmentInternal) GetBlockMaskPrefixLen(network bool) PrefixL
 		return cacheBitCount(seg.GetBitCount() - hostLength)
 	}
 	return nil
-}
-
-// GetTrailingBitCount returns the number of consecutive trailing one or zero bits.
-// If ones is true, returns the number of consecutive trailing zero bits.
-// Otherwise, returns the number of consecutive trailing one bits.
-//
-// This method applies only to the lower value of the range if this segment represents multiple values.
-func (seg *ipAddressSegmentInternal) GetTrailingBitCount(ones bool) BitCount {
-	val := seg.GetSegmentValue()
-	if ones {
-		// trailing ones
-		return BitCount(bits.TrailingZeros32(uint32(^val)))
-	}
-	//trailing zeros
-	bitCount := uint(seg.GetBitCount())
-	return BitCount(bits.TrailingZeros32(uint32(val | (1 << bitCount))))
-}
-
-//	GetLeadingBitCount returns the number of consecutive leading one or zero bits.
-// If ones is true, returns the number of consecutive leading one bits.
-// Otherwise, returns the number of consecutive leading zero bits.
-//
-// This method applies only to the lower value of the range if this segment represents multiple values.
-func (seg *ipAddressSegmentInternal) GetLeadingBitCount(ones bool) BitCount {
-	extraLeading := 32 - seg.GetBitCount()
-	val := seg.GetSegmentValue()
-	if ones {
-		//leading ones
-		return BitCount(bits.LeadingZeros32(uint32(^val&seg.GetMaxValue()))) - extraLeading
-	}
-	// leading zeros
-	return BitCount(bits.LeadingZeros32(uint32(val))) - extraLeading
 }
 
 func (seg *ipAddressSegmentInternal) getUpperStringMasked(radix int, uppercase bool, appendable *strings.Builder) {
@@ -314,18 +281,6 @@ func (seg *ipAddressSegmentInternal) setRangeWildcardString(
 			}
 		}
 	}
-}
-
-func (seg *ipAddressSegmentInternal) GetSegmentNetworkMask(networkBits BitCount) SegInt {
-	bc := seg.GetBitCount()
-	networkBits = checkBitCount(networkBits, bc)
-	return seg.GetMaxValue() & (^SegInt(0) << uint(bc-networkBits))
-}
-
-func (seg *ipAddressSegmentInternal) GetSegmentHostMask(networkBits BitCount) SegInt {
-	bc := seg.GetBitCount()
-	networkBits = checkBitCount(networkBits, bc)
-	return ^(^SegInt(0) << uint(bc-networkBits))
 }
 
 func (seg *ipAddressSegmentInternal) toIPAddressSegment() *IPAddressSegment {
