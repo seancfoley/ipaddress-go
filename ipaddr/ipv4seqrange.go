@@ -298,3 +298,10 @@ func (rng *IPv4AddressSeqRange) GetIPv4PrefixCount(prefixLength BitCount) uint64
 	lowerAdjusted := rng.GetLower().Uint32Value() >> uint(shiftAdjustment)
 	return uint64(upperAdjusted-lowerAdjusted) + 1
 }
+
+func (rng *IPv4AddressSeqRange) ToKey() *IPv4AddressSeqRangeKey {
+	return &IPv4AddressSeqRangeKey{
+		lower: *rng.GetLower().ToKey(),
+		upper: *rng.GetUpper().ToKey(),
+	}
+}

@@ -110,6 +110,8 @@ type testAddresses interface {
 	isLenient() bool
 
 	allowsRange() bool
+
+	getAllCached() []*ipaddr.IPAddress
 }
 
 type addresses struct {
@@ -163,6 +165,9 @@ type addresses struct {
 
 func (t *addresses) useCache(use bool) {
 	if use {
+		if t.caching {
+			return
+		}
 		t.caching = use
 		t.strIPAddressStrCache = make(map[string]*ipaddr.IPAddressString)
 		t.strIPAddressStrCacheLock = &sync.Mutex{}
@@ -205,8 +210,48 @@ func (t *addresses) useCache(use bool) {
 		t.strParamsHostStrCache = make(map[addrstrparam.HostNameParams]map[string]*ipaddr.HostName)
 		t.strParamsHostStrCacheLock = &sync.Mutex{}
 	} else {
+		if !t.caching {
+			return
+		}
 		*t = addresses{}
 	}
+}
+
+func (t *addresses) getAllCached() (all []*ipaddr.IPAddress) {
+	if !t.caching {
+		return
+	}
+	t.strIPAddressStrCacheLock.Lock()
+	t.netIPv4AddressCacheLock.Lock()
+	t.netIPv6AddressCacheLock.Lock()
+	t.intIPv4AddressCacheLock.Lock()
+	t.intsIPv6AddressCacheLock.Lock()
+	all = make([]*ipaddr.IPAddress, 0, len(t.strIPAddressStrCache)+
+		len(t.netIPv4AddressCache)+len(t.netIPv6AddressCache)+
+		len(t.intIPv4AddressCache)+len(t.intsIPv6AddressCache))
+	for _, str := range t.strIPAddressStrCache {
+		if addr := str.GetAddress(); addr != nil {
+			all = append(all, addr)
+		}
+	}
+	for _, addr := range t.netIPv4AddressCache {
+		all = append(all, addr)
+	}
+	for _, addr := range t.netIPv6AddressCache {
+		all = append(all, addr)
+	}
+	for _, addr := range t.intIPv4AddressCache {
+		all = append(all, addr.ToIP())
+	}
+	for _, addr := range t.intsIPv6AddressCache {
+		all = append(all, addr.ToIP())
+	}
+	t.intsIPv6AddressCacheLock.Unlock()
+	t.intIPv4AddressCacheLock.Unlock()
+	t.netIPv6AddressCacheLock.Unlock()
+	t.netIPv4AddressCacheLock.Unlock()
+	t.strIPAddressStrCacheLock.Unlock()
+	return
 }
 
 func (t *addresses) createParametrizedAddress(str string, params addrstrparam.RangeParams) *ipaddr.IPAddressString {
@@ -530,7 +575,7 @@ func (t *addresses) allowsRange() bool {
 }
 
 type rangedAddresses struct {
-	addresses
+	*addresses
 
 	rstrIPAddressStrCache     map[string]*ipaddr.IPAddressString
 	rstrIPAddressStrCacheLock *sync.Mutex
@@ -547,6 +592,9 @@ type rangedAddresses struct {
 
 func (t *rangedAddresses) useCache(use bool) {
 	if use {
+		if t.caching {
+			return
+		}
 		t.rstrIPAddressStrCache = make(map[string]*ipaddr.IPAddressString)
 		t.rstrIPAddressStrCacheLock = &sync.Mutex{}
 
@@ -559,6 +607,9 @@ func (t *rangedAddresses) useCache(use bool) {
 		t.rinetAtonStrHostStrCache = make(map[string]*ipaddr.HostName)
 		t.rinetAtonStrIHostStrCacheLock = &sync.Mutex{}
 	} else {
+		if !t.caching {
+			return
+		}
 		*t = rangedAddresses{}
 	}
 	t.addresses.useCache(use)
@@ -599,6 +650,23 @@ var (
 
 	hostWildcardAndRangeInetAtonOptions = new(addrstrparam.HostNameParamsBuilder).Set(hostWildcardOptions).GetIPAddressParamsBuilder().SetRangeParams(addrstrparam.WildcardAndRange).Allow_inet_aton(true).GetParentBuilder().ToParams()
 )
+
+func (t *rangedAddresses) getAllCached() (all []*ipaddr.IPAddress) {
+	if !t.caching {
+		return
+	}
+	others := t.addresses.getAllCached()
+	t.rstrIPAddressStrCacheLock.Lock()
+	all = make([]*ipaddr.IPAddress, 0, len(t.rstrIPAddressStrCache)+len(others))
+	for _, str := range t.rstrIPAddressStrCache {
+		if addr := str.GetAddress(); addr != nil {
+			all = append(all, addr)
+		}
+	}
+	t.rstrIPAddressStrCacheLock.Unlock()
+	all = append(all, others...)
+	return
+}
 
 func (t *rangedAddresses) createAddress(str string) (res *ipaddr.IPAddressString) {
 	if t.caching {
@@ -674,7 +742,7 @@ var (
 )
 
 type allAddresses struct {
-	rangedAddresses
+	*rangedAddresses
 
 	astrIPAddressStrCache     map[string]*ipaddr.IPAddressString
 	astrIPAddressStrCacheLock *sync.Mutex
@@ -688,6 +756,9 @@ type allAddresses struct {
 
 func (t *allAddresses) useCache(use bool) {
 	if use {
+		if t.caching {
+			return
+		}
 		t.astrIPAddressStrCache = make(map[string]*ipaddr.IPAddressString)
 		t.astrIPAddressStrCacheLock = &sync.Mutex{}
 
@@ -697,9 +768,29 @@ func (t *allAddresses) useCache(use bool) {
 		t.ainetAtonStrHostStrCache = make(map[string]*ipaddr.HostName)
 		t.ainetAtonStrIHostStrCacheLock = &sync.Mutex{}
 	} else {
+		if !t.caching {
+			return
+		}
 		*t = allAddresses{}
 	}
 	t.rangedAddresses.useCache(use)
+}
+
+func (t *allAddresses) getAllCached() (all []*ipaddr.IPAddress) {
+	if !t.caching {
+		return
+	}
+	others := t.rangedAddresses.getAllCached()
+	t.astrIPAddressStrCacheLock.Lock()
+	all = make([]*ipaddr.IPAddress, 0, len(t.astrIPAddressStrCache)+len(others))
+	for _, str := range t.astrIPAddressStrCache {
+		if addr := str.GetAddress(); addr != nil {
+			all = append(all, addr)
+		}
+	}
+	t.astrIPAddressStrCacheLock.Unlock()
+	all = append(all, others...)
+	return
 }
 
 func (t *allAddresses) createAddress(str string) (res *ipaddr.IPAddressString) {

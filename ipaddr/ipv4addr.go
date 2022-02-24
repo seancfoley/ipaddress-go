@@ -135,7 +135,13 @@ func NewIPv4AddressFromPrefixedRange(vals, upperVals IPv4SegmentValueProvider, p
 	return newIPv4Address(section)
 }
 
+func newIPv4AddressFromPrefixedSingle(vals, upperVals IPv4SegmentValueProvider, prefixLength PrefixLen) *IPv4Address {
+	section := newIPv4SectionFromPrefixedSingle(vals, upperVals, IPv4SegmentCount, prefixLength, true)
+	return newIPv4Address(section)
+}
+
 var zeroIPv4 = initZeroIPv4()
+var ipv4All = zeroIPv4.ToPrefixBlockLen(0)
 
 func initZeroIPv4() *IPv4Address {
 	div := zeroIPv4Seg
@@ -317,7 +323,9 @@ func (addr *IPv4Address) Subtract(other *IPv4Address) []*IPv4Address {
 	addr = addr.init()
 	sects, _ := addr.GetSection().Subtract(other.GetSection())
 	sectLen := len(sects)
-	if sectLen == 1 {
+	if sectLen == 0 {
+		return nil
+	} else if sectLen == 1 {
 		sec := sects[0]
 		if sec.ToSectionBase() == addr.section {
 			return []*IPv4Address{addr}
@@ -446,6 +454,16 @@ func (addr *IPv4Address) AssignMinPrefixForBlock() *IPv4Address {
 	return addr.init().assignMinPrefixForBlock().ToIPv4()
 }
 
+// ToSinglePrefixBlockOrAddress converts to a single prefix block or address.
+// If the given address is a single prefix block, it is returned.
+// If it can be converted to a single prefix block by assigning a prefix length, the converted block is returned.
+// If it is a single address, any prefix length is removed and the address is returned.
+// Otherwise, nil is returned.
+// This method provides the address formats used by tries.
+func (addr *IPv4Address) ToSinglePrefixBlockOrAddress() *IPv4Address {
+	return addr.init().toSinglePrefixBlockOrAddress().ToIPv4()
+}
+
 func (addr *IPv4Address) ContainsPrefixBlock(prefixLen BitCount) bool {
 	return addr.init().ipAddressInternal.ContainsPrefixBlock(prefixLen)
 }
@@ -555,6 +573,8 @@ func (addr *IPv4Address) Compare(item AddressItem) int {
 func (addr *IPv4Address) Equal(other AddressType) bool {
 	if addr == nil {
 		return other == nil || other.ToAddressBase() == nil
+	} else if other.ToAddressBase() == nil {
+		return false
 	}
 	return other.ToAddressBase().getAddrType() == ipv4Type && addr.init().section.sameCountTypeEquals(other.ToAddressBase().GetSection())
 }
@@ -569,6 +589,21 @@ func (addr *IPv4Address) CompareSize(other AddressType) int {
 		return 0
 	}
 	return addr.init().compareSize(other)
+}
+
+// TrieCompare compares two addresses according to the trie order.  It returns a number less than zero, zero, or a number greater than zero if the first address argument is less than, equal to, or greater than the second.
+func (addr *IPv4Address) TrieCompare(other *IPv4Address) int {
+	return addr.init().trieCompare(other.ToAddressBase())
+}
+
+// TrieIncrement returns the next address according to address trie ordering
+func (addr *IPv4Address) TrieIncrement() *IPv4Address {
+	return addr.trieIncrement().ToIPv4()
+}
+
+// TrieDecrement returns the previous key according to the trie ordering
+func (addr *IPv4Address) TrieDecrement() *IPv4Address {
+	return addr.trieDecrement().ToIPv4()
 }
 
 func (addr *IPv4Address) MatchesWithMask(other *IPv4Address, mask *IPv4Address) bool {
@@ -1068,4 +1103,26 @@ func (addr *IPv4Address) ToIP() *IPAddress {
 
 func (addr *IPv4Address) Wrap() WrappedIPAddress {
 	return wrapIPAddress(addr.ToIP())
+}
+
+// ToKey creates the associated address key.
+// While addresses can be compare with the Compare, TrieCompare or Equal methods as well as various provided instances of AddressComparator,
+// they are not comparable with go operators.
+// However, IPv4AddressKey instances are comparable with go operators, and thus can be used as map keys.
+func (addr *IPv4Address) ToKey() *IPv4AddressKey {
+	addr = addr.init()
+	key := &IPv4AddressKey{
+		Prefix: PrefixKey{
+			IsPrefixed: addr.IsPrefixed(),
+			PrefixLen:  PrefixBitCount(addr.GetPrefixLen().Len()),
+		},
+	}
+	section := addr.GetSection()
+	divs := section.divisions.(standardDivArray)
+	for i, div := range divs.divisions {
+		seg := div.ToIPv4()
+		vals := &key.Values[i]
+		vals.Value, vals.UpperValue = seg.GetIPv4SegmentValue(), seg.GetIPv4UpperSegmentValue()
+	}
+	return key
 }

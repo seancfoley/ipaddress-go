@@ -168,25 +168,23 @@ func reverseUint32(i uint32) uint32 {
 func flagsFromState(state fmt.State, verb rune) string {
 	flags := "# +-0"
 	vals := make([]rune, 0, len(flags)+5) // %, flags, width, '.', precision, verb
-	valsIndex := 0
 	vals = append(vals, '%')
 	for i := 0; i < len(flags); i++ {
 		b := flags[i]
 		if state.Flag(int(b)) {
 			vals = append(vals, rune(b))
 		}
-		valsIndex++
 	}
-	w, wok := state.Width()
-	p, pok := state.Precision()
-	if wok || pok {
+	width, widthOK := state.Width()
+	precision, precisionOK := state.Precision()
+	if widthOK || precisionOK {
 		var wpv string
-		if wok && pok {
-			wpv = fmt.Sprintf("%d.%d%c", w, p, verb)
-		} else if wok {
-			wpv = fmt.Sprintf("%d%c", w, verb)
+		if widthOK && precisionOK {
+			wpv = fmt.Sprintf("%d.%d%c", width, precision, verb)
+		} else if widthOK {
+			wpv = fmt.Sprintf("%d%c", width, verb)
 		} else {
-			wpv = fmt.Sprintf(".%d%c", p, verb)
+			wpv = fmt.Sprintf(".%d%c", precision, verb)
 		}
 		return string(vals) + wpv
 	}

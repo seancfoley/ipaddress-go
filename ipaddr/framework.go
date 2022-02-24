@@ -71,7 +71,7 @@ type AddressItem interface {
 	// If there are multiple possible prefixes in this item for the given prefix length,
 	// this item contains the prefix block for each and every one of those prefixes.
 	// If the entire range can be dictated this way, then this method returns the same value as {@link #GetPrefixLenForSingleBlock()}.
-	// Otherwise, this method will return the minimal possible prefix that can be paired with this address, while {@link #GetPrefixLenForSingleBlock()} will return null.
+	// Otherwise, this method will return the minimal possible prefix that can be paired with this address, while GetPrefixLenForSingleBlock will return nil.
 	// In cases where the final bit is constant so there is no such block, this returns the bit count.
 	GetMinPrefixLenForBlock() BitCount
 

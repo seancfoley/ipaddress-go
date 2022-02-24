@@ -32,21 +32,25 @@ import (
 
 func Test(isLimited bool) {
 	acc := testAccumulator{lock: &sync.Mutex{}}
+
 	var addresses addresses
 	fullTest := false
+	//fullTest := true
 	fmt.Println("Starting TestRunner")
 	startTime := time.Now()
 
-	rangedAddresses := rangedAddresses{addresses: addresses}
+	rangedAddresses := rangedAddresses{addresses: &addresses}
 
-	allAddresses := allAddresses{rangedAddresses: rangedAddresses}
+	allAddresses := allAddresses{rangedAddresses: &rangedAddresses}
 
 	if isLimited {
 		acc = testAll(addresses, rangedAddresses, allAddresses, fullTest)
 	} else {
-		// warm up
+		// warm up with no caching
 		acc = testAll(addresses, rangedAddresses, allAddresses, fullTest)
 		allAddresses.useCache(true)
+		rangedAddresses.useCache(true)
+		addresses.useCache(true)
 		routineCount := 100
 		var wg sync.WaitGroup
 		wg.Add(routineCount)
@@ -61,10 +65,11 @@ func Test(isLimited bool) {
 	}
 
 	endTime := time.Now().Sub(startTime)
-	fmt.Printf("TestRunner\ntest count: %d\nfail count: %d\n", acc.counter, len(acc.failures))
+	//fmt.Printf("TestRunner\ntest count: %d\nfail count: %d\n", acc.counter, len(acc.failures))
 	if len(acc.failures) > 0 {
 		fmt.Printf("%v\n", acc.failures)
 	}
+	fmt.Printf("TestRunner\ntest count: %d\nfail count: %d\n", acc.counter, len(acc.failures))
 	fmt.Printf("Done: TestRunner\nDone in %v\n", endTime)
 }
 
@@ -77,7 +82,7 @@ func testAll(addresses addresses, rangedAddresses rangedAddresses, allAddresses 
 	hTester := hostTester{testBase{testResults: &acc, testAddresses: &addresses, fullTest: fullTest}}
 	hTester.run()
 
-	macTester := macAddressTester{testBase{testResults: &acc, testAddresses: &addresses}}
+	macTester := macAddressTester{testBase{testResults: &acc, testAddresses: &addresses, fullTest: fullTest}}
 	macTester.run()
 
 	rangeTester := ipAddressRangeTester{ipAddressTester{testBase{testResults: &acc, testAddresses: &rangedAddresses, fullTest: fullTest}}}
@@ -86,7 +91,7 @@ func testAll(addresses addresses, rangedAddresses rangedAddresses, allAddresses 
 	hostRTester := hostRangeTester{hostTester{testBase{testResults: &acc, testAddresses: &rangedAddresses, fullTest: fullTest}}}
 	hostRTester.run()
 
-	macRangeTester := macAddressRangeTester{macAddressTester{testBase{testResults: &acc, testAddresses: &rangedAddresses}}}
+	macRangeTester := macAddressRangeTester{macAddressTester{testBase{testResults: &acc, testAddresses: &rangedAddresses, fullTest: fullTest}}}
 	macRangeTester.run()
 
 	allTester := ipAddressAllTester{ipAddressRangeTester{ipAddressTester{testBase{testResults: &acc, testAddresses: &allAddresses, fullTest: fullTest}}}}
@@ -94,12 +99,18 @@ func testAll(addresses addresses, rangedAddresses rangedAddresses, allAddresses 
 
 	hostATester := hostAllTester{hostRangeTester{hostTester{testBase{testResults: &acc, testAddresses: &rangedAddresses, fullTest: fullTest}}}}
 	hostATester.run()
+	rangedAddresses.getAllCached()
 
 	sTypesTester := specialTypesTester{testBase{testResults: &acc, testAddresses: &addresses, fullTest: fullTest}}
 	sTypesTester.run()
 
 	addressOrderTester := addressOrderTest{testBase{testResults: &acc, testAddresses: &addresses, fullTest: fullTest}}
 	addressOrderTester.run()
+	addresses.getAllCached()
+
+	// because trie test creates a mega tree from all previously created addresses, it should go last
+	trieTester := trieTester{testBase{testResults: &acc, testAddresses: &allAddresses, fullTest: fullTest}}
+	trieTester.run()
 
 	return acc
 }
@@ -1607,6 +1618,7 @@ type failure struct {
 	series ipaddr.AddressSegmentSeries
 	div    ipaddr.DivisionType
 	item   ipaddr.AddressItem
+	trie   *ipaddr.AddressTrie
 }
 
 func (f failure) String() string {
@@ -1614,11 +1626,14 @@ func (f failure) String() string {
 		concat(
 			concat(
 				concat(
-					concat(f.str, f.series),
+					concat(
+						concat(
+							"", f.series),
+						f.trie),
 					f.idStr),
 				f.rng),
 			f.div),
-		f.item)
+		f.item) + ": " + f.str
 }
 
 func concat(str string, stringer fmt.Stringer) string {
@@ -1627,10 +1642,12 @@ func concat(str string, stringer fmt.Stringer) string {
 		if stringerStr == "<nil>" {
 			stringerStr = ""
 		}
-		if str != "" {
-			return stringer.String() + ": " + str
+		if stringerStr != "" {
+			if str != "" {
+				return stringerStr + ": " + str
+			}
+			return stringerStr
 		}
-		return stringer.String()
 	}
 	return str
 }
@@ -1670,6 +1687,17 @@ func newHostIdFailure(str string, idStr ipaddr.HostIdentifierString) failure {
 	}
 }
 
+func newTrieFailure(str string, trie *ipaddr.AddressTrie) failure {
+	return failure{
+		str:  str,
+		trie: trie,
+	}
+}
+
+func newAddrFailure(str string, addr *ipaddr.Address) failure {
+	return newSegmentSeriesFailure(str, addr)
+}
+
 func newIPAddrFailure(str string, addr *ipaddr.IPAddress) failure {
 	return newSegmentSeriesFailure(str, addr)
 }
@@ -1691,8 +1719,7 @@ func newFailure(str string, addrStr *ipaddr.IPAddressString) failure {
 }
 
 func cacheTestBits(i ipaddr.BitCount) ipaddr.PrefixLen {
-	res := ipaddr.PrefixBitCount(i)
-	return &res
+	return ipaddr.ToPrefixLen(i)
 }
 
 var (
@@ -1708,6 +1735,7 @@ var (
 	p17  = cacheTestBits(17)
 	p23  = cacheTestBits(23)
 	p24  = cacheTestBits(24)
+	p30  = cacheTestBits(30)
 	p31  = cacheTestBits(31)
 	p32  = cacheTestBits(32)
 	p33  = cacheTestBits(33)
@@ -1720,6 +1748,7 @@ var (
 	p65  = cacheTestBits(65)
 	p97  = cacheTestBits(97)
 	p104 = cacheTestBits(104)
+	p110 = cacheTestBits(110)
 	p112 = cacheTestBits(112)
 	p127 = cacheTestBits(127)
 	p128 = cacheTestBits(128)

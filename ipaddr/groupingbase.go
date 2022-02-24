@@ -476,5 +476,5 @@ func (grouping standardDivArray) init() standardDivArray {
 }
 
 func (grouping standardDivArray) String() string {
-	return fmt.Sprintf("%v", grouping.init().divisions)
+	return fmt.Sprint(grouping.init().divisions)
 }

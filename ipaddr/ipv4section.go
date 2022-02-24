@@ -169,6 +169,10 @@ func NewIPv4SectionFromRange(vals, upperVals IPv4SegmentValueProvider, segmentCo
 }
 
 func NewIPv4SectionFromPrefixedRange(vals, upperVals IPv4SegmentValueProvider, segmentCount int, prefixLength PrefixLen) (res *IPv4AddressSection) {
+	return newIPv4SectionFromPrefixedSingle(vals, upperVals, segmentCount, prefixLength, false)
+}
+
+func newIPv4SectionFromPrefixedSingle(vals, upperVals IPv4SegmentValueProvider, segmentCount int, prefixLength PrefixLen, singleOnly bool) (res *IPv4AddressSection) {
 	if segmentCount < 0 {
 		segmentCount = 0
 	}
@@ -182,7 +186,7 @@ func NewIPv4SectionFromPrefixedRange(vals, upperVals IPv4SegmentValueProvider, s
 	res = createIPv4Section(segments)
 	res.isMult = isMultiple
 	if prefixLength != nil {
-		assignPrefix(prefixLength, segments, res.ToIP(), false, false, BitCount(segmentCount<<ipv4BitsToSegmentBitshift))
+		assignPrefix(prefixLength, segments, res.ToIP(), singleOnly, false, BitCount(segmentCount<<ipv4BitsToSegmentBitshift))
 	}
 	return
 }

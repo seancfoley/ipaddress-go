@@ -152,10 +152,15 @@ func getMacSegCount(isExtended bool) (segmentCount int) {
 	return
 }
 
-var zeroMAC = createMACZero()
+var zeroMAC = createMACZero(false)
+var macAll = zeroMAC.SetPrefixLen(0).ToPrefixBlock()
+var macAllExtended = createMACZero(true).SetPrefixLen(0).ToPrefixBlock()
 
-func createMACZero() *MACAddress {
+func createMACZero(extended bool) *MACAddress {
 	segs := []*MACAddressSegment{zeroMACSeg, zeroMACSeg, zeroMACSeg, zeroMACSeg, zeroMACSeg, zeroMACSeg}
+	if extended {
+		segs = append(segs, zeroMACSeg, zeroMACSeg)
+	}
 	section := NewMACSection(segs)
 	return newMACAddress(section)
 }
@@ -390,6 +395,16 @@ func (addr *MACAddress) AssignMinPrefixForBlock() *MACAddress {
 	return addr.init().assignMinPrefixForBlock().ToMAC()
 }
 
+// ToSinglePrefixBlockOrAddress converts to a single prefix block or address.
+// If the given address is a single prefix block, it is returned.
+// If it can be converted to a single prefix block by assigning a prefix length, the converted block is returned.
+// If it is a single address, any prefix length is removed and the address is returned.
+// Otherwise, nil is returned.
+// This method provides the address formats used by tries.
+func (addr *MACAddress) ToSinglePrefixBlockOrAddress() *MACAddress {
+	return addr.init().toSinglePrefixBlockOrAddress().ToMAC()
+}
+
 func (addr *MACAddress) ContainsPrefixBlock(prefixLen BitCount) bool {
 	return addr.init().addressInternal.ContainsPrefixBlock(prefixLen)
 }
@@ -446,6 +461,24 @@ func (addr *MACAddress) CompareSize(other AddressType) int { // this is here to 
 	return addr.init().compareSize(other)
 }
 
+// TrieCompare compares two addresses according to the trie order.  It returns a number less than zero, zero, or a number greater than zero if the first address argument is less than, equal to, or greater than the second.
+func (addr *MACAddress) TrieCompare(other *MACAddress) (int, addrerr.IncompatibleAddressError) {
+	if addr.GetSegmentCount() != other.GetSegmentCount() {
+		return 0, &incompatibleAddressError{addressError{key: "ipaddress.error.mismatched.bit.size"}}
+	}
+	return addr.init().trieCompare(other.ToAddressBase()), nil
+}
+
+// TrieIncrement returns the next address according to address trie ordering
+func (addr *MACAddress) TrieIncrement() *MACAddress {
+	return addr.trieIncrement().ToMAC()
+}
+
+// TrieDecrement returns the previous key according to the trie ordering
+func (addr *MACAddress) TrieDecrement() *MACAddress {
+	return addr.trieDecrement().ToMAC()
+}
+
 func (addr *MACAddress) GetMaxSegmentValue() SegInt {
 	return addr.init().getMaxSegmentValue()
 }
@@ -459,11 +492,13 @@ func (addr *MACAddress) IsUnicast() bool {
 	return !addr.IsMulticast()
 }
 
+// IsUniversal returns whether this is a universal address.
 // Universal MAC addresses have second the least significant bit of the first octet set to 0.
 func (addr *MACAddress) IsUniversal() bool {
 	return !addr.IsLocal()
 }
 
+// IsLocal returns whether this is a local address.
 // Local MAC addresses have the second least significant bit of the first octet set to 1.
 func (addr *MACAddress) IsLocal() bool {
 	return addr.GetSegment(0).MatchesWithMask(2, 0x2)
@@ -798,4 +833,27 @@ func (addr *MACAddress) ToAddressBase() *Address {
 
 func (addr *MACAddress) Wrap() WrappedAddress {
 	return WrapAddress(addr.ToAddressBase())
+}
+
+// ToKey creates the associated address key.
+// While addresses can be compare with the Compare, TrieCompare or Equal methods as well as various provided instances of AddressComparator,
+// they are not comparable with go operators.
+// However, IPv6AddressKey instances are comparable with go operators, and thus can be used as map keys.
+func (addr *MACAddress) ToKey() *MACAddressKey {
+	addr = addr.init()
+	key := &MACAddressKey{
+		Prefix: PrefixKey{
+			IsPrefixed: addr.IsPrefixed(),
+			PrefixLen:  PrefixBitCount(addr.GetPrefixLen().Len()),
+		},
+		SegmentCount: uint8(addr.GetSegmentCount()),
+	}
+	section := addr.GetSection()
+	divs := section.divisions.(standardDivArray)
+	for i, div := range divs.divisions {
+		seg := div.ToMAC()
+		vals := &key.Values[i]
+		vals.Value, vals.UpperValue = seg.GetMACSegmentValue(), seg.GetMACUpperSegmentValue()
+	}
+	return key
 }

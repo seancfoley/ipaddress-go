@@ -18,6 +18,7 @@ package ipaddr
 
 import (
 	"fmt"
+	"github.com/seancfoley/ipaddress-go/ipaddr/tree"
 	"math/big"
 	"sync/atomic"
 	"unsafe"
@@ -59,7 +60,8 @@ func createAddress(section *AddressSection, zone Zone) *Address {
 	return res
 }
 
-// values that fall outside the segment value type range are truncated using standard golang integer type conversions https://golang.org/ref/spec#Conversions
+// SegmentValueProvider provides values for segments.
+// Values that fall outside the segment value type range will be truncated using standard golang integer type conversions https://golang.org/ref/spec#Conversions
 type SegmentValueProvider func(segmentIndex int) SegInt
 
 type AddressValueProvider interface {
@@ -214,7 +216,109 @@ func (addr *addressInternal) compareSize(other AddressType) int {
 	return section.CompareSize(other.ToAddressBase().GetSection())
 }
 
-func (addr addressInternal) toString() string { // using non-pointer receiver makes it work well with fmt
+func (addr *addressInternal) trieCompare(other *Address) int {
+	if addr.toAddress() == other {
+		return 0
+	}
+	segmentCount := addr.getDivisionCount()
+	bitsPerSegment := addr.GetBitsPerSegment()
+	o1Pref := addr.GetPrefixLen()
+	o2Pref := other.GetPrefixLen()
+	bitsMatchedSoFar := 0
+	i := 0
+	for {
+		segment1 := addr.getSegment(i)
+		segment2 := other.getSegment(i)
+		pref1 := getSegmentPrefLen(addr.toAddress(), o1Pref, bitsPerSegment, bitsMatchedSoFar, segment1)
+		pref2 := getSegmentPrefLen(other, o2Pref, bitsPerSegment, bitsMatchedSoFar, segment2)
+		if pref1 != nil {
+			segmentPref1 := pref1.Len()
+			segmentPref2 := pref2.Len()
+			if pref2 != nil && segmentPref2 <= segmentPref1 {
+				matchingBits := getMatchingBits(segment1, segment2, segmentPref2, bitsPerSegment)
+				if matchingBits >= segmentPref2 {
+					if segmentPref2 == segmentPref1 {
+						// same prefix block
+						return 0
+					}
+					// segmentPref2 is shorter prefix, prefix bits match, so depends on bit at index segmentPref2
+					if segment1.IsOneBit(segmentPref2) {
+						return 1
+					}
+					return -1
+				}
+				return CompareSegInt(segment1.GetSegmentValue(), segment2.GetSegmentValue())
+			} else {
+				matchingBits := getMatchingBits(segment1, segment2, segmentPref1, bitsPerSegment)
+				if matchingBits >= segmentPref1 {
+					if segmentPref1 < bitsPerSegment {
+						if segment2.IsOneBit(segmentPref1) {
+							return -1
+						}
+						return 1
+					} else {
+						i++
+						if i == segmentCount {
+							return 1 // o1 with prefix length matching bit count is the bigger
+						} // else must check the next segment
+					}
+				} else {
+					return CompareSegInt(segment1.GetSegmentValue(), segment2.GetSegmentValue())
+				}
+			}
+		} else if pref2 != nil {
+			segmentPref2 := pref2.Len()
+			matchingBits := getMatchingBits(segment1, segment2, segmentPref2, bitsPerSegment)
+			if matchingBits >= segmentPref2 {
+				if segmentPref2 < bitsPerSegment {
+					if segment1.IsOneBit(segmentPref2) {
+						return 1
+					}
+					return -1
+				} else {
+					i++
+					if i == segmentCount {
+						return -1 // o2 with prefix length matching bit count is the bigger
+					} // else must check the next segment
+				}
+			} else {
+				return CompareSegInt(segment1.GetSegmentValue(), segment2.GetSegmentValue())
+			}
+		} else {
+			matchingBits := getMatchingBits(segment1, segment2, bitsPerSegment, bitsPerSegment)
+			if matchingBits < bitsPerSegment { // no match - the current subnet/address is not here
+				return CompareSegInt(segment1.GetSegmentValue(), segment2.GetSegmentValue())
+			} else {
+				i++
+				if i == segmentCount {
+					// same address
+					return 0
+				} // else must check the next segment
+			}
+		}
+		bitsMatchedSoFar += bitsPerSegment
+	}
+}
+
+// trieIncrement returns the next address according to address trie ordering
+func (addr *addressInternal) trieIncrement() *Address {
+	res := tree.TrieIncrement(&addressTrieKey{addr.toAddress()})
+	if res == nil {
+		return nil
+	}
+	return res.(*addressTrieKey).Address
+}
+
+// trieDecrement returns the previous key according to the trie ordering
+func (addr *addressInternal) trieDecrement() *Address {
+	res := tree.TrieDecrement(&addressTrieKey{addr.toAddress()})
+	if res == nil {
+		return nil
+	}
+	return res.(*addressTrieKey).Address
+}
+
+func (addr *addressInternal) toString() string { // using non-pointer receiver makes it work well with fmt
 	section := addr.section
 	if section == nil {
 		return nilSection() // note no zone possible since a zero-address like Address{} or IPAddress{} cannot have a zone
@@ -540,6 +644,28 @@ func (addr *addressInternal) assignPrefixForSingleBlock() *Address {
 // such that the range of values are a set of subnet blocks for that prefix.
 func (addr *addressInternal) assignMinPrefixForBlock() *Address {
 	return addr.setPrefixLen(addr.GetMinPrefixLenForBlock())
+}
+
+// toSingleBlockOrAddress converts to a single prefix block or address.
+// If the given address is a single prefix block, it is returned.
+// If it can be converted to a single prefix block by assigning a prefix length, the converted block is returned.
+// If it is a single address, any prefix length is removed and the address is returned.
+// Otherwise, nil is returned.
+func (addr *addressInternal) toSinglePrefixBlockOrAddress() *Address {
+	if !addr.isMultiple() {
+		if !addr.isPrefixed() {
+			return addr.toAddress()
+		}
+		return addr.withoutPrefixLen()
+	} else if addr.IsSinglePrefixBlock() {
+		return addr.toAddress()
+	} else {
+		series := addr.assignPrefixForSingleBlock()
+		if series != nil {
+			return series
+		}
+	}
+	return nil
 }
 
 func (addr *addressInternal) isSameZone(other *Address) bool {
@@ -871,6 +997,8 @@ func (addr *Address) Compare(item AddressItem) int {
 func (addr *Address) Equal(other AddressType) bool {
 	if addr == nil {
 		return other == nil || other.ToAddressBase() == nil
+	} else if other.ToAddressBase() == nil {
+		return false
 	}
 	return addr.init().equals(other)
 }
@@ -884,6 +1012,34 @@ func (addr *Address) CompareSize(other AddressType) int {
 		return 0
 	}
 	return addr.init().compareSize(other)
+}
+
+// TrieCompare compares two addresses according to the trie order.  It returns a number less than zero, zero, or a number greater than zero if the first address argument is less than, equal to, or greater than the second.
+func (addr *Address) TrieCompare(other *Address) (int, addrerr.IncompatibleAddressError) {
+	if thisAddr := addr.ToIPv4(); thisAddr != nil {
+		if oth := other.ToIPv4(); oth != nil {
+			return thisAddr.TrieCompare(oth), nil
+		}
+	} else if thisAddr := addr.ToIPv6(); thisAddr != nil {
+		if oth := other.ToIPv6(); oth != nil {
+			return thisAddr.TrieCompare(oth), nil
+		}
+	} else if thisAddr := addr.ToMAC(); thisAddr != nil {
+		if oth := other.ToMAC(); oth != nil {
+			return thisAddr.TrieCompare(oth)
+		}
+	}
+	return 0, &incompatibleAddressError{addressError{key: "ipaddress.error.mismatched.bit.size"}}
+}
+
+// TrieIncrement returns the next address according to address trie ordering
+func (addr *Address) TrieIncrement() *Address {
+	return addr.trieIncrement()
+}
+
+// TrieDecrement returns the previous key according to the trie ordering
+func (addr *Address) TrieDecrement() *Address {
+	return addr.trieDecrement()
 }
 
 func (addr *Address) GetSection() *AddressSection {
@@ -908,8 +1064,8 @@ func (addr *Address) CopySubSegments(start, end int, segs []*AddressSegment) (co
 	return addr.GetSection().CopySubSegments(start, end, segs)
 }
 
-// CopySubSegments copies the existing segments from the given start index until but not including the segment at the given end index,
-// into the given slice, as much as can be fit into the slice, returning the number of segments copied
+// CopySegments copies the existing segments into the given slice,
+// as much as can be fit into the slice, returning the number of segments copied
 func (addr *Address) CopySegments(segs []*AddressSegment) (count int) {
 	return addr.GetSection().CopySegments(segs)
 }
@@ -934,12 +1090,12 @@ func (addr *Address) GetGenericDivision(index int) DivisionType {
 	return addr.getDivision(index)
 }
 
-// GetGenericDivision returns the segment at the given index as an AddressSegmentType
+// GetGenericSegment returns the segment at the given index as an AddressSegmentType
 func (addr *Address) GetGenericSegment(index int) AddressSegmentType {
 	return addr.getSegment(index)
 }
 
-// GetDivision returns the segment count
+// GetDivisionCount returns the division count
 func (addr *Address) GetDivisionCount() int {
 	return addr.getDivisionCount()
 }
@@ -1038,6 +1194,16 @@ func (addr *Address) AssignPrefixForSingleBlock() *Address {
 // such that the range of values are the prefix block for that prefix.
 func (addr *Address) AssignMinPrefixForBlock() *Address {
 	return addr.init().assignMinPrefixForBlock()
+}
+
+// ToSinglePrefixBlockOrAddress converts to a single prefix block or address.
+// If the given address is a single prefix block, it is returned.
+// If it can be converted to a single prefix block by assigning a prefix length, the converted block is returned.
+// If it is a single address, any prefix length is removed and the address is returned.
+// Otherwise, nil is returned.
+// This method provides the address formats used by tries.
+func (addr *Address) ToSinglePrefixBlockOrAddress() *Address {
+	return addr.init().toSinglePrefixBlockOrAddress()
 }
 
 func (addr *Address) GetMaxSegmentValue() SegInt {
@@ -1196,9 +1362,9 @@ func (addr *Address) ToCustomString(stringOptions addrstr.StringOptions) string 
 
 func (addr *Address) ToAddressString() HostIdentifierString {
 	if addr.isIP() {
-		return addr.toAddress().ToIP().ToAddressString()
+		return addr.ToIP().ToAddressString()
 	} else if addr.isMAC() {
-		return addr.toAddress().ToMAC().ToAddressString()
+		return addr.ToMAC().ToAddressString()
 	}
 	return nil
 }
@@ -1253,4 +1419,19 @@ func (addr *Address) ToMAC() *MACAddress {
 
 func (addr *Address) Wrap() WrappedAddress {
 	return WrapAddress(addr.init())
+}
+
+// ToKey creates the associated address key.
+// While addresses can be compare with the Compare, TrieCompare or Equal methods as well as various provided instances of AddressComparator,
+// they are not comparable with go operators.
+// However, AddressKey instances are comparable with go operators, and thus can be used as map keys.
+func (addr *Address) ToKey() *AddressKey {
+	if thisAddr := addr.ToIPv4(); thisAddr != nil {
+		return thisAddr.ToKey().ToBaseKey()
+	} else if thisAddr := addr.ToIPv6(); thisAddr != nil {
+		return thisAddr.ToKey().ToBaseKey()
+	} else if thisAddr := addr.ToMAC(); thisAddr != nil {
+		return thisAddr.ToKey().ToBaseKey()
+	}
+	return nil
 }

@@ -209,13 +209,13 @@ func (addrStr *IPAddressString) IsPrefixed() bool {
 	return addrStr.getNetworkPrefixLen() != nil
 }
 
-// If this address is a valid address with an associated network prefix length then this returns that prefix length, otherwise returns null.
+// If this address is a valid address with an associated network prefix length then this returns that prefix length, otherwise returns nil.
 // The prefix length may be expressed explicitly with the notation "\xx" where xx is a decimal value, or it may be expressed implicitly as a network mask such as /255.255.0.0
 func (addrStr *IPAddressString) GetNetworkPrefixLen() PrefixLen {
 	return addrStr.getNetworkPrefixLen().copy()
 }
 
-// If this address is a valid address with an associated network prefix length then this returns that prefix length, otherwise returns null.
+// If this address is a valid address with an associated network prefix length then this returns that prefix length, otherwise returns nil.
 // The prefix length may be expressed explicitly with the notation "\xx" where xx is a decimal value, or it may be expressed implicitly as a network mask such as /255.255.0.0
 func (addrStr *IPAddressString) getNetworkPrefixLen() PrefixLen {
 	addrStr = addrStr.init()
@@ -272,7 +272,7 @@ func (addrStr *IPAddressString) IsMixedIPv6() bool {
 	}
 */
 
-// GetIPVersion returns the IP address version if {@link #isIPAddress()} returns true, otherwise returns null
+// GetIPVersion returns the IP address version if {@link #isIPAddress()} returns true, otherwise returns nil
 func (addrStr *IPAddressString) GetIPVersion() IPVersion {
 	if addrStr.IsValid() {
 		return addrStr.addressProvider.getProviderIPVersion()
@@ -448,10 +448,10 @@ func (addrStr *IPAddressString) ToHostAddress() (*IPAddress, addrerr.AddressErro
 // For example, 1-2.3.4.1-2 produces the sequential range 1.3.4.1 to 2.3.4.2 that includes the address 1.255.255.2 not specified by the string.
 //
 // This method can also produce a range for a string for which no IPAddress instance can be created,
-// those cases where IsValid() returns true but ToAddress() returnsaddrerr.IncompatibleAddressError and GetAddress() returns null.
-// The range cannot be produced for the other cases where GetAddress() returns null
+// those cases where IsValid returns true but ToAddress returns addrerr.IncompatibleAddressError and GetAddress returns nil.
+// The range cannot be produced for the other cases where GetAddress returns nil
 //
-// This is similar to ToSequentialRange() except that nil is returned when there is an error.
+// This is similar to ToSequentialRange except that nil is returned when there is an error.
 func (addrStr *IPAddressString) GetSequentialRange() (res *IPAddressSeqRange) {
 	res, _ = addrStr.ToSequentialRange()
 	return
@@ -592,7 +592,7 @@ func (addrStr *IPAddressString) PrefixEqual(other *IPAddressString) bool {
 				return thisAddress.prefixEquals(otherAddress)
 			}
 		}
-		// one or both addresses are null, so there is no prefix to speak of
+		// one or both addresses are nil, so there is no prefix to speak of
 	}
 	return false
 }

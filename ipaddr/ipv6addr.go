@@ -282,6 +282,11 @@ func NewIPv6AddressFromPrefixedZonedRange(vals, upperVals IPv6SegmentValueProvid
 	return newIPv6AddressZoned(section, zone)
 }
 
+func newIPv6AddressFromPrefixedSingle(vals, upperVals IPv6SegmentValueProvider, prefixLength PrefixLen, zone string) *IPv6Address {
+	section := newIPv6SectionFromPrefixedSingle(vals, upperVals, IPv6SegmentCount, prefixLength, true)
+	return newIPv6AddressZoned(section, zone)
+}
+
 // NewIPv6AddressFromMACSection constructs an IPv6 address from a modified EUI-64 (Extended Unique Identifier) address and an IPv6 address 64-bit prefix.
 //
 // If the supplied MAC address section is an 8 byte EUI-64, then it must match the required EUI-64 format of xx-xx-ff-fe-xx-xx
@@ -356,6 +361,7 @@ func newIPv6AddressFromZonedMAC(prefix *IPv6AddressSection, suffix *MACAddressSe
 }
 
 var zeroIPv6 = initZeroIPv6()
+var ipv6All = zeroIPv6.ToPrefixBlockLen(0)
 
 func initZeroIPv6() *IPv6Address {
 	div := zeroIPv6Seg
@@ -605,7 +611,9 @@ func (addr *IPv6Address) Subtract(other *IPv6Address) []*IPv6Address {
 	addr = addr.init()
 	sects, _ := addr.GetSection().Subtract(other.GetSection())
 	sectLen := len(sects)
-	if sectLen == 1 {
+	if sectLen == 0 {
+		return nil
+	} else if sectLen == 1 {
 		sec := sects[0]
 		if sec.ToSectionBase() == addr.section {
 			return []*IPv6Address{addr}
@@ -726,6 +734,16 @@ func (addr *IPv6Address) AssignMinPrefixForBlock() *IPv6Address {
 	return addr.init().assignMinPrefixForBlock().ToIPv6()
 }
 
+// ToSinglePrefixBlockOrAddress converts to a single prefix block or address.
+// If the given address is a single prefix block, it is returned.
+// If it can be converted to a single prefix block by assigning a prefix length, the converted block is returned.
+// If it is a single address, any prefix length is removed and the address is returned.
+// Otherwise, nil is returned.
+// This method provides the address formats used by tries.
+func (addr *IPv6Address) ToSinglePrefixBlockOrAddress() *IPv6Address {
+	return addr.init().toSinglePrefixBlockOrAddress().ToIPv6()
+}
+
 func (addr *IPv6Address) ContainsPrefixBlock(prefixLen BitCount) bool {
 	return addr.init().ipAddressInternal.ContainsPrefixBlock(prefixLen)
 }
@@ -837,6 +855,8 @@ func (addr *IPv6Address) Compare(item AddressItem) int {
 func (addr *IPv6Address) Equal(other AddressType) bool {
 	if addr == nil {
 		return other == nil || other.ToAddressBase() == nil
+	} else if other.ToAddressBase() == nil {
+		return false
 	}
 	return other.ToAddressBase().getAddrType() == ipv6Type && addr.init().section.sameCountTypeEquals(other.ToAddressBase().GetSection()) &&
 		addr.isSameZone(other.ToAddressBase())
@@ -852,6 +872,21 @@ func (addr *IPv6Address) CompareSize(other AddressType) int {
 		return 0
 	}
 	return addr.init().compareSize(other)
+}
+
+// TrieCompare compares two addresses according to the trie order.  It returns a number less than zero, zero, or a number greater than zero if the first address argument is less than, equal to, or greater than the second.
+func (addr *IPv6Address) TrieCompare(other *IPv6Address) int {
+	return addr.init().trieCompare(other.ToAddressBase())
+}
+
+// TrieIncrement returns the next address according to address trie ordering
+func (addr *IPv6Address) TrieIncrement() *IPv6Address {
+	return addr.trieIncrement().ToIPv6()
+}
+
+// TrieDecrement returns the previous key according to the trie ordering
+func (addr *IPv6Address) TrieDecrement() *IPv6Address {
+	return addr.trieDecrement().ToIPv6()
 }
 
 func (addr *IPv6Address) MatchesWithMask(other *IPv6Address, mask *IPv6Address) bool {
@@ -1461,4 +1496,27 @@ func (addr *IPv6Address) ToIP() *IPAddress {
 
 func (addr *IPv6Address) Wrap() WrappedIPAddress {
 	return wrapIPAddress(addr.ToIP())
+}
+
+// ToKey creates the associated address key.
+// While addresses can be compare with the Compare, TrieCompare or Equal methods as well as various provided instances of AddressComparator,
+// they are not comparable with go operators.
+// However, IPv6AddressKey instances are comparable with go operators, and thus can be used as map keys.
+func (addr *IPv6Address) ToKey() *IPv6AddressKey {
+	addr = addr.init()
+	key := &IPv6AddressKey{
+		Prefix: PrefixKey{
+			IsPrefixed: addr.IsPrefixed(),
+			PrefixLen:  PrefixBitCount(addr.GetPrefixLen().Len()),
+		},
+		Zone: addr.GetZone(),
+	}
+	section := addr.GetSection()
+	divs := section.divisions.(standardDivArray)
+	for i, div := range divs.divisions {
+		seg := div.ToIPv6()
+		vals := &key.Values[i]
+		vals.Value, vals.UpperValue = seg.GetIPv6SegmentValue(), seg.GetIPv6UpperSegmentValue()
+	}
+	return key
 }

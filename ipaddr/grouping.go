@@ -386,7 +386,7 @@ func (grouping *addressDivisionGroupingInternal) toString() string {
 	if sect := grouping.toAddressSection(); sect != nil {
 		return sect.ToNormalizedString()
 	}
-	return fmt.Sprintf("%v", grouping.initDivs().divisions.(standardDivArray).divisions)
+	return fmt.Sprint(grouping.initDivs().divisions.(standardDivArray).divisions)
 }
 
 func (grouping *addressDivisionGroupingInternal) initDivs() *addressDivisionGroupingInternal {

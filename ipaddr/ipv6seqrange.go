@@ -282,3 +282,10 @@ func (rng *IPv6AddressSeqRange) Extend(other *IPv6AddressSeqRange) *IPv6AddressS
 func (rng *IPv6AddressSeqRange) Subtract(other *IPv6AddressSeqRange) []*IPv6AddressSeqRange {
 	return cloneToIPv6SeqRange(rng.init().subtract(other.init().ToIP()))
 }
+
+func (rng *IPv6AddressSeqRange) ToKey() *IPv6AddressSeqRangeKey {
+	return &IPv6AddressSeqRangeKey{
+		lower: *rng.GetLower().ToKey(),
+		upper: *rng.GetUpper().ToKey(),
+	}
+}

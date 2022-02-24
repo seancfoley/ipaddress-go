@@ -105,7 +105,7 @@ type ipAddressProvider interface {
 	getParameters() addrstrparam.IPAddressStringParams
 
 	// containsProvider is an optimized contains that does not need to create address objects to return an answer.
-	// Unconventional addresses may require that the address objects are created, in such cases null is returned.
+	// Unconventional addresses may require that the address objects are created, in such cases nil is returned.
 	//
 	// Addresses constructed from canonical or normalized representations with no wildcards will not return null.
 	containsProvider(ipAddressProvider) boolSetting

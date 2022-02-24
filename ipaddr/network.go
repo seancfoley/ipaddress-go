@@ -297,7 +297,7 @@ func getMask(version IPVersion, zeroSeg *AddressDivision, networkPrefixLength Bi
 			offset := ((bits - 1) % bitsPerSegment) + 1
 			for j, entry := 0, offset; j < segmentCount; j, entry = j+1, entry+bitsPerSegment {
 				//for j := 0, entry = offset; j < segmentCount; j++, entry += bitsPerSegment {
-				if entry != cacheIndex { //we already know that the entry at cacheIndex is null
+				if entry != cacheIndex { //we already know that the entry at cacheIndex is nil
 					prev := cache[entry]
 					if prev != nil {
 						segment = prev.getDivision(j)

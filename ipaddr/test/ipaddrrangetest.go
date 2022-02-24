@@ -4761,11 +4761,11 @@ func (t ipAddressRangeTester) testFmtStringsIP(
 	result2 := fmt.Sprintf(formatString, ipaddrs2...)
 	result3 := fmt.Sprintf(formatString, ipaddrs3...)
 	result4 := fmt.Sprintf(formatString, ipaddrs4...)
-	result5 := fmt.Sprintf("%v", slice1)
-	result6 := fmt.Sprintf("%v", slice2)
-	result7 := fmt.Sprintf("%v", slice3)
-	result8 := fmt.Sprintf("%v", slice4)
-	result9 := fmt.Sprintf("%v", slice5)
+	result5 := fmt.Sprint(slice1)
+	result6 := fmt.Sprint(slice2)
+	result7 := fmt.Sprint(slice3)
+	result8 := fmt.Sprint(slice4)
+	result9 := fmt.Sprint(slice5)
 	if result1 != expectedString {
 		t.addFailure(newIPAddrFailure("failed expected: "+expectedString+" actual: "+result1, ipAddress))
 	} else if result2 != expectedString {
@@ -4841,7 +4841,7 @@ func asSlice(addrs []*ipaddr.IPAddress) (result []string) {
 }
 
 func asSliceString(addrs []*ipaddr.IPAddress) string {
-	return fmt.Sprintf("%v", asSlice(addrs))
+	return fmt.Sprint(asSlice(addrs))
 }
 
 func asRangeSlice(addrs []*ipaddr.IPAddressSeqRange) (result []string) {

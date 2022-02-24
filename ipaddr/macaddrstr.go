@@ -120,7 +120,7 @@ func (addrStr *MACAddressString) IsPrefixed() bool {
 	return addrStr.getPrefixLen() != nil
 }
 
-// GetPrefixLen returns the prefix length if this address is a valid prefixed address, otherwise returns null
+// GetPrefixLen returns the prefix length if this address is a valid prefixed address, otherwise returns nil
 func (addrStr *MACAddressString) GetPrefixLen() PrefixLen {
 	return addrStr.getPrefixLen().copy()
 }
@@ -242,7 +242,7 @@ func (addrStr *MACAddressString) Equal(other *MACAddressString) bool {
 			} else if other.GetAddress() != nil {
 				return false
 			}
-			// both are null, either empty oraddrerr.IncompatibleAddressError
+			// both are null, either empty or addrerr.IncompatibleAddressError
 			return stringsMatch
 		}
 	} else if !other.IsValid() { // both are invalid

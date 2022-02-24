@@ -18,8 +18,6 @@ package ipaddr
 
 import (
 	"math/big"
-
-	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
 )
 
 // A Partition is a collection of addresses partitioned from an original address.
@@ -135,9 +133,11 @@ func (p IPv4Partition) PredicateForAny(predicate func(*IPv4Address) bool) bool {
 }
 
 // TODO LATER this needs generics (of course, the whole Partition type could be generic as well)
+// Otherwise our map function would have to map *IPAddress to interface{}
+//
 // Supplies to the given function each element of this partition,
 // inserting non-null return values into the returned map.
-//	public <R> Map<E, R> ApplyForEach(Function<? super E, ? extends R> func) map[]{
+//	public <R> Map<E, R> ApplyForEach(Function<? super E, ? extends R> func) {
 //		TreeMap<E, R> results = new TreeMap<>();
 //		forEach(address -> {
 //			R result = func.apply(address);
@@ -180,16 +180,20 @@ func (p *Partition) Iterator() IPAddressIterator {
 	return res
 }
 
-// Applies the operation to each element of the partition,
+// PredicateForEach applies the operation to each element of the partition,
 // returning true if they all return true, false otherwise
+//
+// Use IPAddressPredicateAdapter to pass in a function that takes *Address as argument instead.
 func (p *Partition) PredicateForEach(predicate func(*IPAddress) bool) bool {
 	return p.predicateForEach(predicate, false)
 }
 
-// Applies the operation to each element of the partition,
+// PredicateForEachEarly applies the operation to each element of the partition,
 // returning false if the given predicate returns false for any of the elements.
 //
 // The method returns when one application of the predicate returns false (determining the overall result)
+//
+// Use IPAddressPredicateAdapter to pass in a function that takes *Address as argument instead.
 func (p *Partition) PredicateForEachEarly(predicate func(*IPAddress) bool) bool {
 	return p.predicateForEach(predicate, false)
 }
@@ -235,20 +239,20 @@ func (p *Partition) predicateForAny(predicate func(address *IPAddress) bool, ret
 //
 // This method iterates through a list of prefix blocks of different sizes that span the entire subnet.
 func PartitionIpv6WithSpanningBlocks(newAddr *IPv6Address) IPv6Partition {
-	return IPv6Partition{partitionWithSpanningBlocks(newAddr.ToIP())}
+	return IPv6Partition{PartitionIPWithSpanningBlocks(newAddr.ToIP())}
 }
 
 // PartitionWithSpanningBlocks partitions the address series into prefix blocks and single addresses.
 //
 // This method iterates through a list of prefix blocks of different sizes that span the entire subnet.
 func PartitionIpv4WithSpanningBlocks(newAddr *IPv4Address) IPv4Partition {
-	return IPv4Partition{partitionWithSpanningBlocks(newAddr.ToIP())}
+	return IPv4Partition{PartitionIPWithSpanningBlocks(newAddr.ToIP())}
 }
 
 // PartitionWithSpanningBlocks partitions the address series into prefix blocks and single addresses.
 //
 // This method iterates through a list of prefix blocks of different sizes that span the entire subnet.
-func partitionWithSpanningBlocks(newAddr *IPAddress) *Partition {
+func PartitionIPWithSpanningBlocks(newAddr *IPAddress) *Partition {
 	if !newAddr.isMultiple() {
 		if !newAddr.IsPrefixed() {
 			return &Partition{
@@ -272,7 +276,7 @@ func partitionWithSpanningBlocks(newAddr *IPAddress) *Partition {
 	blocks := newAddr.SpanWithPrefixBlocks()
 	return &Partition{
 		original: newAddr,
-		iterator: ipAddrSliceIterator{blocks},
+		iterator: &ipAddrSliceIterator{blocks},
 		count:    big.NewInt(int64(len(blocks))),
 	}
 }
@@ -282,7 +286,7 @@ func partitionWithSpanningBlocks(newAddr *IPAddress) *Partition {
 // This method chooses the maximum block size for a list of prefix blocks contained by the address or subnet,
 // and then iterates to produce blocks of that size.
 func PartitionIPv6WithSingleBlockSize(newAddr *IPv6Address) IPv6Partition {
-	return IPv6Partition{partitionWithSingleBlockSize(newAddr.ToIP())}
+	return IPv6Partition{PartitionIPWithSingleBlockSize(newAddr.ToIP())}
 }
 
 // PartitionIPv4WithSingleBlockSize partitions the address series into prefix blocks and single addresses.
@@ -290,14 +294,14 @@ func PartitionIPv6WithSingleBlockSize(newAddr *IPv6Address) IPv6Partition {
 // This method chooses the maximum block size for a list of prefix blocks contained by the address or subnet,
 // and then iterates to produce blocks of that size.
 func PartitionIPv4WithSingleBlockSize(newAddr *IPv4Address) IPv4Partition {
-	return IPv4Partition{partitionWithSingleBlockSize(newAddr.ToIP())}
+	return IPv4Partition{PartitionIPWithSingleBlockSize(newAddr.ToIP())}
 }
 
 // PartitionWithSingleBlockSize partitions the address series into prefix blocks and single addresses.
 //
 // This method chooses the maximum block size for a list of prefix blocks contained by the address or subnet,
 // and then iterates to produce blocks of that size.
-func partitionWithSingleBlockSize(newAddr *IPAddress) *Partition {
+func PartitionIPWithSingleBlockSize(newAddr *IPAddress) *Partition {
 	if !newAddr.isMultiple() {
 		if !newAddr.IsPrefixed() {
 			return &Partition{
@@ -336,29 +340,34 @@ func partitionWithSingleBlockSize(newAddr *IPAddress) *Partition {
 	}
 }
 
-// CheckBlockOrAddress converts to a single prefix block or address.
-// If the given address is a single prefix block, it is returned.
-// If it can be converted to a single prefix block or address (by adjusting the prefix length), the converted block is returned.
-// Otherwise, nil is returned.
-func CheckBlockOrAddress(addr *IPAddress) *IPAddress {
-	res, _ := checkBlockOrAddress(addr)
-	return res
+type IPAddressPredicateAdapter struct {
+	Adapted func(*Address) bool
 }
 
-// Ensures the address is either an individual address or a prefix block subnet.
-func checkBlockOrAddress(addr *IPAddress) (*IPAddress, addrerr.IncompatibleAddressError) {
-	if !addr.isMultiple() {
-		if !addr.IsPrefixed() {
-			return addr, nil
-		}
-		return addr.WithoutPrefixLen(), nil
-	} else if addr.IsSinglePrefixBlock() {
-		return addr, nil
-	} else {
-		series := addr.AssignPrefixForSingleBlock()
-		if series != nil {
-			return series, nil
-		}
-	}
-	return nil, &incompatibleAddressError{addressError{key: "ipaddress.error.address.not.block"}}
+func (a IPAddressPredicateAdapter) IPPredicate(addr *IPAddress) bool {
+	return a.Adapted(addr.ToAddressBase())
+}
+
+func (a IPAddressPredicateAdapter) IPv4Predicate(addr *IPv4Address) bool {
+	return a.Adapted(addr.ToAddressBase())
+}
+
+func (a IPAddressPredicateAdapter) IPv6Predicate(addr *IPv6Address) bool {
+	return a.Adapted(addr.ToAddressBase())
+}
+
+type IPAddressActionAdapter struct {
+	Adapted func(*Address)
+}
+
+func (a IPAddressActionAdapter) IPPredicate(addr *IPAddress) {
+	a.Adapted(addr.ToAddressBase())
+}
+
+func (a IPAddressActionAdapter) IPv4Predicate(addr *IPv4Address) {
+	a.Adapted(addr.ToAddressBase())
+}
+
+func (a IPAddressActionAdapter) IPv6Predicate(addr *IPv6Address) {
+	a.Adapted(addr.ToAddressBase())
 }

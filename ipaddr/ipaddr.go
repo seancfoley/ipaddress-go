@@ -805,6 +805,16 @@ func (addr *IPAddress) AssignMinPrefixForBlock() *IPAddress {
 	return addr.init().assignMinPrefixForBlock().ToIP()
 }
 
+// ToSinglePrefixBlockOrAddress converts to a single prefix block or address.
+// If the given address is a single prefix block, it is returned.
+// If it can be converted to a single prefix block by assigning a prefix length, the converted block is returned.
+// If it is a single address, any prefix length is removed and the address is returned.
+// Otherwise, nil is returned.
+// This method provides the address formats used by tries.
+func (addr *IPAddress) ToSinglePrefixBlockOrAddress() *IPAddress {
+	return addr.init().toSinglePrefixBlockOrAddress().ToIP()
+}
+
 func (addr *IPAddress) GetValue() *big.Int {
 	return addr.init().section.GetValue()
 }
@@ -912,6 +922,30 @@ func (addr *IPAddress) CompareSize(other AddressType) int { // this is here to t
 		return 0
 	}
 	return addr.init().compareSize(other)
+}
+
+// TrieCompare compares two addresses according to the trie order.  It returns a number less than zero, zero, or a number greater than zero if the first address argument is less than, equal to, or greater than the second.
+func (addr *IPAddress) TrieCompare(other *IPAddress) (int, addrerr.IncompatibleAddressError) {
+	if thisAddr := addr.ToIPv4(); thisAddr != nil {
+		if oth := other.ToIPv4(); oth != nil {
+			return thisAddr.TrieCompare(oth), nil
+		}
+	} else if thisAddr := addr.ToIPv6(); thisAddr != nil {
+		if oth := other.ToIPv6(); oth != nil {
+			return thisAddr.TrieCompare(oth), nil
+		}
+	}
+	return 0, &incompatibleAddressError{addressError{key: "ipaddress.error.mismatched.bit.size"}}
+}
+
+// TrieIncrement returns the next address according to address trie ordering
+func (addr *IPAddress) TrieIncrement() *IPAddress {
+	return addr.trieIncrement().ToIP()
+}
+
+// TrieDecrement returns the previous key according to the trie ordering
+func (addr *IPAddress) TrieDecrement() *IPAddress {
+	return addr.trieDecrement().ToIP()
 }
 
 func (addr *IPAddress) MatchesWithMask(other *IPAddress, mask *IPAddress) bool {
@@ -1109,6 +1143,9 @@ func (addr *IPAddress) Intersect(other *IPAddress) *IPAddress {
 // This is set subtraction, not subtraction of segment values.  We have a subnet of addresses and we are removing those addresses found in the argument subnet.
 // If there are no remaining addresses, nil is returned.
 func (addr *IPAddress) Subtract(other *IPAddress) []*IPAddress {
+	if !versionsMatch(addr, other) {
+		return []*IPAddress{addr}
+	}
 	addr = addr.init()
 	sects, _ := addr.GetSection().subtract(other.GetSection())
 	sectLen := len(sects)
@@ -1233,7 +1270,6 @@ func (addr *IPAddress) SpanWithPrefixBlocks() []*IPAddress {
 }
 
 func (addr *IPAddress) SpanWithPrefixBlocksTo(other *IPAddress) []*IPAddress {
-	//if !addr.GetIPVersion().Equal(other.GetIPVersion()){
 	if !versionsMatch(addr, other) {
 		return addr.SpanWithPrefixBlocks()
 	}
@@ -1868,4 +1904,17 @@ func asMap(addrs []*IPAddress) (result map[string]struct{}) {
 		}
 	}
 	return
+}
+
+// ToKey creates the associated address key.
+// While addresses can be compare with the Compare, TrieCompare or Equal methods as well as various provided instances of AddressComparator,
+// they are not comparable with go operators.
+// However, AddressKey instances are comparable with go operators, and thus can be used as map keys.
+func (addr *IPAddress) ToKey() *AddressKey {
+	if thisAddr := addr.ToIPv4(); thisAddr != nil {
+		return thisAddr.ToKey().ToBaseKey()
+	} else if thisAddr := addr.ToIPv6(); thisAddr != nil {
+		return thisAddr.ToKey().ToBaseKey()
+	}
+	return nil
 }

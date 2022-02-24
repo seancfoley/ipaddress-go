@@ -119,7 +119,7 @@ func (seg *ipAddressSegmentInternal) checkForPrefixMask() (networkMaskLen, hostM
 }
 
 // GetBlockMaskPrefixLen returns the prefix length if this address section is equivalent to the mask for a CIDR prefix block.
-// Otherwise, it returns null.
+// Otherwise, it returns nil.
 // A CIDR network mask is an address with all 1s in the network section and then all 0s in the host section.
 // A CIDR host mask is an address with all 0s in the network section and then all 1s in the host section.
 // The prefix length is the length of the network section.
@@ -127,7 +127,7 @@ func (seg *ipAddressSegmentInternal) checkForPrefixMask() (networkMaskLen, hostM
 // Also, keep in mind that the prefix length returned by this method is not equivalent to the prefix length of this object,
 // indicating the network and host section of this address.
 // The prefix length returned here indicates the whether the value of this address can be used as a mask for the network and host
-// section of any other address.  Therefore the two values can be different values, or one can be null while the other is not.
+// section of any other address.  Therefore the two values can be different values, or one can be nil while the other is not.
 //
 // This method applies only to the lower value of the range if this section represents multiple values.
 func (seg *ipAddressSegmentInternal) GetBlockMaskPrefixLen(network bool) PrefixLen {

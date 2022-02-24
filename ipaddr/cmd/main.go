@@ -32,6 +32,8 @@ import (
 
 // this is just a test program used for trying out code
 func main() {
+
+	fmt.Println(ipaddr.IPv4Address{})
 	seg := ipaddr.IPv4AddressSegment{}
 
 	seg.GetSegmentValue()
@@ -469,6 +471,51 @@ func main() {
 
 	bn := ipaddr.AddressTrieNode{}
 	_ = bn
+
+	trie := ipaddr.IPv4AddressTrie{}
+	addrStr = ipaddr.NewIPAddressString("1.2.0.0/16")
+	pAddr = addrStr.GetAddress()
+	trie.Add(pAddr.ToIPv4())
+	addrStr = ipaddr.NewIPAddressString("1.2.3.4")
+	pAddr = addrStr.GetAddress()
+	trie.Add(pAddr.ToIPv4())
+	str = trie.String()
+	fmt.Printf("%s", str)
+	fmt.Printf("trie default: %v", trie)
+	fmt.Printf("decimal: %d\n", trie)
+	fmt.Printf("hex: %#x\n", trie)
+	fmt.Printf("node default: %v\n", *trie.GetRoot())
+	fmt.Printf("node decimal: %d\n", *trie.GetRoot())
+	fmt.Printf("node hex: %#x\n", *trie.GetRoot())
+
+	trie2 := ipaddr.IPv4AddressTrie{}
+	fmt.Println(ipaddr.TreesString(true, trie.ToBase(), trie2.ToBase(), trie.ToBase()))
+	fmt.Println("zero trie\n", trie2)
+	var ptraddr *ipaddr.IPv4Address
+	fmt.Printf("nil addr %s\n", ptraddr)
+	var trie3 *ipaddr.IPv4AddressTrie
+	fmt.Printf("nil trie %s\n", trie3)
+	fmt.Println("nil trie\n", trie3)
+	fmt.Println(ipaddr.TreesString(true, trie.ToBase(), trie2.ToBase(), trie.ToBase(), trie3.ToBase(), trie.ToBase()))
+	trie = ipaddr.IPv4AddressTrie{}
+	fmt.Printf("%v %d %d %t %t",
+		trie,
+		trie.Size(),
+		trie.NodeSize(),
+		trie.BlockSizeAllNodeIterator(true).HasNext(),
+		trie.ContainedFirstAllNodeIterator(true).HasNext())
+	//fmt.Printf("%v %d %d %t %v",
+	//	trie,
+	//	trie.Size(),
+	//	trie.NodeSize(),
+	//	trie.BlockSizeAllNodeIterator(true).HasNext(),
+	//	trie.BlockSizeAllNodeIterator(true).Next())
+	fmt.Printf("%v %d %d %v %v",
+		trie,
+		trie.Size(),
+		trie.NodeSize(),
+		trie.BlockSizeAllNodeIterator(true).Next(),
+		trie.ContainedFirstAllNodeIterator(true).Next())
 }
 
 func splitIntoBlocks(one, two string) {

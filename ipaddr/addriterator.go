@@ -129,11 +129,11 @@ type ipAddrSliceIterator struct {
 	addrs []*IPAddress
 }
 
-func (iter ipAddrSliceIterator) HasNext() bool {
+func (iter *ipAddrSliceIterator) HasNext() bool {
 	return len(iter.addrs) > 0
 }
 
-func (iter ipAddrSliceIterator) Next() (res *IPAddress) {
+func (iter *ipAddrSliceIterator) Next() (res *IPAddress) {
 	if iter.HasNext() {
 		res = iter.addrs[0]
 		iter.addrs = iter.addrs[1:]

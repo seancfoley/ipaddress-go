@@ -272,6 +272,10 @@ func NewIPv6SectionFromRangeVals(vals, upperVals IPv6SegmentValueProvider, segme
 }
 
 func NewIPv6SectionFromPrefixedRangeVals(vals, upperVals IPv6SegmentValueProvider, segmentCount int, prefixLength PrefixLen) (res *IPv6AddressSection) {
+	return newIPv6SectionFromPrefixedSingle(vals, upperVals, segmentCount, prefixLength, false)
+}
+
+func newIPv6SectionFromPrefixedSingle(vals, upperVals IPv6SegmentValueProvider, segmentCount int, prefixLength PrefixLen, singleOnly bool) (res *IPv6AddressSection) {
 	if segmentCount < 0 {
 		segmentCount = 0
 	}
@@ -285,7 +289,7 @@ func NewIPv6SectionFromPrefixedRangeVals(vals, upperVals IPv6SegmentValueProvide
 	res = createIPv6Section(segments)
 	res.isMult = isMultiple
 	if prefixLength != nil {
-		assignPrefix(prefixLength, segments, res.ToIP(), false, false, BitCount(segmentCount<<ipv6BitsToSegmentBitshift))
+		assignPrefix(prefixLength, segments, res.ToIP(), singleOnly, false, BitCount(segmentCount<<ipv6BitsToSegmentBitshift))
 	}
 	return
 }
@@ -1635,8 +1639,8 @@ func toIPv6SegmentsFromEUI(
 	seg7 := eui.GetSegment(euiSegmentIndex)
 	var currentPrefix PrefixLen
 	if prefixLength != nil {
-		//since the prefix comes from the ipv6 section and not the MAC section, any segment prefix for the MAC section is 0 or null
-		//prefixes across segments have the pattern: null, null, ..., null, 0-16, 0, 0, ..., 0
+		//since the prefix comes from the ipv6 section and not the MAC section, any segment prefix for the MAC section is 0 or nil
+		//prefixes across segments have the pattern: nil, nil, ..., nil, 0-16, 0, 0, ..., 0
 		//So if the overall prefix is 0, then the prefix of every segment is 0
 		currentPrefix = cacheBitCount(0)
 	}

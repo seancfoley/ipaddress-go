@@ -159,7 +159,7 @@ func (rng *ipAddressSeqRangeInternal) containsRange(other IPAddressSeqRangeType)
 }
 
 func (rng *ipAddressSeqRangeInternal) toIPv4SequentialRange() *IPv4AddressSeqRange {
-	if rng.lower != nil && rng.lower.getAddrType().isIPv4() {
+	if rng.lower != nil && rng.lower.IsIPv4() {
 		return (*IPv4AddressSeqRange)(unsafe.Pointer(rng))
 	}
 	return nil
@@ -170,7 +170,8 @@ func (rng *ipAddressSeqRangeInternal) toIPSequentialRange() *IPAddressSeqRange {
 }
 
 func (rng *ipAddressSeqRangeInternal) overlaps(other *IPAddressSeqRange) bool {
-	return compareLowIPAddressValues(other.GetLower(), rng.upper) <= 0 && compareLowIPAddressValues(other.GetUpper(), rng.lower) >= 0
+	return compareLowIPAddressValues(other.GetLower(), rng.upper) <= 0 &&
+		compareLowIPAddressValues(other.GetUpper(), rng.lower) >= 0
 }
 
 func (rng *ipAddressSeqRangeInternal) IsSequential() bool {
@@ -379,7 +380,7 @@ func (rng *ipAddressSeqRangeInternal) GetPrefixLenForSingleBlock() PrefixLen {
 		dabits := segPrefix.bitCount()
 		totalPrefix += dabits
 		if dabits < segBitCount {
-			//remaining segments must be full range or we return null
+			//remaining segments must be full range or we return nil
 			for i++; i < count; i++ {
 				lowerSeg = lower.GetSegment(i)
 				upperSeg = upper.GetSegment(i)
@@ -943,6 +944,13 @@ func (rng *IPAddressSeqRange) Extend(other *IPAddressSeqRange) *IPAddressSeqRang
 // If the result has length 2, the two ranges are ordered by ascending lowest range value.
 func (rng *IPAddressSeqRange) Subtract(other *IPAddressSeqRange) []*IPAddressSeqRange {
 	return rng.init().subtract(other.init())
+}
+
+func (rng *IPAddressSeqRange) ToKey() *IPAddressSeqRangeKey {
+	return &IPAddressSeqRangeKey{
+		lower: *rng.GetLower().ToKey(),
+		upper: *rng.GetUpper().ToKey(),
+	}
 }
 
 func newSeqRangeUnchecked(lower, upper *IPAddress, isMult bool) *IPAddressSeqRange {
