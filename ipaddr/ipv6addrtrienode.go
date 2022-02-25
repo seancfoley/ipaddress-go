@@ -64,8 +64,8 @@ func (node *IPv6AddressTrieNode) ToAssociative() *IPv6AddressAssociativeTrieNode
 }
 
 // GetKey gets the key used for placing the node in the tree.
-func (node *IPv6AddressTrieNode) GetKey() *Address {
-	return node.toBase().getKey()
+func (node *IPv6AddressTrieNode) GetKey() *IPv6Address {
+	return node.toBase().getKey().ToIPv6()
 }
 
 // IsRoot returns whether this is the root of the backing tree.
@@ -554,8 +554,8 @@ func (node *IPv6AddressAssociativeTrieNode) ToAssociativeBase() *AssociativeAddr
 }
 
 // GetKey gets the key used for placing the node in the tree.
-func (node *IPv6AddressAssociativeTrieNode) GetKey() *Address {
-	return node.toBase().getKey()
+func (node *IPv6AddressAssociativeTrieNode) GetKey() *IPv6Address {
+	return node.toBase().getKey().ToIPv6()
 }
 
 // IsRoot returns whether this is the root of the backing tree.

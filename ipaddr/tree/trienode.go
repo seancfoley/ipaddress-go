@@ -279,12 +279,12 @@ type TrieKey interface {
 	//
 	// MatchBits returns true on a successful match or mismatch, and false if only a partial match.
 	//
-	// MatchBits calls BitsMatch in handleMatch when the given key matches all the bits in this key,
+	// MatchBits calls BitsMatch in handleMatch when the given key matches all the bits in this key (even if this key has a shorter prefix),
 	// or calls BitsDoNotMatch in handleMatch when there is a mismatch of bits, returning true in both cases.
 	//
-	// If the given key has a shorter prefix length, so not all bits in this key can be compared,
+	// If the given key has a shorter prefix length, so not all bits in this key can be compared to the given key,
 	// but the bits that can be compared are a match, then that is a partial match.
-	// MatchBits calls neither method in handleMatch and returns true in that case.
+	// MatchBits calls neither method in handleMatch and returns false in that case.
 	MatchBits(key TrieKey, bitIndex BitCount, handleMatch KeyCompareResult) bool
 
 	// Compare returns a negative integer, zero, or a positive integer if this instance is less than, equal, or greater than the give item.

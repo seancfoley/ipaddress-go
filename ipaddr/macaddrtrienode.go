@@ -64,8 +64,8 @@ func (node *MACAddressTrieNode) ToAssociative() *MACAddressAssociativeTrieNode {
 }
 
 // GetKey gets the key used for placing the node in the tree.
-func (node *MACAddressTrieNode) GetKey() *Address {
-	return node.toBase().getKey()
+func (node *MACAddressTrieNode) GetKey() *MACAddress {
+	return node.toBase().getKey().ToMAC()
 }
 
 // IsRoot returns whether this is the root of the backing tree.
@@ -554,8 +554,8 @@ func (node *MACAddressAssociativeTrieNode) ToAssociativeBase() *AssociativeAddre
 }
 
 // GetKey gets the key used for placing the node in the tree.
-func (node *MACAddressAssociativeTrieNode) GetKey() *Address {
-	return node.toBase().getKey()
+func (node *MACAddressAssociativeTrieNode) GetKey() *MACAddress {
+	return node.toBase().getKey().ToMAC()
 }
 
 // IsRoot returns whether this is the root of the backing tree.
