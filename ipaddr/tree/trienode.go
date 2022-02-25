@@ -1330,7 +1330,14 @@ func (node *BinTrieNode) AsNewTrie() *BinTrie {
 	trie.setRoot(rootKey)
 	root := trie.root
 	newNode := node.cloneTreeTrackerBounds(root.cTracker, nil)
-	if key.IsOneBit(0) {
+	if rootKey.Compare(key) == 0 {
+		root.setUpper(newNode.upper)
+		root.setLower(newNode.lower)
+		if node.IsAdded() {
+			root.SetAdded()
+		}
+		root.SetValue(node.GetValue())
+	} else if key.IsOneBit(0) {
 		root.setUpper(newNode)
 	} else {
 		root.setLower(newNode)
