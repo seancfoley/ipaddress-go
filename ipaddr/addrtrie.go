@@ -17,8 +17,8 @@ package ipaddr
 
 import (
 	"fmt"
+	"github.com/seancfoley/bintree/tree"
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
-	"github.com/seancfoley/ipaddress-go/ipaddr/tree"
 	"unsafe"
 )
 

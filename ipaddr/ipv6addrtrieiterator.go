@@ -15,7 +15,7 @@
 
 package ipaddr
 
-import "github.com/seancfoley/ipaddress-go/ipaddr/tree"
+import "github.com/seancfoley/bintree/tree"
 
 // IPv6TrieNodeIteratorRem iterates through an IPv6 address trie, until both Next() returns nil and HasNext() returns false.
 // The iterator also allows you to remove the last visited node.

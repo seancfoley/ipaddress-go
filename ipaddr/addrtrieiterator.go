@@ -15,7 +15,7 @@
 
 package ipaddr
 
-import "github.com/seancfoley/ipaddress-go/ipaddr/tree"
+import "github.com/seancfoley/bintree/tree"
 
 // addressKeyIterator implements AddressIterator for tries
 type addressKeyIterator struct {
