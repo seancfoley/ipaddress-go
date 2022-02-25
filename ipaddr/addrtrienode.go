@@ -601,15 +601,19 @@ func (node *AddressTrieNode) ContainedFirstAllNodeIterator(forwardSubNodeOrder b
 // Clone clones the node.
 // Keys remain the same, but the parent node and the lower and upper sub-nodes are all set to nil.
 func (node *AddressTrieNode) Clone() *AddressTrieNode {
-	//return node.clone()
 	return toAddressTrieNode(node.toTrieNode().Clone())
 }
 
 // CloneTree clones the sub-tree starting with this node as root.
 // The nodes are cloned, but their keys and values are not cloned.
 func (node *AddressTrieNode) CloneTree() *AddressTrieNode {
-	//return node.cloneTree()
 	return toAddressTrieNode(node.toTrieNode().CloneTree())
+}
+
+// AsNewTrie creates a new sub-trie, copying the nodes starting with this node as root.
+// The nodes are copies of the nodes in this sub-trie, but their keys and values are not copies.
+func (node *AddressTrieNode) AsNewTrie() *AddressTrie {
+	return toAddressTrie(node.toTrieNode().AsNewTrie())
 }
 
 // Compare returns -1, 0 or 1 if this node is less than, equal, or greater than the other, according to the key and the trie order.
@@ -1077,6 +1081,12 @@ func (node *AssociativeAddressTrieNode) Clone() *AssociativeAddressTrieNode {
 func (node *AssociativeAddressTrieNode) CloneTree() *AssociativeAddressTrieNode {
 	//return node.cloneTree().ToAssociative()
 	return toAssociativeAddressTrieNode(node.toTrieNode().CloneTree())
+}
+
+// AsNewTrie creates a new sub-trie, copying the nodes starting with this node as root.
+// The nodes are copies of the nodes in this sub-trie, but their keys and values are not copies.
+func (node *AssociativeAddressTrieNode) AsNewTrie() *AssociativeAddressTrie {
+	return toAddressTrie(node.toTrieNode().AsNewTrie()).ToAssociative()
 }
 
 // Compare returns -1, 0 or 1 if this node is less than, equal, or greater than the other, according to the key and the trie order.

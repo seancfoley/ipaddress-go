@@ -286,6 +286,12 @@ func (node *MACAddressTrieNode) CloneTree() *MACAddressTrieNode {
 	return toMACAddressTrieNode(node.toTrieNode().CloneTree())
 }
 
+// AsNewTrie creates a new sub-trie, copying the nodes starting with this node as root.
+// The nodes are copies of the nodes in this sub-trie, but their keys and values are not copies.
+func (node *MACAddressTrieNode) AsNewTrie() *MACAddressTrie {
+	return toAddressTrie(node.toTrieNode().AsNewTrie()).ToMAC()
+}
+
 // Compare returns -1, 0 or 1 if this node is less than, equal, or greater than the other, according to the key and the trie order.
 func (node *MACAddressTrieNode) Compare(other *MACAddressTrieNode) int {
 	return node.toTrieNode().Compare(other.toTrieNode())
@@ -785,6 +791,12 @@ func (node *MACAddressAssociativeTrieNode) Clone() *MACAddressAssociativeTrieNod
 // The nodes are cloned, but their keys and values are not cloned.
 func (node *MACAddressAssociativeTrieNode) CloneTree() *MACAddressAssociativeTrieNode {
 	return toMACAAssociativeAddressTrieNode(node.toTrieNode().CloneTree())
+}
+
+// AsNewTrie creates a new sub-trie, copying the nodes starting with this node as root.
+// The nodes are copies of the nodes in this sub-trie, but their keys and values are not copies.
+func (node *MACAddressAssociativeTrieNode) AsNewTrie() *MACAddressAssociativeTrie {
+	return toAddressTrie(node.toTrieNode().AsNewTrie()).ToMACAssociative()
 }
 
 // Compare returns -1, 0 or 1 if this node is less than, equal, or greater than the other, according to the key and the trie order.

@@ -1317,6 +1317,28 @@ func (node *BinTrieNode) CloneTree() *BinTrieNode {
 	return node.toBinTreeNode().cloneTree().toTrieNode()
 }
 
+// AsNewTrie creates a new sub-trie, copying the nodes starting with this node as root.
+// The nodes are copies of the nodes in this sub-trie, but their keys and values are not copies.
+func (node *BinTrieNode) AsNewTrie() *BinTrie {
+	// I suspect clone is faster - in Java I used AddTrie to add the bounded part of the trie if it was bounded
+	// but AddTrie needs to insert nodes amongst existing nodes, clone does not
+	// newTrie := NewBinTrie(key)
+	// newTrie.AddTrie(node)
+	key := node.GetKey()
+	trie := &BinTrie{binTree{}}
+	rootKey := key.ToPrefixBlockLen(0)
+	trie.setRoot(rootKey)
+	root := trie.root
+	newNode := node.cloneTreeTrackerBounds(root.cTracker, nil)
+	if key.IsOneBit(0) {
+		root.setUpper(newNode)
+	} else {
+		root.setLower(newNode)
+	}
+	root.storedSize = sizeUnknown
+	return trie
+}
+
 // Equal returns whether the key matches the key of the given node
 func (node *BinTrieNode) Equal(other *BinTrieNode) bool {
 	if node == nil {

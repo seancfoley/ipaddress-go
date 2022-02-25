@@ -286,6 +286,12 @@ func (node *IPv4AddressTrieNode) CloneTree() *IPv4AddressTrieNode {
 	return toIPv4AddressTrieNode(node.toTrieNode().CloneTree())
 }
 
+// AsNewTrie creates a new sub-trie, copying the nodes starting with this node as root.
+// The nodes are copies of the nodes in this sub-trie, but their keys and values are not copies.
+func (node *IPv4AddressTrieNode) AsNewTrie() *IPv4AddressTrie {
+	return toAddressTrie(node.toTrieNode().AsNewTrie()).ToIPv4()
+}
+
 // Compare returns -1, 0 or 1 if this node is less than, equal, or greater than the other, according to the key and the trie order.
 func (node *IPv4AddressTrieNode) Compare(other *IPv4AddressTrieNode) int {
 	return node.toTrieNode().Compare(other.toTrieNode())
@@ -785,6 +791,12 @@ func (node *IPv4AddressAssociativeTrieNode) Clone() *IPv4AddressAssociativeTrieN
 // The nodes are cloned, but their keys and values are not cloned.
 func (node *IPv4AddressAssociativeTrieNode) CloneTree() *IPv4AddressAssociativeTrieNode {
 	return toIPv4AAssociativeAddressTrieNode(node.toTrieNode().CloneTree())
+}
+
+// AsNewTrie creates a new sub-trie, copying the nodes starting with this node as root.
+// The nodes are copies of the nodes in this sub-trie, but their keys and values are not copies.
+func (node *IPv4AddressAssociativeTrieNode) AsNewTrie() *IPv4AddressAssociativeTrie {
+	return toAddressTrie(node.toTrieNode().AsNewTrie()).ToIPv4Associative()
 }
 
 // Compare returns -1, 0 or 1 if this node is less than, equal, or greater than the other, according to the key and the trie order.
