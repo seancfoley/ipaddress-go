@@ -1,2 +1,2 @@
-github.com/seancfoley/bintree v0.0.0-20220225092820-2871d1194b83 h1:WjoJyeII8O8r2+YiS7lROJtst+nfWcj1jUOSXb8e0+g=
-github.com/seancfoley/bintree v0.0.0-20220225092820-2871d1194b83/go.mod h1:CtE6qO6/n9H3V2CAGEC0lpaYr6/OijhNaMG/dt7P70c=
+github.com/seancfoley/bintree v1.0.0 h1:EnusUK1dNxRkDftWYcmDaR0rV8Mcr34x8PGq3JPEOrc=
+github.com/seancfoley/bintree v1.0.0/go.mod h1:CtE6qO6/n9H3V2CAGEC0lpaYr6/OijhNaMG/dt7P70c=
