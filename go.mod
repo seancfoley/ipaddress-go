@@ -18,6 +18,6 @@ module github.com/seancfoley/ipaddress-go
 
 go 1.12
 
-require github.com/seancfoley/bintree v1.0.0
+require github.com/seancfoley/bintree v1.0.1
 
 retract v0.0.0-20220113165635-21f206932b4b

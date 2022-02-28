@@ -340,6 +340,8 @@ func PartitionIPWithSingleBlockSize(newAddr *IPAddress) *Partition {
 	}
 }
 
+//TODO LATER partition ranges (not just addresses) with spanning blocks
+
 type IPAddressPredicateAdapter struct {
 	Adapted func(*Address) bool
 }
