@@ -15,6 +15,8 @@
 
 package ipaddr
 
+import "unsafe"
+
 // PrefixKey is a representation of a prefix length that is comparable as defined by the language specification.
 // See https://go.dev/ref/spec#Comparison_operators
 // It can be used as a map key.
@@ -89,13 +91,22 @@ func (key *IPv4AddressKey) ToAddress() *IPv4Address {
 	return newIPv4AddressFromPrefixedSingle(key.Val, key.UpperVal, key.Prefix.ToPrefixLen())
 }
 
+func (key *IPv4AddressKey) ToIPKey() *IPAddressKey {
+	return (*IPAddressKey)(unsafe.Pointer(key.ToBaseKey()))
+}
+
 func (key *IPv4AddressKey) ToBaseKey() *AddressKey {
-	baseKey := &AddressKey{Prefix: key.Prefix, SegmentCount: IPv4SegmentCount}
+	baseKey := &AddressKey{Prefix: key.Prefix, SegmentCount: IPv4SegmentCount, Scheme: IPv4Scheme}
 	for i, val := range key.Values {
 		baseVals := &baseKey.Values[i]
 		baseVals.Value, baseVals.UpperValue = SegInt(val.Value), SegInt(val.UpperValue)
 	}
 	return baseKey
+
+}
+
+func (key *IPv4AddressKey) String() string {
+	return key.ToAddress().String()
 }
 
 // IPv6AddressKey is a representation of IPv6Address that is comparable as defined by the language specification.
@@ -140,13 +151,21 @@ func (key *IPv6AddressKey) ToAddress() *IPv6Address {
 	return newIPv6AddressFromPrefixedSingle(key.Val, key.UpperVal, key.Prefix.ToPrefixLen(), key.Zone.String())
 }
 
+func (key *IPv6AddressKey) ToIPKey() *IPAddressKey {
+	return (*IPAddressKey)(unsafe.Pointer(key.ToBaseKey()))
+}
+
 func (key *IPv6AddressKey) ToBaseKey() *AddressKey {
-	baseKey := &AddressKey{Prefix: key.Prefix, SegmentCount: IPv6SegmentCount, Zone: key.Zone}
+	baseKey := &AddressKey{Prefix: key.Prefix, SegmentCount: IPv6SegmentCount, Zone: key.Zone, Scheme: IPv6Scheme}
 	for i, val := range key.Values {
 		baseVals := &baseKey.Values[i]
 		baseVals.Value, baseVals.UpperValue = SegInt(val.Value), SegInt(val.UpperValue)
 	}
 	return baseKey
+}
+
+func (key *IPv6AddressKey) String() string {
+	return key.ToAddress().String()
 }
 
 // MACAddressKey is a representation of MACAddress that is comparable as defined by the language specification.
@@ -184,7 +203,7 @@ func (key *MACAddressKey) ToAddress() *MACAddress {
 }
 
 func (key *MACAddressKey) ToBaseKey() *AddressKey {
-	baseKey := &AddressKey{Prefix: key.Prefix, SegmentCount: key.SegmentCount}
+	baseKey := &AddressKey{Prefix: key.Prefix, SegmentCount: key.SegmentCount, Scheme: EUIScheme}
 	for i, val := range key.Values {
 		baseVals := &baseKey.Values[i]
 		baseVals.Value, baseVals.UpperValue = SegInt(val.Value), SegInt(val.UpperValue)
@@ -192,13 +211,26 @@ func (key *MACAddressKey) ToBaseKey() *AddressKey {
 	return baseKey
 }
 
+func (key *MACAddressKey) String() string {
+	return key.ToAddress().String()
+}
+
 const MaxSegmentCount = IPv6SegmentCount
+
+type AddressScheme string
+
+const (
+	IPv4Scheme               = AddressScheme(IPv4)
+	IPv6Scheme               = AddressScheme(IPv6)
+	EUIScheme  AddressScheme = "EUI"
+)
 
 // AddressKey is a representation of Address that is comparable as defined by the language specification.
 // See https://go.dev/ref/spec#Comparison_operators
 // It can be used as a map key.
 // The zero value is a zero-length address.
 type AddressKey struct {
+	Scheme AddressScheme
 	Values [MaxSegmentCount]struct {
 		Value      SegInt
 		UpperValue SegInt
@@ -206,6 +238,51 @@ type AddressKey struct {
 	SegmentCount uint8
 	Prefix       PrefixKey
 	Zone         Zone
+}
+
+// ToAddress converts to an address instance
+func (key *AddressKey) ToAddress() *Address {
+	switch key.Scheme {
+	case IPv4Scheme:
+		return newIPv4AddressFromPrefixedSingle(
+			func(segmentIndex int) IPv4SegInt {
+				return IPv4SegInt(key.Values[segmentIndex].Value)
+			}, func(segmentIndex int) IPv4SegInt {
+				return IPv4SegInt(key.Values[segmentIndex].UpperValue)
+			}, key.Prefix.ToPrefixLen()).ToAddressBase()
+	case IPv6Scheme:
+		return newIPv6AddressFromPrefixedSingle(
+			func(segmentIndex int) IPv6SegInt {
+				return IPv6SegInt(key.Values[segmentIndex].Value)
+			}, func(segmentIndex int) IPv6SegInt {
+				return IPv6SegInt(key.Values[segmentIndex].UpperValue)
+			}, key.Prefix.ToPrefixLen(), key.Zone.String()).ToAddressBase()
+	case EUIScheme:
+		res := NewMACAddressFromRangeExt(
+			func(segmentIndex int) MACSegInt {
+				return MACSegInt(key.Values[segmentIndex].Value)
+			}, func(segmentIndex int) MACSegInt {
+				return MACSegInt(key.Values[segmentIndex].UpperValue)
+			}, key.SegmentCount > MediaAccessControlSegmentCount)
+		if key.Prefix.IsPrefixed {
+			res.SetPrefixLen(key.Prefix.ToPrefixLen().Len())
+		}
+		return res.ToAddressBase()
+	}
+	return nil
+}
+
+func (key *AddressKey) String() string {
+	return key.ToAddress().String()
+}
+
+type IPAddressKey struct {
+	AddressKey
+}
+
+// ToAddress converts to an address instance
+func (key *IPAddressKey) ToIP() *IPAddress {
+	return key.ToAddress().ToIP()
 }
 
 // IPv4AddressSeqRangeKey is a representation of IPv4AddressSeqRange that is comparable as defined by the language specification.
@@ -221,6 +298,10 @@ func (key *IPv4AddressSeqRangeKey) ToSeqRange() *IPv4AddressSeqRange {
 	return NewIPv4SeqRange(key.lower.ToAddress(), key.upper.ToAddress())
 }
 
+func (key *IPv4AddressSeqRangeKey) String() string {
+	return key.ToSeqRange().String()
+}
+
 // IPv6AddressSeqRangeKey is a representation of IPv6AddressSeqRange that is comparable as defined by the language specification.
 // See https://go.dev/ref/spec#Comparison_operators
 // It can be used as a map key.
@@ -234,10 +315,29 @@ func (key *IPv6AddressSeqRangeKey) ToSeqRange() *IPv6AddressSeqRange {
 	return NewIPv6SeqRange(key.lower.ToAddress(), key.upper.ToAddress())
 }
 
+func (key *IPv6AddressSeqRangeKey) String() string {
+	return key.ToSeqRange().String()
+}
+
 // IPAddressSeqRangeKey is a representation of IPAddressSeqRange that is comparable as defined by the language specification.
 // See https://go.dev/ref/spec#Comparison_operators
 // It can be used as a map key.
 // The zero value is a range from a zero-length address to itself.
 type IPAddressSeqRangeKey struct {
-	lower, upper AddressKey
+	lower, upper IPAddressKey
+}
+
+func (key *IPAddressSeqRangeKey) String() string {
+	return key.ToSeqRange().String()
+}
+
+// ToSeqRange converts to the associated sequential range
+func (key *IPAddressSeqRangeKey) ToSeqRange() *IPAddressSeqRange {
+	switch key.lower.Scheme {
+	case IPv4Scheme:
+		return NewIPv4SeqRange(key.lower.ToIP().ToIPv4(), key.upper.ToIP().ToIPv4()).ToIP()
+	case IPv6Scheme:
+		return NewIPv6SeqRange(key.lower.ToIP().ToIPv6(), key.upper.ToIP().ToIPv6()).ToIP()
+	}
+	return nil
 }

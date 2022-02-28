@@ -94,24 +94,6 @@ type AddressComponent interface { //AddressSegment and above, AddressSegmentSeri
 	ToNormalizedString() string
 }
 
-type ipAddressRange interface {
-	GetLowerIPAddress() *IPAddress
-	GetUpperIPAddress() *IPAddress
-
-	CopyNetIP(bytes net.IP) net.IP
-	CopyUpperNetIP(bytes net.IP) net.IP
-
-	GetNetIP() net.IP
-	GetUpperNetIP() net.IP
-}
-
-// IPAddressRange represents all IPAddress instances and all IPAddress sequential ranges instances
-type IPAddressRange interface { //IPAddress and above, IPAddressSeqRange and above
-	ipAddressRange
-
-	IsSequential() bool
-}
-
 // StandardDivGroupingType represents any standard division grouping (division groupings or address sections where all divisions are 64 bits or less)
 // including AddressSection, IPAddressSection, IPv4AddressSection, IPv6AddressSection, MACAddressSection, and AddressDivisionGrouping
 type StandardDivGroupingType interface {
@@ -313,10 +295,35 @@ type AddressType interface {
 
 var _, _ AddressType = &Address{}, &MACAddress{}
 
+type ipAddressRange interface {
+	GetLowerIPAddress() *IPAddress
+	GetUpperIPAddress() *IPAddress
+
+	CopyNetIP(bytes net.IP) net.IP
+	CopyUpperNetIP(bytes net.IP) net.IP
+
+	GetNetIP() net.IP
+	GetUpperNetIP() net.IP
+}
+
+// IPAddressRange represents all IPAddress instances and all IPAddress sequential range instances
+type IPAddressRange interface { //IPAddress and above, IPAddressSeqRange and above
+	AddressItem
+
+	ipAddressRange
+
+	IsSequential() bool
+}
+
+var _, _, _, _, _, _ IPAddressRange = &IPAddress{}, &IPv4Address{}, &IPv6Address{}, &IPAddressSeqRange{},
+	&IPv4AddressSeqRange{},
+	&IPv6AddressSeqRange{}
+
 // IPAddressType represents any IP address, all of which can be represented by the base type IPAddress.
 // This includes IPv4Address and IPv6Address.
 type IPAddressType interface {
 	AddressType
+
 	ipAddressRange
 
 	Wrap() WrappedIPAddress
@@ -332,7 +339,8 @@ var _, _, _ IPAddressType = &IPAddress{},
 // This includes IPv4AddressSeqRange and IPv6AddressSeqRange.
 type IPAddressSeqRangeType interface {
 	AddressItem
-	IPAddressRange
+
+	ipAddressRange
 
 	CompareSize(IPAddressSeqRangeType) int
 	ContainsRange(IPAddressSeqRangeType) bool

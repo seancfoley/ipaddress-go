@@ -1910,11 +1910,11 @@ func asMap(addrs []*IPAddress) (result map[string]struct{}) {
 // While addresses can be compare with the Compare, TrieCompare or Equal methods as well as various provided instances of AddressComparator,
 // they are not comparable with go operators.
 // However, AddressKey instances are comparable with go operators, and thus can be used as map keys.
-func (addr *IPAddress) ToKey() *AddressKey {
+func (addr *IPAddress) ToKey() *IPAddressKey {
 	if thisAddr := addr.ToIPv4(); thisAddr != nil {
-		return thisAddr.ToKey().ToBaseKey()
+		return thisAddr.ToKey().ToIPKey()
 	} else if thisAddr := addr.ToIPv6(); thisAddr != nil {
-		return thisAddr.ToKey().ToBaseKey()
+		return thisAddr.ToKey().ToIPKey()
 	}
 	return nil
 }
