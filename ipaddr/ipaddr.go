@@ -823,8 +823,8 @@ func (addr *IPAddress) GetUpperValue() *big.Int {
 	return addr.init().section.GetUpperValue()
 }
 
-func (addr *IPAddress) GetNetIPAddr() net.IPAddr {
-	return net.IPAddr{
+func (addr *IPAddress) GetNetIPAddr() *net.IPAddr {
+	return &net.IPAddr{
 		IP:   addr.GetNetIP(),
 		Zone: string(addr.zone),
 	}
@@ -1749,7 +1749,7 @@ func NewIPAddressFromPrefixedNetIPAddr(addr *net.IPAddr, prefixLength PrefixLen)
 }
 
 // The error can be either addrerr.AddressValueError or addrerr.IncompatibleAddressError
-func NewIPAddressFromNetIPNet(ipnet net.IPNet) (*IPAddress, addrerr.AddressError) {
+func NewIPAddressFromNetIPNet(ipnet *net.IPNet) (*IPAddress, addrerr.AddressError) {
 	ip := ipnet.IP
 	maskIp := ipnet.Mask
 	if ipv4 := ip.To4(); ipv4 != nil {

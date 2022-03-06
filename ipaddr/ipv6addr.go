@@ -768,8 +768,8 @@ func (addr *IPv6Address) GetUpperValue() *big.Int {
 	return addr.init().section.GetUpperValue()
 }
 
-func (addr *IPv6Address) GetNetIPAddr() net.IPAddr {
-	return net.IPAddr{
+func (addr *IPv6Address) GetNetIPAddr() *net.IPAddr {
+	return &net.IPAddr{
 		IP:   addr.GetNetIP(),
 		Zone: string(addr.GetZone()),
 	}
