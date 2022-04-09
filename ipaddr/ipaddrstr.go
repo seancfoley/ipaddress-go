@@ -272,6 +272,8 @@ func (addrStr *IPAddressString) IsMixedIPv6() bool {
 	}
 */
 
+// TODO LATER isMappedIPv4Address using prefixEquals like we added in Java, which requires a few tweals to containsProv method in parsedaddr.go
+
 // GetIPVersion returns the IP address version if {@link #isIPAddress()} returns true, otherwise returns nil
 func (addrStr *IPAddressString) GetIPVersion() IPVersion {
 	if addrStr.IsValid() {

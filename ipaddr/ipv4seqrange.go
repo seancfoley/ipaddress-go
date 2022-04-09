@@ -87,10 +87,12 @@ func (rng *IPv4AddressSeqRange) ToCanonicalString() string {
 	return rng.ToString((*IPv4Address).ToCanonicalString, DefaultSeqRangeSeparator, (*IPv4Address).ToNormalizedString)
 }
 
+// GetBitCount returns the number of bits in each address in the range, which is 8
 func (rng *IPv4AddressSeqRange) GetBitCount() BitCount {
 	return rng.GetLower().GetBitCount()
 }
 
+// GetByteCount returns the number of bytes in each address in the range, which is 1
 func (rng *IPv4AddressSeqRange) GetByteCount() int {
 	return rng.GetLower().GetByteCount()
 }

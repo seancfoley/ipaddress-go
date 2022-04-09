@@ -90,6 +90,7 @@ func (div *addressDivisionBase) getDivisionPrefixLength() PrefixLen {
 	return vals.getDivisionPrefixLength()
 }
 
+// GetBitCount returns the number of bits in each value comprising this address item
 func (div *addressDivisionBase) GetBitCount() BitCount {
 	vals := div.divisionValues
 	if vals == nil {
@@ -98,6 +99,8 @@ func (div *addressDivisionBase) GetBitCount() BitCount {
 	return vals.getBitCount()
 }
 
+// GetByteCount returns the number of bytes required for each value comprising this address item,
+// rounding up if the bit count is not a multiple of 8.
 func (div *addressDivisionBase) GetByteCount() int {
 	vals := div.divisionValues
 	if vals == nil {

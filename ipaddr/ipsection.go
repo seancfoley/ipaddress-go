@@ -1284,10 +1284,12 @@ func (section *ipAddressSectionInternal) toIPAddressSection() *IPAddressSection 
 
 //// only needed for godoc / pkgsite
 
+// GetBitCount returns the number of bits in each value comprising this address item
 func (section *ipAddressSectionInternal) GetBitCount() BitCount {
 	return section.addressSectionInternal.GetBitCount()
 }
 
+// GetByteCount returns the number of bytes required for each value comprising this address item.
 func (section *ipAddressSectionInternal) GetByteCount() int {
 	return section.addressSectionInternal.GetByteCount()
 }
@@ -1684,10 +1686,37 @@ func (section *IPAddressSection) SequentialBlockIterator() IPSectionIterator {
 	return ipSectionIterator{section.sequentialBlockIterator()}
 }
 
+// IncrementBoundary returns the item that is the given increment from the range boundaries of this item.
+//
+// If the given increment is positive, adds the value to the highest ({@link #getUpper()}) in the range to produce a new item.
+// If the given increment is negative, adds the value to the lowest ({@link #getLower()}) in the range to produce a new item.
+// If the increment is zero, returns this.
+//
+// If this represents just a single value, this item is simply incremented by the given increment value, positive or negative.
+//
+// On overflow or underflow, IncrementBoundary returns nil.
 func (section *IPAddressSection) IncrementBoundary(increment int64) *IPAddressSection {
 	return section.incrementBoundary(increment).ToIP()
 }
 
+// Increment returns the item that is the given increment upwards into the range,
+// with the increment of 0 returning the first in the range.
+//
+// If the increment i matches or exceeds the range count c, then i - c + 1
+// is added to the upper item of the range.
+// An increment matching the count gives you the item just above the highest in the range.
+//
+// If the increment is negative, it is added to the lowest of the range.
+// To get the item just below the lowest of the range, use the increment -1.
+//
+// If this represents just a single value, the item is simply incremented by the given increment, positive or negative.
+//
+// If this item represents multiple values, a positive increment i is equivalent i + 1 values from the iterator and beyond.
+// For instance, a increment of 0 is the first value from the iterator, an increment of 1 is the second value from the iterator, and so on.
+// An increment of a negative value added to the count is equivalent to the same number of iterator values preceding the last value of the iterator.
+// For instance, an increment of count - 1 is the last value from the iterator, an increment of count - 2 is the second last value, and so on.
+//
+// On overflow or underflow, Increment returns nil.
 func (section *IPAddressSection) Increment(increment int64) *IPAddressSection {
 	return section.increment(increment).ToIP()
 }

@@ -194,10 +194,12 @@ func (seg *IPv4AddressSegment) PrefixEqual(other AddressSegmentType, prefixLengt
 	return seg.init().ipAddressSegmentInternal.PrefixEqual(other, prefixLength)
 }
 
+// GetBitCount returns the number of bits in each value comprising this address item, which is 8
 func (seg *IPv4AddressSegment) GetBitCount() BitCount {
 	return IPv4BitsPerSegment
 }
 
+// GetByteCount returns the number of bytes required for each value comprising this address item, which is 1
 func (seg *IPv4AddressSegment) GetByteCount() int {
 	return IPv4BytesPerSegment
 }

@@ -570,10 +570,12 @@ func (seg *addressSegmentInternal) isReversibleRange(perByte bool) (isReversible
 
 //// only needed for godoc / pkgsite
 
+// GetBitCount returns the number of bits in each value comprising this address item
 func (seg *addressSegmentInternal) GetBitCount() BitCount {
 	return seg.addressDivisionInternal.GetBitCount()
 }
 
+// GetByteCount returns the number of bytes required for each value comprising this address item.
 func (seg *addressSegmentInternal) GetByteCount() int {
 	return seg.addressDivisionInternal.GetByteCount()
 }

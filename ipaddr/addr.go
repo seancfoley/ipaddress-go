@@ -64,6 +64,7 @@ func createAddress(section *AddressSection, zone Zone) *Address {
 // Values that fall outside the segment value type range will be truncated using standard golang integer type conversions https://golang.org/ref/spec#Conversions
 type SegmentValueProvider func(segmentIndex int) SegInt
 
+// AddressValueProvider provides values for addresses.
 type AddressValueProvider interface {
 	GetSegmentCount() int
 
@@ -76,6 +77,7 @@ type addrsCache struct {
 	lower, upper *Address
 }
 
+// IdentifierStr is a string representation of an address or host name.
 type IdentifierStr struct {
 	idStr HostIdentifierString // MACAddressString or IPAddressString or HostName
 }
@@ -96,6 +98,8 @@ type addressInternal struct {
 	cache   *addressCache
 }
 
+// GetBitCount returns the number of bits comprising this address,
+// or each address in the range if a subnet.
 func (addr *addressInternal) GetBitCount() BitCount {
 	section := addr.section
 	if section == nil {
@@ -104,6 +108,8 @@ func (addr *addressInternal) GetBitCount() BitCount {
 	return section.GetBitCount()
 }
 
+// GetByteCount returns the number of bytes required for this address,
+// or each address in the range if a subnet.
 func (addr *addressInternal) GetByteCount() int {
 	section := addr.section
 	if section == nil {
@@ -1241,10 +1247,37 @@ func (addr *Address) GetSequentialBlockCount() *big.Int {
 	return addr.getSequentialBlockCount()
 }
 
+// IncrementBoundary returns the address that is the given increment from the range boundaries of this subnet.
+//
+// If the given increment is positive, adds the value to the upper address ({@link #getUpper()}) in the subnet range to produce a new address.
+// If the given increment is negative, adds the value to the lower address ({@link #getLower()}) in the subnet range to produce a new address.
+// If the increment is zero, returns this address.
+//
+// If this is a single address value, that address is simply incremented by the given increment value, positive or negative.
+//
+// On address overflow or underflow, IncrementBoundary returns nil.
 func (addr *Address) IncrementBoundary(increment int64) *Address {
 	return addr.init().IncrementBoundary(increment)
 }
 
+// Increment returns the address from the subnet that is the given increment upwards into the subnet range,
+// with the increment of 0 returning the first address in the range.
+//
+// If the increment i matches or exceeds the subnet size count c, then i - c + 1
+// is added to the upper address of the range.
+// An increment matching the subnet count gives you the address just above the highest address in the subnet.
+//
+// If the increment is negative, it is added to the lower address of the range.
+// To get the address just below the lowest address of the subnet, use the increment -1.
+//
+// If this is just a single address value, the address is simply incremented by the given increment, positive or negative.
+//
+// If this is a subnet with multiple values, a positive increment i is equivalent i + 1 values from the subnet iterator and beyond.
+// For instance, a increment of 0 is the first value from the iterator, an increment of 1 is the second value from the iterator, and so on.
+// An increment of a negative value added to the subnet count is equivalent to the same number of iterator values preceding the upper bound of the iterator.
+// For instance, an increment of count - 1 is the last value from the iterator, an increment of count - 2 is the second last value, and so on.
+//
+// On address overflow or underflow, Increment returns nil.
 func (addr *Address) Increment(increment int64) *Address {
 	return addr.init().increment(increment)
 }

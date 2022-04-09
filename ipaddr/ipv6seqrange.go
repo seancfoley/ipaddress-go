@@ -89,10 +89,12 @@ func (rng *IPv6AddressSeqRange) ToCanonicalString() string {
 	return rng.ToString((*IPv6Address).ToCanonicalString, DefaultSeqRangeSeparator, (*IPv6Address).ToNormalizedString)
 }
 
+// GetBitCount returns the number of bits in each address in the range, which is 16
 func (rng *IPv6AddressSeqRange) GetBitCount() BitCount {
 	return rng.GetLower().GetBitCount()
 }
 
+// GetByteCount returns the number of bytes in each address in the range, which is 2
 func (rng *IPv6AddressSeqRange) GetByteCount() int {
 	return rng.GetLower().GetByteCount()
 }

@@ -803,10 +803,13 @@ func (div *addressDivisionInternal) getDefaultRangeSeparatorString() string {
 
 //// only needed for godoc / pkgsite
 
+// GetBitCount returns the number of bits in each value comprising this address item
 func (div *addressDivisionInternal) GetBitCount() BitCount {
 	return div.addressDivisionBase.GetBitCount()
 }
 
+// GetByteCount returns the number of bytes required for each value comprising this address item,
+// rounding up if the bit count is not a multiple of 8.
 func (div *addressDivisionInternal) GetByteCount() int {
 	return div.addressDivisionBase.GetByteCount()
 }

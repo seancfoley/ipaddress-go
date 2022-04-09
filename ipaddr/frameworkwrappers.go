@@ -66,7 +66,35 @@ type ExtendedSegmentSeries interface {
 
 	ToPrefixBlock() ExtendedSegmentSeries
 
+	// Increment returns the item that is the given increment upwards into the range,
+	// with the increment of 0 returning the first in the range.
+	//
+	// If the increment i matches or exceeds the range count c, then i - c + 1
+	// is added to the upper item of the range.
+	// An increment matching the count gives you the item just above the highest in the range.
+	//
+	// If the increment is negative, it is added to the lowest of the range.
+	// To get the item just below the lowest of the range, use the increment -1.
+	//
+	// If this represents just a single value, the item is simply incremented by the given increment, positive or negative.
+	//
+	// If this item represents multiple values, a positive increment i is equivalent i + 1 values from the iterator and beyond.
+	// For instance, a increment of 0 is the first value from the iterator, an increment of 1 is the second value from the iterator, and so on.
+	// An increment of a negative value added to the count is equivalent to the same number of iterator values preceding the last value of the iterator.
+	// For instance, an increment of count - 1 is the last value from the iterator, an increment of count - 2 is the second last value, and so on.
+	//
+	// On overflow or underflow, Increment returns nil.
 	Increment(int64) ExtendedSegmentSeries
+
+	// IncrementBoundary returns the item that is the given increment from the range boundaries of this item.
+	//
+	// If the given increment is positive, adds the value to the highest ({@link #getUpper()}) in the range to produce a new item.
+	// If the given increment is negative, adds the value to the lowest ({@link #getLower()}) in the range to produce a new item.
+	// If the increment is zero, returns this.
+	//
+	// If this represents just a single value, this item is simply incremented by the given increment value, positive or negative.
+	//
+	// On overflow or underflow, IncrementBoundary returns nil.
 	IncrementBoundary(int64) ExtendedSegmentSeries
 
 	GetLower() ExtendedSegmentSeries
@@ -141,10 +169,37 @@ func (addr WrappedAddress) ToPrefixBlock() ExtendedSegmentSeries {
 	return WrapAddress(addr.Address.ToPrefixBlock())
 }
 
+// Increment returns the item that is the given increment upwards into the range,
+// with the increment of 0 returning the first in the range.
+//
+// If the increment i matches or exceeds the range count c, then i - c + 1
+// is added to the upper item of the range.
+// An increment matching the count gives you the item just above the highest in the range.
+//
+// If the increment is negative, it is added to the lowest of the range.
+// To get the item just below the lowest of the range, use the increment -1.
+//
+// If this represents just a single value, the item is simply incremented by the given increment, positive or negative.
+//
+// If this item represents multiple values, a positive increment i is equivalent i + 1 values from the iterator and beyond.
+// For instance, a increment of 0 is the first value from the iterator, an increment of 1 is the second value from the iterator, and so on.
+// An increment of a negative value added to the count is equivalent to the same number of iterator values preceding the last value of the iterator.
+// For instance, an increment of count - 1 is the last value from the iterator, an increment of count - 2 is the second last value, and so on.
+//
+// On overflow or underflow, Increment returns nil.
 func (addr WrappedAddress) Increment(i int64) ExtendedSegmentSeries {
 	return convAddrToIntf(addr.Address.Increment(i))
 }
 
+// IncrementBoundary returns the item that is the given increment from the range boundaries of this item.
+//
+// If the given increment is positive, adds the value to the highest ({@link #getUpper()}) in the range to produce a new item.
+// If the given increment is negative, adds the value to the lowest ({@link #getLower()}) in the range to produce a new item.
+// If the increment is zero, returns this.
+//
+// If this represents just a single value, this item is simply incremented by the given increment value, positive or negative.
+//
+// On overflow or underflow, IncrementBoundary returns nil.
 func (addr WrappedAddress) IncrementBoundary(i int64) ExtendedSegmentSeries {
 	return convAddrToIntf(addr.Address.IncrementBoundary(i))
 }
@@ -272,10 +327,37 @@ func (section WrappedAddressSection) ToPrefixBlock() ExtendedSegmentSeries {
 	return WrapSection(section.AddressSection.ToPrefixBlock())
 }
 
+// Increment returns the item that is the given increment upwards into the range,
+// with the increment of 0 returning the first in the range.
+//
+// If the increment i matches or exceeds the range count c, then i - c + 1
+// is added to the upper item of the range.
+// An increment matching the count gives you the item just above the highest in the range.
+//
+// If the increment is negative, it is added to the lowest of the range.
+// To get the item just below the lowest of the range, use the increment -1.
+//
+// If this represents just a single value, the item is simply incremented by the given increment, positive or negative.
+//
+// If this item represents multiple values, a positive increment i is equivalent i + 1 values from the iterator and beyond.
+// For instance, a increment of 0 is the first value from the iterator, an increment of 1 is the second value from the iterator, and so on.
+// An increment of a negative value added to the count is equivalent to the same number of iterator values preceding the last value of the iterator.
+// For instance, an increment of count - 1 is the last value from the iterator, an increment of count - 2 is the second last value, and so on.
+//
+// On overflow or underflow, Increment returns nil.
 func (section WrappedAddressSection) Increment(i int64) ExtendedSegmentSeries {
 	return convSectToIntf(section.AddressSection.Increment(i))
 }
 
+// IncrementBoundary returns the item that is the given increment from the range boundaries of this item.
+//
+// If the given increment is positive, adds the value to the highest ({@link #getUpper()}) in the range to produce a new item.
+// If the given increment is negative, adds the value to the lowest ({@link #getLower()}) in the range to produce a new item.
+// If the increment is zero, returns this.
+//
+// If this represents just a single value, this item is simply incremented by the given increment value, positive or negative.
+//
+// On overflow or underflow, IncrementBoundary returns nil.
 func (section WrappedAddressSection) IncrementBoundary(i int64) ExtendedSegmentSeries {
 	return convSectToIntf(section.AddressSection.IncrementBoundary(i))
 }

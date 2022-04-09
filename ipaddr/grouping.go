@@ -894,10 +894,13 @@ func (grouping *addressDivisionGroupingInternal) createNewPrefixedDivisions(bits
 
 //// only needed for godoc / pkgsite
 
+// GetBitCount returns the number of bits in each value comprising this address item
 func (grouping addressDivisionGroupingInternal) GetBitCount() BitCount {
 	return grouping.addressDivisionGroupingBase.GetBitCount()
 }
 
+// GetByteCount returns the number of bytes required for each value comprising this address item,
+// rounding up if the bit count is not a multiple of 8.
 func (grouping addressDivisionGroupingInternal) GetByteCount() int {
 	return grouping.addressDivisionGroupingBase.GetByteCount()
 }

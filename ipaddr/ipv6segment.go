@@ -194,10 +194,12 @@ func (seg *IPv6AddressSegment) Compare(item AddressItem) int {
 	return CountComparator.Compare(seg, item)
 }
 
+// GetBitCount returns the number of bits in each value comprising this address item, which is 16
 func (seg *IPv6AddressSegment) GetBitCount() BitCount {
 	return IPv6BitsPerSegment
 }
 
+// GetByteCount returns the number of bytes required for each value comprising this address item, which is 2
 func (seg *IPv6AddressSegment) GetByteCount() int {
 	return IPv6BytesPerSegment
 }

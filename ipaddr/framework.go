@@ -42,7 +42,11 @@ type AddressItem interface {
 	// IsMultiple returns whether the count is larger than 1
 	IsMultiple() bool
 
+	// GetByteCount returns the number of bytes required for each value comprising this address item,
+	// rounding up if the bit count is not a multiple of 8.
 	GetByteCount() int
+
+	// GetBitCount returns the number of bits in each value comprising this address item
 	GetBitCount() BitCount
 
 	IsFullRange() bool
@@ -99,7 +103,7 @@ type AddressComponent interface { //AddressSegment and above, AddressSegmentSeri
 type StandardDivGroupingType interface {
 	AddressDivisionSeries
 
-	// IsZeroGrouping returns true if the division grouping was originally created as a zero-valued section or grouping (eg IPv4AddressSection{}),
+	// IsAdaptiveZero returns true if the division grouping was originally created as a zero-valued section or grouping (eg IPv4AddressSection{}),
 	// meaning it was not constructed using a constructor function.
 	// Such a grouping, which has no divisions or segments, is convertible to a zero-valued grouping of any type or version, whether IPv6, IPv4, MAC, etc
 	IsAdaptiveZero() bool

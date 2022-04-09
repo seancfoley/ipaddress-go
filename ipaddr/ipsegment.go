@@ -289,10 +289,12 @@ func (seg *ipAddressSegmentInternal) toIPAddressSegment() *IPAddressSegment {
 
 //// only needed for godoc / pkgsite
 
+// GetBitCount returns the number of bits in each value comprising this address item
 func (seg *ipAddressSegmentInternal) GetBitCount() BitCount {
 	return seg.addressSegmentInternal.GetBitCount()
 }
 
+// GetByteCount returns the number of bytes required for each value comprising this address item.
 func (seg *ipAddressSegmentInternal) GetByteCount() int {
 	return seg.addressSegmentInternal.GetByteCount()
 }

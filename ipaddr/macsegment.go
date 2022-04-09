@@ -188,10 +188,12 @@ func (seg *MACAddressSegment) Compare(item AddressItem) int {
 	return CountComparator.Compare(seg, item)
 }
 
+// GetBitCount returns the number of bits in each value comprising this address item, which is 8.
 func (seg *MACAddressSegment) GetBitCount() BitCount {
 	return IPv4BitsPerSegment
 }
 
+// GetByteCount returns the number of bytes required for each value comprising this address item, which is 1.
 func (seg *MACAddressSegment) GetByteCount() int {
 	return IPv4BytesPerSegment
 }
