@@ -216,10 +216,15 @@ func (seg *IPv4AddressSegment) GetUpper() *IPv4AddressSegment {
 	return seg.init().getUpper().ToIPv4()
 }
 
+// IsMultiple returns whether this segment represents multiple values
 func (seg *IPv4AddressSegment) IsMultiple() bool {
 	return seg != nil && seg.isMultiple()
 }
 
+// GetCount returns the count of possible distinct values for this item.
+// If not representing multiple values, the count is 1.
+//
+// For instance, a segment with the value range of 3-7 has count 5.
 func (seg *IPv4AddressSegment) GetCount() *big.Int {
 	if seg == nil {
 		return bigZero()
@@ -333,6 +338,7 @@ func (seg *IPv4AddressSegment) PrefixIterator() IPv4SegmentIterator {
 	return ipv4SegmentIterator{seg.init().prefixIterator()}
 }
 
+// IsPrefixed returns whether this segment has an associated prefix length
 func (seg *IPv4AddressSegment) IsPrefixed() bool {
 	return seg != nil && seg.isPrefixed()
 }

@@ -238,6 +238,9 @@ func (section *IPv4AddressSection) GetIPVersion() IPVersion {
 	return IPv4
 }
 
+// GetCount returns the count of possible distinct values for this item.
+// If not representing multiple values, the count is 1,
+// unless this is a division grouping with no divisions, or an address section with no segments, in which case it is 0.
 func (section *IPv4AddressSection) GetCount() *big.Int {
 	if section == nil {
 		return bigZero()
@@ -247,20 +250,30 @@ func (section *IPv4AddressSection) GetCount() *big.Int {
 	})
 }
 
+// IsMultiple returns  whether this section represents multiple values
 func (section *IPv4AddressSection) IsMultiple() bool {
 	return section != nil && section.isMultiple()
 }
 
+// IsPrefixed returns whether this section has an associated prefix length
 func (section *IPv4AddressSection) IsPrefixed() bool {
 	return section != nil && section.isPrefixed()
 }
 
+// GetPrefixCount returns the number of distinct prefix values in this item.
+//
+// The prefix length is given by GetPrefixLen.
+//
+// If this has a non-nil prefix length, returns the number of distinct prefix values.
+//
+// If this has a nil prefix length, returns the same value as GetCount
 func (section *IPv4AddressSection) GetPrefixCount() *big.Int {
 	return section.cachePrefixCount(func() *big.Int {
 		return bigZero().SetUint64(section.GetIPv4PrefixCount())
 	})
 }
 
+// GetPrefixCountLen returns the number of distinct prefix values in this item for the given prefix length
 func (section *IPv4AddressSection) GetPrefixCountLen(prefixLen BitCount) *big.Int {
 	if prefixLen <= 0 {
 		return bigOne()
@@ -270,6 +283,7 @@ func (section *IPv4AddressSection) GetPrefixCountLen(prefixLen BitCount) *big.In
 	return section.calcCount(func() *big.Int { return new(big.Int).SetUint64(section.GetIPv4PrefixCountLen(prefixLen)) })
 }
 
+// GetBlockCount returns the count of distinct values in the given number of initial (more significant) segments.
 func (section *IPv4AddressSection) GetBlockCount(segmentCount int) *big.Int {
 	if segmentCount <= 0 {
 		return bigOne()

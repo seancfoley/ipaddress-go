@@ -899,10 +899,15 @@ func (div *AddressDivision) GetUpperDivisionValue() DivInt {
 	return div.getUpperDivisionValue()
 }
 
+// IsMultiple returns  whether this division represents a sequential range of values
 func (div *AddressDivision) IsMultiple() bool {
 	return div != nil && div.isMultiple()
 }
 
+// GetCount returns the count of possible distinct values for this item.
+// If not representing multiple values, the count is 1.
+//
+// For instance, a division with the value range of 3-7 has count 5.
 func (div *AddressDivision) GetCount() *big.Int {
 	if div == nil {
 		return bigZero()

@@ -39,7 +39,7 @@ type AddressItem interface {
 	// GetCount provides the number of address items represented by this AddressItem, for example the subnet size for IP addresses
 	GetCount() *big.Int
 
-	// IsMultiple returns whether the count is larger than 1
+	// IsMultiple returns whether this item represents multiple values (the count is larger than 1)
 	IsMultiple() bool
 
 	// GetByteCount returns the number of bytes required for each value comprising this address item,

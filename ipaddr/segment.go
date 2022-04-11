@@ -177,16 +177,25 @@ func (seg *addressSegmentInternal) GetMaxValue() SegInt {
 	return ^(^SegInt(0) << uint(seg.GetBitCount()))
 }
 
-// TestBit computes (this & (1 << n)) != 0), using the lower value of this segment.
+// TestBit returns true if the bit in the lower value of this segment at the given index is 1, where index 0 refers to the least significant bit.
+// In other words, it computes (bits & (1 << n)) != 0), using the lower value of this section.
+// TestBit will panic if n < 0, or if it matches or exceeds the bit count of this item.
 func (seg *addressSegmentInternal) TestBit(n BitCount) bool {
 	value := seg.GetSegmentValue()
+	if n < 0 || n > seg.GetBitCount() {
+		panic("invalid bit index")
+	}
 	return (value & (1 << uint(n))) != 0
 }
 
-// IsOneBit returns true if the bit in the lower value of this segment at the given index is 1, where index 0 is the most significant bit.
+// IsOneBit returns true if the bit in the lower value of this segment at the given index is 1, where index 0 refers to the most significant bit.
+// IsOneBit will panic if bitIndex < 0, or if it is larger than the bit count of this item.
 func (seg *addressSegmentInternal) IsOneBit(segmentBitIndex BitCount) bool {
 	value := seg.GetSegmentValue()
 	bitCount := seg.GetBitCount()
+	if segmentBitIndex < 0 || segmentBitIndex > seg.GetBitCount() {
+		panic("invalid bit index")
+	}
 	return (value & (1 << uint(bitCount-(segmentBitIndex+1)))) != 0
 }
 
@@ -678,10 +687,15 @@ func (seg *addressSegmentInternal) GetUpper() *AddressSegment {
 	return seg.getUpper()
 }
 
+// IsMultiple returns whether this segment represents multiple values
 func (seg *AddressSegment) IsMultiple() bool {
 	return seg != nil && seg.isMultiple()
 }
 
+// GetCount returns the count of possible distinct values for this item.
+// If not representing multiple values, the count is 1.
+//
+// For instance, a segment with the value range of 3-7 has count 5.
 func (seg *AddressSegment) GetCount() *big.Int {
 	if seg == nil {
 		return bigZero()

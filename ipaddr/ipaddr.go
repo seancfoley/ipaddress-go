@@ -196,6 +196,8 @@ func (addr *ipAddressInternal) getNetworkPrefixLen() PrefixLen {
 	return section.ToIP().getNetworkPrefixLen()
 }
 
+// GetNetworkPrefixLen returns the prefix length, or nil if there is no prefix length.
+// GetNetworkPrefixLen is equivalent to the method GetPrefixLen.
 func (addr *ipAddressInternal) GetNetworkPrefixLen() PrefixLen {
 	return addr.getNetworkPrefixLen().copy()
 }
@@ -517,18 +519,40 @@ func (addr *ipAddressInternal) getNetwork() IPAddressNetwork {
 
 //// only needed for godoc / pkgsite
 
+// GetPrefixCount returns the count of prefixes in this address or subnet.
+//
+// The prefix length is given by GetPrefixLen.
+//
+// If this has a non-nil prefix length, returns the count of the range of values in the prefix.
+//
+// If this has a nil prefix length, returns the same value as GetCount()
 func (addr *ipAddressInternal) GetPrefixCount() *big.Int {
 	return addr.addressInternal.GetPrefixCount()
 }
 
+// GetPrefixCountLen returns the count of prefixes in this address or subnet for the given prefix length.
+//
+// If not a subnet of multiple addresses, or a subnet with just single prefix of the given length, returns 1.
 func (addr *ipAddressInternal) GetPrefixCountLen(prefixLen BitCount) *big.Int {
 	return addr.addressInternal.GetPrefixCountLen(prefixLen)
 }
 
-func (addr *ipAddressInternal) GetBlockCount(segmentCount int) *big.Int {
-	return addr.addressInternal.GetBlockCount(segmentCount)
+// GetBlockCount returns the count of distinct values in the given number of initial (more significant) segments.
+func (addr *ipAddressInternal) GetBlockCount(segments int) *big.Int {
+	return addr.addressInternal.GetBlockCount(segments)
 }
 
+// GetPrefixLen returns the prefix length, or nil if there is no prefix length.
+//
+// A prefix length indicates the number of bits in the initial part of the address that comprise the prefix.
+//
+// A prefix is a part of the address that is not specific to that address but common amongst a group of addresses, such as a CIDR prefix block subnet.
+//
+// For IP addresses, the prefix is explicitly defined when the address is created. For example, 1.2.0.0/16 has a prefix length of 16, while 1.2.*.* has no prefix length,
+// even though they both represent the same set of addresses and are considered equal.  Prefixes can be considered variable for a given IP address and can depend on routing.
+//
+// The methods GetMinPrefixLenForBlock and GetPrefixLenForSingleBlock can help you to obtain or define a prefix length if one does not exist already.
+// The method ToPrefixBlockLen allows you to create the subnet consisting of the block of addresses for any given prefix length.
 func (addr *ipAddressInternal) GetPrefixLen() PrefixLen {
 	return addr.addressInternal.GetPrefixLen()
 }
@@ -589,6 +613,11 @@ func (addr *IPAddress) getProvider() ipAddressProvider {
 
 }
 
+// GetCount returns the count of addresses that this address or subnet represents.
+//
+// If just a single address, not a subnet of multiple addresses, returns 1.
+//
+// For instance, the IP address subnet 2001:db8::/64 has the count of 2 to the power of 64.
 func (addr *IPAddress) GetCount() *big.Int {
 	if addr == nil {
 		return bigZero()
@@ -596,6 +625,7 @@ func (addr *IPAddress) GetCount() *big.Int {
 	return addr.getCount()
 }
 
+// IsMultiple returns true if this represents more than a single individual address, whether it is a subnet of multiple addresses.
 func (addr *IPAddress) IsMultiple() bool {
 	return addr != nil && addr.isMultiple()
 }
@@ -773,6 +803,7 @@ func (addr *IPAddress) ToBlock(segmentIndex int, lower, upper SegInt) *IPAddress
 	return addr.init().toBlock(segmentIndex, lower, upper).ToIP()
 }
 
+// IsPrefixed returns whether this address has an associated prefix length
 func (addr *IPAddress) IsPrefixed() bool {
 	return addr != nil && addr.isPrefixed()
 }
@@ -881,12 +912,15 @@ func (addr *IPAddress) IncludesMax() bool {
 	return addr.init().section.IncludesMax()
 }
 
-// TestBit computes (this & (1 << n)) != 0), using the lower value of this segment.
+// TestBit returns true if the bit in the lower value of this address at the given index is 1, where index 0 refers to the least significant bit.
+// In other words, it computes (bits & (1 << n)) != 0), using the lower value of this address.
+// TestBit will panic if n < 0, or if it matches or exceeds the bit count of this item.
 func (addr *IPAddress) TestBit(n BitCount) bool {
 	return addr.init().testBit(n)
 }
 
-// Returns true if the bit in the lower value of this segment at the given index is 1, where index 0 is the most significant bit.
+// IsOneBit returns true if the bit in the lower value of this address at the given index is 1, where index 0 refers to the most significant bit.
+// IsOneBit will panic if bitIndex < 0, or if it is larger than the bit count of this item.
 func (addr *IPAddress) IsOneBit(bitIndex BitCount) bool {
 	return addr.init().isOneBit(bitIndex)
 }

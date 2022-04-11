@@ -440,12 +440,15 @@ func (section *addressSectionInternal) GetMaxSegmentValue() SegInt {
 	return section.GetSegment(0).GetMaxValue()
 }
 
-// TestBit computes (this & (1 << n)) != 0), using the lower value of this segment.
+// TestBit returns true if the bit in the lower value of this section at the given index is 1, where index 0 refers to the least significant bit.
+// In other words, it computes (bits & (1 << n)) != 0), using the lower value of this section.
+// TestBit will panic if n < 0, or if it matches or exceeds the bit count of this item.
 func (section *addressSectionInternal) TestBit(n BitCount) bool {
 	return section.IsOneBit(section.GetBitCount() - (n + 1))
 }
 
-// IsOneBit returns true if the bit in the lower value of this section at the given index is 1, where index 0 is the most significant bit.
+// IsOneBit returns true if the bit in the lower value of this section at the given index is 1, where index 0 refers to the most significant bit.
+// IsOneBit will panic if bitIndex < 0, or if it is larger than the bit count of this item.
 func (section *addressSectionInternal) IsOneBit(prefixBitIndex BitCount) bool {
 	bitsPerSegment := section.GetBitsPerSegment()
 	bytesPerSegment := section.GetBytesPerSegment()
@@ -1916,6 +1919,11 @@ func (section *addressSectionInternal) GetSequentialBlockIndex() int {
 	return section.addressDivisionGroupingInternal.GetSequentialBlockIndex()
 }
 
+// GetPrefixLen returns the prefix length, or nil if there is no prefix length.
+//
+// A prefix length indicates the number of bits in the initial part of the address item that comprises the prefix.
+//
+// A prefix is a part of the address item that is not specific to that address but common amongst a group of such items, such as a CIDR prefix block subnet.
 func (section *addressSectionInternal) GetPrefixLen() PrefixLen {
 	return section.addressDivisionGroupingInternal.GetPrefixLen()
 }
@@ -2054,6 +2062,9 @@ func (section *AddressSection) CompareSize(other StandardDivGroupingType) int {
 	return section.compareSize(other)
 }
 
+// GetCount returns the count of possible distinct values for this item.
+// If not representing multiple values, the count is 1,
+// unless this is a division grouping with no divisions, or an address section with no segments, in which case it is 0.
 func (section *AddressSection) GetCount() *big.Int {
 	if section == nil {
 		return bigZero()
@@ -2067,10 +2078,18 @@ func (section *AddressSection) GetCount() *big.Int {
 	return section.addressDivisionGroupingBase.getCount()
 }
 
+// IsMultiple returns  whether this segment represents multiple values
 func (section *AddressSection) IsMultiple() bool {
 	return section != nil && section.isMultiple()
 }
 
+// GetPrefixCount returns the number of distinct prefix values in this item.
+//
+// The prefix length is given by GetPrefixLen.
+//
+// If this has a non-nil prefix length, returns the number of distinct prefix values.
+//
+// If this has a nil prefix length, returns the same value as GetCount
 func (section *AddressSection) GetPrefixCount() *big.Int {
 	if sect := section.ToIPv4(); sect != nil {
 		return sect.GetPrefixCount()
@@ -2082,6 +2101,7 @@ func (section *AddressSection) GetPrefixCount() *big.Int {
 	return section.addressDivisionGroupingBase.GetPrefixCount()
 }
 
+// GetPrefixCountLen returns the number of distinct prefix values in this item for the given prefix length
 func (section *AddressSection) GetPrefixCountLen(prefixLen BitCount) *big.Int {
 	if sect := section.ToIPv4(); sect != nil {
 		return sect.GetPrefixCountLen(prefixLen)
@@ -2093,16 +2113,16 @@ func (section *AddressSection) GetPrefixCountLen(prefixLen BitCount) *big.Int {
 	return section.addressDivisionGroupingBase.GetPrefixCountLen(prefixLen)
 }
 
-// GetBlockCount returns the count of values in the initial (higher) count of divisions.
-func (section *AddressSection) GetBlockCount(segmentCount int) *big.Int {
+// GetBlockCount returns the count of distinct values in the given number of initial (more significant) segments.
+func (section *AddressSection) GetBlockCount(segments int) *big.Int {
 	if sect := section.ToIPv4(); sect != nil {
-		return sect.GetBlockCount(segmentCount)
+		return sect.GetBlockCount(segments)
 	} else if sect := section.ToIPv6(); sect != nil {
-		return sect.GetBlockCount(segmentCount)
+		return sect.GetBlockCount(segments)
 	} else if sect := section.ToMAC(); sect != nil {
-		return sect.GetBlockCount(segmentCount)
+		return sect.GetBlockCount(segments)
 	}
-	return section.addressDivisionGroupingBase.GetBlockCount(segmentCount)
+	return section.addressDivisionGroupingBase.GetBlockCount(segments)
 }
 
 // GetTrailingSection gets the subsection from the series starting from the given index.
@@ -2144,6 +2164,7 @@ func (section *AddressSection) GetUpper() *AddressSection {
 	return section.getUpper()
 }
 
+// IsPrefixed returns whether this section has an associated prefix length
 func (section *AddressSection) IsPrefixed() bool {
 	return section != nil && section.isPrefixed()
 }

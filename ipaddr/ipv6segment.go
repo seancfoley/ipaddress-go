@@ -216,10 +216,15 @@ func (seg *IPv6AddressSegment) GetUpper() *IPv6AddressSegment {
 	return seg.init().getUpper().ToIPv6()
 }
 
+// IsMultiple returns whether this segment represents multiple values
 func (seg *IPv6AddressSegment) IsMultiple() bool {
 	return seg != nil && seg.isMultiple()
 }
 
+// GetCount returns the count of possible distinct values for this item.
+// If not representing multiple values, the count is 1.
+//
+// For instance, a segment with the value range of 3-7 has count 5.
 func (seg *IPv6AddressSegment) GetCount() *big.Int {
 	if seg == nil {
 		return bigZero()
@@ -333,6 +338,7 @@ func (seg *IPv6AddressSegment) PrefixIterator() IPv6SegmentIterator {
 	return ipv6SegmentIterator{seg.init().prefixIterator()}
 }
 
+// IsPrefixed returns whether this segment has an associated prefix length
 func (seg *IPv6AddressSegment) IsPrefixed() bool {
 	return seg != nil && seg.isPrefixed()
 }

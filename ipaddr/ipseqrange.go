@@ -701,6 +701,7 @@ func (rng *IPAddressSeqRange) init() *IPAddressSeqRange {
 	return rng
 }
 
+// GetCount returns the count of addresses that this sequential range represents.
 func (rng *IPAddressSeqRange) GetCount() *big.Int {
 	if rng == nil {
 		return bigZero()
@@ -708,6 +709,7 @@ func (rng *IPAddressSeqRange) GetCount() *big.Int {
 	return rng.init().getCount()
 }
 
+// IsMultiple returns whether this range represents a range of multiple addresses
 func (rng *IPAddressSeqRange) IsMultiple() bool {
 	return rng != nil && rng.isMultiple()
 }

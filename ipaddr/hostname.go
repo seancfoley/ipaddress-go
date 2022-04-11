@@ -673,9 +673,9 @@ TODO LATER isUNCIPv6Literal and isReverseDNS
 //	return isValid() && parsedHost.isReverseDNS();
 //}
 
-// GetNetworkPrefixLen() returns the prefix length, if a prefix length was supplied,
-// either as part of an address or as part of a domain (in which case the prefix applies to any resolved address),
-// Otherwise, returns nil.
+// GetNetworkPrefixLen returns the prefix length, if a prefix length was supplied,
+// either as part of an address or as part of a domain (in which case the prefix applies to any resolved address).
+// Otherwise, GetNetworkPrefixLen returns nil.
 func (host *HostName) GetNetworkPrefixLen() PrefixLen {
 	if host.IsAddress() {
 		addr, err := host.parsedHost.asAddress()

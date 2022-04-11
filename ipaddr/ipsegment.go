@@ -78,6 +78,23 @@ func (seg *ipAddressSegmentInternal) GetPrefixValueCount() SegIntCount {
 	return getPrefixValueCount(seg.toAddressSegment(), prefixLength.bitCount())
 }
 
+// GetSegmentPrefixLen returns the network prefix for the segment.
+//
+// The network prefix is 16 for an address like 1.2.0.0/16.
+//
+// When it comes to each address division or segment, the prefix for the division is the
+// prefix obtained when applying the address or section prefix.
+//
+// For instance, consider the address 1.2.0.0/20.
+// The first segment has no prefix because the address prefix 20 extends beyond the 8 bits in the first segment, it does not even apply to the segment.
+// The second segment has no prefix because the address prefix extends beyond bits 9 to 16 which lie in the second segment, it does not apply to that segment either.
+// The third segment has the prefix 4 because the address prefix 20 corresponds to the first 4 bits in the 3rd segment,
+// which means that the first 4 bits are part of the network section of the address or segment.
+// The last segment has the prefix 0 because not a single bit is in the network section of the address or segment
+//
+// The prefix applied across the address is nil ... nil ... (1 to segment bit length) ... 0 ... 0
+//
+// If the segment has no prefix then nil is returned.
 func (seg *ipAddressSegmentInternal) GetSegmentPrefixLen() PrefixLen {
 	return seg.getDivisionPrefixLength()
 }
@@ -407,10 +424,15 @@ func (seg *ipAddressSegmentInternal) GetMaxValue() SegInt {
 	return seg.addressSegmentInternal.GetMaxValue()
 }
 
+// TestBit returns true if the bit in the lower value of this segment at the given index is 1, where index 0 refers to the least significant bit.
+// In other words, it computes (bits & (1 << n)) != 0), using the lower value of this section.
+// TestBit will panic if n < 0, or if it matches or exceeds the bit count of this item.
 func (seg *ipAddressSegmentInternal) TestBit(n BitCount) bool {
 	return seg.addressSegmentInternal.TestBit(n)
 }
 
+// IsOneBit returns true if the bit in the lower value of this segment at the given index is 1, where index 0 refers to the most significant bit.
+// IsOneBit will panic if bitIndex < 0, or if it is larger than the bit count of this item.
 func (seg *ipAddressSegmentInternal) IsOneBit(segmentBitIndex BitCount) bool {
 	return seg.addressSegmentInternal.IsOneBit(segmentBitIndex)
 }
@@ -445,10 +467,15 @@ func (seg *IPAddressSegment) GetUpper() *IPAddressSegment {
 	return seg.getUpper().ToIP()
 }
 
+// IsMultiple returns whether this segment represents multiple values
 func (seg *IPAddressSegment) IsMultiple() bool {
 	return seg != nil && seg.isMultiple()
 }
 
+// GetCount returns the count of possible distinct values for this item.
+// If not representing multiple values, the count is 1.
+//
+// For instance, a segment with the value range of 3-7 has count 5.
 func (seg *IPAddressSegment) GetCount() *big.Int {
 	if seg == nil {
 		return bigZero()
@@ -514,6 +541,7 @@ func (seg *IPAddressSegment) PrefixIterator() IPSegmentIterator {
 	return ipSegmentIterator{seg.prefixIterator()}
 }
 
+// IsPrefixed returns whether this section has an associated prefix length
 func (seg *IPAddressSegment) IsPrefixed() bool {
 	return seg != nil && seg.isPrefixed()
 }

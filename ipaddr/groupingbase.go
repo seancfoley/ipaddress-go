@@ -237,15 +237,23 @@ func (grouping *addressDivisionGroupingBase) getCount() *big.Int {
 	return grouping.cacheCount(grouping.getCountBig)
 }
 
+// GetPrefixCount returns the number of distinct prefix values in this item.
+//
+// The prefix length is given by GetPrefixLen.
+//
+// If this has a non-nil prefix length, returns the number of distinct prefix values.
+//
+// If this has a nil prefix length, returns the same value as GetCount
 func (grouping *addressDivisionGroupingBase) GetPrefixCount() *big.Int {
 	return grouping.cachePrefixCount(grouping.getPrefixCountBig)
 }
 
+// GetPrefixCountLen returns the number of distinct prefix values in this item for the given prefix length
 func (grouping *addressDivisionGroupingBase) GetPrefixCountLen(prefixLen BitCount) *big.Int {
 	return grouping.calcCount(func() *big.Int { return grouping.getPrefixCountLenBig(prefixLen) })
 }
 
-// GetBlockCount returns the count of values in the initial (higher) count of divisions.
+// GetBlockCount returns the count of distinct values in the given number of initial (more significant) divisions.
 func (grouping *addressDivisionGroupingBase) GetBlockCount(divisionCount int) *big.Int {
 	return grouping.calcCount(func() *big.Int { return grouping.getBlockCountBig(divisionCount) })
 }

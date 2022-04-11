@@ -42,6 +42,7 @@ func (rng *IPv4AddressSeqRange) init() *IPv4AddressSeqRange {
 	return rng
 }
 
+// GetCount returns the count of addresses that this sequential range represents.
 func (rng *IPv4AddressSeqRange) GetCount() *big.Int {
 	if rng == nil {
 		return bigZero()
@@ -49,6 +50,7 @@ func (rng *IPv4AddressSeqRange) GetCount() *big.Int {
 	return rng.init().getCount()
 }
 
+// IsMultiple returns whether this range represents a range of multiple addresses
 func (rng *IPv4AddressSeqRange) IsMultiple() bool {
 	return rng != nil && rng.isMultiple()
 }

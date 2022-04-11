@@ -257,6 +257,13 @@ func (grouping *addressDivisionGroupingInternal) getCount() *big.Int {
 	return grouping.addressDivisionGroupingBase.getCount()
 }
 
+// GetPrefixCount returns the number of distinct prefix values in this item.
+//
+// The prefix length is given by GetPrefixLen.
+//
+// If this has a non-nil prefix length, returns the number of distinct prefix values.
+//
+// If this has a nil prefix length, returns the same value as GetCount
 func (grouping *addressDivisionGroupingInternal) GetPrefixCount() *big.Int {
 	if section := grouping.toAddressSection(); section != nil {
 		return section.GetPrefixCount()
@@ -264,6 +271,7 @@ func (grouping *addressDivisionGroupingInternal) GetPrefixCount() *big.Int {
 	return grouping.addressDivisionGroupingBase.GetPrefixCount()
 }
 
+// GetPrefixCountLen returns the number of distinct prefix values in this item for the given prefix length
 func (grouping *addressDivisionGroupingInternal) GetPrefixCountLen(prefixLen BitCount) *big.Int {
 	if section := grouping.toAddressSection(); section != nil {
 		return section.GetPrefixCountLen(prefixLen)
@@ -400,6 +408,11 @@ func (grouping *addressDivisionGroupingInternal) getPrefixLen() PrefixLen {
 	return grouping.prefixLength
 }
 
+// GetPrefixLen returns the prefix length, or nil if there is no prefix length.
+//
+// A prefix length indicates the number of bits in the initial part of the address item that comprises the prefix.
+//
+// A prefix is a part of the address item that is not specific to that address but common amongst a group of such items, such as a CIDR prefix block subnet.
 func (grouping *addressDivisionGroupingInternal) GetPrefixLen() PrefixLen {
 	return grouping.getPrefixLen().copy()
 }
@@ -941,6 +954,7 @@ func (grouping *addressDivisionGroupingInternal) GetSequentialBlockCount() *big.
 	return grouping.addressDivisionGroupingBase.GetSequentialBlockCount()
 }
 
+// GetBlockCount returns the count of distinct values in the given number of initial (more significant) divisions.
 func (grouping *addressDivisionGroupingInternal) GetBlockCount(divisionCount int) *big.Int {
 	return grouping.addressDivisionGroupingBase.GetBlockCount(divisionCount)
 }
@@ -966,6 +980,9 @@ func (grouping *AddressDivisionGrouping) CompareSize(other StandardDivGroupingTy
 	return grouping.compareSize(other)
 }
 
+// GetCount returns the count of possible distinct values for this item.
+// If not representing multiple values, the count is 1,
+// unless this is a division grouping with no divisions, or an address section with no segments, in which case it is 0.
 func (grouping *AddressDivisionGrouping) GetCount() *big.Int {
 	if grouping == nil {
 		return bigZero()
@@ -973,10 +990,12 @@ func (grouping *AddressDivisionGrouping) GetCount() *big.Int {
 	return grouping.getCount()
 }
 
+// IsMultiple returns whether this grouping represents multiple values
 func (grouping *AddressDivisionGrouping) IsMultiple() bool {
 	return grouping != nil && grouping.isMultiple()
 }
 
+// IsPrefixed returns whether this grouping has an associated prefix length
 func (grouping *AddressDivisionGrouping) IsPrefixed() bool {
 	if grouping == nil {
 		return false

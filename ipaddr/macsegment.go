@@ -210,10 +210,15 @@ func (seg *MACAddressSegment) GetUpper() *MACAddressSegment {
 	return seg.init().getUpper().ToMAC()
 }
 
+// IsMultiple returns whether this segment represents multiple values
 func (seg *MACAddressSegment) IsMultiple() bool {
 	return seg != nil && seg.isMultiple()
 }
 
+// GetCount returns the count of possible distinct values for this item.
+// If not representing multiple values, the count is 1.
+//
+// For instance, a segment with the value range of 3-7 has count 5.
 func (seg *MACAddressSegment) GetCount() *big.Int {
 	if seg == nil {
 		return bigZero()

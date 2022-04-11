@@ -351,6 +351,9 @@ func (section *IPv6AddressSection) GetBytesPerSegment() int {
 	return IPv6BytesPerSegment
 }
 
+// GetCount returns the count of possible distinct values for this item.
+// If not representing multiple values, the count is 1,
+// unless this is a division grouping with no divisions, or an address section with no segments, in which case it is 0.
 func (section *IPv6AddressSection) GetCount() *big.Int {
 	if section == nil {
 		return bigZero()
@@ -362,28 +365,39 @@ func (section *IPv6AddressSection) GetCount() *big.Int {
 	})
 }
 
+// IsMultiple returns  whether this section represents multiple values
 func (section *IPv6AddressSection) IsMultiple() bool {
 	return section != nil && section.isMultiple()
 }
 
+// IsPrefixed returns whether this section has an associated prefix length
 func (section *IPv6AddressSection) IsPrefixed() bool {
 	return section != nil && section.isPrefixed()
 }
 
-func (section *IPv6AddressSection) GetBlockCount(segmentCount int) *big.Int {
+// GetBlockCount returns the count of distinct values in the given number of initial (more significant) segments.
+func (section *IPv6AddressSection) GetBlockCount(segments int) *big.Int {
 	return section.calcCount(func() *big.Int {
 		return count(func(index int) uint64 {
 			return section.GetSegment(index).GetValueCount()
-		}, segmentCount, 2, 0x7fffffffffff)
+		}, segments, 2, 0x7fffffffffff)
 	})
 }
 
+// GetPrefixCount returns the number of distinct prefix values in this item.
+//
+// The prefix length is given by GetPrefixLen.
+//
+// If this has a non-nil prefix length, returns the number of distinct prefix values.
+//
+// If this has a nil prefix length, returns the same value as GetCount
 func (section *IPv6AddressSection) GetPrefixCount() *big.Int {
 	return section.cachePrefixCount(func() *big.Int {
 		return section.GetPrefixCountLen(section.getPrefixLen().bitCount())
 	})
 }
 
+// GetPrefixCountLen returns the number of distinct prefix values in this item for the given prefix length
 func (section *IPv6AddressSection) GetPrefixCountLen(prefixLen BitCount) *big.Int {
 	if prefixLen <= 0 {
 		return bigOne()
@@ -1588,6 +1602,9 @@ func (grouping *IPv6v4MixedAddressGrouping) CompareSize(other StandardDivGroupin
 	return grouping.compareSize(other)
 }
 
+// GetCount returns the count of possible distinct values for this item.
+// If not representing multiple values, the count is 1,
+// unless this is a division grouping with no divisions, or an address section with no segments, in which case it is 0.
 func (grouping *IPv6v4MixedAddressGrouping) GetCount() *big.Int {
 	if grouping == nil {
 		return bigZero()
@@ -1596,10 +1613,12 @@ func (grouping *IPv6v4MixedAddressGrouping) GetCount() *big.Int {
 	return cnt.Add(cnt, grouping.GetIPv4AddressSection().GetCount())
 }
 
+// IsMultiple returns  whether this grouping represents multiple values
 func (grouping *IPv6v4MixedAddressGrouping) IsMultiple() bool {
 	return grouping != nil && grouping.isMultiple()
 }
 
+// IsPrefixed returns whether this grouping has an associated prefix length
 func (grouping *IPv6v4MixedAddressGrouping) IsPrefixed() bool {
 	return grouping != nil && grouping.isPrefixed()
 }

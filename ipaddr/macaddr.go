@@ -169,6 +169,9 @@ type MACAddress struct {
 	addressInternal
 }
 
+// GetCount returns the count of addresses that this address or subnet represents.
+//
+// If just a single address, not a subnet of multiple addresses, returns 1.
 func (addr *MACAddress) init() *MACAddress {
 	if addr.section == nil {
 		return zeroMAC
@@ -183,10 +186,12 @@ func (addr *MACAddress) GetCount() *big.Int {
 	return addr.getCount()
 }
 
+// IsMultiple returns true if this represents more than a single individual address, whether it is a subnet of multiple addresses.
 func (addr *MACAddress) IsMultiple() bool {
 	return addr != nil && addr.isMultiple()
 }
 
+// IsPrefixed returns whether this address has an associated prefix length
 func (addr *MACAddress) IsPrefixed() bool {
 	return addr != nil && addr.isPrefixed()
 }
@@ -335,12 +340,15 @@ func (addr *MACAddress) GetGenericSegment(index int) AddressSegmentType {
 	return addr.init().getSegment(index)
 }
 
-// TestBit computes (this & (1 << n)) != 0), using the lower value of this segment.
+// TestBit returns true if the bit in the lower value of this address at the given index is 1, where index 0 refers to the least significant bit.
+// In other words, it computes (bits & (1 << n)) != 0), using the lower value of this address.
+// TestBit will panic if n < 0, or if it matches or exceeds the bit count of this item.
 func (addr *MACAddress) TestBit(n BitCount) bool {
 	return addr.init().testBit(n)
 }
 
-// IsOneBit returns true if the bit in the lower value of this segment at the given index is 1, where index 0 is the most significant bit.
+// IsOneBit returns true if the bit in the lower value of this address at the given index is 1, where index 0 refers to the most significant bit.
+// IsOneBit will panic if bitIndex < 0, or if it is larger than the bit count of this item.
 func (addr *MACAddress) IsOneBit(bitIndex BitCount) bool {
 	return addr.init().isOneBit(bitIndex)
 }

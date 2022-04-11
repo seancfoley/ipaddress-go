@@ -43,6 +43,7 @@ func (pref *PrefixKey) Normalize() {
 	}
 }
 
+// ToPrefixLen converts this key to its corresponding prefix length.
 func (pref *PrefixKey) ToPrefixLen() PrefixLen {
 	if pref.IsPrefixed {
 		return &pref.PrefixLen

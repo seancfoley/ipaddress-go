@@ -44,6 +44,7 @@ func (rng *IPv6AddressSeqRange) init() *IPv6AddressSeqRange {
 	return rng
 }
 
+// GetCount returns the count of addresses that this sequential range represents.
 func (rng *IPv6AddressSeqRange) GetCount() *big.Int {
 	if rng == nil {
 		return bigZero()
@@ -51,6 +52,7 @@ func (rng *IPv6AddressSeqRange) GetCount() *big.Int {
 	return rng.init().getCount()
 }
 
+// IsMultiple returns whether this range represents a range of multiple addresses
 func (rng *IPv6AddressSeqRange) IsMultiple() bool {
 	return rng != nil && rng.isMultiple()
 }
