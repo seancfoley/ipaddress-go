@@ -4,6 +4,8 @@
 
 [View Project Page](https://seancfoley.github.io/IPAddress/)
 
+Note: godoc is actively being worked
+
 [View Godoc](https://pkg.go.dev/github.com/seancfoley/ipaddress-go) [![Go Reference](https://pkg.go.dev/badge/github.com/seancfoley/ipaddress-go/ipaddr.svg)](https://pkg.go.dev/github.com/seancfoley/ipaddress-go)
 
 [View Code Examples](https://github.com/seancfoley/ipaddress-go/wiki/Code-Examples)
