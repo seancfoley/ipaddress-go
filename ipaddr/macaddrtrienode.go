@@ -113,7 +113,7 @@ func (node *MACAddressTrieNode) GetLowerSubNode() *MACAddressTrieNode {
 	return toMACAddressTrieNode(node.toTrieNode().GetLowerSubNode())
 }
 
-// GetParent gets the node from which this node is a direct child node, or null if this is the root.
+// GetParent gets the node from which this node is a direct child node, or nil if this is the root.
 func (node *MACAddressTrieNode) GetParent() *MACAddressTrieNode {
 	return toMACAddressTrieNode(node.toTrieNode().GetParent())
 }
@@ -618,7 +618,7 @@ func (node *MACAddressAssociativeTrieNode) GetLowerSubNode() *MACAddressAssociat
 	return toMACAAssociativeAddressTrieNode(node.toTrieNode().GetLowerSubNode())
 }
 
-// GetParent gets the node from which this node is a direct child node, or null if this is the root.
+// GetParent gets the node from which this node is a direct child node, or nil if this is the root.
 func (node *MACAddressAssociativeTrieNode) GetParent() *MACAddressAssociativeTrieNode {
 	return toMACAAssociativeAddressTrieNode(node.toTrieNode().GetParent())
 }

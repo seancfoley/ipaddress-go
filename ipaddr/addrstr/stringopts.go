@@ -120,14 +120,15 @@ type StringOptions interface {
 
 	IsExpandedSegments() bool
 
-	// the default is hexadecimal unless build using an IPv4 options build in which case the default is decimal
+	// GetRadix returns the radix.  The default is hexadecimal unless build using an IPv4 options build in which case the default is decimal
 	GetRadix() int
 
-	// separates the divisions of the address, typically ':' or '.', but also can be null for no separator
-	// the default is a space, unless built using a MAC, IPv6 or IPv4 options builder in which case the separator is ':' for MAC and IPv6 and '.' for IPv4
+	// GetSeparator returns the separator that separates the divisions of the address, typically ':' or '.'.  HasSeparator indicates if this method should be called.
+	// the default is to have no separator, unless built using a MAC, IPv6 or IPv4 options builder in which case the separator is ':' for MAC and IPv6 and '.' for IPv4
 	GetSeparator() byte
 
-	// default is false, no separator, unless built using a MAC, IPv6 or IPv4 options builder in which case there is a default separator
+	// HasSeparator indicates whether there is a separator.
+	// The default is false, no separator, unless built using a MAC, IPv6 or IPv4 options builder in which case there is a default separator
 	HasSeparator() bool
 
 	GetAddressLabel() string
@@ -154,7 +155,7 @@ type stringOptions struct {
 	reverse,
 	uppercase bool
 
-	hasSeparator *bool // default is false, no separator
+	hasSeparator *bool // if not set, the default is false, no separator
 
 	stringOptionsCache
 }
@@ -183,7 +184,7 @@ func (opts *stringOptions) GetRadix() int {
 	return opts.base
 }
 
-// separates the divisions of the address, typically ':' or '.', but also can be null for no separator
+// separates the divisions of the address, typically ':' or '.', while HasSeparator indicates if this method should be called
 func (opts *stringOptions) GetSeparator() byte {
 	return opts.separator
 }
@@ -542,7 +543,7 @@ func (builder *IPStringOptionsBuilder) SetHasSeparator(has bool) *IPStringOption
 	return builder
 }
 
-// separates the divisions of the address, typically ':' or '.', but also can be null for no separator
+// SetSeparator indicates the separator that separates the divisions of the address, typically ':' or '.', while HasSeparator indicates if this method should be called
 func (builder *IPStringOptionsBuilder) SetSeparator(separator byte) *IPStringOptionsBuilder {
 	builder.StringOptionsBuilder.SetSeparator(separator)
 	return builder
@@ -623,7 +624,7 @@ func (builder *IPv4StringOptionsBuilder) SetHasSeparator(has bool) *IPv4StringOp
 	return builder
 }
 
-// separates the divisions of the address, typically ':' or '.', but also can be null for no separator
+// SetSeparator indicates the separator that separates the divisions of the address, typically ':' or '.', while HasSeparator indicates if this method should be called
 func (builder *IPv4StringOptionsBuilder) SetSeparator(separator byte) *IPv4StringOptionsBuilder {
 	builder.IPStringOptionsBuilder.SetSeparator(separator)
 	return builder

@@ -645,6 +645,14 @@ func (seg *addressSegmentInternal) GetMinPrefixLenForBlock() BitCount {
 	return seg.addressDivisionInternal.GetMinPrefixLenForBlock()
 }
 
+// GetPrefixLenForSingleBlock returns a prefix length for which there is only one prefix in this segment,
+// and the range of values in this segment matches the block of all values for that prefix.
+//
+// If the range of segment values can be described this way, then this method returns the same value as GetMinPrefixLenForBlock.
+//
+// If no such prefix length exists, returns nil.
+//
+// If this segment represents a single value, this returns the bit count of the segment.
 func (seg *addressSegmentInternal) GetPrefixLenForSingleBlock() PrefixLen {
 	return seg.addressDivisionInternal.GetPrefixLenForSingleBlock()
 }

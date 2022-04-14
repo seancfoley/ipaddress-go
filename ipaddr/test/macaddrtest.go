@@ -927,7 +927,7 @@ func (t macAddressTester) testNormalized(original, expected string) {
 	w := t.createMACAddress(original)
 	val := w.GetAddress()
 	if val == nil {
-		t.addFailure(newMACFailure("normalization was null", w))
+		t.addFailure(newMACFailure("normalization was nil", w))
 	} else {
 		normalized := val.ToNormalizedString()
 		if expected != normalized {
@@ -941,7 +941,7 @@ func (t macAddressTester) testCanonical(original, expected string) {
 	w := t.createMACAddress(original)
 	val := w.GetAddress()
 	if val == nil {
-		t.addFailure(newMACFailure("normalization was null", w))
+		t.addFailure(newMACFailure("normalization was nil", w))
 	} else {
 		normalized := val.ToCanonicalString()
 		if expected != normalized {

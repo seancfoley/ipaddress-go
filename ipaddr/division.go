@@ -337,6 +337,14 @@ func (div *addressDivisionInternal) GetMinPrefixLenForBlock() BitCount {
 	return res.bitCount()
 }
 
+// GetPrefixLenForSingleBlock returns a prefix length for which there is only one prefix in this division,
+// and the range of values in this division matches the block of all values for that prefix.
+//
+// If the range of division values can be described this way, then this method returns the same value as GetMinPrefixLenForBlock.
+//
+// If no such prefix length exists, returns nil.
+//
+// If this division represents a single value, this returns the bit count of the segment.
 func (div *addressDivisionInternal) GetPrefixLenForSingleBlock() PrefixLen {
 	return GetPrefixLenForSingleBlock(div.getDivisionValue(), div.getUpperDivisionValue(), div.GetBitCount())
 }

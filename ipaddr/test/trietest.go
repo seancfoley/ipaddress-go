@@ -362,7 +362,7 @@ func (t trieTester) testAddressCheck() {
 	t.testConvertedAddrBlock(mac.ToAddressBase(), p24)
 	t.testMACAddrBlock("a:b:c:*:*:*")
 	t.testNonMACBlock("a:b:c:*:2:*")
-	t.testNonBlock("a:b:c:*:2:*") // passes null into checkBlockOrAddress
+	t.testNonBlock("a:b:c:*:2:*") // passes nil into checkBlockOrAddress
 	t.testMACAddrBlock("a:b:c:1:2:3")
 }
 

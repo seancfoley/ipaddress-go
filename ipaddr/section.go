@@ -157,8 +157,8 @@ func (section *addressSectionInternal) initMultAndPrefLen() {
 			//Calculate the segment-level prefix
 			//
 			//Across an address prefixes are:
-			//IPv6: (null):...:(null):(1 to 16):(0):...:(0)
-			//or IPv4: ...(null).(1 to 8).(0)...
+			//IPv6: (nil):...:(nil):(1 to 16):(0):...:(0)
+			//or IPv4: ...(nil).(1 to 8).(0)...
 			//For MAC, all segs have nil prefix since prefix is not segment-level
 			segPrefix := segment.getDivisionPrefixLength()
 			if previousSegmentPrefix == nil {
@@ -1936,6 +1936,14 @@ func (section *addressSectionInternal) IsPrefixBlock() bool {
 	return section.addressDivisionGroupingInternal.IsPrefixBlock()
 }
 
+// IsSinglePrefixBlock returns whether the range matches the block of values for a single prefix identified by the prefix length of this address.
+// This is similar to IsPrefixBlock() except that it returns false when the subnet has multiple prefixes.
+//
+// What distinguishes this method from ContainsSinglePrefixBlock is that this method returns
+// false if the series does not have a prefix length assigned to it,
+// or a prefix length that differs from the prefix length for which ContainsSinglePrefixBlock returns true.
+//
+// It is similar to IsPrefixBlock but returns false when there are multiple prefixes.
 func (section *addressSectionInternal) IsSinglePrefixBlock() bool {
 	return section.addressDivisionGroupingInternal.IsSinglePrefixBlock()
 }
@@ -1944,6 +1952,11 @@ func (section *addressSectionInternal) GetMinPrefixLenForBlock() BitCount {
 	return section.addressDivisionGroupingInternal.GetMinPrefixLenForBlock()
 }
 
+// GetPrefixLenForSingleBlock returns a prefix length for which the range of this address section matches the block of addresses for that prefix.
+//
+// If no such prefix exists, GetPrefixLenForSingleBlock returns nil.
+//
+// If this address section represents a single value, returns the bit length.
 func (section *addressSectionInternal) GetPrefixLenForSingleBlock() PrefixLen {
 	return section.addressDivisionGroupingInternal.GetPrefixLenForSingleBlock()
 }

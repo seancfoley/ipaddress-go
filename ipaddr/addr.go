@@ -189,7 +189,7 @@ func (addr *addressInternal) isPrefixed() bool {
 
 // GetPrefixLen returns the prefix length, or nil if there is no prefix length.
 //
-// A prefix length indicates the number of bits in the initial part of the address that comprise the prefix.
+// A prefix length indicates the number of bits in the initial part (most significant bits) of the address that comprise the prefix.
 //
 // A prefix is a part of the address that is not specific to that address but common amongst a group of addresses, such as a CIDR prefix block subnet.
 //
@@ -212,13 +212,23 @@ func (addr *addressInternal) getPrefixLen() PrefixLen {
 	return addr.section.getPrefixLen()
 }
 
-// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
-// IsSinglePrefixBlock is next.
-
+// IsSinglePrefixBlock returns whether the address range matches the block of values for a single prefix identified by the prefix length of this address.
+// This is similar to IsPrefixBlock() except that it returns false when the subnet has multiple prefixes.
+//
+// What distinguishes this method from ContainsSinglePrefixBlock is that this method returns
+// false if the series does not have a prefix length assigned to it,
+// or a prefix length that differs from the prefix length for which ContainsSinglePrefixBlock returns true.
+//
+// It is similar to IsPrefixBlock but returns false when there are multiple prefixes.
+//
+// For instance, 1.*.*.* /16 return false for this method and returns true for IsPrefixBlock
 func (addr *addressInternal) IsSinglePrefixBlock() bool {
 	prefLen := addr.getPrefixLen()
 	return prefLen != nil && addr.section.IsSinglePrefixBlock()
 }
+
+// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
+// IsPrefixBlock is next.
 
 func (addr *addressInternal) IsPrefixBlock() bool {
 	prefLen := addr.getPrefixLen()
@@ -241,6 +251,22 @@ func (addr *addressInternal) GetMinPrefixLenForBlock() BitCount {
 	return section.GetMinPrefixLenForBlock()
 }
 
+// GetPrefixLenForSingleBlock returns a prefix length for which the range of this address subnet matches exactly the block of addresses for that prefix.
+//
+// If the range can be described this way, then this method returns the same value as GetMinPrefixLengthForBlock.
+//
+// If no such prefix exists, returns nil.
+//
+// If this segment grouping represents a single value, returns the bit length of this address division series.
+//
+// IP address examples:
+// 1.2.3.4 returns 32
+// 1.2.3.4/16 returns 32
+// 1.2.*.* returns 16
+// 1.2.*.0/24 returns 16
+// 1.2.0.0/16 returns 16
+// 1.2.*.4 returns null
+// 1.2.252-255.* returns 22
 func (addr *addressInternal) GetPrefixLenForSingleBlock() PrefixLen {
 	section := addr.section
 	if section == nil {
@@ -351,7 +377,7 @@ func (addr *addressInternal) trieIncrement() *Address {
 	return res.(*addressTrieKey).Address
 }
 
-// trieDecrement returns the previous key according to the trie ordering
+// trieDecrement returns the previous address according to address trie ordering
 func (addr *addressInternal) trieDecrement() *Address {
 	res := tree.TrieDecrement(&addressTrieKey{addr.toAddress()})
 	if res == nil {
@@ -682,7 +708,7 @@ func (addr *addressInternal) assignPrefixForSingleBlock() *Address {
 	return addr.checkIdentity(addr.section.setPrefixLen(newPrefix.bitCount()))
 }
 
-// Constructs an equivalent address section with the smallest CIDR prefix possible (largest network),
+// assignMinPrefixForBlock constructs an equivalent address section with the smallest CIDR prefix possible (largest network),
 // such that the range of values are a set of subnet blocks for that prefix.
 func (addr *addressInternal) assignMinPrefixForBlock() *Address {
 	return addr.setPrefixLen(addr.GetMinPrefixLenForBlock())
@@ -991,6 +1017,29 @@ func (addr *addressInternal) format(state fmt.State, verb rune) {
 
 var zeroAddr = createAddress(zeroSection, NoZone)
 
+// Address represents a single address, or a collection of multiple addresses, such as with a subnet.
+//
+// Addresses consist of a sequence of segments, each of equal bit-size.
+// The number of such segments and the bit-size are determined by the underlying version or type of the address, whether IPv4, IPv6, MAC, or other.
+// Each segment can represent a single value or a sequential range of values.
+//
+// To construct one from a string, use
+// NewIPAddressString or NewMACAddressString,
+// then use the ToAddress or GetAddress methods to get an IPAddress or MACAddress,
+// and then you can convert to this type using the ToAddressBase method.
+//
+// Any given specific address types can be converted to Address with the ToAddressBase method,
+// and then back again to their original types with methods like ToIPv6, ToIP, ToIPv4, and ToMAC.
+// When calling such a method, if the address was not originally constructed as the type returned from the method,
+// then the method will return nil.  Conversion methods work with nil pointers (returning nil) so that they can always be chained together safely.
+//
+// This allows for polymorphic code that works with all addresses, such as with the address trie code in this library,
+// while still allowing for methods and code specific to each address type.
+//
+// You can also use the methods IsIPv6, IsIP, IsIPv4, and IsMAC,
+// which will return true if and only if the corresponding method ToIPv6, ToIP, ToIPv4, and ToMAC returns non-nil, respectively.
+//
+// The zero value for an Address is an address with no segments and no associated address version or type.
 type Address struct {
 	addressInternal
 }
@@ -1086,7 +1135,7 @@ func (addr *Address) TrieIncrement() *Address {
 	return addr.trieIncrement()
 }
 
-// TrieDecrement returns the previous key according to the trie ordering
+// TrieDecrement returns the previous address according to address trie ordering
 func (addr *Address) TrieDecrement() *Address {
 	return addr.trieDecrement()
 }
@@ -1124,27 +1173,31 @@ func (addr *Address) GetSegments() []*AddressSegment {
 	return addr.GetSection().GetSegments()
 }
 
-// GetSegment returns the segment at the given index
+// GetSegment returns the segment at the given index.
+// GetSegment will panic given a negative index or index larger than the segment count.
 func (addr *Address) GetSegment(index int) *AddressSegment {
 	return addr.getSegment(index)
 }
 
-// GetSegmentCount returns the segment count
+// GetSegmentCount returns the segment count, the number of segments in this address.
+// For example, IPv4 addresses have 4, IPv6 addresses have 8.
 func (addr *Address) GetSegmentCount() int {
 	return addr.getDivisionCount()
 }
 
-// GetGenericDivision returns the segment at the given index as an DivisionType
+// GetGenericDivision returns the segment at the given index as an DivisionType.
+// GetGenericDivision will panic given a negative index or index larger than the division count.
 func (addr *Address) GetGenericDivision(index int) DivisionType {
 	return addr.getDivision(index)
 }
 
-// GetGenericSegment returns the segment at the given index as an AddressSegmentType
+// GetGenericSegment returns the segment at the given index as an AddressSegmentType.
+// GetGenericSegment will panic given a negative index or index larger than the segment count.
 func (addr *Address) GetGenericSegment(index int) AddressSegmentType {
 	return addr.getSegment(index)
 }
 
-// GetDivisionCount returns the division count
+// GetDivisionCount returns the division count, which is the same as the segment count, since the divisions of an address are the segments.
 func (addr *Address) GetDivisionCount() int {
 	return addr.getDivisionCount()
 }

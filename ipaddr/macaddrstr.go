@@ -199,7 +199,7 @@ func (addrStr *MACAddressString) Compare(other *MACAddressString) int {
 					return addr.Compare(otherAddr)
 				}
 			}
-			// one or the other is null, either empty or IncompatibleAddressException
+			// one or the other is nil, either empty or IncompatibleAddressException
 			return strings.Compare(addrStr.String(), other.String())
 		}
 		return 1
@@ -246,7 +246,7 @@ func (addrStr *MACAddressString) Equal(other *MACAddressString) bool {
 			} else if other.GetAddress() != nil {
 				return false
 			}
-			// both are null, either empty or addrerr.IncompatibleAddressError
+			// both are nil, either empty or addrerr.IncompatibleAddressError
 			return stringsMatch
 		}
 	} else if !other.IsValid() { // both are invalid

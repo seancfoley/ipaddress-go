@@ -660,7 +660,7 @@ func (parseData *parsedIPAddress) matchesPrefix(other string) (res boolSetting) 
 
 				if !currentSegHasNonZeroDigits {
 					//we know that this address has no ipv4 leading zeros, we abort this method in such cases.
-					//However, we do want to handle all the following cases and return null for each.
+					//However, we do want to handle all the following cases and return "no setting" for each.
 					//We do not handle differing numbers of leading zeros
 					//We do not handle ipv6 compression in different places
 					//So we want to handle segments that start like all of these cases:
@@ -683,7 +683,7 @@ func (parseData *parsedIPAddress) matchesPrefix(other string) (res boolSetting) 
 					//other :
 					//this  0
 
-					//Those should all return null since they might in fact represent matching segments.
+					//Those should all return "no setting" since they might in fact represent matching segments.
 					//However, the following should return FALSE when there are no leading zeros and no compression:
 
 					//other 0.
@@ -699,9 +699,9 @@ func (parseData *parsedIPAddress) matchesPrefix(other string) (res boolSetting) 
 					//this  0:
 
 					//So in summary, we first check that we have not matched non-zero values first (ie digitCount must be 0)
-					//All the null cases involve one or the other starting with 0.
-					//If the other is an ipv6 segment separator, return null.
-					//Otherwise, if the zero is not the end of segment, we have leading zeros which we do not handle here, so we return null.
+					//All the "no-setting" cases involve one or the other starting with 0.
+					//If the other is an ipv6 segment separator, return no setting.
+					//Otherwise, if the zero is not the end of segment, we have leading zeros which we do not handle here, so we return "no setting".
 					//Otherwise, return false.  This is because we have a zero segment, and the other is not (it is neither compressed nor 0).
 					//Actually, we return false only if the 0 segment is the other string, because if the 0 segment is this it is only one segment while the other may be multi-segment.
 					//If the other might be multi-segment, we defer to the segment check that will tell us if we must have matching segments here.
@@ -741,7 +741,7 @@ func (parseData *parsedIPAddress) matchesPrefix(other string) (res boolSetting) 
 				}
 			}
 
-			//if other is a range like 3-3 must return null
+			//if other is a range like 3-3 must return "no setting"
 			for k := i + 1; k < otherLen; k++ {
 				otherChar = other[k]
 				if otherChar == IPv6SegmentSeparator {

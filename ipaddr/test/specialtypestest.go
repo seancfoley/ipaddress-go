@@ -475,13 +475,13 @@ func (t specialTypesTester) testAllValues() {
 	addressAll := t.createParamsAddress("*", addressOptionsSpecial)
 	macAll := t.createMACParamsAddress("*", macOptionsSpecial)
 	if addressAll.GetAddress() != nil {
-		t.addFailure(newFailure("non null", addressAll))
+		t.addFailure(newFailure("non nil", addressAll))
 	} else if hostAll.AsAddress() != nil {
-		t.addFailure(newHostFailure("non null", hostAll))
+		t.addFailure(newHostFailure("non nil", hostAll))
 	} else if hostAll.GetAddress() != nil {
-		t.addFailure(newHostFailure("non null", hostAll))
+		t.addFailure(newHostFailure("non nil", hostAll))
 	} else if macAll.GetAddress() == nil {
-		t.addFailure(newMACFailure("null", macAll))
+		t.addFailure(newMACFailure("nil", macAll))
 	}
 	t.incrementTestCount()
 }

@@ -970,7 +970,7 @@ func (t testBase) testMACStrings(w *ipaddr.MACAddressString,
 	if err != nil {
 		isMatch := singleHex == ""
 		if !isMatch {
-			t.addFailure(newMACFailure("failed expected non-null, actual: "+err.Error(), w))
+			t.addFailure(newMACFailure("failed expected non-nil, actual: "+err.Error(), w))
 		}
 	} else {
 
@@ -1145,9 +1145,9 @@ func (t testBase) testStrings(w *ipaddr.IPAddressString,
 
 	binary, err := ipAddr.ToBinaryString(false)
 	if err != nil {
-		isMatch := singleHex == "" //iff hex is null is binary null
+		isMatch := singleHex == ""
 		if !isMatch {
-			t.addFailure(newFailure("failed expected non-null binary string but got: "+err.Error(), w))
+			t.addFailure(newFailure("failed expected non-nil binary string but got: "+err.Error(), w))
 		}
 	} else if ipAddr == nil {
 		if binary != "<nil>" {
@@ -1169,7 +1169,7 @@ func (t testBase) testStrings(w *ipaddr.IPAddressString,
 				}
 			}
 			if c2 != '0' && c2 != '1' && c2 != '-' {
-				t.addFailure(newFailure("failed expected non-null binary string but got: "+binary, w))
+				t.addFailure(newFailure("failed expected non-nil binary string but got: "+binary, w))
 				break
 			}
 		}

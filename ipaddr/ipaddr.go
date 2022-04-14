@@ -557,6 +557,16 @@ func (addr *ipAddressInternal) GetPrefixLen() PrefixLen {
 	return addr.addressInternal.GetPrefixLen()
 }
 
+// IsSinglePrefixBlock returns whether the address range matches the block of values for a single prefix identified by the prefix length of this address.
+// This is similar to IsPrefixBlock() except that it returns false when the subnet has multiple prefixes.
+//
+// What distinguishes this method from ContainsSinglePrefixBlock is that this method returns
+// false if the series does not have a prefix length assigned to it,
+// or a prefix length that differs from the prefix length for which ContainsSinglePrefixBlock returns true.
+//
+// It is similar to IsPrefixBlock but returns false when there are multiple prefixes.
+//
+// For instance, 1.*.*.* /16 return false for this method and returns true for IsPrefixBlock
 func (addr *ipAddressInternal) IsSinglePrefixBlock() bool {
 	return addr.addressInternal.IsSinglePrefixBlock()
 }
@@ -577,6 +587,22 @@ func (addr *ipAddressInternal) GetMinPrefixLenForBlock() BitCount {
 	return addr.addressInternal.GetMinPrefixLenForBlock()
 }
 
+// GetPrefixLenForSingleBlock returns a prefix length for which the range of this address subnet matches exactly the block of addresses for that prefix.
+//
+// If the range can be described this way, then this method returns the same value as GetMinPrefixLengthForBlock.
+//
+// If no such prefix exists, returns nil.
+//
+// If this segment grouping represents a single value, returns the bit length of this address division series.
+//
+// IP address examples:
+// 1.2.3.4 returns 32
+// 1.2.3.4/16 returns 32
+// 1.2.*.* returns 16
+// 1.2.*.0/24 returns 16
+// 1.2.0.0/16 returns 16
+// 1.2.*.4 returns null
+// 1.2.252-255.* returns 22
 func (addr *ipAddressInternal) GetPrefixLenForSingleBlock() PrefixLen {
 	return addr.addressInternal.GetPrefixLenForSingleBlock()
 }
@@ -982,7 +1008,7 @@ func (addr *IPAddress) TrieIncrement() *IPAddress {
 	return addr.trieIncrement().ToIP()
 }
 
-// TrieDecrement returns the previous key according to the trie ordering
+// TrieDecrement returns the previous address according to address trie ordering
 func (addr *IPAddress) TrieDecrement() *IPAddress {
 	return addr.trieDecrement().ToIP()
 }

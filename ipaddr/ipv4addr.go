@@ -487,6 +487,22 @@ func (addr *IPv4Address) GetMinPrefixLenForBlock() BitCount {
 	return addr.init().ipAddressInternal.GetMinPrefixLenForBlock()
 }
 
+// GetPrefixLenForSingleBlock returns a prefix length for which the range of this address subnet matches exactly the block of addresses for that prefix.
+//
+// If the range can be described this way, then this method returns the same value as GetMinPrefixLenForBlock.
+//
+// If no such prefix exists, returns nil.
+//
+// If this segment grouping represents a single value, returns the bit length of this address division series.
+//
+// IP address examples:
+// 1.2.3.4 returns 32
+// 1.2.3.4/16 returns 32
+// 1.2.*.* returns 16
+// 1.2.*.0/24 returns 16
+// 1.2.0.0/16 returns 16
+// 1.2.*.4 returns null
+// 1.2.252-255.* returns 22
 func (addr *IPv4Address) GetPrefixLenForSingleBlock() PrefixLen {
 	return addr.init().ipAddressInternal.GetPrefixLenForSingleBlock()
 }
@@ -615,7 +631,7 @@ func (addr *IPv4Address) TrieIncrement() *IPv4Address {
 	return addr.trieIncrement().ToIPv4()
 }
 
-// TrieDecrement returns the previous key according to the trie ordering
+// TrieDecrement returns the previous address according to address trie ordering
 func (addr *IPv4Address) TrieDecrement() *IPv4Address {
 	return addr.trieDecrement().ToIPv4()
 }

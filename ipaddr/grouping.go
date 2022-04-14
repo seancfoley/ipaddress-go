@@ -491,6 +491,13 @@ func (grouping *addressDivisionGroupingInternal) IsPrefixBlock() bool { //Note f
 	return prefLen != nil && grouping.ContainsPrefixBlock(prefLen.bitCount())
 }
 
+// IsSinglePrefixBlock returns whether the range of values matches a single subnet block for the prefix length.
+//
+// What distinguishes this method with ContainsSinglePrefixBlock is that this method returns
+// false if the series does not have a prefix length assigned to it,
+// or a prefix length that differs from the prefix length for which ContainsSinglePrefixBlock returns true.
+//
+// It is similar to IsPrefixBlock but returns false when there are multiple prefixes.
 func (grouping *addressDivisionGroupingInternal) IsSinglePrefixBlock() bool { //Note for any given prefix length you can compare with GetPrefixLenForSingleBlock
 	calc := func() bool {
 		prefLen := grouping.getPrefixLen()
@@ -556,6 +563,11 @@ func (grouping *addressDivisionGroupingInternal) GetMinPrefixLenForBlock() BitCo
 	return res.bitCount()
 }
 
+// GetPrefixLenForSingleBlock returns a prefix length for which the range of this division grouping matches the block of addresses for that prefix.
+//
+// If no such prefix exists, GetPrefixLenForSingleBlock returns nil.
+//
+// If this division grouping represents a single value, returns the bit length.
 func (grouping *addressDivisionGroupingInternal) GetPrefixLenForSingleBlock() PrefixLen {
 	calc := func() *PrefixLen {
 		count := grouping.GetDivisionCount()

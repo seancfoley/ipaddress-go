@@ -788,7 +788,7 @@ func (section *ipAddressSectionInternal) subtract(other *IPAddressSection) (res 
 			if higher <= otherHigher {
 				//this segment is contained in the other
 				if seg.isPrefixed() {
-					intersections[i] = createAddressDivision(seg.deriveNewMultiSeg(lower, higher, nil)) //addrCreator.createSegment(lower, higher, null);
+					intersections[i] = createAddressDivision(seg.deriveNewMultiSeg(lower, higher, nil))
 				} else {
 					intersections[i] = seg.ToDiv()
 				}
@@ -1345,6 +1345,14 @@ func (section *ipAddressSectionInternal) IsPrefixBlock() bool {
 	return section.addressSectionInternal.IsPrefixBlock()
 }
 
+// IsSinglePrefixBlock returns whether the range matches the block of values for a single prefix identified by the prefix length of this address.
+// This is similar to IsPrefixBlock() except that it returns false when the subnet has multiple prefixes.
+//
+// What distinguishes this method from ContainsSinglePrefixBlock is that this method returns
+// false if the series does not have a prefix length assigned to it,
+// or a prefix length that differs from the prefix length for which ContainsSinglePrefixBlock returns true.
+//
+// It is similar to IsPrefixBlock but returns false when there are multiple prefixes.
 func (section *ipAddressSectionInternal) IsSinglePrefixBlock() bool {
 	return section.addressSectionInternal.IsSinglePrefixBlock()
 }
@@ -1353,6 +1361,11 @@ func (section *ipAddressSectionInternal) GetMinPrefixLenForBlock() BitCount {
 	return section.addressSectionInternal.GetMinPrefixLenForBlock()
 }
 
+// GetPrefixLenForSingleBlock returns a prefix length for which the range of this address section matches the block of addresses for that prefix.
+//
+// If no such prefix exists, GetPrefixLenForSingleBlock returns nil.
+//
+// If this address section represents a single value, returns the bit length.
 func (section *ipAddressSectionInternal) GetPrefixLenForSingleBlock() PrefixLen {
 	return section.addressSectionInternal.GetPrefixLenForSingleBlock()
 }

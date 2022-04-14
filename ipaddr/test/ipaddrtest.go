@@ -2346,7 +2346,7 @@ func (t ipAddressTester) testSubnet(addressStr, maskStr string, prefix ipaddr.Bi
 				t.addFailure(newIPAddrFailure("testSubnet failed: "+string2+" expected: "+normalizedSubnetString, subnet2))
 			} else {
 				if subnet2.GetNetworkPrefixLen() != nil {
-					t.addFailure(newIPAddrFailure("testSubnet failed, expected null prefix, got: "+subnet2.GetNetworkPrefixLen().String(), subnet2))
+					t.addFailure(newIPAddrFailure("testSubnet failed, expected nil prefix, got: "+subnet2.GetNetworkPrefixLen().String(), subnet2))
 				} else {
 					subnet4, err := value.Mask(mask) //1.2.0.0/15 masked with 0.0.255.255, does this result in full host or not?  previously I had it that way, but now I wonder why
 					if err != nil {
@@ -2457,7 +2457,7 @@ func (t ipAddressTester) testBitwiseOr(orig string, prefixAdjustment *ipaddr.Bit
 				t.addFailure(newIPAddrFailure("ored expected: "+expectedResultAddr.String()+" actual: "+result.String(), original))
 			}
 			if !result.GetPrefixLen().Equal(original.GetPrefixLen()) {
-				t.addFailure(newIPAddrFailure("ored expected null prefix: "+expectedResultAddr.String()+" actual: "+result.GetPrefixLen().String(), original))
+				t.addFailure(newIPAddrFailure("ored expected nil prefix: "+expectedResultAddr.String()+" actual: "+result.GetPrefixLen().String(), original))
 			}
 		}
 	}
@@ -3835,7 +3835,7 @@ func (t ipAddressTester) testSub(one, two string, resultStrings []string) {
 	res := addr.Subtract(subAddr)
 	if len(resultStrings) == 0 {
 		if len(res) != 0 {
-			t.addFailure(newIPAddrFailure("non-null subtraction with "+addr.String(), subAddr))
+			t.addFailure(newIPAddrFailure("non-nil subtraction with "+addr.String(), subAddr))
 		}
 	} else {
 		if len(resultStrings) != len(res) {
@@ -3874,7 +3874,7 @@ func (t ipAddressTester) testIntersectLowest(one, two, resultString string, lowe
 	r := addr.Intersect(addr2)
 	if resultString == "" {
 		if r != nil {
-			t.addFailure(newIPAddrFailure("non-null intersection with "+addr.String(), addr2))
+			t.addFailure(newIPAddrFailure("non-nil intersection with "+addr.String(), addr2))
 		}
 	} else {
 		result := t.createAddress(resultString).GetAddress()
@@ -4338,7 +4338,7 @@ func (t ipAddressTester) testRangeExtendImpl(lower1, higher1, lower2, higher2, r
 	}
 	if resultLower == "" {
 		if result != nil {
-			t.addFailure(newIPAddrFailure("mismatch result "+result.String()+" expected null extending '"+range1.String()+"' with '"+range2.String()+"'", addr))
+			t.addFailure(newIPAddrFailure("mismatch result "+result.String()+" expected nil extending '"+range1.String()+"' with '"+range2.String()+"'", addr))
 		}
 	} else {
 		addr = t.createAddress(resultLower).GetAddress()
@@ -4368,7 +4368,7 @@ func (t ipAddressTester) testRangeJoinImpl(lower1, higher1, lower2, higher2, res
 	result := range1.JoinTo(range2)
 	if resultLower == "" {
 		if result != nil {
-			t.addFailure(newIPAddrFailure(fmt.Sprintf("mismatch result %v expected null joining '"+addr.String()+"' with '"+addr2.String()+"'", result), addr))
+			t.addFailure(newIPAddrFailure(fmt.Sprintf("mismatch result %v expected nil joining '"+addr.String()+"' with '"+addr2.String()+"'", result), addr))
 		}
 	} else {
 		addr = t.createAddress(resultLower).GetAddress()
@@ -4399,7 +4399,7 @@ func (t ipAddressTester) testRangeIntersectImpl(lower1, higher1, lower2, higher2
 	result := range1.Intersect(range2)
 	if resultLower == "" {
 		if result != nil {
-			t.addFailure(newIPAddrFailure("mismatch result "+result.String()+" expected null intersecting '"+addr.String()+"' with '"+addr2.String()+"'", addr))
+			t.addFailure(newIPAddrFailure("mismatch result "+result.String()+" expected nil intersecting '"+addr.String()+"' with '"+addr2.String()+"'", addr))
 		}
 	} else {
 		addr := t.createAddress(resultLower).GetAddress()

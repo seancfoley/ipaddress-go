@@ -130,7 +130,14 @@ type AddressDivisionSeries interface {
 	IsSequential() bool
 
 	IsPrefixBlock() bool
+
+	// IsSinglePrefixBlock returns whether the range of values matches a single subnet block for the prefix length.
+	//
+	// What distinguishes this method with ContainsSinglePrefixBlock is that this method returns
+	// false if the series does not have a prefix length assigned to it,
+	// or a prefix length that differs from the prefix length for which ContainsSinglePrefixBlock returns true.
 	IsSinglePrefixBlock() bool
+
 	IsPrefixed() bool
 	GetPrefixLen() PrefixLen
 

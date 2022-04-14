@@ -360,6 +360,14 @@ func (rng *ipAddressSeqRangeInternal) ContainsSinglePrefixBlock(prefixLen BitCou
 	return true
 }
 
+// GetPrefixLenForSingleBlock returns a prefix length for which there is only one prefix in this range,
+// and the range of values in this range matches the block of all values for that prefix.
+//
+// If the range can be described this way, then this method returns the same value as GetMinPrefixLenForBlock.
+//
+// If no such prefix length exists, returns nil.
+//
+// If this item represents a single value, this returns the bit count.
 func (rng *ipAddressSeqRangeInternal) GetPrefixLenForSingleBlock() PrefixLen {
 	lower := rng.lower
 	if lower == nil {
@@ -440,7 +448,7 @@ func (rng *ipAddressSeqRangeInternal) IncludesMax() bool {
 	return upper == nil || upper.IsMax()
 }
 
-// whether this address item represents all possible values attainable by an address item of this type
+// IsFullRange returns whether this address item represents all possible values attainable by an address item of this type
 func (rng *ipAddressSeqRangeInternal) IsFullRange() bool {
 	return rng.IncludesZero() && rng.IncludesMax()
 }

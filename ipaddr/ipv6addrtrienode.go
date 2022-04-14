@@ -113,7 +113,7 @@ func (node *IPv6AddressTrieNode) GetLowerSubNode() *IPv6AddressTrieNode {
 	return toIPv6AddressTrieNode(node.toTrieNode().GetLowerSubNode())
 }
 
-// GetParent gets the node from which this node is a direct child node, or null if this is the root.
+// GetParent gets the node from which this node is a direct child node, or nil if this is the root.
 func (node *IPv6AddressTrieNode) GetParent() *IPv6AddressTrieNode {
 	return toIPv6AddressTrieNode(node.toTrieNode().GetParent())
 }
@@ -618,7 +618,7 @@ func (node *IPv6AddressAssociativeTrieNode) GetLowerSubNode() *IPv6AddressAssoci
 	return toIPv6AAssociativeAddressTrieNode(node.toTrieNode().GetLowerSubNode())
 }
 
-// GetParent gets the node from which this node is a direct child node, or null if this is the root.
+// GetParent gets the node from which this node is a direct child node, or nil if this is the root.
 func (node *IPv6AddressAssociativeTrieNode) GetParent() *IPv6AddressAssociativeTrieNode {
 	return toIPv6AAssociativeAddressTrieNode(node.toTrieNode().GetParent())
 }

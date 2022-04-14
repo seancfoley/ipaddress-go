@@ -767,6 +767,13 @@ func (addr *IPv6Address) GetMinPrefixLenForBlock() BitCount {
 	return addr.init().ipAddressInternal.GetMinPrefixLenForBlock()
 }
 
+// GetPrefixLenForSingleBlock returns a prefix length for which the range of this address subnet matches exactly the block of addresses for that prefix.
+//
+// If the range can be described this way, then this method returns the same value as GetMinPrefixLenForBlock.
+//
+// If no such prefix exists, returns nil.
+//
+// If this segment grouping represents a single value, returns the bit length of this address division series.
 func (addr *IPv6Address) GetPrefixLenForSingleBlock() PrefixLen {
 	return addr.init().ipAddressInternal.GetPrefixLenForSingleBlock()
 }
@@ -898,7 +905,7 @@ func (addr *IPv6Address) TrieIncrement() *IPv6Address {
 	return addr.trieIncrement().ToIPv6()
 }
 
-// TrieDecrement returns the previous key according to the trie ordering
+// TrieDecrement returns the previous address according to address trie ordering
 func (addr *IPv6Address) TrieDecrement() *IPv6Address {
 	return addr.trieDecrement().ToIPv6()
 }

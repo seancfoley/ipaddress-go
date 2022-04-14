@@ -429,6 +429,13 @@ func (addr *MACAddress) GetMinPrefixLenForBlock() BitCount {
 	return addr.init().addressInternal.GetMinPrefixLenForBlock()
 }
 
+// GetPrefixLenForSingleBlock returns a prefix length for which the range of this address subnet matches the block of addresses for that prefix.
+//
+// If the range can be described this way, then this method returns the same value as GetMinPrefixLenForBlock.
+//
+// If no such prefix exists, returns nil.
+//
+// If this segment grouping represents a single value, this returns the bit length of this address.
 func (addr *MACAddress) GetPrefixLenForSingleBlock() PrefixLen {
 	return addr.init().addressInternal.GetPrefixLenForSingleBlock()
 }
@@ -486,7 +493,7 @@ func (addr *MACAddress) TrieIncrement() *MACAddress {
 	return addr.trieIncrement().ToMAC()
 }
 
-// TrieDecrement returns the previous key according to the trie ordering
+// TrieDecrement returns the previous address according to address trie ordering
 func (addr *MACAddress) TrieDecrement() *MACAddress {
 	return addr.trieDecrement().ToMAC()
 }

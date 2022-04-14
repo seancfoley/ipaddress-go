@@ -807,12 +807,12 @@ func (trie *IPv4AddressAssociativeTrie) PutNode(addr *IPv4Address, value NodeVal
 // If the node is not found, the value argument will be nil.
 // If the node is found, the value argument will be the node's value, which can also be nil.
 //
-// If the remapping function returns null, then the matched node will be removed, if any.
-// If it returns a non-null value, then it will either set the existing node to have that value,
+// If the remapping function returns nil, then the matched node will be removed, if any.
+// If it returns a non-nil value, then it will either set the existing node to have that value,
 // or if there was no matched node, it will create a new node with that value.
 //
 // The method will return the node involved, which is either the matched node, or the newly created node,
-// or null if there was no matched node nor newly created node.
+// or nil if there was no matched node nor newly created node.
 //
 // If the remapping function modifies the trie during its computation,
 // and the returned value specifies changes to be made,
@@ -824,17 +824,17 @@ func (trie *IPv4AddressAssociativeTrie) Remap(addr *IPv4Address, remapper func(N
 	return trie.remap(addr.ToAddressBase(), remapper).ToIPv4()
 }
 
-// RemapIfAbsent remaps node values in the trie, but only for nodes that do not exist or are mapped to null.
+// RemapIfAbsent remaps node values in the trie, but only for nodes that do not exist or are mapped to nil.
 //
 // This will look up the node corresponding to the given key.
-// If the node is not found or mapped to null, this will call the remapping function.
+// If the node is not found or mapped to nil, this will call the remapping function.
 //
 // If the remapping function returns a non-nil value, then it will either set the existing node to have that value,
 // or if there was no matched node, it will create a new node with that value.
-// If the remapping function returns null, then it will do the same if insertNull is true, otherwise it will do nothing.
+// If the remapping function returns nil, then it will do the same if insertNil is true, otherwise it will do nothing.
 //
 // The method will return the node involved, which is either the matched node, or the newly created node,
-// or null if there was no matched node nor newly created node.
+// or nil if there was no matched node nor newly created node.
 //
 // If the remapping function modifies the trie during its computation,
 // and the returned value specifies changes to be made,
@@ -854,7 +854,7 @@ func (trie *IPv4AddressAssociativeTrie) RemapIfAbsent(addr *IPv4Address, supplie
 // The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
 //
 // Returns the value for the given key.
-// Returns null if the contains no mapping for that key or if the mapped value is null.
+// Returns nil if the contains no mapping for that key or if the mapped value is nil.
 func (trie *IPv4AddressAssociativeTrie) Get(addr *IPv4Address) NodeValue {
 	return trie.get(addr.ToAddressBase())
 }

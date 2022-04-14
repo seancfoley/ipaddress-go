@@ -633,7 +633,7 @@ func (addrStr *IPAddressString) PrefixContains(other *IPAddressString) bool {
 				return thisAddress.prefixContains(otherAddress)
 			}
 		}
-		// one or both addresses are null, so there is no prefix to speak of
+		// one or both addresses are nil, so there is no prefix to speak of
 	}
 	return false
 }
@@ -710,8 +710,7 @@ func (addrStr *IPAddressString) Equal(other *IPAddressString) bool {
 			if directResult.isSet {
 				return directResult.val
 			}
-			// When a value provider produces no value, equality and comparison are based on the enum ipType,
-			// which can be null.
+			// When a value provider produces no value, equality and comparison are based on the enum ipType
 			var err addrerr.AddressError
 			addrProvider, err := addrStr.getAddressProvider()
 			if err != nil {
