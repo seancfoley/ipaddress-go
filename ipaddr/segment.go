@@ -633,14 +633,24 @@ func (seg *addressSegmentInternal) IsFullRange() bool {
 	return seg.addressDivisionInternal.IsFullRange()
 }
 
+// ContainsPrefixBlock returns whether the segment range includes the block of values for the given prefix length
 func (seg *addressSegmentInternal) ContainsPrefixBlock(prefixLen BitCount) bool {
 	return seg.addressDivisionInternal.ContainsPrefixBlock(prefixLen)
 }
 
+// ContainsSinglePrefixBlock returns whether the segment range matches exactly the block of values for the given prefix length and has just a single prefix for that prefix length.
 func (seg *addressSegmentInternal) ContainsSinglePrefixBlock(prefixLen BitCount) bool {
 	return seg.addressDivisionInternal.ContainsSinglePrefixBlock(prefixLen)
 }
 
+// GetMinPrefixLenForBlock returns the smallest prefix length such that this segment includes the block of all values for that prefix length.
+//
+// If the entire range can be described this way, then this method returns the same value as GetPrefixLenForSingleBlock.
+//
+// There may be a single prefix, or multiple possible prefix values in this item for the returned prefix length.
+// Use GetPrefixLenForSingleBlock to avoid the case of multiple prefix values.
+//
+// If this segment represents a single value, this returns the bit count.
 func (seg *addressSegmentInternal) GetMinPrefixLenForBlock() BitCount {
 	return seg.addressDivisionInternal.GetMinPrefixLenForBlock()
 }

@@ -33,6 +33,7 @@ func (seg *ipAddressSegmentInternal) isPrefixed() bool {
 	return seg.GetSegmentPrefixLen() != nil
 }
 
+// IsPrefixBlock returns whether the division has a prefix length and the division range includes the block of values for that prefix length.
 func (seg *ipAddressSegmentInternal) IsPrefixBlock() bool {
 	return seg.isPrefixBlock()
 }
@@ -368,14 +369,24 @@ func (seg *ipAddressSegmentInternal) IsFullRange() bool {
 	return seg.addressSegmentInternal.IsFullRange()
 }
 
+// ContainsPrefixBlock returns whether the division range includes the block of values for the given prefix length
 func (seg *ipAddressSegmentInternal) ContainsPrefixBlock(prefixLen BitCount) bool {
 	return seg.addressSegmentInternal.ContainsPrefixBlock(prefixLen)
 }
 
+// ContainsSinglePrefixBlock returns whether the segment range matches exactly the block of values for the given prefix length and has just a single prefix for that prefix length.
 func (seg *ipAddressSegmentInternal) ContainsSinglePrefixBlock(prefixLen BitCount) bool {
 	return seg.addressSegmentInternal.ContainsSinglePrefixBlock(prefixLen)
 }
 
+// GetMinPrefixLenForBlock returns the smallest prefix length such that this segment includes the block of all values for that prefix length.
+//
+// If the entire range can be described this way, then this method returns the same value as GetPrefixLenForSingleBlock.
+//
+// There may be a single prefix, or multiple possible prefix values in this item for the returned prefix length.
+// Use GetPrefixLenForSingleBlock to avoid the case of multiple prefix values.
+//
+// If this segment represents a single value, this returns the bit count.
 func (seg *ipAddressSegmentInternal) GetMinPrefixLenForBlock() BitCount {
 	return seg.addressSegmentInternal.GetMinPrefixLenForBlock()
 }
@@ -383,7 +394,7 @@ func (seg *ipAddressSegmentInternal) GetMinPrefixLenForBlock() BitCount {
 // GetPrefixLenForSingleBlock returns a prefix length for which there is only one prefix in this segment,
 // and the range of values in this segment matches the block of all values for that prefix.
 //
-// If the range of segment values can be described this way, then this method returns the same value as GetMinPrefixLengthForBlock.
+// If the range of segment values can be described this way, then this method returns the same value as GetMinPrefixLenForBlock.
 //
 // If no such prefix length exists, returns nil.
 //
@@ -518,6 +529,7 @@ func (seg *IPAddressSegment) Compare(item AddressItem) int {
 	return CountComparator.Compare(seg, item)
 }
 
+// ContainsPrefixBlock returns whether the division range includes the block of values for the given prefix length
 func (seg *IPAddressSegment) ContainsPrefixBlock(divisionPrefixLen BitCount) bool {
 	return seg.containsPrefixBlock(divisionPrefixLen)
 }

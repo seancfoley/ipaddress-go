@@ -313,16 +313,26 @@ func (div *addressDivisionInternal) isSinglePrefixBlock(divisionValue, upperValu
 		divisionHostMask)
 }
 
+// ContainsPrefixBlock returns whether the division range includes the block of values for the given prefix length.
 func (div *addressDivisionInternal) ContainsPrefixBlock(prefixLen BitCount) bool {
 	prefixLen = checkDiv(div.toAddressDivision(), prefixLen)
 	return div.isPrefixBlockVals(div.getDivisionValue(), div.getUpperDivisionValue(), prefixLen)
 }
 
+// ContainsSinglePrefixBlock returns whether the division range matches exactly the block of values for the given prefix length and has just a single prefix for that prefix length.
 func (div *addressDivisionInternal) ContainsSinglePrefixBlock(prefixLen BitCount) bool {
 	prefixLen = checkDiv(div.toAddressDivision(), prefixLen)
 	return div.isSinglePrefixBlock(div.getDivisionValue(), div.getUpperDivisionValue(), prefixLen)
 }
 
+// GetMinPrefixLenForBlock returns the smallest prefix length such that this division includes the block of all values for that prefix length.
+//
+// If the entire range can be described this way, then this method returns the same value as GetPrefixLenForSingleBlock.
+//
+// There may be a single prefix, or multiple possible prefix values in this item for the returned prefix length.
+// Use GetPrefixLenForSingleBlock to avoid the case of multiple prefix values.
+//
+// If this division represents a single value, this returns the bit count.
 func (div *addressDivisionInternal) GetMinPrefixLenForBlock() BitCount {
 	cache := div.getCache()
 	if cache == nil {

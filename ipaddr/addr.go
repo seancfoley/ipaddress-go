@@ -227,22 +227,43 @@ func (addr *addressInternal) IsSinglePrefixBlock() bool {
 	return prefLen != nil && addr.section.IsSinglePrefixBlock()
 }
 
-// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
-// IsPrefixBlock is next.
-
+// IsPrefixBlock returns whether the address has a prefix length and the address range includes the block of values for that prefix length.
+//
+// To create a prefix block from any address, use ToPrefixBlock.
+//
+// This is different from ContainsPrefixBlock in that this method returns
+// false if the series has no prefix length or a prefix length that differs from prefix lengths for which ContainsPrefixBlock returns true.
 func (addr *addressInternal) IsPrefixBlock() bool {
 	prefLen := addr.getPrefixLen()
 	return prefLen != nil && addr.section.ContainsPrefixBlock(prefLen.bitCount())
 }
 
+// ContainsPrefixBlock returns whether the range of this address or subnet contains the block of addresses for the given prefix length.
+//
+// Unlike ContainsSinglePrefixBlock, whether there are multiple prefix values in this item for the given prefix length makes no difference.
+//
+// Use GetMinPrefixLenForBlock() to determine the smallest prefix length for which this method returns true.
 func (addr *addressInternal) ContainsPrefixBlock(prefixLen BitCount) bool {
 	return addr.section == nil || addr.section.ContainsPrefixBlock(prefixLen)
 }
 
+// ContainsSinglePrefixBlock returns whether this address contains a single prefix block for the given prefix length.
+//
+// This means there is only one prefix value for the given prefix length, and it also contains the full prefix block for that prefix, all addresses with that prefix.
+//
+// Use GetPrefixLenForSingleBlock to determine whether there is a prefix length for which this method returns true.
 func (addr *addressInternal) ContainsSinglePrefixBlock(prefixLen BitCount) bool {
 	return addr.section == nil || addr.section.ContainsSinglePrefixBlock(prefixLen)
 }
 
+// GetMinPrefixLenForBlock returns the smallest prefix length such that this includes the block of addresses for that prefix length.
+//
+// If the entire range can be described this way, then this method returns the same value as GetPrefixLenForSingleBlock.
+//
+// There may be a single prefix, or multiple possible prefix values in this item for the returned prefix length.
+// Use GetPrefixLenForSingleBlock to avoid the case of multiple prefix values.
+//
+// If this represents just a single address, returns the bit length of this address.
 func (addr *addressInternal) GetMinPrefixLenForBlock() BitCount {
 	section := addr.section
 	if section == nil {
@@ -253,11 +274,11 @@ func (addr *addressInternal) GetMinPrefixLenForBlock() BitCount {
 
 // GetPrefixLenForSingleBlock returns a prefix length for which the range of this address subnet matches exactly the block of addresses for that prefix.
 //
-// If the range can be described this way, then this method returns the same value as GetMinPrefixLengthForBlock.
+// If the range can be described this way, then this method returns the same value as GetMinPrefixLenForBlock.
 //
 // If no such prefix exists, returns nil.
 //
-// If this segment grouping represents a single value, returns the bit length of this address division series.
+// If this segment grouping represents a single value, returns the bit length of this address.
 //
 // IP address examples:
 // 1.2.3.4 returns 32

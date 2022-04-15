@@ -196,10 +196,20 @@ func (rng *IPv6AddressSeqRange) CompareSize(other IPAddressSeqRangeType) int {
 	return rng.compareSize(other)
 }
 
+// ContainsPrefixBlock returns whether the range contains the block of addresses for the given prefix length.
+//
+// Unlike ContainsSinglePrefixBlock, whether there are multiple prefix values for the given prefix length makes no difference.
+//
+// Use GetMinPrefixLenForBlock to determine whether there is a prefix length for which this method returns true.
 func (rng *IPv6AddressSeqRange) ContainsPrefixBlock(prefixLen BitCount) bool {
 	return rng.init().ipAddressSeqRangeInternal.ContainsPrefixBlock(prefixLen)
 }
 
+// ContainsSinglePrefixBlock returns whether this address range contains a single prefix block for the given prefix length.
+//
+// This means there is only one prefix value for the given prefix length, and it also contains the full prefix block for that prefix, all addresses with that prefix.
+//
+// Use GetPrefixLenForSingleBlock to determine whether there is a prefix length for which this method returns true.
 func (rng *IPv6AddressSeqRange) ContainsSinglePrefixBlock(prefixLen BitCount) bool {
 	return rng.init().ipAddressSeqRangeInternal.ContainsSinglePrefixBlock(prefixLen)
 }
@@ -216,6 +226,12 @@ func (rng *IPv6AddressSeqRange) GetPrefixLenForSingleBlock() PrefixLen {
 	return rng.init().ipAddressSeqRangeInternal.GetPrefixLenForSingleBlock()
 }
 
+// GetMinPrefixLenForBlock returns the smallest prefix length such that this includes the block of addresses for that prefix length.
+//
+// If the entire range can be described this way, then this method returns the same value as GetPrefixLenForSingleBlock.
+//
+// There may be a single prefix, or multiple possible prefix values in this item for the returned prefix length.
+// Use GetPrefixLenForSingleBlock to avoid the case of multiple prefix values.
 func (rng *IPv6AddressSeqRange) GetMinPrefixLenForBlock() BitCount {
 	return rng.init().ipAddressSeqRangeInternal.GetMinPrefixLenForBlock()
 }

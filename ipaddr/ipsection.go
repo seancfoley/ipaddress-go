@@ -1333,14 +1333,29 @@ func (section *ipAddressSectionInternal) GetSequentialBlockCount() *big.Int {
 	return section.addressSectionInternal.GetSequentialBlockCount()
 }
 
+// ContainsPrefixBlock returns whether the values of this item contains the block of values for the given prefix length.
+//
+// Unlike ContainsSinglePrefixBlock, whether there are multiple prefix values in this item for the given prefix length makes no difference.
+//
+// Use GetMinPrefixLenForBlock to determine the smallest prefix length for which this method returns true.
 func (section *ipAddressSectionInternal) ContainsPrefixBlock(prefixLen BitCount) bool {
 	return section.addressSectionInternal.ContainsPrefixBlock(prefixLen)
 }
+
+// ContainsSinglePrefixBlock returns whether the values of this section contains a single prefix block for the given prefix length.
+//
+// This means there is only one prefix of the given length in this item, and this item contains the prefix block for that given prefix.
+//
+// Use GetPrefixLenForSingleBlock to determine whether there is a prefix length for which this method returns true.
 
 func (section *ipAddressSectionInternal) ContainsSinglePrefixBlock(prefixLen BitCount) bool {
 	return section.addressSectionInternal.ContainsSinglePrefixBlock(prefixLen)
 }
 
+// IsPrefixBlock returns whether this address segment series has a prefix length and includes the block associated with its prefix length.
+//
+// This is different from ContainsPrefixBlock in that this method returns
+// false if the series has no prefix length or a prefix length that differs from prefix lengths for which ContainsPrefixBlock returns true.
 func (section *ipAddressSectionInternal) IsPrefixBlock() bool {
 	return section.addressSectionInternal.IsPrefixBlock()
 }
@@ -1357,6 +1372,14 @@ func (section *ipAddressSectionInternal) IsSinglePrefixBlock() bool {
 	return section.addressSectionInternal.IsSinglePrefixBlock()
 }
 
+// GetMinPrefixLenForBlock returns the smallest prefix length such that this section includes the block of all values for that prefix length.
+//
+// If the entire range can be described this way, then this method returns the same value as GetPrefixLenForSingleBlock.
+//
+// There may be a single prefix, or multiple possible prefix values in this item for the returned prefix length.
+// Use GetPrefixLenForSingleBlock to avoid the case of multiple prefix values.
+//
+// If this section represents a single value, this returns the bit count.
 func (section *ipAddressSectionInternal) GetMinPrefixLenForBlock() BitCount {
 	return section.addressSectionInternal.GetMinPrefixLenForBlock()
 }

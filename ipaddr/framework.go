@@ -56,33 +56,38 @@ type AddressItem interface {
 	IsMax() bool
 
 	// ContainsPrefixBlock returns whether the values of this item contains the prefix block for the given prefix length.
-	// If there are multiple possible prefixes in this item for the given prefix length, then this returns
-	// whether this item contains the prefix block for each and every one of those prefixes.
+	// Unlike ContainsSinglePrefixBlock, whether there are multiple prefix values for the given prefix length makes no difference.
 	ContainsPrefixBlock(BitCount) bool
 
 	// ContainsSinglePrefixBlock returns whether the values of this series contains a single prefix block for the given prefix length.
-	// This means there is only one prefix of the given length in this item, and this item contains the prefix block for that given prefix.
+	// This means there is only one prefix of the given length in this item, and this item contains the prefix block for that given prefix, all items with that same prefix.
 	ContainsSinglePrefixBlock(BitCount) bool
 
 	// GetPrefixLenForSingleBlock returns a prefix length for which there is only one prefix of that length in this item,
 	// and the range of this item matches the block of all values for that prefix.
-	// If the range can be dictated this way, then this method returns the same value as GetMinPrefixLenForBlock.
+	//
+	// If the entire range can be described this way, then this method returns the same value as GetMinPrefixLenForBlock.
+	//
 	// If no such prefix length exists, returns nil.
+	//
 	// If this item represents a single value, this returns the bit count.
 	GetPrefixLenForSingleBlock() PrefixLen
 
 	// GetMinPrefixLenForBlock returns the smallest prefix length possible such that this item includes the block of all values for that prefix length.
-	// If there are multiple possible prefixes in this item for the given prefix length,
-	// this item contains the prefix block for each and every one of those prefixes.
+	//
 	// If the entire range can be dictated this way, then this method returns the same value as {@link #GetPrefixLenForSingleBlock()}.
-	// Otherwise, this method will return the minimal possible prefix that can be paired with this address, while GetPrefixLenForSingleBlock will return nil.
-	// In cases where the final bit is constant so there is no such block, this returns the bit count.
+	//
+	// There may be a single prefix, or multiple possible prefix values in this item for the returned prefix length.
+	// Use GetPrefixLenForSingleBlock to avoid the case of multiple prefix values.
+	//
+	// If this item represents a single value, this returns the bit count.
 	GetMinPrefixLenForBlock() BitCount
 
-	// The count of the number of distinct values within the prefix part of the range of values for this item
+	// GetPrefixCountLen returns the count of the number of distinct values within the prefix part of the range of values for this item
 	GetPrefixCountLen(BitCount) *big.Int
 
-	// Compare returns a negative integer, zero, or a positive integer if this instance is less than, equal, or greater than the give item.  Any address item is comparable to any other.
+	// Compare returns a negative integer, zero, or a positive integer if this instance is less than, equal, or greater than the give item.
+	// Any address item is comparable to any other.
 	Compare(item AddressItem) int
 
 	fmt.Stringer
@@ -129,13 +134,16 @@ type AddressDivisionSeries interface {
 
 	IsSequential() bool
 
+	// IsPrefixBlock returns whether this address division series has a prefix length and includes the block associated with its prefix length.
+	//
+	// This is different from ContainsPrefixBlock in that this method returns
+	// false if the series has no prefix length or a prefix length that differs from prefix lengths for which ContainsPrefixBlock returns true.
 	IsPrefixBlock() bool
 
 	// IsSinglePrefixBlock returns whether the range of values matches a single subnet block for the prefix length.
 	//
-	// What distinguishes this method with ContainsSinglePrefixBlock is that this method returns
-	// false if the series does not have a prefix length assigned to it,
-	// or a prefix length that differs from the prefix length for which ContainsSinglePrefixBlock returns true.
+	// This is different from ContainsSinglePrefixBlock in that this method returns
+	// false if this series has no prefix length or a prefix length that differs from the prefix lengths for which ContainsSinglePrefixBlock returns true.
 	IsSinglePrefixBlock() bool
 
 	IsPrefixed() bool

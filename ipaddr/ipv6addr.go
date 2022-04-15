@@ -755,14 +755,32 @@ func (addr *IPv6Address) ToSinglePrefixBlockOrAddress() *IPv6Address {
 	return addr.init().toSinglePrefixBlockOrAddress().ToIPv6()
 }
 
+// ContainsPrefixBlock returns whether the range of this address or subnet contains the block of addresses for the given prefix length.
+//
+// Unlike ContainsSinglePrefixBlock, whether there are multiple prefix values in this item for the given prefix length makes no difference.
+//
+// Use GetMinPrefixLenForBlock to determine the smallest prefix length for which this method returns true.
 func (addr *IPv6Address) ContainsPrefixBlock(prefixLen BitCount) bool {
 	return addr.init().ipAddressInternal.ContainsPrefixBlock(prefixLen)
 }
 
+// ContainsSinglePrefixBlock returns whether this address contains a single prefix block for the given prefix length.
+//
+// This means there is only one prefix value for the given prefix length, and it also contains the full prefix block for that prefix, all addresses with that prefix.
+//
+// Use GetPrefixLenForSingleBlock to determine whether there is a prefix length for which this method returns true.
 func (addr *IPv6Address) ContainsSinglePrefixBlock(prefixLen BitCount) bool {
 	return addr.init().ipAddressInternal.ContainsSinglePrefixBlock(prefixLen)
 }
 
+// GetMinPrefixLenForBlock returns the smallest prefix length such that this includes the block of addresses for that prefix length.
+//
+// If the entire range can be described this way, then this method returns the same value as GetPrefixLenForSingleBlock.
+//
+// There may be a single prefix, or multiple possible prefix values in this item for the returned prefix length.
+// Use GetPrefixLenForSingleBlock to avoid the case of multiple prefix values.
+//
+// If this represents just a single address, returns the bit length of this address.
 func (addr *IPv6Address) GetMinPrefixLenForBlock() BitCount {
 	return addr.init().ipAddressInternal.GetMinPrefixLenForBlock()
 }
