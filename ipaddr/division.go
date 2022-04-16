@@ -926,6 +926,8 @@ func (div *AddressDivision) IsMultiple() bool {
 // If not representing multiple values, the count is 1.
 //
 // For instance, a division with the value range of 3-7 has count 5.
+//
+// Use IsMultiple if you simply want to know if the count is greater than 1.
 func (div *AddressDivision) GetCount() *big.Int {
 	if div == nil {
 		return bigZero()

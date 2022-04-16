@@ -34,6 +34,12 @@ type ExtendedIPSegmentSeries interface {
 
 	Equal(ExtendedIPSegmentSeries) bool
 	Contains(ExtendedIPSegmentSeries) bool
+
+	// CompareSize compares the counts of two address series, the number of individual series represented in each.
+	//
+	// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one series represents more individual address series than another.
+	//
+	// CompareSize returns a positive integer if this address series has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
 	CompareSize(ExtendedIPSegmentSeries) int
 
 	// GetSection returns the full address section
@@ -294,6 +300,11 @@ func (addr WrappedIPAddress) Contains(other ExtendedIPSegmentSeries) bool {
 	return ok && addr.IPAddress.Contains(a)
 }
 
+// CompareSize compares the counts of two address series, the number of individual series represented in each.
+//
+// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one series represents more individual address series than another.
+//
+// CompareSize returns a positive integer if this address series has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
 func (addr WrappedIPAddress) CompareSize(other ExtendedIPSegmentSeries) int {
 	if a, ok := other.Unwrap().(AddressType); ok {
 		return addr.IPAddress.CompareSize(a)
@@ -497,6 +508,11 @@ func (section WrappedIPAddressSection) Equal(other ExtendedIPSegmentSeries) bool
 	return ok && section.IPAddressSection.Equal(s)
 }
 
+// CompareSize compares the counts of two address series, the number of individual series represented in each.
+//
+// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one series represents more individual address series than another.
+//
+// CompareSize returns a positive integer if this address series has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
 func (section WrappedIPAddressSection) CompareSize(other ExtendedIPSegmentSeries) int {
 	if s, ok := other.Unwrap().(AddressSectionType); ok {
 		return section.IPAddressSection.CompareSize(s)

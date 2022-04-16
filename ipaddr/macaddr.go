@@ -179,6 +179,11 @@ func (addr *MACAddress) init() *MACAddress {
 	return addr
 }
 
+// GetCount returns the count of addresses that this address or subnet represents.
+//
+// If just a single address, not a subnet of multiple addresses, returns 1.
+//
+// Use IsMultiple if you simply want to know if the count is greater than 1.
 func (addr *MACAddress) GetCount() *big.Int {
 	if addr == nil {
 		return bigZero()
@@ -486,7 +491,11 @@ func (addr *MACAddress) Equal(other AddressType) bool {
 	return addr.init().equals(other)
 }
 
-// CompareSize returns whether this subnet has more elements than the other, returning -1 if this subnet has less, 1 if more, and 0 if both have the same count of individual addresses
+// CompareSize compares the counts of two subnets or addresses, the number of individual addresses within.
+//
+// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one subnet represents more individual addresses than another.
+//
+// CompareSize returns a positive integer if this address or subnet has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
 func (addr *MACAddress) CompareSize(other AddressType) int { // this is here to take advantage of the CompareSize in IPAddressSection
 	if addr == nil {
 		if other != nil && other.ToAddressBase() != nil {

@@ -328,6 +328,11 @@ func (section *IPv6AddressSection) Compare(item AddressItem) int {
 	return CountComparator.Compare(section, item)
 }
 
+// CompareSize compares the counts of two address sections, the number of individual sections represented.
+//
+// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one section represents more individual address sections than another.
+//
+// CompareSize returns a positive integer if this address section has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
 func (section *IPv6AddressSection) CompareSize(other StandardDivGroupingType) int {
 	if section == nil {
 		if other != nil && other.ToDivGrouping() != nil {
@@ -354,6 +359,8 @@ func (section *IPv6AddressSection) GetBytesPerSegment() int {
 // GetCount returns the count of possible distinct values for this item.
 // If not representing multiple values, the count is 1,
 // unless this is a division grouping with no divisions, or an address section with no segments, in which case it is 0.
+//
+// Use IsMultiple if you simply want to know if the count is greater than 1.
 func (section *IPv6AddressSection) GetCount() *big.Int {
 	if section == nil {
 		return bigZero()
@@ -1595,6 +1602,11 @@ func (grouping *IPv6v4MixedAddressGrouping) Compare(item AddressItem) int {
 	return CountComparator.Compare(grouping, item)
 }
 
+// CompareSize compares the counts of two address division groupings, the number of individual groupings represented.
+//
+// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one grouping represents more individual address groupings than another.
+//
+// CompareSize returns a positive integer if this address division grouping has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
 func (grouping *IPv6v4MixedAddressGrouping) CompareSize(other StandardDivGroupingType) int {
 	if grouping == nil {
 		if other != nil && other.ToDivGrouping() != nil {
@@ -1609,6 +1621,8 @@ func (grouping *IPv6v4MixedAddressGrouping) CompareSize(other StandardDivGroupin
 // GetCount returns the count of possible distinct values for this item.
 // If not representing multiple values, the count is 1,
 // unless this is a division grouping with no divisions, or an address section with no segments, in which case it is 0.
+//
+// Use IsMultiple if you simply want to know if the count is greater than 1.
 func (grouping *IPv6v4MixedAddressGrouping) GetCount() *big.Int {
 	if grouping == nil {
 		return bigZero()

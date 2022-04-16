@@ -390,6 +390,8 @@ func (addr *IPv6Address) init() *IPv6Address {
 // If just a single address, not a subnet of multiple addresses, returns 1.
 //
 // For instance, the IP address subnet 2001:db8::/64 has the count of 2 to the power of 64.
+//
+// Use IsMultiple if you simply want to know if the count is greater than 1.
 func (addr *IPv6Address) GetCount() *big.Int {
 	if addr == nil {
 		return bigZero()
@@ -901,7 +903,11 @@ func (addr *IPv6Address) Equal(other AddressType) bool {
 		addr.isSameZone(other.ToAddressBase())
 }
 
-// CompareSize returns whether this subnet has more elements than the other, returning -1 if this subnet has less, 1 if more, and 0 if both have the same count of individual addresses
+// CompareSize compares the counts of two subnets or addresses, the number of individual addresses within.
+//
+// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one subnet represents more individual addresses than another.
+//
+// CompareSize returns a positive integer if this address or subnet has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
 func (addr *IPv6Address) CompareSize(other AddressType) int {
 	if addr == nil {
 		if other != nil && other.ToAddressBase() != nil {

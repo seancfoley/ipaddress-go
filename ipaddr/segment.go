@@ -714,6 +714,8 @@ func (seg *AddressSegment) IsMultiple() bool {
 // If not representing multiple values, the count is 1.
 //
 // For instance, a segment with the value range of 3-7 has count 5.
+//
+// Use IsMultiple if you simply want to know if the count is greater than 1.
 func (seg *AddressSegment) GetCount() *big.Int {
 	if seg == nil {
 		return bigZero()

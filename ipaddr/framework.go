@@ -127,8 +127,12 @@ type AddressDivisionSeries interface {
 
 	GetDivisionCount() int
 
+	// GetPrefixCountLen returns the count of prefixes in this series for the given prefix length.
 	GetPrefixCount() *big.Int
+
+	// GetBlockCount returns the count of distinct values in the given number of initial (more significant) segments.
 	GetBlockCount(divisionCount int) *big.Int
+
 	GetSequentialBlockIndex() int
 	GetSequentialBlockCount() *big.Int
 
@@ -146,7 +150,14 @@ type AddressDivisionSeries interface {
 	// false if this series has no prefix length or a prefix length that differs from the prefix lengths for which ContainsSinglePrefixBlock returns true.
 	IsSinglePrefixBlock() bool
 
+	// IsPrefixed returns whether this address has an associated prefix length
 	IsPrefixed() bool
+
+	// GetPrefixLen returns the prefix length, or nil if there is no prefix length.
+	//
+	// A prefix length indicates the number of bits in the initial part (most significant bits) of the series that comprise the prefix.
+	//
+	// A prefix is a part of the series that is not specific to that series but common amongst a group, such as a CIDR prefix block subnet.
 	GetPrefixLen() PrefixLen
 
 	GetGenericDivision(index int) DivisionType // useful for comparisons
@@ -213,10 +224,10 @@ var _, _ IPAddressSegmentSeries = &IPAddress{}, &IPAddressSection{}
 type IPv6AddressSegmentSeries interface {
 	IPAddressSegmentSeries
 
-	// GetTrailingSection returns an ending subsection of the full address section
+	// GetTrailingSection returns an ending subsection of the full address or address section
 	GetTrailingSection(index int) *IPv6AddressSection
 
-	// GetSubSection returns a subsection of the full address section
+	// GetSubSection returns a subsection of the full address or address section
 	GetSubSection(index, endIndex int) *IPv6AddressSection
 
 	GetNetworkSection() *IPv6AddressSection

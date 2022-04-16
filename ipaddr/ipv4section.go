@@ -215,6 +215,11 @@ func (section *IPv4AddressSection) Compare(item AddressItem) int {
 	return CountComparator.Compare(section, item)
 }
 
+// CompareSize compares the counts of two address sections, the number of individual sections represented.
+//
+// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one section represents more individual address sections than another.
+//
+// CompareSize returns a positive integer if this address section has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
 func (section *IPv4AddressSection) CompareSize(other StandardDivGroupingType) int {
 	if section == nil {
 		if other != nil && other.ToDivGrouping() != nil {
@@ -241,6 +246,8 @@ func (section *IPv4AddressSection) GetIPVersion() IPVersion {
 // GetCount returns the count of possible distinct values for this item.
 // If not representing multiple values, the count is 1,
 // unless this is a division grouping with no divisions, or an address section with no segments, in which case it is 0.
+//
+// Use IsMultiple if you simply want to know if the count is greater than 1.
 func (section *IPv4AddressSection) GetCount() *big.Int {
 	if section == nil {
 		return bigZero()

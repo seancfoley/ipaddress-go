@@ -305,6 +305,9 @@ func (addr *addressInternal) compareSize(other AddressType) int {
 	return section.CompareSize(other.ToAddressBase().GetSection())
 }
 
+// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
+// trieCompare is next.
+
 func (addr *addressInternal) trieCompare(other *Address) int {
 	if addr.toAddress() == other {
 		return 0
@@ -1077,6 +1080,8 @@ func (addr *Address) init() *Address {
 // If just a single address, not a subnet of multiple addresses, returns 1.
 //
 // For instance, the IP address subnet 2001:db8::/64 has the count of 2 to the power of 64.
+//
+// Use IsMultiple if you simply want to know if the count is greater than 1.
 func (addr *Address) GetCount() *big.Int {
 	if addr == nil {
 		return bigZero()
@@ -1113,6 +1118,11 @@ func (addr *Address) Compare(item AddressItem) int {
 	return CountComparator.Compare(addr, item)
 }
 
+// CompareSize compares the counts of two subnets, the number of individual addresses within.
+//
+// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one subnet represents more individual addresses than another.
+//
+// CompareSize returns a positive integer if this address division grouping has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
 func (addr *Address) Equal(other AddressType) bool {
 	if addr == nil {
 		return other == nil || other.ToAddressBase() == nil
@@ -1122,6 +1132,11 @@ func (addr *Address) Equal(other AddressType) bool {
 	return addr.init().equals(other)
 }
 
+// CompareSize compares the counts of two subnets or addresses, the number of individual addresses within.
+//
+// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one subnet represents more individual addresses than another.
+//
+// CompareSize returns a positive integer if this address or subnet has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
 func (addr *Address) CompareSize(other AddressType) int {
 	if addr == nil {
 		if other != nil && other.ToAddressBase() != nil {
@@ -1133,7 +1148,13 @@ func (addr *Address) CompareSize(other AddressType) int {
 	return addr.init().compareSize(other)
 }
 
-// TrieCompare compares two addresses according to the trie order.  It returns a number less than zero, zero, or a number greater than zero if the first address argument is less than, equal to, or greater than the second.
+// TrieCompare compares two addresses according to address trie ordering.
+// It returns a number less than zero, zero, or a number greater than zero if the first address argument is less than, equal to, or greater than the second.
+//
+// The comparison is intended for individual addresses and CIDR prefix blocks.
+// If an address is neither an individual address nor a prefix block, it is treated like one.
+// Ranges that occur inside the prefix length are ignored, only the lower value is used.
+// Ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
 func (addr *Address) TrieCompare(other *Address) (int, addrerr.IncompatibleAddressError) {
 	if thisAddr := addr.ToIPv4(); thisAddr != nil {
 		if oth := other.ToIPv4(); oth != nil {

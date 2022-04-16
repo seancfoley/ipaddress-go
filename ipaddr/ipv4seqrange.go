@@ -42,7 +42,9 @@ func (rng *IPv4AddressSeqRange) init() *IPv4AddressSeqRange {
 	return rng
 }
 
-// GetCount returns the count of addresses that this sequential range represents.
+// GetCount returns the count of addresses that this sequential range spans.
+//
+// Use IsMultiple if you simply want to know if the count is greater than 1.
 func (rng *IPv4AddressSeqRange) GetCount() *big.Int {
 	if rng == nil {
 		return bigZero()
@@ -183,6 +185,11 @@ func (rng *IPv4AddressSeqRange) Compare(item AddressItem) int {
 	return CountComparator.Compare(rng, item)
 }
 
+// CompareSize compares the counts of two address ranges, the number of individual addresses within.
+//
+// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one range spans more individual addresses than another.
+//
+// CompareSize returns a positive integer if this address division grouping has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
 func (rng *IPv4AddressSeqRange) CompareSize(other IPAddressSeqRangeType) int {
 	if rng == nil {
 		if other != nil && other.ToIP() != nil {
