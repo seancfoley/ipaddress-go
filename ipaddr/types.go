@@ -104,6 +104,7 @@ func (p *PrefixBitCount) Compare(other PrefixLen) int {
 	return p.bitCount() - other.bitCount()
 }
 
+// String returns the bit count as a base-10 positive integer string, or "<nil>" if the receiver is a nil pointer
 func (p *PrefixBitCount) String() string {
 	if p == nil {
 		return nilString()
@@ -221,6 +222,7 @@ func (p *PortNum) Compare(other Port) int {
 	return p.portNum() - other.portNum()
 }
 
+// String returns the bit count as a base-10 positive integer string, or "<nil>" if the receiver is a nil pointer
 func (p *PortNum) String() string {
 	if p == nil {
 		return nilString()

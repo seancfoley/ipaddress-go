@@ -63,6 +63,7 @@ func (zone Zone) IsEmpty() bool {
 	return zone == ""
 }
 
+// String implements the fmt.Stringer interface, returning the zone characters as a string
 func (zone Zone) String() string {
 	return string(zone)
 }
@@ -554,7 +555,9 @@ func (addr *IPv6Address) GetSegments() []*IPv6AddressSegment {
 	return addr.GetSection().GetSegments()
 }
 
-// GetSegment returns the segment at the given index
+// GetSegment returns the segment at the given index.
+// The first segment is at index 0.
+// GetSegment will panic given a negative index or index larger than the segment count.
 func (addr *IPv6Address) GetSegment(index int) *IPv6AddressSegment {
 	return addr.init().getSegment(index).ToIPv6()
 }
@@ -919,17 +922,34 @@ func (addr *IPv6Address) CompareSize(other AddressType) int {
 	return addr.init().compareSize(other)
 }
 
-// TrieCompare compares two addresses according to the trie order.  It returns a number less than zero, zero, or a number greater than zero if the first address argument is less than, equal to, or greater than the second.
+// TrieCompare compares two addresses according to address trie ordering.
+// It returns a number less than zero, zero, or a number greater than zero if the first address argument is less than, equal to, or greater than the second.
+//
+// The comparison is intended for individual addresses and CIDR prefix blocks.
+// If an address is neither an individual address nor a prefix block, it is treated like one:
+//
+//	- ranges that occur inside the prefix length are ignored, only the lower value is used.
+//	- ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
 func (addr *IPv6Address) TrieCompare(other *IPv6Address) int {
 	return addr.init().trieCompare(other.ToAddressBase())
 }
 
-// TrieIncrement returns the next address according to address trie ordering
+// TrieIncrement returns the next address or block according to address trie ordering
+//
+// If an address is neither an individual address nor a prefix block, it is treated like one:
+//
+//	- ranges that occur inside the prefix length are ignored, only the lower value is used.
+//	- ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
 func (addr *IPv6Address) TrieIncrement() *IPv6Address {
 	return addr.trieIncrement().ToIPv6()
 }
 
-// TrieDecrement returns the previous address according to address trie ordering
+// TrieDecrement returns the previous address or block according to address trie ordering
+//
+// If an address is neither an individual address nor a prefix block, it is treated like one:
+//
+//	- ranges that occur inside the prefix length are ignored, only the lower value is used.
+//	- ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
 func (addr *IPv6Address) TrieDecrement() *IPv6Address {
 	return addr.trieDecrement().ToIPv6()
 }
@@ -1403,6 +1423,7 @@ func (addr IPv6Address) Format(state fmt.State, verb rune) {
 	addr.init().format(state, verb)
 }
 
+// String implements the fmt.Stringer interface, returning the canonical string provided by ToCanonicalString, or "<nil>" if the receiver is a nil pointer
 func (addr *IPv6Address) String() string {
 	if addr == nil {
 		return nilString()

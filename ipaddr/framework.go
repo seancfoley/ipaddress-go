@@ -136,6 +136,9 @@ type AddressDivisionSeries interface {
 	GetSequentialBlockIndex() int
 	GetSequentialBlockCount() *big.Int
 
+	// IsSequential returns  whether the series represents a range of values that are sequential.
+	//
+	// Generally, this means that any division covering a range of values must be followed by divisions that are full range, covering all values.
 	IsSequential() bool
 
 	// IsPrefixBlock returns whether this address division series has a prefix length and includes the block associated with its prefix length.
@@ -160,6 +163,9 @@ type AddressDivisionSeries interface {
 	// A prefix is a part of the series that is not specific to that series but common amongst a group, such as a CIDR prefix block subnet.
 	GetPrefixLen() PrefixLen
 
+	// GetGenericDivision returns the division at the given index as a DivisionType.
+	// The first division is at index 0.
+	// GetGenericDivision will panic given a negative index or index larger than the division count.
 	GetGenericDivision(index int) DivisionType // useful for comparisons
 }
 
@@ -342,6 +348,14 @@ type IPAddressRange interface { //IPAddress and above, IPAddressSeqRange and abo
 
 	ipAddressRange
 
+	// IsSequential returns whether the address item represents a range of addresses that are sequential.
+	//
+	// IP Address sequential ranges are sequential by definition.
+	//
+	// Generally, for a subnet this means that any segment covering a range of values must be followed by segments that are full range, covering all values.
+	//
+	// Individual addresses are sequential and CIDR prefix blocks are sequential.
+	// The subnet 1.2.3-4.5 is not sequential, since the two addresses it represents, 1.2.3.5 and 1.2.4.5, are not (1.2.3.6 is in-between the two but not in the subnet).
 	IsSequential() bool
 }
 

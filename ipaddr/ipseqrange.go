@@ -174,6 +174,9 @@ func (rng *ipAddressSeqRangeInternal) overlaps(other *IPAddressSeqRange) bool {
 		compareLowIPAddressValues(other.GetUpper(), rng.lower) >= 0
 }
 
+// IsSequential returns whether the address or subnet represents a range of values that are sequential.
+//
+// IP address sequential ranges are sequential by definition, so this returns true.
 func (rng *ipAddressSeqRangeInternal) IsSequential() bool {
 	return true
 }
@@ -740,6 +743,10 @@ func (rng *IPAddressSeqRange) IsMultiple() bool {
 	return rng != nil && rng.isMultiple()
 }
 
+// String implements the fmt.Stringer interface,
+// returning the lower address canonical string, followed by the default separator " -> ",
+// followed by the upper address canonical string.
+// It returns "<nil>" if the receiver is a nil pointer.
 func (rng *IPAddressSeqRange) String() string {
 	if rng == nil {
 		return nilString()

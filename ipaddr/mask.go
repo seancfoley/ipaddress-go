@@ -51,6 +51,7 @@ func (masker maskerBase) GetMaskedUpper(upperValue, maskValue uint64) uint64 {
 	return upperValue & maskValue
 }
 
+// IsSequential returns whether masking all values in the range results in a sequential set of values
 func (masker maskerBase) IsSequential() bool {
 	return masker.isSequentialVal
 }
@@ -245,6 +246,7 @@ func (masker bitwiseOrerBase) GetOredUpper(upperValue, maskValue uint64) uint64 
 	return upperValue | maskValue
 }
 
+// IsSequential returns whether masking all values in the range results in a sequential set of values
 func (masker bitwiseOrerBase) IsSequential() bool {
 	return masker.isSequentialVal
 }

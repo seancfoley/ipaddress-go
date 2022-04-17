@@ -305,9 +305,6 @@ func (addr *addressInternal) compareSize(other AddressType) int {
 	return section.CompareSize(other.ToAddressBase().GetSection())
 }
 
-// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
-// trieCompare is next.
-
 func (addr *addressInternal) trieCompare(other *Address) int {
 	if addr.toAddress() == other {
 		return 0
@@ -410,7 +407,7 @@ func (addr *addressInternal) trieDecrement() *Address {
 	return res.(*addressTrieKey).Address
 }
 
-func (addr *addressInternal) toString() string { // using non-pointer receiver makes it work well with fmt
+func (addr *addressInternal) toString() string {
 	section := addr.section
 	if section == nil {
 		return nilSection() // note no zone possible since a zero-address like Address{} or IPAddress{} cannot have a zone
@@ -420,6 +417,14 @@ func (addr *addressInternal) toString() string { // using non-pointer receiver m
 	return addr.toCanonicalString()
 }
 
+// IsSequential returns whether the address or subnet represents a range of addresses that are sequential.
+//
+// Generally, for a subnet this means that any segment covering a range of values must be followed by segments that are full range, covering all values.
+//
+// Individual addresses are sequential and CIDR prefix blocks are sequential.
+// The subnet 1.2.3-4.5 is not sequential, since the two addresses it represents, 1.2.3.5 and 1.2.4.5, are not (1.2.3.6 is in-between the two but not in the subnet).
+//
+// With any IP address subnet, you can use {@link IPAddress#sequentialBlockIterator()} to convert any subnet to a collection of sequential subnets.
 func (addr *addressInternal) IsSequential() bool {
 	section := addr.section
 	if section == nil {
@@ -431,6 +436,9 @@ func (addr *addressInternal) IsSequential() bool {
 func (addr *addressInternal) getSegment(index int) *AddressSegment {
 	return addr.section.GetSegment(index)
 }
+
+// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
+// GetBitsPerSegment() is next.
 
 func (addr *addressInternal) GetBitsPerSegment() BitCount {
 	section := addr.section
@@ -1152,9 +1160,10 @@ func (addr *Address) CompareSize(other AddressType) int {
 // It returns a number less than zero, zero, or a number greater than zero if the first address argument is less than, equal to, or greater than the second.
 //
 // The comparison is intended for individual addresses and CIDR prefix blocks.
-// If an address is neither an individual address nor a prefix block, it is treated like one.
-// Ranges that occur inside the prefix length are ignored, only the lower value is used.
-// Ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
+// If an address is neither an individual address nor a prefix block, it is treated like one:
+//
+//	- ranges that occur inside the prefix length are ignored, only the lower value is used.
+//	- ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
 func (addr *Address) TrieCompare(other *Address) (int, addrerr.IncompatibleAddressError) {
 	if thisAddr := addr.ToIPv4(); thisAddr != nil {
 		if oth := other.ToIPv4(); oth != nil {
@@ -1172,12 +1181,22 @@ func (addr *Address) TrieCompare(other *Address) (int, addrerr.IncompatibleAddre
 	return 0, &incompatibleAddressError{addressError{key: "ipaddress.error.mismatched.bit.size"}}
 }
 
-// TrieIncrement returns the next address according to address trie ordering
+// TrieIncrement returns the next address or block according to address trie ordering
+//
+// If an address is neither an individual address nor a prefix block, it is treated like one:
+//
+//	- ranges that occur inside the prefix length are ignored, only the lower value is used.
+//	- ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
 func (addr *Address) TrieIncrement() *Address {
 	return addr.trieIncrement()
 }
 
-// TrieDecrement returns the previous address according to address trie ordering
+// TrieDecrement returns the previous or block address according to address trie ordering
+//
+// If an address is neither an individual address nor a prefix block, it is treated like one:
+//
+//	- ranges that occur inside the prefix length are ignored, only the lower value is used.
+//	- ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
 func (addr *Address) TrieDecrement() *Address {
 	return addr.trieDecrement()
 }
@@ -1216,6 +1235,7 @@ func (addr *Address) GetSegments() []*AddressSegment {
 }
 
 // GetSegment returns the segment at the given index.
+// The first segment is at index 0.
 // GetSegment will panic given a negative index or index larger than the segment count.
 func (addr *Address) GetSegment(index int) *AddressSegment {
 	return addr.getSegment(index)
@@ -1227,13 +1247,15 @@ func (addr *Address) GetSegmentCount() int {
 	return addr.getDivisionCount()
 }
 
-// GetGenericDivision returns the segment at the given index as an DivisionType.
+// GetGenericDivision returns the segment at the given index as a DivisionType.
+// The first segment is at index 0.
 // GetGenericDivision will panic given a negative index or index larger than the division count.
 func (addr *Address) GetGenericDivision(index int) DivisionType {
 	return addr.getDivision(index)
 }
 
 // GetGenericSegment returns the segment at the given index as an AddressSegmentType.
+// The first segment is at index 0.
 // GetGenericSegment will panic given a negative index or index larger than the segment count.
 func (addr *Address) GetGenericSegment(index int) AddressSegmentType {
 	return addr.getSegment(index)
@@ -1471,6 +1493,7 @@ func (addr Address) Format(state fmt.State, verb rune) {
 	addr.init().format(state, verb)
 }
 
+// String implements the fmt.Stringer interface, returning the canonical string provided by ToCanonicalString, or "<nil>" if the receiver is a nil pointer
 func (addr *Address) String() string {
 	if addr == nil {
 		return nilString()

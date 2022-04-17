@@ -332,6 +332,9 @@ func (section *IPv4AddressSection) GetIPv4BlockCount(segmentCount int) uint64 {
 	return longCount(section.ToSectionBase(), segmentCount)
 }
 
+// GetSegment returns the segment at the given index.
+// The first segment is at index 0.
+// GetSegment will panic given a negative index or index larger than the segment count.
 func (section *IPv4AddressSection) GetSegment(index int) *IPv4AddressSegment {
 	return section.getDivision(index).ToIPv4()
 }
@@ -1100,6 +1103,7 @@ func (section *IPv4AddressSection) toNormalizedString(stringOptions addrstr.IPSt
 	return toNormalizedIPString(stringOptions, section)
 }
 
+// String implements the fmt.Stringer interface, returning the normalized string provided by ToNormalizedString, or "<nil>" if the receiver is a nil pointer
 func (section *IPv4AddressSection) String() string {
 	if section == nil {
 		return nilString()

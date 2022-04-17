@@ -391,6 +391,8 @@ func (seg *MACAddressSegment) GetWildcardString() string {
 	return seg.init().getWildcardString()
 }
 
+// String produces a string that is useful when a segment is provided with no context.  It uses the hexadecimal radix with the string prefix for hex (0x).
+// GetWildcardString and GetString are more appropriate in context with other segments or divisions.  They do not use a string prefix and use '*' for full-range segments.
 func (seg *MACAddressSegment) String() string {
 	if seg == nil {
 		return nilString()

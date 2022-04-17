@@ -221,6 +221,9 @@ func (host *HostName) Validate() addrerr.HostNameError {
 	return data.validateError
 }
 
+// String implements the fmt.Stringer interface,
+// returning the original string used to create this HostName (altered by strings.TrimSpace if a host name and not an address),
+// or "<nil>" if the receiver is a nil pointer
 func (host *HostName) String() string {
 	if host == nil {
 		return nilString()

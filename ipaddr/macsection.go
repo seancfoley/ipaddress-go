@@ -312,6 +312,9 @@ func (section *MACAddressSection) AssignMinPrefixForBlock() *MACAddressSection {
 	return section.assignMinPrefixForBlock().ToMAC()
 }
 
+// GetSegment returns the segment at the given index.
+// The first segment is at index 0.
+// GetSegment will panic given a negative index or index larger than the segment count.
 func (section *MACAddressSection) GetSegment(index int) *MACAddressSegment {
 	return section.getDivision(index).ToMAC()
 }
@@ -703,6 +706,7 @@ func (section *MACAddressSection) ToColonDelimitedString() string {
 	return section.ToNormalizedString()
 }
 
+// String implements the fmt.Stringer interface, returning the normalized string provided by ToNormalizedString, or "<nil>" if the receiver is a nil pointer
 func (section *MACAddressSection) String() string {
 	if section == nil {
 		return nilString()

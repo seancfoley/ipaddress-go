@@ -288,12 +288,15 @@ func (addrStr *IPAddressString) IsLoopback() bool {
 	return val != nil && val.IsLoopback()
 }
 
-// Returns whether this string represents an IP address whose value is zero.
+// IsZero returns whether this string represents an IP address whose value is zero.
 func (addrStr *IPAddressString) IsZero() bool {
 	value := addrStr.GetAddress()
 	return value != nil && value.IsZero()
 }
 
+// String implements the fmt.Stringer interface,
+// returning the original string used to create this IPAddressString (altered by strings.TrimSpace),
+// or "<nil>" if the receiver is a nil pointer
 func (addrStr *IPAddressString) String() string {
 	if addrStr == nil {
 		return nilString()
@@ -426,22 +429,23 @@ func (addrStr *IPAddressString) ToHostAddress() (*IPAddress, addrerr.AddressErro
 	return provider.getProviderHostAddress()
 }
 
-// IsSequential returns whether the addresses returned by this IPAddressString are sequential,
-// meaning that if any address has a numerical value that lies in between the numerical values of two addresses represented by this IPAddressString,
-// then that address is also represented by this IPAddressString.  In other words, the represented range of address values is sequential.
-//
-// When the IPAddressString is sequential, it can be represented exactly by the IPAddressSeqRange returned from {@link #getSequentialRange()}.
-// In some cases, no IPAddress instance can be obtained from {@link #getAddress()} or {@link #toAddress()}, in the cases where {@link #toAddress()} throws IncompatibleAddressException,
-// but if the IPAddressString is sequential, you can obtain a IPAddressSeqRange to represent the IPAddressString instead.
+//// IsSequential returns whether the addresses returned by this IPAddressString are sequential,
+//// meaning that if any address has a numerical value that lies in between the numerical values of two addresses represented by this IPAddressString,
+//// then that address is also represented by this IPAddressString.  In other words, the range of addresses is sequential.
+////
+//// When the IPAddressString is sequential, it can be represented exactly by the IPAddressSeqRange returned from GetSequentialRange.
+//// In some cases, no IPAddress instance can be obtained from GetAddress or ToAddress,
+//// but if the IPAddressString is sequential, you can obtain a IPAddressSeqRange to represent the IPAddressString instead.
 //func (addrStr *IPAddressString) IsSequential() bool {
 //	addrStr = addrStr.init()
 //	return addrStr.IsValid() && addrStr.addressProvider.isSequential()
-//} // TODO LATER this needs ToDivGrouping in IPAddressString which we have delayed til later
-// Also restore this part of the godoc below:
+//}
 //
-// The sequential range matches the same set of addresses as the address string or the address when {@link #isSequential()} is true.
-// Otherwise, the range includes addresses not specified by the address string.
-//
+//// Also restore this part of the godoc for GetSequentialRange below once IsSequential  is back:
+////
+//// The sequential range matches the same set of addresses as the address string or the address when IsSequential is true.
+//// Otherwise, the range includes addresses not specified by the address string.
+////
 
 // GetSequentialRange returns the range of sequential addresses from the lowest address specified in this address string to the highest.
 //

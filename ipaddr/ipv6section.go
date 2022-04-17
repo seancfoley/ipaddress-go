@@ -426,6 +426,9 @@ func (section *IPv6AddressSection) GetPrefixCountLen(prefixLen BitCount) *big.In
 	})
 }
 
+// GetSegment returns the segment at the given index.
+// The first segment is at index 0.
+// GetSegment will panic given a negative index or index larger than the segment count.
 func (section *IPv6AddressSection) GetSegment(index int) *IPv6AddressSegment {
 	return section.getDivision(index).ToIPv6()
 }
@@ -1038,6 +1041,7 @@ var (
 					SetExpandedSegments(true).ToOptions()
 )
 
+// String implements the fmt.Stringer interface, returning the normalized string provided by ToNormalizedString, or "<nil>" if the receiver is a nil pointer
 func (section *IPv6AddressSection) String() string {
 	if section == nil {
 		return nilString()
@@ -1657,7 +1661,10 @@ func (grouping *IPv6v4MixedAddressGrouping) GetIPv4AddressSection() *IPv4Address
 	return grouping.cache.mixed.embeddedIPv4Section
 }
 
-func (grouping *IPv6v4MixedAddressGrouping) String() string {
+// String implements the fmt.Stringer interface,
+// as a slice string with each division converted to a string by String ( ie "[ div0 div1 ...]"),
+// or "<nil>" if the receiver is a nil pointer
+func (grouping *IPv6v4MixedAddressGrouping) String() string { //TODO print the same way we print with ToMixedString
 	if grouping == nil {
 		return nilString()
 	}

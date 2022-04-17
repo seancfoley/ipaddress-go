@@ -111,6 +111,9 @@ type ipAddressSectionInternal struct {
 	addressSectionInternal
 }
 
+// GetSegment returns the segment at the given index.
+// The first segment is at index 0.
+// GetSegment will panic given a negative index or index larger than the segment count.
 func (section *ipAddressSectionInternal) GetSegment(index int) *IPAddressSegment {
 	return section.getDivision(index).ToIP()
 }
@@ -1417,6 +1420,9 @@ func (section *ipAddressSectionInternal) CopyUpperBytes(bytes []byte) []byte {
 	return section.addressSectionInternal.CopyUpperBytes(bytes)
 }
 
+// IsSequential returns  whether the section represents a range of values that are sequential.
+//
+// Generally, this means that any segment covering a range of values must be followed by segment that are full range, covering all values.
 func (section *ipAddressSectionInternal) IsSequential() bool {
 	return section.addressSectionInternal.IsSequential()
 }
@@ -1837,6 +1843,7 @@ func (section *IPAddressSection) ReverseSegments() *IPAddressSection {
 	return res.ToIP()
 }
 
+// String implements the fmt.Stringer interface, returning the normalized string provided by ToNormalizedString, or "<nil>" if the receiver is a nil pointer
 func (section *IPAddressSection) String() string {
 	if section == nil {
 		return nilString()

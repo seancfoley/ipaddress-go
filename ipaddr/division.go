@@ -212,11 +212,16 @@ var (
 	decimalParamsDiv = new(addrstr.IPStringOptionsBuilder).SetRadix(10).SetWildcards(rangeWildcard).ToOptions()
 )
 
+// String produces a string that is useful when a division string is provided with no context.
+// If the division was originally constructed as an address segment, uses the default radix for that segment, which is decimal for IPv4 and hexadecimal for IPv6, MAC or other.
+// It uses a string prefix for octal or hex (0 or 0x), and does not use the wildcard '*', because division size is variable, so '*' is ambiguous.
+// GetWildcardString is more appropriate in context with other segments or divisions.  It does not use a string prefix and uses '*' for full-range segments.
+// GetString is more appropriate in context with prefix lengths, it uses zeros instead of wildcards for prefix block ranges.
 func (div *addressDivisionInternal) String() string {
 	return div.toString()
 }
 
-// String() produces a string that is useful when a division string is provided with no context.
+// toString produces a string that is useful when a division string is provided with no context.
 // It uses a string prefix for octal or hex (0 or 0x), and does not use the wildcard '*', because division size is variable, so '*' is ambiguous.
 // GetWildcardString() is more appropriate in context with other segments or divisions.  It does not use a string prefix and uses '*' for full-range segments.
 // GetString() is more appropriate in context with prefix lengths, it uses zeros instead of wildcards for prefix block ranges.

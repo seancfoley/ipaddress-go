@@ -785,6 +785,7 @@ func (version IPVersion) IsIndeterminate() bool {
 	return true
 }
 
+// String returns "IPv4", "IPv6", or the zero-value "" representing an indeterminate version
 func (version IPVersion) String() string {
 	return string(version)
 }

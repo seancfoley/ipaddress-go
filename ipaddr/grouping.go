@@ -791,7 +791,8 @@ func (grouping *addressDivisionGroupingInternal) calcBytes() (bytes, upperBytes 
 	return
 }
 
-// Returns whether the series represents a range of values that are sequential.
+// IsSequential returns whether the grouping represents a range of values that are sequential.
+//
 // Generally, this means that any division covering a range of values must be followed by divisions that are full range, covering all values.
 func (grouping *addressDivisionGroupingInternal) IsSequential() bool {
 	count := grouping.GetDivisionCount()
@@ -1134,6 +1135,10 @@ func (grouping *AddressDivisionGrouping) GetDivision(index int) *AddressDivision
 	return grouping.getDivision(index)
 }
 
+// String implements the fmt.Stringer interface,
+// returning the normalized string provided by ToNormalizedString if this grouping originated as an address section,
+// or printed as a slice with each division converted to a string by String ( ie "[ div0 div1 ...]"),
+// or "<nil>" if the receiver is a nil pointer
 func (grouping *AddressDivisionGrouping) String() string {
 	if grouping == nil {
 		return nilString()

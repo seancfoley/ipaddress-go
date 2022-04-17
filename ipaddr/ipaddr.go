@@ -73,6 +73,7 @@ func (version IPVersion) Equal(other IPVersion) bool {
 	return strings.EqualFold(string(version), string(other)) || (version.IsIndeterminate() && other.IsIndeterminate())
 }
 
+// String returns "IPv4", "IPv6", or the zero-value "" representing an indeterminate version
 func (version IPVersion) String() string {
 	return string(version)
 }
@@ -330,10 +331,6 @@ func (addr *ipAddressInternal) GetBlockMaskPrefixLen(network bool) PrefixLen {
 		return nil
 	}
 	return section.ToIP().GetBlockMaskPrefixLen(network)
-}
-
-func (addr *ipAddressInternal) GetSegment(index int) *IPAddressSegment {
-	return addr.getSegment(index).ToIP()
 }
 
 func (addr *ipAddressInternal) spanWithPrefixBlocks() []ExtendedIPSegmentSeries {
@@ -686,6 +683,7 @@ func (addr IPAddress) Format(state fmt.State, verb rune) {
 	addr.init().format(state, verb)
 }
 
+// String implements the fmt.Stringer interface, returning the canonical string provided by ToCanonicalString, or "<nil>" if the receiver is a nil pointer
 func (addr *IPAddress) String() string {
 	if addr == nil {
 		return nilString()
@@ -750,7 +748,9 @@ func (addr *IPAddress) GetSegments() []*IPAddressSegment {
 	return addr.GetSection().GetSegments()
 }
 
-// GetSegment returns the segment at the given index
+// GetSegment returns the segment at the given index.
+// The first segment is at index 0.
+// GetSegment will panic given a negative index or index larger than the segment count.
 func (addr *IPAddress) GetSegment(index int) *IPAddressSegment {
 	return addr.getSegment(index).ToIP()
 }
@@ -1019,7 +1019,14 @@ func (addr *IPAddress) CompareSize(other AddressType) int { // this is here to t
 	return addr.init().compareSize(other)
 }
 
-// TrieCompare compares two addresses according to the trie order.  It returns a number less than zero, zero, or a number greater than zero if the first address argument is less than, equal to, or greater than the second.
+// TrieCompare compares two addresses according to address trie ordering.
+// It returns a number less than zero, zero, or a number greater than zero if the first address argument is less than, equal to, or greater than the second.
+//
+// The comparison is intended for individual addresses and CIDR prefix blocks.
+// If an address is neither an individual address nor a prefix block, it is treated like one:
+//
+//	- ranges that occur inside the prefix length are ignored, only the lower value is used.
+//	- ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
 func (addr *IPAddress) TrieCompare(other *IPAddress) (int, addrerr.IncompatibleAddressError) {
 	if thisAddr := addr.ToIPv4(); thisAddr != nil {
 		if oth := other.ToIPv4(); oth != nil {
@@ -1033,12 +1040,22 @@ func (addr *IPAddress) TrieCompare(other *IPAddress) (int, addrerr.IncompatibleA
 	return 0, &incompatibleAddressError{addressError{key: "ipaddress.error.mismatched.bit.size"}}
 }
 
-// TrieIncrement returns the next address according to address trie ordering
+// TrieIncrement returns the next address or block according to address trie ordering
+//
+// If an address is neither an individual address nor a prefix block, it is treated like one:
+//
+//	- ranges that occur inside the prefix length are ignored, only the lower value is used.
+//	- ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
 func (addr *IPAddress) TrieIncrement() *IPAddress {
 	return addr.trieIncrement().ToIP()
 }
 
-// TrieDecrement returns the previous address according to address trie ordering
+// TrieDecrement returns the previous address or block according to address trie ordering
+//
+// If an address is neither an individual address nor a prefix block, it is treated like one:
+//
+//	- ranges that occur inside the prefix length are ignored, only the lower value is used.
+//	- ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
 func (addr *IPAddress) TrieDecrement() *IPAddress {
 	return addr.trieDecrement().ToIP()
 }

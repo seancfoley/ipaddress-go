@@ -59,6 +59,10 @@ func (rng *IPv6AddressSeqRange) IsMultiple() bool {
 	return rng != nil && rng.isMultiple()
 }
 
+// String implements the fmt.Stringer interface,
+// returning the lower address canonical string, followed by the default separator " -> ",
+// followed by the upper address canonical string.
+// It returns "<nil>" if the receiver is a nil pointer.
 func (rng *IPv6AddressSeqRange) String() string {
 	if rng == nil {
 		return nilString()

@@ -83,6 +83,9 @@ func (addrStr *MACAddressString) GetValidationOptions() addrstrparam.MACAddressS
 	return addrStr.init().params
 }
 
+// String implements the fmt.Stringer interface,
+// returning the original string used to create this MACAddressString (altered by strings.TrimSpace),
+// or "<nil>" if the receiver is a nil pointer
 func (addrStr *MACAddressString) String() string {
 	if addrStr == nil {
 		return nilString()

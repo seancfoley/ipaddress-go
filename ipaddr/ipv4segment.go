@@ -438,6 +438,9 @@ func (seg *IPv4AddressSegment) GetWildcardString() string {
 	return seg.init().getWildcardString()
 }
 
+// String produces a string that is useful when a segment string is provided with no context.  It uses the decimal radix.
+// GetWildcardString is more appropriate in context with other segments or divisions.  It does not use a string prefix and uses '*' for full-range segments.
+// GetString is more appropriate in context with prefix lengths, it uses zeros instead of wildcards with full prefix block ranges alongside prefix lengths.
 func (seg *IPv4AddressSegment) String() string {
 	if seg == nil {
 		return nilString()
