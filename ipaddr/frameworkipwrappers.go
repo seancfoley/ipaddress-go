@@ -114,7 +114,14 @@ type ExtendedIPSegmentSeries interface {
 	// On overflow or underflow, IncrementBoundary returns nil.
 	IncrementBoundary(int64) ExtendedIPSegmentSeries
 
+	// GetLower returns the series in the range with the lowest numeric value,
+	// which will be the same series if it represents a single value.
+	// For example, for "1.2-3.4.5-6", the series "1.2.4.5" is returned.
 	GetLower() ExtendedIPSegmentSeries
+
+	// GetUpper returns the series in the range with the highest numeric value,
+	// which will be the same series if it represents a single value.
+	// For example, for "1.2-3.4.5-6", the series "1.3.4.6" is returned.
 	GetUpper() ExtendedIPSegmentSeries
 
 	AssignPrefixForSingleBlock() ExtendedIPSegmentSeries
@@ -259,10 +266,16 @@ func (addr WrappedIPAddress) IncrementBoundary(i int64) ExtendedIPSegmentSeries 
 	return convIPAddrToIntf(addr.IPAddress.IncrementBoundary(i))
 }
 
+// GetLower returns the series in the range with the lowest numeric value,
+// which will be the same series if it represents a single value.
+// For example, for "1.2-3.4.5-6", the series "1.2.4.5" is returned.
 func (addr WrappedIPAddress) GetLower() ExtendedIPSegmentSeries {
 	return wrapIPAddress(addr.IPAddress.GetLower())
 }
 
+// GetUpper returns the series in the range with the highest numeric value,
+// which will be the same series if it represents a single value.
+// For example, for "1.2-3.4.5-6", the series "1.3.4.6" is returned.
 func (addr WrappedIPAddress) GetUpper() ExtendedIPSegmentSeries {
 	return wrapIPAddress(addr.IPAddress.GetUpper())
 }
@@ -462,10 +475,16 @@ func (section WrappedIPAddressSection) IncrementBoundary(i int64) ExtendedIPSegm
 	return convIPSectToIntf(section.IPAddressSection.IncrementBoundary(i))
 }
 
+// GetLower returns the series in the range with the lowest numeric value,
+// which will be the same series if it represents a single value.
+// For example, for "1.2-3.4.5-6", the series "1.2.4.5" is returned.
 func (section WrappedIPAddressSection) GetLower() ExtendedIPSegmentSeries {
 	return wrapIPSection(section.IPAddressSection.GetLower())
 }
 
+// GetUpper returns the series in the range with the highest numeric value,
+// which will be the same series if it represents a single value.
+// For example, for "1.2-3.4.5-6", the series "1.3.4.6" is returned.
 func (section WrappedIPAddressSection) GetUpper() ExtendedIPSegmentSeries {
 	return wrapIPSection(section.IPAddressSection.GetUpper())
 }

@@ -437,9 +437,7 @@ func (addr *addressInternal) getSegment(index int) *AddressSegment {
 	return addr.section.GetSegment(index)
 }
 
-// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
-// GetBitsPerSegment() is next.
-
+// GetBitsPerSegment returns the number of bits comprising each segment in this address or subnet.  Segments in the same address are equal length.
 func (addr *addressInternal) GetBitsPerSegment() BitCount {
 	section := addr.section
 	if section == nil {
@@ -448,6 +446,7 @@ func (addr *addressInternal) GetBitsPerSegment() BitCount {
 	return section.GetBitsPerSegment()
 }
 
+// GetBytesPerSegment returns the number of bytes comprising each segment in this address or subnet.  Segments in the same address are equal length.
 func (addr *addressInternal) GetBytesPerSegment() int {
 	section := addr.section
 	if section == nil {
@@ -522,6 +521,7 @@ func (addr *addressInternal) toMinUpper() *Address {
 	return addr.checkIdentity(addr.section.toMinUpper())
 }
 
+// IsZero returns whether this address matches exactly the value of zero
 func (addr *addressInternal) IsZero() bool {
 	section := addr.section
 	if section == nil {
@@ -530,6 +530,7 @@ func (addr *addressInternal) IsZero() bool {
 	return section.IsZero()
 }
 
+// IncludesZero returns whether this address includes the zero address within its range
 func (addr *addressInternal) IncludesZero() bool {
 	section := addr.section
 	if section == nil {
@@ -537,6 +538,9 @@ func (addr *addressInternal) IncludesZero() bool {
 	}
 	return section.IncludesZero()
 }
+
+// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
+// IsFullRange is next.
 
 func (addr *addressInternal) IsFullRange() bool {
 	section := addr.section
@@ -1126,11 +1130,6 @@ func (addr *Address) Compare(item AddressItem) int {
 	return CountComparator.Compare(addr, item)
 }
 
-// CompareSize compares the counts of two subnets, the number of individual addresses within.
-//
-// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one subnet represents more individual addresses than another.
-//
-// CompareSize returns a positive integer if this address division grouping has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
 func (addr *Address) Equal(other AddressType) bool {
 	if addr == nil {
 		return other == nil || other.ToAddressBase() == nil
@@ -1234,6 +1233,16 @@ func (addr *Address) GetSegments() []*AddressSegment {
 	return addr.GetSection().GetSegments()
 }
 
+//TODO I am thinking this should not panic, just return nil.
+// The only downside is code outside the method doing the same check as inside.
+// But that is optimized out.  Why panic when you can avoid it?
+// Panic is reserved for situations where progression of the program not possible.
+// But returning nil avoids that.
+// Maps in golang return zero value when not present.  So you could use that as model and not slice.
+// It also fits with what you did with CopySubSegments, allowing for negative and indices larger than seg count
+// Search for: will panic given a negative index or index larger than the
+// Maybe also search for the word "panic"
+
 // GetSegment returns the segment at the given index.
 // The first segment is at index 0.
 // GetSegment will panic given a negative index or index larger than the segment count.
@@ -1279,10 +1288,16 @@ func (addr *Address) IsOneBit(bitIndex BitCount) bool {
 	return addr.init().isOneBit(bitIndex)
 }
 
+// GetLower returns the address in the subnet with the lowest numeric value,
+// which will be the same address if it represents a single value.
+// For example, for "1.2-3.4.5-6", the series "1.2.4.5" is returned.
 func (addr *Address) GetLower() *Address {
 	return addr.init().getLower()
 }
 
+// GetUpper returns the address in the subnet with the highest numeric value,
+// which will be the same address if it represents a single value.
+// For example, for "1.2-3.4.5-6", the series "1.3.4.6" is returned.
 func (addr *Address) GetUpper() *Address {
 	return addr.init().getUpper()
 }
@@ -1375,6 +1390,10 @@ func (addr *Address) ToSinglePrefixBlockOrAddress() *Address {
 	return addr.init().toSinglePrefixBlockOrAddress()
 }
 
+// GetMaxSegmentValue returns the maximum possible segment value for this type of address.
+//
+// Note this is not the maximum of the range of segment values in this specific address,
+// this is the maximum value of any segment for this address type and version, determined by the number of bits per segment.
 func (addr *Address) GetMaxSegmentValue() SegInt {
 	return addr.init().getMaxSegmentValue()
 }

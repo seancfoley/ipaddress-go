@@ -152,6 +152,7 @@ func (addrStr *MACAddressString) IsEmpty() bool {
 	return err == nil && addr == nil
 }
 
+// IsZero returns whether this string represents a MAC address whose value is exactly zero.
 func (addrStr *MACAddressString) IsZero() bool {
 	addr := addrStr.GetAddress()
 	return addr != nil && addr.IsZero()

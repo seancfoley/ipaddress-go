@@ -449,10 +449,12 @@ func (rng *ipAddressSeqRangeInternal) GetMinPrefixLenForBlock() BitCount {
 	return totalPrefix
 }
 
+// IsZero returns whether this sequential range spans from the zero address to itself.
 func (rng *ipAddressSeqRangeInternal) IsZero() bool {
 	return rng.IncludesZero() && !rng.isMultiple()
 }
 
+// IncludesZero returns whether this sequential range's lower value is the zero address.
 func (rng *ipAddressSeqRangeInternal) IncludesZero() bool {
 	lower := rng.lower
 	return lower == nil || lower.IsZero()
@@ -783,12 +785,12 @@ func (rng *IPAddressSeqRange) GetUpperIPAddress() *IPAddress {
 	return rng.GetUpper()
 }
 
-// GetLower returns the lower IP address in the range
+// GetLower returns the lowest address in the range, the one with the lowest numeric value
 func (rng *IPAddressSeqRange) GetLower() *IPAddress {
 	return rng.init().lower
 }
 
-// GetUpper returns the upper IP address in the range
+// GetUpper returns the highest address in the range, the one with the highest numeric value
 func (rng *IPAddressSeqRange) GetUpper() *IPAddress {
 	return rng.init().upper
 }
@@ -871,7 +873,7 @@ func (rng *IPAddressSeqRange) Compare(item AddressItem) int {
 //
 // Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one range spans more individual addresses than another.
 //
-// CompareSize returns a positive integer if this address division grouping has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
+// CompareSize returns a positive integer if this range has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
 func (rng *IPAddressSeqRange) CompareSize(other IPAddressSeqRangeType) int {
 	if rng == nil {
 		if other != nil && other.ToIP() != nil {

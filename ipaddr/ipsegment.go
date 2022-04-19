@@ -349,10 +349,12 @@ func (seg *ipAddressSegmentInternal) CopyUpperBytes(bytes []byte) []byte {
 	return seg.addressSegmentInternal.CopyUpperBytes(bytes)
 }
 
+// IsZero returns whether this segment matches exactly the value of zero
 func (seg *ipAddressSegmentInternal) IsZero() bool {
 	return seg.addressSegmentInternal.IsZero()
 }
 
+// IncludesZero returns whether this segment includes the value of zero within its range
 func (seg *ipAddressSegmentInternal) IncludesZero() bool {
 	return seg.addressSegmentInternal.IncludesZero()
 }
@@ -447,6 +449,9 @@ func (seg *ipAddressSegmentInternal) GetValueCount() SegIntCount {
 	return seg.addressSegmentInternal.GetValueCount()
 }
 
+// GetMaxValue gets the maximum possible value for this type or version of segment, determined by the number of bits.
+//
+// For the highest range value of this particular segment, use GetUpperSegmentValue.
 func (seg *ipAddressSegmentInternal) GetMaxValue() SegInt {
 	return seg.addressSegmentInternal.GetMaxValue()
 }
@@ -486,10 +491,12 @@ type IPAddressSegment struct {
 	ipAddressSegmentInternal
 }
 
+// GetLower returns a segment representing just the lowest value in the range, which will be the same segment if it represents a single value.
 func (seg *IPAddressSegment) GetLower() *IPAddressSegment {
 	return seg.getLower().ToIP()
 }
 
+// GetUpper returns a segment representing just the highest value in the range, which will be the same segment if it represents a single value.
 func (seg *IPAddressSegment) GetUpper() *IPAddressSegment {
 	return seg.getUpper().ToIP()
 }

@@ -202,10 +202,12 @@ func (section *MACAddressSection) CompareSize(other StandardDivGroupingType) int
 	return section.compareSize(other)
 }
 
+// GetBitsPerSegment returns the number of bits comprising each segment in this section.  Segments in the same address section are equal length.
 func (section *MACAddressSection) GetBitsPerSegment() BitCount {
 	return MACBitsPerSegment
 }
 
+// GetBytesPerSegment returns the number of bytes comprising each segment in this section.  Segments in the same address section are equal length.
 func (section *MACAddressSection) GetBytesPerSegment() int {
 	return MACBytesPerSegment
 }
@@ -362,10 +364,16 @@ func (section *MACAddressSection) GetSegments() (res []*MACAddressSegment) {
 	return
 }
 
+// GetLower returns the section in the range with the lowest numeric value,
+// which will be the same section if it represents a single value.
+// For example, for "1:1:1:2-3:4:5-6", the series "1:1:1:2:4:5" is returned.
 func (section *MACAddressSection) GetLower() *MACAddressSection {
 	return section.getLower().ToMAC()
 }
 
+// GetUpper returns the section in the range with the highest numeric value,
+// which will be the same section if it represents a single value.
+// For example, for "1:1:1:2-3:4:5-6", the series "1:1:1:3:4:6" is returned.
 func (section *MACAddressSection) GetUpper() *MACAddressSection {
 	return section.getUpper().ToMAC()
 }

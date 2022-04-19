@@ -961,10 +961,12 @@ func (grouping *addressDivisionGroupingInternal) GetDivisionCount() int {
 	return grouping.addressDivisionGroupingBase.GetDivisionCount()
 }
 
+// IsZero returns whether this grouping matches exactly the value of zero
 func (grouping *addressDivisionGroupingInternal) IsZero() bool {
 	return grouping.addressDivisionGroupingBase.IsZero()
 }
 
+// IncludesZero returns whether this grouping includes the value of zero within its range
 func (grouping *addressDivisionGroupingInternal) IncludesZero() bool {
 	return grouping.addressDivisionGroupingBase.IncludesZero()
 }

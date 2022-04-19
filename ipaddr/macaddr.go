@@ -217,10 +217,12 @@ func (addr *MACAddress) GetByteCount() int {
 	return addr.init().addressInternal.GetByteCount()
 }
 
+// GetBitsPerSegment returns the number of bits comprising each segment in this address.  Segments in the same address are equal length.
 func (addr *MACAddress) GetBitsPerSegment() BitCount {
 	return MACBitsPerSegment
 }
 
+// GetBytesPerSegment returns the number of bytes comprising each segment in this address or subnet.  Segments in the same address are equal length.
 func (addr *MACAddress) GetBytesPerSegment() int {
 	return MACBytesPerSegment
 }
@@ -244,10 +246,16 @@ func (addr *MACAddress) GetUpperValue() *big.Int {
 	return addr.init().section.GetUpperValue()
 }
 
+// GetLower returns the address in the subnet with the lowest numeric value,
+// which will be the same address if it represents a single value.
+// For example, for "1:1:1:2-3:4:5-6", the series "1:1:1:2:4:5" is returned.
 func (addr *MACAddress) GetLower() *Address {
 	return addr.init().getLower()
 }
 
+// GetUpper returns the address in the subnet with the highest numeric value,
+// which will be the same address if it represents a single value.
+// For example, for "1:1:1:2-3:4:5-6", the series "1:1:1:3:4:6" is returned.
 func (addr *MACAddress) GetUpper() *Address {
 	return addr.init().getUpper()
 }
@@ -544,6 +552,10 @@ func (addr *MACAddress) TrieDecrement() *MACAddress {
 	return addr.trieDecrement().ToMAC()
 }
 
+// GetMaxSegmentValue returns the maximum possible segment value for this type of address.
+//
+// Note this is not the maximum of the range of segment values in this specific address,
+// this is the maximum value of any segment for this address type and version, determined by the number of bits per segment.
 func (addr *MACAddress) GetMaxSegmentValue() SegInt {
 	return addr.init().getMaxSegmentValue()
 }

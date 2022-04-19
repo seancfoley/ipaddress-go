@@ -422,10 +422,12 @@ func (addr *IPv6Address) GetByteCount() int {
 	return IPv6ByteCount
 }
 
+// GetBitsPerSegment returns the number of bits comprising each segment in this address.  Segments in the same address are equal length.
 func (addr *IPv6Address) GetBitsPerSegment() BitCount {
 	return IPv6BitsPerSegment
 }
 
+// GetBytesPerSegment returns the number of bytes comprising each segment in this address or subnet.  Segments in the same address are equal length.
 func (addr *IPv6Address) GetBytesPerSegment() int {
 	return IPv6BytesPerSegment
 }
@@ -655,10 +657,16 @@ func (addr *IPv6Address) SpanWithRange(other *IPv6Address) *IPv6AddressSeqRange 
 	return NewIPv6SeqRange(addr.init(), other.init())
 }
 
+// GetLower returns the address in the subnet with the lowest numeric value,
+// which will be the same address if it represents a single value.
+// For example, for "1::1:2-3:4:5-6", the series "1::1:2:4:5" is returned.
 func (addr *IPv6Address) GetLower() *IPv6Address {
 	return addr.init().getLower().ToIPv6()
 }
 
+// GetUpper returns the address in the subnet with the highest numeric value,
+// which will be the same address if it represents a single value.
+// For example, for "1::1:2-3:4:5-6", the series "1::1:3:4:6" is returned.
 func (addr *IPv6Address) GetUpper() *IPv6Address {
 	return addr.init().getUpper().ToIPv6()
 }
@@ -958,6 +966,10 @@ func (addr *IPv6Address) MatchesWithMask(other *IPv6Address, mask *IPv6Address) 
 	return addr.init().GetSection().MatchesWithMask(other.GetSection(), mask.GetSection())
 }
 
+// GetMaxSegmentValue returns the maximum possible segment value for this type of address.
+//
+// Note this is not the maximum of the range of segment values in this specific address,
+// this is the maximum value of any segment for this address type and version, determined by the number of bits per segment.
 func (addr *IPv6Address) GetMaxSegmentValue() SegInt {
 	return addr.init().getMaxSegmentValue()
 }

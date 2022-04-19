@@ -204,14 +204,19 @@ func (seg *IPv6AddressSegment) GetByteCount() int {
 	return IPv6BytesPerSegment
 }
 
+// GetMaxValue gets the maximum possible value for this type or version of segment, determined by the number of bits.
+//
+// For the highest range value of this particular segment, use GetUpperSegmentValue.
 func (seg *IPv6AddressSegment) GetMaxValue() IPv6SegInt {
 	return 0xffff
 }
 
+// GetLower returns a segment representing just the lowest value in the range, which will be the same segment if it represents a single value.
 func (seg *IPv6AddressSegment) GetLower() *IPv6AddressSegment {
 	return seg.init().getLower().ToIPv6()
 }
 
+// GetUpper returns a segment representing just the highest value in the range, which will be the same segment if it represents a single value.
 func (seg *IPv6AddressSegment) GetUpper() *IPv6AddressSegment {
 	return seg.init().getUpper().ToIPv6()
 }

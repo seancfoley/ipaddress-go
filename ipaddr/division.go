@@ -861,10 +861,12 @@ func (div *addressDivisionInternal) CopyUpperBytes(bytes []byte) []byte {
 	return div.addressDivisionBase.CopyUpperBytes(bytes)
 }
 
+// IsZero returns whether this division matches exactly the value of zero
 func (div *addressDivisionInternal) IsZero() bool {
 	return div.addressDivisionBase.IsZero()
 }
 
+// IncludesZero returns whether this item includes the value of zero within its range
 func (div *addressDivisionInternal) IncludesZero() bool {
 	return div.addressDivisionBase.IncludesZero()
 }
@@ -956,6 +958,9 @@ func (div *AddressDivision) MatchesValsWithMask(lowerValue, upperValue, mask Div
 	return div.matchesValsWithMask(lowerValue, upperValue, mask)
 }
 
+// GetMaxValue gets the maximum possible value for this type of division, determined by the number of bits.
+//
+// For the highest range value of this particular segment, use GetUpperDivisionValue.
 func (div *AddressDivision) GetMaxValue() DivInt {
 	return div.getMaxValue()
 }

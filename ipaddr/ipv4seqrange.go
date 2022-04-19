@@ -113,10 +113,12 @@ func (rng *IPv4AddressSeqRange) GetUpperIPAddress() *IPAddress {
 	return rng.init().upper
 }
 
+// GetLower returns the lowest address of the sequential range, the one with the lowest numeric value
 func (rng *IPv4AddressSeqRange) GetLower() *IPv4Address {
 	return rng.init().lower.ToIPv4()
 }
 
+// GetUpper returns the highest address of the sequential range, the one with the highest numeric value
 func (rng *IPv4AddressSeqRange) GetUpper() *IPv4Address {
 	return rng.init().upper.ToIPv4()
 }
@@ -193,7 +195,7 @@ func (rng *IPv4AddressSeqRange) Compare(item AddressItem) int {
 //
 // Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one range spans more individual addresses than another.
 //
-// CompareSize returns a positive integer if this address division grouping has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
+// CompareSize returns a positive integer if this range has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
 func (rng *IPv4AddressSeqRange) CompareSize(other IPAddressSeqRangeType) int {
 	if rng == nil {
 		if other != nil && other.ToIP() != nil {

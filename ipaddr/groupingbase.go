@@ -88,6 +88,7 @@ func (grouping *addressDivisionGroupingBase) GetDivisionCount() int {
 	return 0
 }
 
+// IsZero returns whether this grouping matches exactly the value of zero
 func (grouping *addressDivisionGroupingBase) IsZero() bool {
 	divCount := grouping.GetDivisionCount()
 	for i := 0; i < divCount; i++ {
@@ -98,6 +99,7 @@ func (grouping *addressDivisionGroupingBase) IsZero() bool {
 	return true
 }
 
+// IncludesZero returns whether this grouping includes the value of zero within its range
 func (grouping *addressDivisionGroupingBase) IncludesZero() bool {
 	divCount := grouping.GetDivisionCount()
 	for i := 0; i < divCount; i++ {

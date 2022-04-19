@@ -96,6 +96,7 @@ func (version IPVersion) toType() (t addrType) {
 	return
 }
 
+// GetMaxSegmentValue returns the maximum possible segment value for this IP version, determined by the number of bits per segment.
 func (version IPVersion) GetMaxSegmentValue() SegInt {
 	if version.IsIPv4() {
 		return IPv4MaxValuePerSegment
@@ -105,6 +106,7 @@ func (version IPVersion) GetMaxSegmentValue() SegInt {
 	return 0
 }
 
+// GetBytesPerSegment returns the number of bytes comprising each segment in this address or subnet.  Segments in the same address are equal length.
 func (version IPVersion) GetBytesPerSegment() int {
 	if version.IsIPv4() {
 		return IPv4BytesPerSegment
@@ -114,6 +116,7 @@ func (version IPVersion) GetBytesPerSegment() int {
 	return 0
 }
 
+// GetBitsPerSegment returns the number of bits comprising each segment in this address.  Segments in the same address are equal length.
 func (version IPVersion) GetBitsPerSegment() BitCount {
 	if version.IsIPv4() {
 		return IPv4BitsPerSegment
@@ -807,10 +810,16 @@ func (addr *IPAddress) GetUpperIPAddress() *IPAddress {
 	return addr.GetUpper()
 }
 
+// GetLower returns the address in the subnet with the lowest numeric value,
+// which will be the same address if it represents a single value.
+// For example, for "1.2-3.4.5-6", the series "1.2.4.5" is returned.
 func (addr *IPAddress) GetLower() *IPAddress {
 	return addr.init().getLower().ToIP()
 }
 
+// GetUpper returns the address in the subnet with the highest numeric value,
+// which will be the same address if it represents a single value.
+// For example, for "1.2-3.4.5-6", the series "1.3.4.6" is returned.
 func (addr *IPAddress) GetUpper() *IPAddress {
 	return addr.init().getUpper().ToIP()
 }
@@ -1118,6 +1127,10 @@ func (addr *IPAddress) Wrap() WrappedIPAddress {
 	return wrapIPAddress(addr)
 }
 
+// GetMaxSegmentValue returns the maximum possible segment value for this type of address.
+//
+// Note this is not the maximum of the range of segment values in this specific address,
+// this is the maximum value of any segment for this address type and version, determined by the number of bits per segment.
 func (addr *IPAddress) GetMaxSegmentValue() SegInt {
 	return addr.init().getMaxSegmentValue()
 }

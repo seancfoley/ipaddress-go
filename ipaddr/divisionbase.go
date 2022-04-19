@@ -224,6 +224,7 @@ func (div *addressDivisionBase) GetPrefixCountLen(prefixLength BitCount) *big.In
 	return upper
 }
 
+// IsZero returns whether this division matches exactly the value of zero
 func (div *addressDivisionBase) IsZero() bool {
 	return !div.isMultiple() && div.IncludesZero()
 }

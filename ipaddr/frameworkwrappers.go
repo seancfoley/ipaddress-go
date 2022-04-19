@@ -103,7 +103,12 @@ type ExtendedSegmentSeries interface {
 	// On overflow or underflow, IncrementBoundary returns nil.
 	IncrementBoundary(int64) ExtendedSegmentSeries
 
+	// GetLower returns the series in the range with the lowest numeric value,
+	// which will be the same series if it represents a single value.
 	GetLower() ExtendedSegmentSeries
+
+	// GetUpper returns the series in the range with the highest numeric value,
+	// which will be the same series if it represents a single value.
 	GetUpper() ExtendedSegmentSeries
 
 	AssignPrefixForSingleBlock() ExtendedSegmentSeries
@@ -210,10 +215,14 @@ func (addr WrappedAddress) IncrementBoundary(i int64) ExtendedSegmentSeries {
 	return convAddrToIntf(addr.Address.IncrementBoundary(i))
 }
 
+// GetLower returns the series in the range with the lowest numeric value,
+// which will be the same series if it represents a single value.
 func (addr WrappedAddress) GetLower() ExtendedSegmentSeries {
 	return WrapAddress(addr.Address.GetLower())
 }
 
+// GetUpper returns the series in the range with the highest numeric value,
+// which will be the same series if it represents a single value.
 func (addr WrappedAddress) GetUpper() ExtendedSegmentSeries {
 	return WrapAddress(addr.Address.GetUpper())
 }
@@ -373,10 +382,14 @@ func (section WrappedAddressSection) IncrementBoundary(i int64) ExtendedSegmentS
 	return convSectToIntf(section.AddressSection.IncrementBoundary(i))
 }
 
+// GetLower returns the series in the range with the lowest numeric value,
+// which will be the same series if it represents a single value.
 func (section WrappedAddressSection) GetLower() ExtendedSegmentSeries {
 	return WrapSection(section.AddressSection.GetLower())
 }
 
+// GetUpper returns the series in the range with the highest numeric value,
+// which will be the same series if it represents a single value.
 func (section WrappedAddressSection) GetUpper() ExtendedSegmentSeries {
 	return WrapSection(section.AddressSection.GetUpper())
 }

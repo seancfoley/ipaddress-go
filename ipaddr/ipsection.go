@@ -1308,10 +1308,12 @@ func (section *ipAddressSectionInternal) GetByteCount() int {
 //IPv6v4, Div, Not needed Addr
 //func (grouping *addressDivisionGroupingBase) GetDivisionCount() int {
 
+// IsZero returns whether this section matches exactly the value of zero
 func (section *ipAddressSectionInternal) IsZero() bool {
 	return section.addressSectionInternal.IsZero()
 }
 
+// IncludesZero returns whether this section includes the value of zero within its range
 func (section *ipAddressSectionInternal) IncludesZero() bool {
 	return section.addressSectionInternal.IncludesZero()
 }
@@ -1427,10 +1429,12 @@ func (section *ipAddressSectionInternal) IsSequential() bool {
 	return section.addressSectionInternal.IsSequential()
 }
 
+// GetBitsPerSegment returns the number of bits comprising each segment in this section.  Segments in the same address section are equal length.
 func (section *ipAddressSectionInternal) GetBitsPerSegment() BitCount {
 	return section.addressSectionInternal.GetBitsPerSegment()
 }
 
+// GetBytesPerSegment returns the number of bytes comprising each segment in this section.  Segments in the same address section are equal length.
 func (section *ipAddressSectionInternal) GetBytesPerSegment() int {
 	return section.addressSectionInternal.GetBytesPerSegment()
 }
@@ -1443,6 +1447,10 @@ func (section *ipAddressSectionInternal) GetSegmentCount() int {
 	return section.addressSectionInternal.GetSegmentCount()
 }
 
+// GetMaxSegmentValue returns the maximum possible segment value for this type of address.
+//
+// Note this is not the maximum of the range of segment values in this specific address,
+// this is the maximum value of any segment for this address type and version, determined by the number of bits per segment.
 func (section *ipAddressSectionInternal) GetMaxSegmentValue() SegInt {
 	return section.addressSectionInternal.GetMaxSegmentValue()
 }
@@ -1663,10 +1671,16 @@ func (section *IPAddressSection) GetSegments() (res []*IPAddressSegment) {
 	return
 }
 
+// GetLower returns the section in the range with the lowest numeric value,
+// which will be the same section if it represents a single value.
+// For example, for "1.2-3.4.5-6", the section "1.2.4.5" is returned.
 func (section *IPAddressSection) GetLower() *IPAddressSection {
 	return section.getLower().ToIP()
 }
 
+// GetUpper returns the section in the range with the highest numeric value,
+// which will be the same section if it represents a single value.
+// For example, for "1.2-3.4.5-6", the section "1.3.4.6" is returned.
 func (section *IPAddressSection) GetUpper() *IPAddressSection {
 	return section.getUpper().ToIP()
 }

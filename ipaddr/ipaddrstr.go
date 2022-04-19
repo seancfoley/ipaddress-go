@@ -288,7 +288,7 @@ func (addrStr *IPAddressString) IsLoopback() bool {
 	return val != nil && val.IsLoopback()
 }
 
-// IsZero returns whether this string represents an IP address whose value is zero.
+// IsZero returns whether this string represents an IP address whose value is exactly zero.
 func (addrStr *IPAddressString) IsZero() bool {
 	value := addrStr.GetAddress()
 	return value != nil && value.IsZero()

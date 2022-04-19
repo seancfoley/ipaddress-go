@@ -198,14 +198,19 @@ func (seg *MACAddressSegment) GetByteCount() int {
 	return IPv4BytesPerSegment
 }
 
+// GetMaxValue gets the maximum possible value for this type or version of segment, determined by the number of bits.
+//
+// For the highest range value of this particular segment, use GetUpperSegmentValue.
 func (seg *MACAddressSegment) GetMaxValue() MACSegInt {
 	return 0xff
 }
 
+// GetLower returns a segment representing just the lowest value in the range, which will be the same segment if it represents a single value.
 func (seg *MACAddressSegment) GetLower() *MACAddressSegment {
 	return seg.init().getLower().ToMAC()
 }
 
+// GetUpper returns a segment representing just the highest value in the range, which will be the same segment if it represents a single value.
 func (seg *MACAddressSegment) GetUpper() *MACAddressSegment {
 	return seg.init().getUpper().ToMAC()
 }

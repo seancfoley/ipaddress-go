@@ -173,6 +173,9 @@ func (seg *addressSegmentInternal) GetValueCount() SegIntCount {
 	return uint64(seg.GetUpperSegmentValue()-seg.GetSegmentValue()) + 1
 }
 
+// GetMaxValue gets the maximum possible value for this type or version of segment, determined by the number of bits.
+//
+// For the highest range value of this particular segment, use GetUpperSegmentValue.
 func (seg *addressSegmentInternal) GetMaxValue() SegInt {
 	return ^(^SegInt(0) << uint(seg.GetBitCount()))
 }
@@ -613,10 +616,12 @@ func (seg *addressSegmentInternal) CopyUpperBytes(bytes []byte) []byte {
 	return seg.addressDivisionInternal.CopyUpperBytes(bytes)
 }
 
+// IsZero returns whether this segment matches exactly the value of zero
 func (seg *addressSegmentInternal) IsZero() bool {
 	return seg.addressDivisionInternal.IsZero()
 }
 
+// IncludesZero returns whether this segment includes the value of zero within its range
 func (seg *addressSegmentInternal) IncludesZero() bool {
 	return seg.addressDivisionInternal.IncludesZero()
 }
@@ -697,10 +702,12 @@ func (seg *AddressSegment) Compare(item AddressItem) int {
 	return CountComparator.Compare(seg, item)
 }
 
+// GetLower returns a segment representing just the lowest value in the range, which will be the same segment if it represents a single value.
 func (seg *addressSegmentInternal) GetLower() *AddressSegment {
 	return seg.getLower()
 }
 
+// GetUpper returns a segment representing just the highest value in the range, which will be the same segment if it represents a single value.
 func (seg *addressSegmentInternal) GetUpper() *AddressSegment {
 	return seg.getUpper()
 }

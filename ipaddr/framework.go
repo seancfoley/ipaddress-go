@@ -50,9 +50,15 @@ type AddressItem interface {
 	GetBitCount() BitCount
 
 	IsFullRange() bool
+
+	// IncludesZero returns whether this item includes the value of zero within its range
 	IncludesZero() bool
+
 	IncludesMax() bool
+
+	// IsZero returns whether this address item matches exactly the value of zero
 	IsZero() bool
+
 	IsMax() bool
 
 	// ContainsPrefixBlock returns whether the values of this item contains the prefix block for the given prefix length.
@@ -96,8 +102,14 @@ type AddressItem interface {
 
 // AddressComponent represents all addresses, address sections, and address segments
 type AddressComponent interface { //AddressSegment and above, AddressSegmentSeries and above
-	TestBit(BitCount) bool
-	IsOneBit(BitCount) bool
+	// TestBit returns true if the bit in the lower value of the address component at the given index is 1, where index 0 refers to the least significant bit.
+	// In other words, it computes (bits & (1 << n)) != 0), using the lower value of this address component.
+	// TestBit will panic if n < 0, or if it matches or exceeds the bit count of this address component.
+	TestBit(index BitCount) bool
+
+	// IsOneBit returns true if the bit in the lower value of this address component at the given index is 1, where index 0 refers to the most significant bit.
+	// IsOneBit will panic if bitIndex < 0, or if it is larger than the bit count of this address component.
+	IsOneBit(index BitCount) bool
 
 	ToHexString(bool) (string, addrerr.IncompatibleAddressError)
 	ToNormalizedString() string
@@ -113,6 +125,11 @@ type StandardDivGroupingType interface {
 	// Such a grouping, which has no divisions or segments, is convertible to a zero-valued grouping of any type or version, whether IPv6, IPv4, MAC, etc
 	IsAdaptiveZero() bool
 
+	// CompareSize compares the counts of two division groupings, the number of individual division groupings within.
+	//
+	// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one grouping represents more individual groupings than another.
+	//
+	// CompareSize returns a positive integer if this address division grouping has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
 	CompareSize(StandardDivGroupingType) int
 
 	ToDivGrouping() *AddressDivisionGrouping
@@ -177,7 +194,11 @@ type AddressSegmentSeries interface { // Address and above, AddressSection and a
 
 	GetMaxSegmentValue() SegInt
 	GetSegmentCount() int
+
+	// GetBitsPerSegment returns the number of bits comprising each segment in this series.  Segments in the same series are equal length.
 	GetBitsPerSegment() BitCount
+
+	// GetBytesPerSegment returns the number of bytes comprising each segment in this series.  Segments in the same series are equal length.
 	GetBytesPerSegment() int
 
 	ToCanonicalString() string
@@ -321,6 +342,12 @@ type AddressType interface {
 
 	Equal(AddressType) bool
 	Contains(AddressType) bool
+
+	// CompareSize compares the counts of two subnets, the number of individual addresses within.
+	//
+	// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one subnet represents more individual addresses than another.
+	//
+	// CompareSize returns a positive integer if this address has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
 	CompareSize(AddressType) int
 
 	PrefixEqual(AddressType) bool
@@ -386,7 +413,13 @@ type IPAddressSeqRangeType interface {
 
 	ipAddressRange
 
+	// CompareSize compares the counts of two subnets, the number of individual addresses within.
+	//
+	// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one subnet represents more individual addresses than another.
+	//
+	// CompareSize returns a positive integer if this address has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
 	CompareSize(IPAddressSeqRangeType) int
+
 	ContainsRange(IPAddressSeqRangeType) bool
 	Contains(IPAddressType) bool
 	ToIP() *IPAddressSeqRange

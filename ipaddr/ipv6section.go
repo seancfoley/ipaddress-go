@@ -348,10 +348,12 @@ func (section *IPv6AddressSection) GetIPVersion() IPVersion {
 	return IPv6
 }
 
+// GetBitsPerSegment returns the number of bits comprising each segment in this section.  Segments in the same address section are equal length.
 func (section *IPv6AddressSection) GetBitsPerSegment() BitCount {
 	return IPv6BitsPerSegment
 }
 
+// GetBytesPerSegment returns the number of bytes comprising each segment in this section.  Segments in the same address section are equal length.
 func (section *IPv6AddressSection) GetBytesPerSegment() int {
 	return IPv6BytesPerSegment
 }
@@ -532,10 +534,16 @@ func (section *IPv6AddressSection) Intersect(other *IPv6AddressSection) (res *IP
 	return
 }
 
+// GetLower returns the section in the range with the lowest numeric value,
+// which will be the same section if it represents a single value.
+// For example, for "1::1:2-3:4:5-6", the section "1::1:2:4:5" is returned.
 func (section *IPv6AddressSection) GetLower() *IPv6AddressSection {
 	return section.getLower().ToIPv6()
 }
 
+// GetUpper returns the section in the range with the highest numeric value,
+// which will be the same section if it represents a single value.
+// For example, for "1::1:2-3:4:5-6", the section "1::1:3:4:6" is returned.
 func (section *IPv6AddressSection) GetUpper() *IPv6AddressSection {
 	return section.getUpper().ToIPv6()
 }
