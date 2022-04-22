@@ -979,6 +979,9 @@ func (grouping *addressDivisionGroupingInternal) IncludesMax() bool {
 	return grouping.addressDivisionGroupingBase.IncludesMax()
 }
 
+// IsFullRange returns whether this address item represents all possible values attainable by an address item of this type.
+//
+// This is true if and only if both IncludesZero and IncludesMax return true.
 func (grouping *addressDivisionGroupingInternal) IsFullRange() bool {
 	return grouping.addressDivisionGroupingBase.IsFullRange()
 }

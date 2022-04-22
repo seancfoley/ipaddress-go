@@ -634,6 +634,9 @@ func (seg *addressSegmentInternal) IncludesMax() bool {
 	return seg.addressDivisionInternal.IncludesMax()
 }
 
+// IsFullRange returns whether the segment range includes all possible values for its bit length.
+//
+//  This is true if and only if both IncludesZero and IncludesMax return true.
 func (seg *addressSegmentInternal) IsFullRange() bool {
 	return seg.addressDivisionInternal.IsFullRange()
 }

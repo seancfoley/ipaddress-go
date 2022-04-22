@@ -539,9 +539,9 @@ func (addr *addressInternal) IncludesZero() bool {
 	return section.IncludesZero()
 }
 
-// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
-// IsFullRange is next.
-
+// IsFullRange returns whether this address covers the entire address space of this address version or type.
+//
+// This is true if and only if both IncludesZero and IncludesMax return true.
 func (addr *addressInternal) IsFullRange() bool {
 	section := addr.section
 	if section == nil {
@@ -550,6 +550,9 @@ func (addr *addressInternal) IsFullRange() bool {
 	}
 	return section.IsFullRange()
 }
+
+// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
+// ToAddressBase is next.
 
 func (addr *addressInternal) toAddress() *Address {
 	return (*Address)(unsafe.Pointer(addr))

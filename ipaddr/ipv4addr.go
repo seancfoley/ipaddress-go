@@ -189,6 +189,13 @@ func (addr *IPv4Address) IsPrefixed() bool {
 	return addr != nil && addr.isPrefixed()
 }
 
+// IsFullRange returns whether this address covers the entire IPv4 address space.
+//
+// This is true if and only if both IncludesZero and IncludesMax return true.
+func (addr *IPv4Address) IsFullRange() bool {
+	return addr.GetSection().IsFullRange()
+}
+
 // GetBitCount returns the number of bits comprising this address,
 // or each address in the range if a subnet, which is 32.
 func (addr *IPv4Address) GetBitCount() BitCount {

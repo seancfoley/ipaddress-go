@@ -201,6 +201,9 @@ func (addr *MACAddress) IsPrefixed() bool {
 	return addr != nil && addr.isPrefixed()
 }
 
+// IsFullRange returns whether this address covers the entire MAC address space for its MAC bit length.
+//
+// This is true if and only if both IncludesZero and IncludesMax return true.
 func (addr *MACAddress) IsFullRange() bool {
 	return addr.GetSection().IsFullRange()
 }

@@ -247,6 +247,21 @@ func (rng *IPv4AddressSeqRange) GetMinPrefixLenForBlock() BitCount {
 	return rng.init().ipAddressSeqRangeInternal.GetMinPrefixLenForBlock()
 }
 
+// IsFullRange returns whether this address range covers the entire IPv4 address space.
+//
+// This is true if and only if both IncludesZero and IncludesMax return true.
+func (rng *IPv4AddressSeqRange) IsFullRange() bool {
+	return rng.init().ipAddressSeqRangeInternal.IsFullRange()
+}
+
+func (rng *IPv4AddressSeqRange) IsMax() bool {
+	return rng.init().ipAddressSeqRangeInternal.IsMax()
+}
+
+func (rng *IPv4AddressSeqRange) IncludesMax() bool {
+	return rng.init().ipAddressSeqRangeInternal.IncludesMax()
+}
+
 func (rng *IPv4AddressSeqRange) Iterator() IPv4AddressIterator {
 	if rng == nil {
 		return ipv4AddressIterator{nilAddrIterator()}

@@ -140,7 +140,7 @@ func (addrStr *MACAddressString) getPrefixLen() PrefixLen {
 	return nil
 }
 
-// IsFullRange returns whether the address represents the set all all valid MAC48Len addresses for its address length
+// IsFullRange returns whether the address represents the set all all valid MAC addresses for its address length
 func (addrStr *MACAddressString) IsFullRange() bool {
 	addr := addrStr.GetAddress()
 	return addr != nil && addr.IsFullRange()

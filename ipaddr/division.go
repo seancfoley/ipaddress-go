@@ -879,6 +879,9 @@ func (div *addressDivisionInternal) IncludesMax() bool {
 	return div.addressDivisionBase.IncludesMax()
 }
 
+// IsFullRange returns whether the division range includes all possible values for its bit length.
+//
+//  This is true if and only if both IncludesZero and IncludesMax return true.
 func (div *addressDivisionInternal) IsFullRange() bool {
 	return div.addressDivisionBase.IsFullRange()
 }

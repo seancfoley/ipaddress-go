@@ -410,6 +410,13 @@ func (addr *IPv6Address) IsPrefixed() bool {
 	return addr != nil && addr.isPrefixed()
 }
 
+// IsFullRange returns whether this address covers the entire IPv6 address space.
+//
+// This is true if and only if both IncludesZero and IncludesMax return true.
+func (addr *IPv6Address) IsFullRange() bool {
+	return addr.GetSection().IsFullRange()
+}
+
 // GetBitCount returns the number of bits comprising this address,
 // or each address in the range if a subnet, which is 128.
 func (addr *IPv6Address) GetBitCount() BitCount {

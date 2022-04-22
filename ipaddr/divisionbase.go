@@ -252,7 +252,9 @@ func (div *addressDivisionBase) IncludesMax() bool {
 	return vals.includesMax()
 }
 
-// IsFullRange returns whether this address item represents all possible values attainable by an address item of this type
+// IsFullRange returns whether the division range includes all possible values for its bit length.
+//
+//  This is true if and only if both IncludesZero and IncludesMax return true.
 func (div *addressDivisionBase) IsFullRange() bool {
 	return div.includesZero() && div.includesMax()
 }

@@ -49,6 +49,9 @@ type AddressItem interface {
 	// GetBitCount returns the number of bits in each value comprising this address item
 	GetBitCount() BitCount
 
+	// IsFullRange returns whether this address item represents all possible values attainable by an address item of this type.
+	//
+	// This is true if and only if both IncludesZero and IncludesMax return true.
 	IsFullRange() bool
 
 	// IncludesZero returns whether this item includes the value of zero within its range

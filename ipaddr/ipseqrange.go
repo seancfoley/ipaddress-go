@@ -469,7 +469,9 @@ func (rng *ipAddressSeqRangeInternal) IncludesMax() bool {
 	return upper == nil || upper.IsMax()
 }
 
-// IsFullRange returns whether this address item represents all possible values attainable by an address item of this type
+// IsFullRange returns whether this address range covers the entire address space of this IP address version.
+//
+// This is true if and only if both IncludesZero and IncludesMax return true.
 func (rng *ipAddressSeqRangeInternal) IsFullRange() bool {
 	return rng.IncludesZero() && rng.IncludesMax()
 }

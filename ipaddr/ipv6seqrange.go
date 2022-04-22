@@ -249,6 +249,21 @@ func (rng *IPv6AddressSeqRange) GetMinPrefixLenForBlock() BitCount {
 	return rng.init().ipAddressSeqRangeInternal.GetMinPrefixLenForBlock()
 }
 
+// IsFullRange returns whether this address range covers the entire IPv6 address space.
+//
+// This is true if and only if both IncludesZero and IncludesMax return true.
+func (rng *IPv6AddressSeqRange) IsFullRange() bool {
+	return rng.init().ipAddressSeqRangeInternal.IsFullRange()
+}
+
+func (rng *IPv6AddressSeqRange) IsMax() bool {
+	return rng.init().ipAddressSeqRangeInternal.IsMax()
+}
+
+func (rng *IPv6AddressSeqRange) IncludesMax() bool {
+	return rng.init().ipAddressSeqRangeInternal.IncludesMax()
+}
+
 func (rng *IPv6AddressSeqRange) Iterator() IPv6AddressIterator {
 	if rng == nil {
 		return ipv6AddressIterator{nilAddrIterator()}
