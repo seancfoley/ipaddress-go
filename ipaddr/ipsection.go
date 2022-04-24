@@ -1732,10 +1732,16 @@ func (section *IPAddressSection) AdjustPrefixLenZeroed(prefixLen BitCount) (*IPA
 	return section.adjustPrefixLenZeroed(prefixLen)
 }
 
+// ToPrefixBlock returns the section with the same prefix as this section while the remaining bits span all values.
+// The returned section will be the block of all sections with the same prefix.
+//
+// If this section has no prefix, this section is returned.
 func (section *IPAddressSection) ToPrefixBlock() *IPAddressSection {
 	return section.toPrefixBlock().ToIP()
 }
 
+// ToPrefixBlockLen returns the section with the same prefix of the given length as this section while the remaining bits span all values.
+// The returned section will be the block of all sections with the same prefix.
 func (section *IPAddressSection) ToPrefixBlockLen(prefLen BitCount) *IPAddressSection {
 	return section.toPrefixBlockLen(prefLen).ToIP()
 }
@@ -1748,6 +1754,8 @@ func (section *IPAddressSection) AssignMinPrefixForBlock() *IPAddressSection {
 	return section.assignMinPrefixForBlock().ToIP()
 }
 
+// ToBlock creates a new block of address sections by changing the segment at the given index to have the given lower and upper value,
+// and changing the following segments to be full-range.
 func (section *IPAddressSection) ToBlock(segmentIndex int, lower, upper SegInt) *IPAddressSection {
 	return section.toBlock(segmentIndex, lower, upper).ToIP()
 }
@@ -1777,8 +1785,8 @@ func (section *IPAddressSection) SequentialBlockIterator() IPSectionIterator {
 
 // IncrementBoundary returns the item that is the given increment from the range boundaries of this item.
 //
-// If the given increment is positive, adds the value to the highest ({@link #getUpper()}) in the range to produce a new item.
-// If the given increment is negative, adds the value to the lowest ({@link #getLower()}) in the range to produce a new item.
+// If the given increment is positive, adds the value to the highest (GetUpper) in the range to produce a new item.
+// If the given increment is negative, adds the value to the lowest (GetLower) in the range to produce a new item.
 // If the increment is zero, returns this.
 //
 // If this represents just a single value, this item is simply incremented by the given increment value, positive or negative.

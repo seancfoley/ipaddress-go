@@ -35,6 +35,10 @@ func (a *addressTrieKey) GetPrefixLen() tree.PrefixLen {
 	return tree.PrefixLen(a.Address.GetPrefixLen())
 }
 
+// ToPrefixBlockLen returns the address key associated with the prefix length provided,
+// the address key whose prefix of that length matches the prefix of this address key, and the remaining bits span all values.
+//
+// The returned address key will represent all addresses with the same prefix as this one, the prefix "block".
 func (a *addressTrieKey) ToPrefixBlockLen(bitCount BitCount) tree.TrieKey {
 	return &addressTrieKey{a.Address.ToPrefixBlockLen(bitCount)}
 }

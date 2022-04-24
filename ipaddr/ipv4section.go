@@ -546,14 +546,22 @@ func (section *IPv4AddressSection) calcIntValues() (lower, upper uint32) {
 	return
 }
 
+// ToPrefixBlock returns the section with the same prefix as this section while the remaining bits span all values.
+// The returned section will be the block of all sections with the same prefix.
+//
+// If this section has no prefix, this section is returned.
 func (section *IPv4AddressSection) ToPrefixBlock() *IPv4AddressSection {
 	return section.toPrefixBlock().ToIPv4()
 }
 
+// ToPrefixBlockLen returns the section with the same prefix of the given length as this section while the remaining bits span all values.
+// The returned section will be the block of all sections with the same prefix.
 func (section *IPv4AddressSection) ToPrefixBlockLen(prefLen BitCount) *IPv4AddressSection {
 	return section.toPrefixBlockLen(prefLen).ToIPv4()
 }
 
+// ToBlock creates a new block of address sections by changing the segment at the given index to have the given lower and upper value,
+// and changing the following segments to be full-range.
 func (section *IPv4AddressSection) ToBlock(segmentIndex int, lower, upper SegInt) *IPv4AddressSection {
 	return section.toBlock(segmentIndex, lower, upper).ToIPv4()
 }
@@ -628,8 +636,8 @@ func (section *IPv4AddressSection) ToIP() *IPAddressSection {
 
 // IncrementBoundary returns the item that is the given increment from the range boundaries of this item.
 //
-// If the given increment is positive, adds the value to the highest ({@link #getUpper()}) in the range to produce a new item.
-// If the given increment is negative, adds the value to the lowest ({@link #getLower()}) in the range to produce a new item.
+// If the given increment is positive, adds the value to the highest (GetUpper) in the range to produce a new item.
+// If the given increment is negative, adds the value to the lowest (GetLower) in the range to produce a new item.
 // If the increment is zero, returns this.
 //
 // If this represents just a single value, this item is simply incremented by the given increment value, positive or negative.

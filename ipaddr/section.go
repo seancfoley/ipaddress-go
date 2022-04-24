@@ -2234,10 +2234,16 @@ func (section *AddressSection) IsPrefixed() bool {
 	return section != nil && section.isPrefixed()
 }
 
+// ToPrefixBlock returns the section with the same prefix as this section while the remaining bits span all values.
+// The returned section will be the block of all sections with the same prefix.
+//
+// If this section has no prefix, this section is returned.
 func (section *AddressSection) ToPrefixBlock() *AddressSection {
 	return section.toPrefixBlock()
 }
 
+// ToPrefixBlockLen returns the section with the same prefix of the given length as this section while the remaining bits span all values.
+// The returned section will be the block of all sections with the same prefix.
 func (section *AddressSection) ToPrefixBlockLen(prefLen BitCount) *AddressSection {
 	return section.toPrefixBlockLen(prefLen)
 }
@@ -2274,6 +2280,8 @@ func (section *AddressSection) AssignMinPrefixForBlock() *AddressSection {
 	return section.assignMinPrefixForBlock()
 }
 
+// ToBlock creates a new block of address sections by changing the segment at the given index to have the given lower and upper value,
+// and changing the following segments to be full-range.
 func (section *AddressSection) ToBlock(segmentIndex int, lower, upper SegInt) *AddressSection {
 	return section.toBlock(segmentIndex, lower, upper)
 }
@@ -2355,8 +2363,8 @@ func (section *AddressSection) PrefixBlockIterator() SectionIterator {
 
 // IncrementBoundary returns the item that is the given increment from the range boundaries of this item.
 //
-// If the given increment is positive, adds the value to the highest ({@link #getUpper()}) in the range to produce a new item.
-// If the given increment is negative, adds the value to the lowest ({@link #getLower()}) in the range to produce a new item.
+// If the given increment is positive, adds the value to the highest (GetUpper) in the range to produce a new item.
+// If the given increment is negative, adds the value to the lowest (GetLower) in the range to produce a new item.
 // If the increment is zero, returns this.
 //
 // If this represents just a single value, this item is simply incremented by the given increment value, positive or negative.

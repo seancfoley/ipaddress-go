@@ -282,7 +282,7 @@ func (addr *IPv4Address) GetSegment(index int) *IPv4AddressSegment {
 	return addr.init().getSegment(index).ToIPv4()
 }
 
-// GetSegmentCount returns the segment count
+// GetSegmentCount returns the segment count, the number of segments in this address, which is 4
 func (addr *IPv4Address) GetSegmentCount() int {
 	return addr.GetDivisionCount()
 }
@@ -439,14 +439,29 @@ func (addr *IPv4Address) UpperUint32Value() uint32 {
 	return addr.GetSection().UpperUint32Value()
 }
 
+// ToPrefixBlock returns the subnet associated with the prefix length of this address.
+// If this address has no prefix length, this address is returned.
+//
+// The subnet will include all addresses with the same prefix as this one, the prefix "block".
+// The network prefix will match the prefix of this address or subnet, and the host values will span all values.
+//
+// For example, if the address is 1.2.3.4/16 it returns the subnet 1.2.0.0/16 which can also be written as 1.2.*.*/16
 func (addr *IPv4Address) ToPrefixBlock() *IPv4Address {
 	return addr.init().toPrefixBlock().ToIPv4()
 }
 
+// ToPrefixBlockLen returns the subnet associated with the given prefix length.
+//
+// The subnet will include all addresses with the same prefix as this one, the prefix "block" for that prefix length.
+// The network prefix will match the prefix of this address or subnet, and the host values will span all values.
+//
+// For example, if the address is 1.2.3.4 and the prefix length provided is 16, it returns the subnet 1.2.0.0/16 which can also be written as 1.2.*.*/16
 func (addr *IPv4Address) ToPrefixBlockLen(prefLen BitCount) *IPv4Address {
 	return addr.init().toPrefixBlockLen(prefLen).ToIPv4()
 }
 
+// ToBlock creates a new block of addresses by changing the segment at the given index to have the given lower and upper value,
+// and changing the following segments to be full-range.
 func (addr *IPv4Address) ToBlock(segmentIndex int, lower, upper SegInt) *IPv4Address {
 	return addr.init().toBlock(segmentIndex, lower, upper).ToIPv4()
 }
@@ -843,8 +858,8 @@ func (addr *IPv4Address) GetSequentialBlockCount() *big.Int {
 
 // IncrementBoundary returns the address that is the given increment from the range boundaries of this subnet.
 //
-// If the given increment is positive, adds the value to the upper address ({@link #getUpper()}) in the subnet range to produce a new address.
-// If the given increment is negative, adds the value to the lower address ({@link #getLower()}) in the subnet range to produce a new address.
+// If the given increment is positive, adds the value to the upper address (GetUpper) in the subnet range to produce a new address.
+// If the given increment is negative, adds the value to the lower address (GetLower) in the subnet range to produce a new address.
 // If the increment is zero, returns this address.
 //
 // If this is a single address value, that address is simply incremented by the given increment value, positive or negative.

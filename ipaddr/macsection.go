@@ -410,14 +410,22 @@ func (section *MACAddressSection) getLongValue(lower bool) (result uint64) {
 	return
 }
 
+// ToPrefixBlock returns the section with the same prefix as this section while the remaining bits span all values.
+// The returned section will be the block of all sections with the same prefix.
+//
+// If this section has no prefix, this section is returned.
 func (section *MACAddressSection) ToPrefixBlock() *MACAddressSection {
 	return section.toPrefixBlock().ToMAC()
 }
 
+// ToPrefixBlockLen returns the section with the same prefix of the given length as this section while the remaining bits span all values.
+// The returned section will be the block of all sections with the same prefix.
 func (section *MACAddressSection) ToPrefixBlockLen(prefLen BitCount) *MACAddressSection {
 	return section.toPrefixBlockLen(prefLen).ToMAC()
 }
 
+// ToBlock creates a new block of address sections by changing the segment at the given index to have the given lower and upper value,
+// and changing the following segments to be full-range.
 func (section *MACAddressSection) ToBlock(segmentIndex int, lower, upper SegInt) *MACAddressSection {
 	return section.toBlock(segmentIndex, lower, upper).ToMAC()
 }
@@ -439,8 +447,8 @@ func (section *MACAddressSection) PrefixBlockIterator() MACSectionIterator {
 
 // IncrementBoundary returns the item that is the given increment from the range boundaries of this item.
 //
-// If the given increment is positive, adds the value to the highest ({@link #getUpper()}) in the range to produce a new item.
-// If the given increment is negative, adds the value to the lowest ({@link #getLower()}) in the range to produce a new item.
+// If the given increment is positive, adds the value to the highest (GetUpper) in the range to produce a new item.
+// If the given increment is negative, adds the value to the lowest (GetLower) in the range to produce a new item.
 // If the increment is zero, returns this.
 //
 // If this represents just a single value, this item is simply incremented by the given increment value, positive or negative.

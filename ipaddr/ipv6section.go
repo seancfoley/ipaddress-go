@@ -572,14 +572,22 @@ func (section *IPv6AddressSection) ToMaxHostLen(prefixLength BitCount) (*IPv6Add
 	return res.ToIPv6(), err
 }
 
+// ToPrefixBlock returns the section with the same prefix as this section while the remaining bits span all values.
+// The returned section will be the block of all sections with the same prefix.
+//
+// If this section has no prefix, this section is returned.
 func (section *IPv6AddressSection) ToPrefixBlock() *IPv6AddressSection {
 	return section.toPrefixBlock().ToIPv6()
 }
 
+// ToPrefixBlockLen returns the section with the same prefix of the given length as this section while the remaining bits span all values.
+// The returned section will be the block of all sections with the same prefix.
 func (section *IPv6AddressSection) ToPrefixBlockLen(prefLen BitCount) *IPv6AddressSection {
 	return section.toPrefixBlockLen(prefLen).ToIPv6()
 }
 
+// ToBlock creates a new block of address sections by changing the segment at the given index to have the given lower and upper value,
+// and changing the following segments to be full-range.
 func (section *IPv6AddressSection) ToBlock(segmentIndex int, lower, upper SegInt) *IPv6AddressSection {
 	return section.toBlock(segmentIndex, lower, upper).ToIPv6()
 }
@@ -787,8 +795,8 @@ func (section *IPv6AddressSection) getZeroSegments(includeRanges bool) RangeList
 
 // IncrementBoundary returns the item that is the given increment from the range boundaries of this item.
 //
-// If the given increment is positive, adds the value to the highest ({@link #getUpper()}) in the range to produce a new item.
-// If the given increment is negative, adds the value to the lowest ({@link #getLower()}) in the range to produce a new item.
+// If the given increment is positive, adds the value to the highest (GetUpper) in the range to produce a new item.
+// If the given increment is negative, adds the value to the lowest (GetLower) in the range to produce a new item.
 // If the increment is zero, returns this.
 //
 // If this represents just a single value, this item is simply incremented by the given increment value, positive or negative.

@@ -70,12 +70,19 @@ type ExtendedIPSegmentSeries interface {
 	ToIPv4() IPv4AddressSegmentSeries
 	ToIPv6() IPv6AddressSegmentSeries
 
-	// ToBlock creates a sequential block by changing the segment at the given index to have the given lower and upper value,
-	// and changing the following segments to be full-range
+	// ToBlock creates a new series block by changing the segment at the given index to have the given lower and upper value,
+	// and changing the following segments to be full-range.
 	ToBlock(segmentIndex int, lower, upper SegInt) ExtendedIPSegmentSeries
 
-	ToPrefixBlockLen(BitCount) ExtendedIPSegmentSeries
+	// ToPrefixBlock returns the series with the same prefix as this series while the remaining bits span all values.
+	// The series will be the block of all series with the same prefix.
+	//
+	// If this series has no prefix, this series is returned.
 	ToPrefixBlock() ExtendedIPSegmentSeries
+
+	// ToPrefixBlockLen returns the series with the same prefix of the given length as this series while the remaining bits span all values.
+	// The returned series will be the block of all series with the same prefix.
+	ToPrefixBlockLen(BitCount) ExtendedIPSegmentSeries
 
 	ToZeroHostLen(BitCount) (ExtendedIPSegmentSeries, addrerr.IncompatibleAddressError)
 	ToZeroHost() (ExtendedIPSegmentSeries, addrerr.IncompatibleAddressError)
@@ -105,8 +112,8 @@ type ExtendedIPSegmentSeries interface {
 
 	// IncrementBoundary returns the item that is the given increment from the range boundaries of this item.
 	//
-	// If the given increment is positive, adds the value to the highest ({@link #getUpper()}) in the range to produce a new item.
-	// If the given increment is negative, adds the value to the lowest ({@link #getLower()}) in the range to produce a new item.
+	// If the given increment is positive, adds the value to the highest (GetUpper) in the range to produce a new item.
+	// If the given increment is negative, adds the value to the lowest (GetLower) in the range to produce a new item.
 	// If the increment is zero, returns this.
 	//
 	// If this represents just a single value, this item is simply incremented by the given increment value, positive or negative.
@@ -197,16 +204,22 @@ func (addr WrappedIPAddress) PrefixBlockIterator() ExtendedIPSegmentSeriesIterat
 	return ipaddressSeriesIterator{addr.IPAddress.PrefixBlockIterator()}
 }
 
-// creates a sequential block by changing the segment at the given index to have the given lower and upper value,
-// and changing the following segments to be full-range
+// ToBlock creates a new series block by changing the segment at the given index to have the given lower and upper value,
+// and changing the following segments to be full-range.
 func (addr WrappedIPAddress) ToBlock(segmentIndex int, lower, upper SegInt) ExtendedIPSegmentSeries {
 	return wrapIPAddress(addr.IPAddress.ToBlock(segmentIndex, lower, upper))
 }
 
+// ToPrefixBlockLen returns the series with the same prefix of the given length as this series while the remaining bits span all values.
+// The returned series will be the block of all series with the same prefix.
 func (addr WrappedIPAddress) ToPrefixBlockLen(bitCount BitCount) ExtendedIPSegmentSeries {
 	return wrapIPAddress(addr.IPAddress.ToPrefixBlockLen(bitCount))
 }
 
+// ToPrefixBlock returns the series with the same prefix as this series while the remaining bits span all values.
+// The series will be the block of all series with the same prefix.
+//
+// If this series has no prefix, this series is returned.
 func (addr WrappedIPAddress) ToPrefixBlock() ExtendedIPSegmentSeries {
 	return wrapIPAddress(addr.IPAddress.ToPrefixBlock())
 }
@@ -255,8 +268,8 @@ func (addr WrappedIPAddress) Increment(i int64) ExtendedIPSegmentSeries {
 
 // IncrementBoundary returns the item that is the given increment from the range boundaries of this item.
 //
-// If the given increment is positive, adds the value to the highest ({@link #getUpper()}) in the range to produce a new item.
-// If the given increment is negative, adds the value to the lowest ({@link #getLower()}) in the range to produce a new item.
+// If the given increment is positive, adds the value to the highest (GetUpper) in the range to produce a new item.
+// If the given increment is negative, adds the value to the lowest (GetLower) in the range to produce a new item.
 // If the increment is zero, returns this.
 //
 // If this represents just a single value, this item is simply incremented by the given increment value, positive or negative.
@@ -406,16 +419,22 @@ func (section WrappedIPAddressSection) PrefixBlockIterator() ExtendedIPSegmentSe
 	return ipsectionSeriesIterator{section.IPAddressSection.PrefixBlockIterator()}
 }
 
-// creates a sequential block by changing the segment at the given index to have the given lower and upper value,
-// and changing the following segments to be full-range
+// ToBlock creates a new series block by changing the segment at the given index to have the given lower and upper value,
+// and changing the following segments to be full-range.
 func (section WrappedIPAddressSection) ToBlock(segmentIndex int, lower, upper SegInt) ExtendedIPSegmentSeries {
 	return wrapIPSection(section.IPAddressSection.ToBlock(segmentIndex, lower, upper))
 }
 
+// ToPrefixBlockLen returns the series with the same prefix of the given length as this series while the remaining bits span all values.
+// The returned series will be the block of all series with the same prefix.
 func (section WrappedIPAddressSection) ToPrefixBlockLen(bitCount BitCount) ExtendedIPSegmentSeries {
 	return wrapIPSection(section.IPAddressSection.ToPrefixBlockLen(bitCount))
 }
 
+// ToPrefixBlock returns the series with the same prefix as this series while the remaining bits span all values.
+// The series will be the block of all series with the same prefix.
+//
+// If this series has no prefix, this series is returned.
 func (section WrappedIPAddressSection) ToPrefixBlock() ExtendedIPSegmentSeries {
 	return wrapIPSection(section.IPAddressSection.ToPrefixBlock())
 }
@@ -464,8 +483,8 @@ func (section WrappedIPAddressSection) Increment(i int64) ExtendedIPSegmentSerie
 
 // IncrementBoundary returns the item that is the given increment from the range boundaries of this item.
 //
-// If the given increment is positive, adds the value to the highest ({@link #getUpper()}) in the range to produce a new item.
-// If the given increment is negative, adds the value to the lowest ({@link #getLower()}) in the range to produce a new item.
+// If the given increment is positive, adds the value to the highest (GetUpper) in the range to produce a new item.
+// If the given increment is negative, adds the value to the lowest (GetLower) in the range to produce a new item.
 // If the increment is zero, returns this.
 //
 // If this represents just a single value, this item is simply incremented by the given increment value, positive or negative.

@@ -169,9 +169,9 @@ type MACAddress struct {
 	addressInternal
 }
 
-// GetCount returns the count of addresses that this address or subnet represents.
+// GetCount returns the count of addresses that this address or address collection represents.
 //
-// If just a single address, not a subnet of multiple addresses, returns 1.
+// If just a single address, not a collection of multiple addresses, returns 1.
 func (addr *MACAddress) init() *MACAddress {
 	if addr.section == nil {
 		return zeroMAC
@@ -179,9 +179,9 @@ func (addr *MACAddress) init() *MACAddress {
 	return addr
 }
 
-// GetCount returns the count of addresses that this address or subnet represents.
+// GetCount returns the count of addresses that this address or address collection represents.
 //
-// If just a single address, not a subnet of multiple addresses, returns 1.
+// If just a single address, not a collection of multiple addresses, returns 1.
 //
 // Use IsMultiple if you simply want to know if the count is greater than 1.
 func (addr *MACAddress) GetCount() *big.Int {
@@ -191,7 +191,7 @@ func (addr *MACAddress) GetCount() *big.Int {
 	return addr.getCount()
 }
 
-// IsMultiple returns true if this represents more than a single individual address, whether it is a subnet of multiple addresses.
+// IsMultiple returns true if this represents more than a single individual address, whether it is a collection of multiple addresses.
 func (addr *MACAddress) IsMultiple() bool {
 	return addr != nil && addr.isMultiple()
 }
@@ -209,13 +209,13 @@ func (addr *MACAddress) IsFullRange() bool {
 }
 
 // GetBitCount returns the number of bits comprising this address,
-// or each address in the range if a subnet.
+// or each address in the range.
 func (addr *MACAddress) GetBitCount() BitCount {
 	return addr.init().addressInternal.GetBitCount()
 }
 
 // GetByteCount returns the number of bytes required for this address,
-// or each address in the range if a subnet.
+// or each address in the range.
 func (addr *MACAddress) GetByteCount() int {
 	return addr.init().addressInternal.GetByteCount()
 }
@@ -225,7 +225,7 @@ func (addr *MACAddress) GetBitsPerSegment() BitCount {
 	return MACBitsPerSegment
 }
 
-// GetBytesPerSegment returns the number of bytes comprising each segment in this address or subnet.  Segments in the same address are equal length.
+// GetBytesPerSegment returns the number of bytes comprising each segment in this address.  Segments in the same address are equal length.
 func (addr *MACAddress) GetBytesPerSegment() int {
 	return MACBytesPerSegment
 }
@@ -249,14 +249,14 @@ func (addr *MACAddress) GetUpperValue() *big.Int {
 	return addr.init().section.GetUpperValue()
 }
 
-// GetLower returns the address in the subnet with the lowest numeric value,
+// GetLower returns the address in the collection with the lowest numeric value,
 // which will be the same address if it represents a single value.
 // For example, for "1:1:1:2-3:4:5-6", the series "1:1:1:2:4:5" is returned.
 func (addr *MACAddress) GetLower() *Address {
 	return addr.init().getLower()
 }
 
-// GetUpper returns the address in the subnet with the highest numeric value,
+// GetUpper returns the address in the collection with the highest numeric value,
 // which will be the same address if it represents a single value.
 // For example, for "1:1:1:2-3:4:5-6", the series "1:1:1:3:4:6" is returned.
 func (addr *MACAddress) GetUpper() *Address {
@@ -384,10 +384,25 @@ func (addr *MACAddress) GetDivisionCount() int {
 	return addr.init().getDivisionCount()
 }
 
+// ToPrefixBlock returns the address associated with the prefix of this address or address collection,
+// the address whose prefix matches the prefix of this address, and the remaining bits span all values.
+// If this address has no prefix length, this address is returned.
+//
+// The returned address collection will include all addresses with the same prefix as this one, the prefix "block".
 func (addr *MACAddress) ToPrefixBlock() *MACAddress {
 	return addr.init().toPrefixBlock().ToMAC()
 }
 
+// ToPrefixBlockLen returns the address associated with the prefix length provided,
+// the address collection whose prefix of that length matches the prefix of this address, and the remaining bits span all values.
+//
+// The returned address will include all addresses with the same prefix as this one, the prefix "block".
+func (addr *MACAddress) ToPrefixBlockLen(prefLen BitCount) *MACAddress {
+	return addr.init().toPrefixBlockLen(prefLen).ToMAC()
+}
+
+// ToBlock creates a new block of addresses by changing the segment at the given index to have the given lower and upper value,
+// and changing the following segments to be full-range.
 func (addr *MACAddress) ToBlock(segmentIndex int, lower, upper SegInt) *MACAddress {
 	return addr.init().toBlock(segmentIndex, lower, upper).ToMAC()
 }
@@ -435,7 +450,7 @@ func (addr *MACAddress) ToSinglePrefixBlockOrAddress() *MACAddress {
 	return addr.init().toSinglePrefixBlockOrAddress().ToMAC()
 }
 
-// ContainsPrefixBlock returns whether the range of this address or subnet contains the block of addresses for the given prefix length.
+// ContainsPrefixBlock returns whether the range of this address or address collection contains the block of addresses for the given prefix length.
 //
 // Unlike ContainsSinglePrefixBlock, whether there are multiple prefix values in this item for the given prefix length makes no difference.
 //
@@ -465,7 +480,7 @@ func (addr *MACAddress) GetMinPrefixLenForBlock() BitCount {
 	return addr.init().addressInternal.GetMinPrefixLenForBlock()
 }
 
-// GetPrefixLenForSingleBlock returns a prefix length for which the range of this address subnet matches the block of addresses for that prefix.
+// GetPrefixLenForSingleBlock returns a prefix length for which the range of this address collection matches the block of addresses for that prefix.
 //
 // If the range can be described this way, then this method returns the same value as GetMinPrefixLenForBlock.
 //
@@ -504,11 +519,11 @@ func (addr *MACAddress) Equal(other AddressType) bool {
 	return addr.init().equals(other)
 }
 
-// CompareSize compares the counts of two subnets or addresses, the number of individual addresses within.
+// CompareSize compares the counts of two addresses or address collections, the number of individual addresses within.
 //
-// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one subnet represents more individual addresses than another.
+// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one address collection represents more individual addresses than another.
 //
-// CompareSize returns a positive integer if this address or subnet has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
+// CompareSize returns a positive integer if this address or address collection has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
 func (addr *MACAddress) CompareSize(other AddressType) int { // this is here to take advantage of the CompareSize in IPAddressSection
 	if addr == nil {
 		if other != nil && other.ToAddressBase() != nil {
@@ -615,10 +630,10 @@ func (addr *MACAddress) GetSequentialBlockCount() *big.Int {
 	return addr.init().getSequentialBlockCount()
 }
 
-// IncrementBoundary returns the address that is the given increment from the range boundaries of this subnet.
+// IncrementBoundary returns the address that is the given increment from the range boundaries of this address collection.
 //
-// If the given increment is positive, adds the value to the upper address ({@link #getUpper()}) in the subnet range to produce a new address.
-// If the given increment is negative, adds the value to the lower address ({@link #getLower()}) in the subnet range to produce a new address.
+// If the given increment is positive, adds the value to the upper address (GetUpper) in the range to produce a new address.
+// If the given increment is negative, adds the value to the lower address (GetLower) in the range to produce a new address.
 // If the increment is zero, returns this address.
 //
 // If this is a single address value, that address is simply incremented by the given increment value, positive or negative.
@@ -628,21 +643,21 @@ func (addr *MACAddress) IncrementBoundary(increment int64) *MACAddress {
 	return addr.init().incrementBoundary(increment).ToMAC()
 }
 
-// Increment returns the address from the subnet that is the given increment upwards into the subnet range,
+// Increment returns the address from the address collection that is the given increment upwards into the address range,
 // with the increment of 0 returning the first address in the range.
 //
-// If the increment i matches or exceeds the subnet size count c, then i - c + 1
+// If the increment i matches or exceeds the size count c, then i - c + 1
 // is added to the upper address of the range.
-// An increment matching the subnet count gives you the address just above the highest address in the subnet.
+// An increment matching the range count gives you the address just above the highest address in the range.
 //
 // If the increment is negative, it is added to the lower address of the range.
-// To get the address just below the lowest address of the subnet, use the increment -1.
+// To get the address just below the lowest address of the address range, use the increment -1.
 //
 // If this is just a single address value, the address is simply incremented by the given increment, positive or negative.
 //
-// If this is a subnet with multiple values, a positive increment i is equivalent i + 1 values from the subnet iterator and beyond.
+// If this is an address range with multiple values, a positive increment i is equivalent i + 1 values from the iterator and beyond.
 // For instance, a increment of 0 is the first value from the iterator, an increment of 1 is the second value from the iterator, and so on.
-// An increment of a negative value added to the subnet count is equivalent to the same number of iterator values preceding the upper bound of the iterator.
+// An increment of a negative value added to the range count is equivalent to the same number of iterator values preceding the upper bound of the iterator.
 // For instance, an increment of count - 1 is the last value from the iterator, an increment of count - 2 is the second last value, and so on.
 //
 // On address overflow or underflow, Increment returns nil.

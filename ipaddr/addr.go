@@ -551,15 +551,8 @@ func (addr *addressInternal) IsFullRange() bool {
 	return section.IsFullRange()
 }
 
-// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
-// ToAddressBase is next.
-
 func (addr *addressInternal) toAddress() *Address {
 	return (*Address)(unsafe.Pointer(addr))
-}
-
-func (addr *addressInternal) hasNoDivisions() bool {
-	return addr.section.hasNoDivisions()
 }
 
 func (addr *addressInternal) getDivision(index int) *AddressDivision {
@@ -581,12 +574,15 @@ func (addr *addressInternal) toPrefixBlock() *Address {
 	return addr.checkIdentity(addr.section.toPrefixBlock())
 }
 
-func (addr *addressInternal) toBlock(segmentIndex int, lower, upper SegInt) *Address {
-	return addr.checkIdentity(addr.section.toBlock(segmentIndex, lower, upper))
-}
-
 func (addr *addressInternal) toPrefixBlockLen(prefLen BitCount) *Address {
 	return addr.checkIdentity(addr.section.toPrefixBlockLen(prefLen))
+}
+
+// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
+// toBlock is next.
+
+func (addr *addressInternal) toBlock(segmentIndex int, lower, upper SegInt) *Address {
+	return addr.checkIdentity(addr.section.toBlock(segmentIndex, lower, upper))
 }
 
 func (addr *addressInternal) reverseBytes() (*Address, addrerr.IncompatibleAddressError) {
@@ -1092,7 +1088,7 @@ func (addr *Address) init() *Address {
 
 // GetCount returns the count of addresses that this address or subnet represents.
 //
-// If just a single address, not a subnet of multiple addresses, returns 1.
+// If just a single address, not a collection nor subnet of multiple addresses, returns 1.
 //
 // For instance, the IP address subnet 2001:db8::/64 has the count of 2 to the power of 64.
 //
@@ -1104,7 +1100,7 @@ func (addr *Address) GetCount() *big.Int {
 	return addr.getCount()
 }
 
-// IsMultiple returns true if this represents more than a single individual address, whether it is a subnet of multiple addresses.
+// IsMultiple returns true if this represents more than a single individual address, whether it is a collection or subnet of multiple addresses.
 func (addr *Address) IsMultiple() bool {
 	return addr != nil && addr.isMultiple()
 }
@@ -1144,7 +1140,7 @@ func (addr *Address) Equal(other AddressType) bool {
 
 // CompareSize compares the counts of two subnets or addresses, the number of individual addresses within.
 //
-// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one subnet represents more individual addresses than another.
+// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one subnet or collection represents more individual addresses than another.
 //
 // CompareSize returns a positive integer if this address or subnet has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
 func (addr *Address) CompareSize(other AddressType) int {
@@ -1291,14 +1287,14 @@ func (addr *Address) IsOneBit(bitIndex BitCount) bool {
 	return addr.init().isOneBit(bitIndex)
 }
 
-// GetLower returns the address in the subnet with the lowest numeric value,
+// GetLower returns the address in the subnet or address collection with the lowest numeric value,
 // which will be the same address if it represents a single value.
 // For example, for "1.2-3.4.5-6", the series "1.2.4.5" is returned.
 func (addr *Address) GetLower() *Address {
 	return addr.init().getLower()
 }
 
-// GetUpper returns the address in the subnet with the highest numeric value,
+// GetUpper returns the address in the subnet or address collection with the highest numeric value,
 // which will be the same address if it represents a single value.
 // For example, for "1.2-3.4.5-6", the series "1.3.4.6" is returned.
 func (addr *Address) GetUpper() *Address {
@@ -1337,14 +1333,25 @@ func (addr *Address) IncludesMax() bool {
 	return addr.init().section.IncludesMax()
 }
 
+// ToPrefixBlock returns the address collection associated with the prefix of this address or address collection,
+// the address whose prefix matches the prefix of this address, and the remaining bits span all values.
+// If this address has no prefix length, this address is returned.
+//
+// The returned address collection will include all addresses with the same prefix as this one, the prefix "block".
 func (addr *Address) ToPrefixBlock() *Address {
 	return addr.init().toPrefixBlock()
 }
 
+// ToPrefixBlockLen returns the address associated with the prefix length provided,
+// the address collection whose prefix of that length matches the prefix of this address, and the remaining bits span all values.
+//
+// The returned address will include all addresses with the same prefix as this one, the prefix "block".
 func (addr *Address) ToPrefixBlockLen(prefLen BitCount) *Address {
 	return addr.init().toPrefixBlockLen(prefLen)
 }
 
+// ToBlock creates a new block of addresses by changing the segment at the given index to have the given lower and upper value,
+// and changing the following segments to be full-range.
 func (addr *Address) ToBlock(segmentIndex int, lower, upper SegInt) *Address {
 	return addr.init().toBlock(segmentIndex, lower, upper)
 }
@@ -1432,10 +1439,10 @@ func (addr *Address) GetSequentialBlockCount() *big.Int {
 	return addr.getSequentialBlockCount()
 }
 
-// IncrementBoundary returns the address that is the given increment from the range boundaries of this subnet.
+// IncrementBoundary returns the address that is the given increment from the range boundaries of this subnet or address collection.
 //
-// If the given increment is positive, adds the value to the upper address ({@link #getUpper()}) in the subnet range to produce a new address.
-// If the given increment is negative, adds the value to the lower address ({@link #getLower()}) in the subnet range to produce a new address.
+// If the given increment is positive, adds the value to the upper address (GetUpper) in the range to produce a new address.
+// If the given increment is negative, adds the value to the lower address (GetLower) in the range to produce a new address.
 // If the increment is zero, returns this address.
 //
 // If this is a single address value, that address is simply incremented by the given increment value, positive or negative.
