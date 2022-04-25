@@ -713,6 +713,11 @@ func (seg *AddressSegment) Contains(other AddressSegmentType) bool {
 	return seg.contains(other)
 }
 
+// Equal returns whether the given segment is equal to this segment.
+// Two segments are equal if they match:
+//  - type/version (IPv4, IPv6, MAC)
+//  - value range
+// Prefix lengths are ignored.
 func (seg *AddressSegment) Equal(other AddressSegmentType) bool {
 	if seg == nil {
 		return other == nil || other.ToDiv() == nil

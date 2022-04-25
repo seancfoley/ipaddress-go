@@ -77,6 +77,7 @@ func (version IPVersion) index() int {
 	return 2
 }
 
+// Equal returns whether the given version matches this version.
 func (version IPVersion) Equal(other IPVersion) bool {
 	return strings.EqualFold(string(version), string(other)) || (version.IsIndeterminate() && other.IsIndeterminate())
 }
@@ -808,11 +809,17 @@ func (addr *IPAddress) GetByteCount() int {
 	return addr.addressInternal.GetByteCount()
 }
 
+// GetLowerIPAddress returns the address in the subnet or address collection with the lowest numeric value,
+// which will be the same address if it represents a single value.
+// For example, for "1.2-3.4.5-6", the series "1.2.4.5" is returned.
 // GetLowerIPAddress implements the IPAddressRange interface, and is equivalent to GetLower()
 func (addr *IPAddress) GetLowerIPAddress() *IPAddress {
 	return addr.GetLower()
 }
 
+// GetUpperIPAddress returns the address in the subnet or address collection with the highest numeric value,
+// which will be the same address if it represents a single value.
+// For example, for "1.2-3.4.5-6", the series "1.3.4.6" is returned.
 // GetUpperIPAddress implements the IPAddressRange interface, and is equivalent to GetUpper()
 func (addr *IPAddress) GetUpperIPAddress() *IPAddress {
 	return addr.GetUpper()
@@ -892,6 +899,7 @@ func (addr *IPAddress) IsPrefixed() bool {
 	return addr != nil && addr.isPrefixed()
 }
 
+// WithoutPrefixLen provides the same address but with no prefix length.  The values remain unchanged.
 func (addr *IPAddress) WithoutPrefixLen() *IPAddress {
 	if !addr.IsPrefixed() {
 		return addr
@@ -1038,6 +1046,8 @@ func (addr *IPAddress) Compare(item AddressItem) int {
 	return CountComparator.Compare(addr, item)
 }
 
+// Equal returns whether the given address or subnet is equal to this address or subnet.
+// Two address instances are equal if they represent the same set of addresses.
 func (addr *IPAddress) Equal(other AddressType) bool {
 	if addr == nil {
 		return other == nil || other.ToAddressBase() == nil

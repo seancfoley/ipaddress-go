@@ -859,6 +859,8 @@ func (rng *IPAddressSeqRange) ContainsRange(other IPAddressSeqRangeType) bool {
 	return rng.init().containsRange(other)
 }
 
+// Equal returns whether the given sequential address range is equal to this sequential address range.
+// Two sequential address ranges are equal if their lower and upper range boundaries are equal.
 func (rng *IPAddressSeqRange) Equal(other IPAddressSeqRangeType) bool {
 	if rng == nil {
 		return other == nil || other.ToIP() == nil

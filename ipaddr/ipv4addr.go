@@ -392,11 +392,17 @@ func (addr *IPv4Address) GetUpper() *IPv4Address {
 	return addr.init().getUpper().ToIPv4()
 }
 
+// GetLowerIPAddress returns the address in the subnet or address collection with the lowest numeric value,
+// which will be the same address if it represents a single value.
+// For example, for "1.2-3.4.5-6", the series "1.2.4.5" is returned.
 // GetLowerIPAddress implements the IPAddressRange interface
 func (addr *IPv4Address) GetLowerIPAddress() *IPAddress {
 	return addr.GetLower().ToIP()
 }
 
+// GetUpperIPAddress returns the address in the subnet or address collection with the highest numeric value,
+// which will be the same address if it represents a single value.
+// For example, for "1.2-3.4.5-6", the series "1.3.4.6" is returned.
 // GetUpperIPAddress implements the IPAddressRange interface
 func (addr *IPv4Address) GetUpperIPAddress() *IPAddress {
 	return addr.GetUpper().ToIP()
@@ -469,6 +475,7 @@ func (addr *IPv4Address) ToBlock(segmentIndex int, lower, upper SegInt) *IPv4Add
 	return addr.init().toBlock(segmentIndex, lower, upper).ToIPv4()
 }
 
+// WithoutPrefixLen provides the same address but with no prefix length.  The values remain unchanged.
 func (addr *IPv4Address) WithoutPrefixLen() *IPv4Address {
 	if !addr.IsPrefixed() {
 		return addr
@@ -661,10 +668,14 @@ func (addr *IPv4Address) Contains(other AddressType) bool {
 	return otherAddr.getAddrType() == ipv4Type && addr.section.sameCountTypeContains(otherAddr.GetSection())
 }
 
+// Compare returns a negative integer, zero, or a positive integer if this instance is less than, equal, or greater than the give item.
+// Any address item is comparable to any other.
 func (addr *IPv4Address) Compare(item AddressItem) int {
 	return CountComparator.Compare(addr, item)
 }
 
+// Equal returns whether the given address or subnet is equal to this address or subnet.
+// Two address instances are equal if they represent the same set of addresses.
 func (addr *IPv4Address) Equal(other AddressType) bool {
 	if addr == nil {
 		return other == nil || other.ToAddressBase() == nil

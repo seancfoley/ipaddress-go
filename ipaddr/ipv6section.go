@@ -320,6 +320,13 @@ func (section *IPv6AddressSection) Contains(other AddressSectionType) bool {
 	return section.contains(other)
 }
 
+// Equal returns whether the given address section is equal to this address section.
+// Two address sections are equal if they represent the same set of sections.
+// They must match:
+//  - type/version: IPv6
+//  - segment count
+//  - segment value ranges
+// Prefix lengths are ignored.
 func (section *IPv6AddressSection) Equal(other AddressSectionType) bool {
 	if section == nil {
 		return other == nil || other.ToSectionBase() == nil
@@ -596,6 +603,7 @@ func (section *IPv6AddressSection) ToBlock(segmentIndex int, lower, upper SegInt
 	return section.toBlock(segmentIndex, lower, upper).ToIPv6()
 }
 
+// WithoutPrefixLen provides the same address section but with no prefix length.  The values remain unchanged.
 func (section *IPv6AddressSection) WithoutPrefixLen() *IPv6AddressSection {
 	if !section.IsPrefixed() {
 		return section

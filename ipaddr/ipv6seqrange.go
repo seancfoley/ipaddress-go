@@ -107,10 +107,12 @@ func (rng *IPv6AddressSeqRange) GetByteCount() int {
 	return rng.GetLower().GetByteCount()
 }
 
+// GetLowerIPAddress satisfies the IPAddressRange interface, returning the lower address in the range, same as GetLower()
 func (rng *IPv6AddressSeqRange) GetLowerIPAddress() *IPAddress {
 	return rng.init().lower
 }
 
+// GetUpperIPAddress satisfies the IPAddressRange interface, returning the upper address in the range, same as GetUpper()
 func (rng *IPv6AddressSeqRange) GetUpperIPAddress() *IPAddress {
 	return rng.init().upper
 }
@@ -181,6 +183,8 @@ func (rng *IPv6AddressSeqRange) ContainsRange(other IPAddressSeqRangeType) bool 
 	return rng.init().containsRange(other)
 }
 
+// Equal returns whether the given sequential address range is equal to this sequential address range.
+// Two sequential address ranges are equal if their lower and upper range boundaries are equal.
 func (rng *IPv6AddressSeqRange) Equal(other IPAddressSeqRangeType) bool {
 	if rng == nil {
 		return other == nil || other.ToIP() == nil

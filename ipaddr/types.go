@@ -77,7 +77,7 @@ func (p *PrefixBitCount) copy() PrefixLen {
 	return &res
 }
 
-// Equal compares two PrefixLen values for equality.  This method is intended for the PrefixLen type.  BitCount values should be compared with == operator.
+// Equal compares two PrefixLen values for equality.  This method is intended for the PrefixLen type.  BitCount values should be compared with the == operator.
 func (p *PrefixBitCount) Equal(other PrefixLen) bool {
 	if p == nil {
 		return other == nil

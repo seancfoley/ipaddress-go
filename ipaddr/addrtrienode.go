@@ -625,7 +625,7 @@ func (node *AddressTrieNode) Compare(other *AddressTrieNode) int {
 	return node.toTrieNode().Compare(other.toTrieNode())
 }
 
-// Equal returns whether the address and and mapped values match those of the given node
+// Equal returns whether the address and and mapped value match those of the given node
 func (node *AddressTrieNode) Equal(other *AddressTrieNode) bool {
 	return node.toTrieNode().Equal(other.toTrieNode())
 }
@@ -1098,7 +1098,7 @@ func (node *AssociativeAddressTrieNode) Compare(other *AssociativeAddressTrieNod
 	return node.toTrieNode().Compare(other.toTrieNode())
 }
 
-// Equal returns whether the key and and mapped values match those of the given node
+// Equal returns whether the key and and mapped value match those of the given node
 func (node *AssociativeAddressTrieNode) Equal(other *AssociativeAddressTrieNode) bool {
 	return node.toTrieNode().Equal(other.toTrieNode())
 }

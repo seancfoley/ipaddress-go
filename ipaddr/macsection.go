@@ -178,6 +178,13 @@ func (section *MACAddressSection) Contains(other AddressSectionType) bool {
 	return section.contains(other)
 }
 
+// Equal returns whether the given address section is equal to this address section.
+// Two address sections are equal if they represent the same set of sections.
+// They must match:
+//  - type/version: MAC
+//  - segment counts
+//  - segment value ranges
+// Prefix lengths are ignored.
 func (section *MACAddressSection) Equal(other AddressSectionType) bool {
 	if section == nil {
 		return other == nil || other.ToSectionBase() == nil
@@ -284,6 +291,7 @@ func (section *MACAddressSection) GetBlockCount(segments int) *big.Int {
 	})
 }
 
+// WithoutPrefixLen provides the same address section but with no prefix length.  The values remain unchanged.
 func (section *MACAddressSection) WithoutPrefixLen() *MACAddressSection {
 	if !section.IsPrefixed() {
 		return section

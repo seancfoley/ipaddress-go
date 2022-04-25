@@ -297,7 +297,7 @@ func (node *IPv4AddressTrieNode) Compare(other *IPv4AddressTrieNode) int {
 	return node.toTrieNode().Compare(other.toTrieNode())
 }
 
-// Equal returns whether the key and mapped values match those of the given node
+// Equal returns whether the key and mapped value match those of the given node
 func (node *IPv4AddressTrieNode) Equal(other *IPv4AddressTrieNode) bool {
 	return node.toTrieNode().Equal(other.toTrieNode())
 }
@@ -804,7 +804,7 @@ func (node *IPv4AddressAssociativeTrieNode) Compare(other *IPv4AddressAssociativ
 	return node.toTrieNode().Compare(other.toTrieNode())
 }
 
-// Equal returns whether the key and mapped values match those of the given node
+// Equal returns whether the key and mapped value match those of the given node
 func (node *IPv4AddressAssociativeTrieNode) Equal(other *IPv4AddressAssociativeTrieNode) bool {
 	return node.toTrieNode().Equal(other.toTrieNode())
 }

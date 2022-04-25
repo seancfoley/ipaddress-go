@@ -577,7 +577,8 @@ func toNormalizedAddrPortString(addr *IPAddress, port PortInt) string {
 
 // Equal returns true if the given host name matches this one.
 // For hosts to match, they must represent the same addresses or have the same host names.
-// Hosts are not resolved when matching.  Also, hosts must have the same port and service.  They must have the same masks if they are host names.
+// Hosts are not resolved when matching.  Also, hosts must have the same port or service.
+// They must have the same masks if they are host names.
 // Even if two hosts are invalid, they match if they have the same invalid string.
 func (host *HostName) Equal(other *HostName) bool {
 	if host == nil {

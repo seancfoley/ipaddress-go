@@ -207,6 +207,13 @@ func (section *IPv4AddressSection) Contains(other AddressSectionType) bool {
 	return section.contains(other)
 }
 
+// Equal returns whether the given address section is equal to this address section.
+// Two address sections are equal if they represent the same set of sections.
+// They must match:
+//  - type/version: IPv4
+//  - segment counts
+//  - segment value ranges
+// Prefix lengths are ignored.
 func (section *IPv4AddressSection) Equal(other AddressSectionType) bool {
 	if section == nil {
 		return other == nil || other.ToSectionBase() == nil
@@ -570,6 +577,7 @@ func (section *IPv4AddressSection) ToBlock(segmentIndex int, lower, upper SegInt
 	return section.toBlock(segmentIndex, lower, upper).ToIPv4()
 }
 
+// WithoutPrefixLen provides the same address section but with no prefix length.  The values remain unchanged.
 func (section *IPv4AddressSection) WithoutPrefixLen() *IPv4AddressSection {
 	if !section.IsPrefixed() {
 		return section

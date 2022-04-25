@@ -30,6 +30,9 @@ type ExtendedSegmentSeries interface {
 	// Unwrap returns the wrapped *Address or *AddressSection as an interface, AddressSegmentSeries
 	Unwrap() AddressSegmentSeries
 
+	// Equal returns whether the given address series is equal to this address series.
+	// Two address series are equal if they represent the same set of series.
+	// Both must be equal addresses or both must be equal sections.
 	Equal(ExtendedSegmentSeries) bool
 
 	// Contains returns whether this is same type and version as the given address series and whether it contains all values in the given series.
@@ -150,6 +153,8 @@ type ExtendedSegmentSeries interface {
 	AdjustPrefixLenZeroed(BitCount) (ExtendedSegmentSeries, addrerr.IncompatibleAddressError)
 	SetPrefixLen(BitCount) ExtendedSegmentSeries
 	SetPrefixLenZeroed(BitCount) (ExtendedSegmentSeries, addrerr.IncompatibleAddressError)
+
+	// WithoutPrefixLen provides the same address series but with no prefix length.  The values remain unchanged.
 	WithoutPrefixLen() ExtendedSegmentSeries
 
 	// ReverseBytes returns a new segment series with the bytes reversed.  Any prefix length is dropped.
@@ -294,6 +299,7 @@ func (addr WrappedAddress) AssignMinPrefixForBlock() ExtendedSegmentSeries {
 	return WrapAddress(addr.Address.AssignMinPrefixForBlock())
 }
 
+// WithoutPrefixLen provides the same address series but with no prefix length.  The values remain unchanged.
 func (addr WrappedAddress) WithoutPrefixLen() ExtendedSegmentSeries {
 	return WrapAddress(addr.Address.WithoutPrefixLen())
 }
@@ -306,6 +312,9 @@ func (addr WrappedAddress) Contains(other ExtendedSegmentSeries) bool {
 	return ok && addr.Address.Contains(a)
 }
 
+// Equal returns whether the given address series is equal to this address series.
+// Two address series are equal if they represent the same set of series.
+// Both must be equal addresses.
 func (addr WrappedAddress) Equal(other ExtendedSegmentSeries) bool {
 	a, ok := other.Unwrap().(AddressType)
 	return ok && addr.Address.Equal(a)
@@ -489,6 +498,7 @@ func (section WrappedAddressSection) AssignMinPrefixForBlock() ExtendedSegmentSe
 	return WrapSection(section.AddressSection.AssignMinPrefixForBlock())
 }
 
+// WithoutPrefixLen provides the same address series but with no prefix length.  The values remain unchanged.
 func (section WrappedAddressSection) WithoutPrefixLen() ExtendedSegmentSeries {
 	return WrapSection(section.AddressSection.WithoutPrefixLen())
 }
@@ -513,6 +523,9 @@ func (section WrappedAddressSection) CompareSize(other ExtendedSegmentSeries) in
 	return section.GetCount().Cmp(other.GetCount())
 }
 
+// Equal returns whether the given address series is equal to this address series.
+// Two address series are equal if they represent the same set of series.
+// Both must be equal sections.
 func (section WrappedAddressSection) Equal(other ExtendedSegmentSeries) bool {
 	s, ok := other.Unwrap().(AddressSectionType)
 	return ok && section.AddressSection.Equal(s)

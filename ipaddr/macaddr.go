@@ -409,6 +409,7 @@ func (addr *MACAddress) ToBlock(segmentIndex int, lower, upper SegInt) *MACAddre
 	return addr.init().toBlock(segmentIndex, lower, upper).ToMAC()
 }
 
+// WithoutPrefixLen provides the same address but with no prefix length.  The values remain unchanged.
 func (addr *MACAddress) WithoutPrefixLen() *MACAddress {
 	if !addr.IsPrefixed() {
 		return addr
@@ -521,6 +522,8 @@ func (addr *MACAddress) Contains(other AddressType) bool {
 	return addr.init().contains(other)
 }
 
+// Equal returns whether the given address or address collection is equal to this address or address collection.
+// Two address instances are equal if they represent the same set of addresses.
 func (addr *MACAddress) Equal(other AddressType) bool {
 	if addr == nil {
 		return other == nil || other.ToAddressBase() == nil

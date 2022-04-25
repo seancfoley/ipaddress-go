@@ -171,6 +171,11 @@ func (seg *IPv4AddressSegment) Contains(other AddressSegmentType) bool {
 	return seg.init().contains(other)
 }
 
+// Equal returns whether the given segment is equal to this segment.
+// Two segments are equal if they match:
+//  - type/version: IPv4
+//  - value range
+// Prefix lengths are ignored.
 func (seg *IPv4AddressSegment) Equal(other AddressSegmentType) bool {
 	if seg == nil {
 		return other == nil || other.ToDiv() == nil
@@ -353,6 +358,7 @@ func (seg *IPv4AddressSegment) IsPrefixed() bool {
 	return seg != nil && seg.isPrefixed()
 }
 
+// WithoutPrefixLen returns a segment with the same value range but without a prefix length.
 func (seg *IPv4AddressSegment) WithoutPrefixLen() *IPv4AddressSegment {
 	if !seg.IsPrefixed() {
 		return seg

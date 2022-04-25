@@ -364,7 +364,19 @@ var _, _ MACAddressSegmentSeries = &MACAddress{}, &MACAddressSection{}
 type AddressSectionType interface {
 	StandardDivGroupingType
 
+	// Equal returns whether the given address section is equal to this address section.
+	// Two address sections are equal if they represent the same set of sections.
+	// They must match:
+	//  - type/version (IPv4, IPv6, MAC, etc)
+	//  - segment counts
+	//. - bits per segment
+	//  - segment value ranges
+	// Prefix lengths are ignored.
 	Equal(AddressSectionType) bool
+
+	// Contains returns whether this is same type and version as the given address section and whether it contains all values in the given section.
+	//
+	// Sections must also have the same number of segments to be comparable, otherwise false is returned.
 	Contains(AddressSectionType) bool
 
 	// PrefixEqual determines if the given section matches this section up to the prefix length of this section.
@@ -399,7 +411,11 @@ var _, _, _, _, _ AddressSectionType = &AddressSection{},
 type AddressType interface {
 	AddressSegmentSeries
 
+	// Equal returns whether the given address or subnet is equal to this address or subnet.
+	// Two address instances are equal if they represent the same set of addresses.
 	Equal(AddressType) bool
+
+	// Contains returns whether this is same type and version as the given address or subnet and whether it contains all addresses in the given address or subnet.
 	Contains(AddressType) bool
 
 	// CompareSize compares the counts of two subnets, the number of individual addresses within.
@@ -428,7 +444,14 @@ type AddressType interface {
 var _, _ AddressType = &Address{}, &MACAddress{}
 
 type ipAddressRange interface {
+	// GetLowerIPAddress returns the address in the subnet or address collection with the lowest numeric value,
+	// which will be the same address if it represents a single value.
+	// For example, for "1.2-3.4.5-6", the series "1.2.4.5" is returned.
 	GetLowerIPAddress() *IPAddress
+
+	// GetUpperIPAddress returns the address in the subnet or address collection with the highest numeric value,
+	// which will be the same address if it represents a single value.
+	// For example, for "1.2-3.4.5-6", the series "1.3.4.6" is returned.
 	GetUpperIPAddress() *IPAddress
 
 	CopyNetIP(bytes net.IP) net.IP
@@ -497,7 +520,7 @@ type IPAddressSeqRangeType interface {
 	// ContainsRange returns whether all the addresses in the given sequential range are also contained in this sequential range.
 	ContainsRange(IPAddressSeqRangeType) bool
 
-	// Contains returns whether this range contains all addresses in the given address or subnet.
+	// Contains returns whether this range contains all IP addresses in the given address or subnet.
 	Contains(IPAddressType) bool
 
 	// ToIP converts to an IPAddressSeqRange, a polymorphic type usable with all IP address sequential ranges.

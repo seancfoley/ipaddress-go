@@ -656,9 +656,6 @@ func (addr *addressInternal) prefixContains(other AddressType) bool {
 		addr.isSameZone(otherAddr)
 }
 
-// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
-// contains and equals are next.
-
 func (addr *addressInternal) contains(other AddressType) bool {
 	if other == nil {
 		return true
@@ -712,6 +709,9 @@ func (addr *IPAddress) equalsSameVersion(other *IPAddress) bool {
 func (addr *addressInternal) withoutPrefixLen() *Address {
 	return addr.checkIdentity(addr.section.withoutPrefixLen())
 }
+
+// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
+// adjustPrefixLen is next.
 
 func (addr *addressInternal) adjustPrefixLen(prefixLen BitCount) *Address {
 	return addr.checkIdentity(addr.section.adjustPrefixLen(prefixLen))
@@ -1370,6 +1370,7 @@ func (addr *Address) ToBlock(segmentIndex int, lower, upper SegInt) *Address {
 	return addr.init().toBlock(segmentIndex, lower, upper)
 }
 
+// WithoutPrefixLen provides the same address but with no prefix length.  The values remain unchanged.
 func (addr *Address) WithoutPrefixLen() *Address {
 	if !addr.IsPrefixed() {
 		return addr

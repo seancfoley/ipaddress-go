@@ -297,7 +297,7 @@ func (node *IPv6AddressTrieNode) AsNewTrie() *IPv6AddressTrie {
 	return toAddressTrie(node.toTrieNode().AsNewTrie()).ToIPv6()
 }
 
-// Equal returns whether the key and mapped values match those of the given node
+// Equal returns whether the key and mapped value match those of the given node
 func (node *IPv6AddressTrieNode) Equal(other *IPv6AddressTrieNode) bool {
 	return node.toTrieNode().Equal(other.toTrieNode())
 }
@@ -804,7 +804,7 @@ func (node *IPv6AddressAssociativeTrieNode) Compare(other *IPv6AddressAssociativ
 	return node.toTrieNode().Compare(other.toTrieNode())
 }
 
-// Equal returns whether the key and mapped values match those of the given node
+// Equal returns whether the key and mapped value match those of the given node
 func (node *IPv6AddressAssociativeTrieNode) Equal(other *IPv6AddressAssociativeTrieNode) bool {
 	return node.toTrieNode().Equal(other.toTrieNode())
 }

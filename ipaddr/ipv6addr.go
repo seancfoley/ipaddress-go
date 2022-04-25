@@ -681,11 +681,15 @@ func (addr *IPv6Address) GetUpper() *IPv6Address {
 	return addr.init().getUpper().ToIPv6()
 }
 
+// GetLowerIPAddress returns the address in the subnet or address collection with the lowest numeric value,
+// which will be the same address if it represents a single value.
 // GetLowerIPAddress implements the IPAddressRange interface
 func (addr *IPv6Address) GetLowerIPAddress() *IPAddress {
 	return addr.GetLower().ToIP()
 }
 
+// GetUpperIPAddress returns the address in the subnet or address collection with the highest numeric value,
+// which will be the same address if it represents a single value.
 // GetUpperIPAddress implements the IPAddressRange interface
 func (addr *IPv6Address) GetUpperIPAddress() *IPAddress {
 	return addr.GetUpper().ToIP()
@@ -750,6 +754,7 @@ func (addr *IPv6Address) ToBlock(segmentIndex int, lower, upper SegInt) *IPv6Add
 	return addr.init().toBlock(segmentIndex, lower, upper).ToIPv6()
 }
 
+// WithoutPrefixLen provides the same address but with no prefix length.  The values remain unchanged.
 func (addr *IPv6Address) WithoutPrefixLen() *IPv6Address {
 	if !addr.IsPrefixed() {
 		return addr
@@ -939,6 +944,8 @@ func (addr *IPv6Address) Compare(item AddressItem) int {
 	return CountComparator.Compare(addr, item)
 }
 
+// Equal returns whether the given address or subnet is equal to this address or subnet.
+// Two address instances are equal if they represent the same set of addresses.
 func (addr *IPv6Address) Equal(other AddressType) bool {
 	if addr == nil {
 		return other == nil || other.ToAddressBase() == nil
