@@ -168,6 +168,9 @@ type MACAddressSection struct {
 	addressSectionInternal
 }
 
+// Contains returns whether this is same type and version as the given address section and whether it contains all values in the given section.
+//
+// Sections must also have the same number of segments to be comparable, otherwise false is returned.
 func (section *MACAddressSection) Contains(other AddressSectionType) bool {
 	if section == nil {
 		return other == nil || other.ToSectionBase() == nil
@@ -458,6 +461,10 @@ func (section *MACAddressSection) IncrementBoundary(increment int64) *MACAddress
 	return section.incrementBoundary(increment).ToMAC()
 }
 
+// IsAdaptiveZero returns true if the section was originally created as a zero-valued section (eg MACAddressSection{}),
+// meaning it was not constructed using a constructor function.
+// Such a grouping, which has no divisions or segments, is convertible to a zero-valued grouping of any type or version, whether IPv6, IPv4, MAC, etc
+// It is not considered equal to constructions of specific zero length sections or groupings like NewIPv4Section(nil) which can only represent a zero-length section of a single address type.
 func (section *MACAddressSection) IsAdaptiveZero() bool {
 	return section != nil && section.matchesZeroGrouping()
 }

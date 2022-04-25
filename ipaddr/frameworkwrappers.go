@@ -31,6 +31,10 @@ type ExtendedSegmentSeries interface {
 	Unwrap() AddressSegmentSeries
 
 	Equal(ExtendedSegmentSeries) bool
+
+	// Contains returns whether this is same type and version as the given address series and whether it contains all values in the given series.
+	//
+	// Series must also have the same number of segments to be comparable, otherwise false is returned.
 	Contains(ExtendedSegmentSeries) bool
 
 	// CompareSize compares the counts of two address series, the number of individual series represented in each.
@@ -294,6 +298,9 @@ func (addr WrappedAddress) WithoutPrefixLen() ExtendedSegmentSeries {
 	return WrapAddress(addr.Address.WithoutPrefixLen())
 }
 
+// Contains returns whether this is same type and version as the given address series and whether it contains all values in the given series.
+//
+// Series must also have the same number of segments to be comparable, otherwise false is returned.
 func (addr WrappedAddress) Contains(other ExtendedSegmentSeries) bool {
 	a, ok := other.Unwrap().(AddressType)
 	return ok && addr.Address.Contains(a)
@@ -486,6 +493,9 @@ func (section WrappedAddressSection) WithoutPrefixLen() ExtendedSegmentSeries {
 	return WrapSection(section.AddressSection.WithoutPrefixLen())
 }
 
+// Contains returns whether this is same type and version as the given address series and whether it contains all values in the given series.
+//
+// Series must also have the same number of segments to be comparable, otherwise false is returned.
 func (section WrappedAddressSection) Contains(other ExtendedSegmentSeries) bool {
 	s, ok := other.Unwrap().(AddressSectionType)
 	return ok && section.AddressSection.Contains(s)

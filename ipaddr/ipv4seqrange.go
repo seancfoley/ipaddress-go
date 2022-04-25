@@ -163,6 +163,7 @@ func (rng *IPv4AddressSeqRange) GetUpperValue() *big.Int {
 	return rng.GetUpper().GetValue()
 }
 
+// Contains returns whether this range contains all addresses in the given address or subnet.
 func (rng *IPv4AddressSeqRange) Contains(other IPAddressType) bool {
 	if rng == nil {
 		return other == nil || other.ToAddressBase() == nil
@@ -170,6 +171,7 @@ func (rng *IPv4AddressSeqRange) Contains(other IPAddressType) bool {
 	return rng.init().contains(other)
 }
 
+// ContainsRange returns whether all the addresses in the given sequential range are also contained in this sequential range.
 func (rng *IPv4AddressSeqRange) ContainsRange(other IPAddressSeqRangeType) bool {
 	if rng == nil {
 		return other == nil || other.ToIP() == nil

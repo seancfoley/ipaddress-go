@@ -128,7 +128,7 @@ func (trie *IPv4AddressTrie) AddTrie(added *IPv4AddressTrieNode) *IPv4AddressTri
 //
 // Returns true if the prefix block or address exists already in the trie, false otherwise.
 //
-// Use GetAddedNode  to get the node for the address rather than just checking for its existence.
+// Use GetAddedNode to get the node for the address rather than just checking for its existence.
 func (trie *IPv4AddressTrie) Contains(addr *IPv4Address) bool {
 	return trie.contains(addr.ToAddressBase())
 }

@@ -310,6 +310,9 @@ type IPv6AddressSection struct {
 	ipAddressSectionInternal
 }
 
+// Contains returns whether this is same type and version as the given address section and whether it contains all values in the given section.
+//
+// Sections must also have the same number of segments to be comparable, otherwise false is returned.
 func (section *IPv6AddressSection) Contains(other AddressSectionType) bool {
 	if section == nil {
 		return other == nil || other.ToSectionBase() == nil
@@ -344,6 +347,7 @@ func (section *IPv6AddressSection) CompareSize(other StandardDivGroupingType) in
 	return section.compareSize(other)
 }
 
+// GetIPVersion returns IPv6, the IP version of this address section
 func (section *IPv6AddressSection) GetIPVersion() IPVersion {
 	return IPv6
 }
@@ -1035,6 +1039,10 @@ func (section *IPv6AddressSection) ReplaceLen(startIndex, endIndex int, replacem
 	return section.replaceLen(startIndex, endIndex, replacement.ToIP(), replacementStartIndex, replacementEndIndex, ipv6BitsToSegmentBitshift).ToIPv6()
 }
 
+// IsAdaptiveZero returns true if the section was originally created as a zero-valued section or grouping (eg IPv4AddressSection{}),
+// meaning it was not constructed using a constructor function.
+// Such a grouping, which has no divisions or segments, is convertible to a zero-valued grouping of any type or version, whether IPv6, IPv4, MAC, etc
+// It is not considered equal to constructions of specific zero length sections or groupings like NewIPv4Section(nil) which can only represent a zero-length section of a single address type.
 func (section *IPv6AddressSection) IsAdaptiveZero() bool {
 	return section != nil && section.matchesZeroGrouping()
 }
@@ -1679,6 +1687,9 @@ func (grouping *IPv6v4MixedAddressGrouping) IsPrefixed() bool {
 	return grouping != nil && grouping.isPrefixed()
 }
 
+// IsAdaptiveZero returns true if the grouping was originally created as a zero-valued grouping (eg IPv6v4MixedAddressGrouping{}),
+// meaning it was not constructed using a constructor function.
+// Such a grouping, which has no divisions or segments, is convertible to a zero-valued grouping of any type or version, whether IPv6, IPv4, MAC, etc
 func (grouping *IPv6v4MixedAddressGrouping) IsAdaptiveZero() bool {
 	return grouping != nil && grouping.matchesZeroGrouping()
 }

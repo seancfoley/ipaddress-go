@@ -31,6 +31,10 @@ type ExtendedIPSegmentSeries interface {
 	Unwrap() IPAddressSegmentSeries
 
 	Equal(ExtendedIPSegmentSeries) bool
+
+	// Contains returns whether this is same type and version as the given address series and whether it contains all values in the given series.
+	//
+	// Series must also have the same number of segments to be comparable, otherwise false is returned.
 	Contains(ExtendedIPSegmentSeries) bool
 
 	// CompareSize compares the counts of two address series, the number of individual series represented in each.
@@ -352,6 +356,9 @@ func (addr WrappedIPAddress) CoverWithPrefixBlock() ExtendedIPSegmentSeries {
 	return addr.IPAddress.coverSeriesWithPrefixBlock()
 }
 
+// Contains returns whether this is same type and version as the given address series and whether it contains all values in the given series.
+//
+// Series must also have the same number of segments to be comparable, otherwise false is returned.
 func (addr WrappedIPAddress) Contains(other ExtendedIPSegmentSeries) bool {
 	a, ok := other.Unwrap().(AddressType)
 	return ok && addr.IPAddress.Contains(a)
@@ -582,6 +589,9 @@ func (section WrappedIPAddressSection) CoverWithPrefixBlock() ExtendedIPSegmentS
 	return section.IPAddressSection.coverSeriesWithPrefixBlock()
 }
 
+// Contains returns whether this is same type and version as the given address series and whether it contains all values in the given series.
+//
+// Series must also have the same number of segments to be comparable, otherwise false is returned.
 func (section WrappedIPAddressSection) Contains(other ExtendedIPSegmentSeries) bool {
 	s, ok := other.Unwrap().(AddressSectionType)
 	return ok && section.IPAddressSection.Contains(s)

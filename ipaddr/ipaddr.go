@@ -645,9 +645,9 @@ var zeroIPAddr = createIPAddress(zeroSection, NoZone)
 
 //
 //
-// IPAddress represents an IPAddress, either IPv4 or IPv6.
-// Only the zero-value IPAddress can be neither IPv4 or IPv6.
-// The zero value has no segments, which is not compatible with zero value for ivp4 or ipv6.
+// IPAddress represents an IP address or subnet, either IPv4 or IPv6.
+// An IP address is composed of range-valued segments and can optionally have an associated prefix length.
+// The zero value IPAddress has no segments, neither IPv4 nor IPv6, which is not compatible with zero value for ivp4 or ipv6.
 type IPAddress struct {
 	ipAddressInternal
 }
@@ -1011,14 +1011,22 @@ func (addr *IPAddress) IsOneBit(bitIndex BitCount) bool {
 	return addr.init().isOneBit(bitIndex)
 }
 
+// PrefixEqual determines if the given address matches this address up to the prefix length of this address.
+// It returns whether the two addresses share the same range of prefix values.
 func (addr *IPAddress) PrefixEqual(other AddressType) bool {
 	return addr.init().prefixEquals(other)
 }
 
+// PrefixContains returns whether the prefix values in the given address or subnet
+// are prefix values in this address or subnet, using the prefix length of this address or subnet.
+// If this address has no prefix length, the entire address is compared.
+//
+// It returns whether the prefix of this address contains all values of the same prefix length in the given address.
 func (addr *IPAddress) PrefixContains(other AddressType) bool {
 	return addr.init().prefixContains(other)
 }
 
+// Contains returns whether this is the same type and version as the given address or subnet and whether it contains all addresses in the given address or subnet.
 func (addr *IPAddress) Contains(other AddressType) bool {
 	if addr == nil {
 		return other == nil || other.ToAddressBase() == nil
@@ -1121,6 +1129,7 @@ func (addr *IPAddress) IsIPv6() bool {
 	return addr != nil && addr.isIPv6()
 }
 
+// GetIPVersion returns the IP version of this address
 func (addr *IPAddress) GetIPVersion() IPVersion {
 	return addr.getIPVersion()
 }
@@ -1405,15 +1414,15 @@ func versionsMatch(one, two *IPAddress) bool {
 	return one.getAddrType() == two.getAddrType()
 }
 
-func allVersionsMatch(one *IPAddress, two []*IPAddress) bool {
-	addrType := one.getAddrType()
-	for _, addr := range two {
-		if addr.getAddrType() != addrType {
-			return false
-		}
-	}
-	return true
-}
+//func allVersionsMatch(one *IPAddress, two []*IPAddress) bool {
+//	addrType := one.getAddrType()
+//	for _, addr := range two {
+//		if addr.getAddrType() != addrType {
+//			return false
+//		}
+//	}
+//	return true
+//}
 
 //
 // MergeToSequentialBlocks merges this with the list of addresses to produce the smallest array of blocks that are sequential
@@ -1945,6 +1954,7 @@ func NewIPAddressFromPrefixedNetIPAddr(addr *net.IPAddr, prefixLength PrefixLen)
 	return nil, &addressValueError{addressError: addressError{key: "ipaddress.error.exceeds.size"}}
 }
 
+// NewIPAddressFromNetIPNet constructs a subnet from a net.IPNet
 // The error can be either addrerr.AddressValueError or addrerr.IncompatibleAddressError
 func NewIPAddressFromNetIPNet(ipnet *net.IPNet) (*IPAddress, addrerr.AddressError) {
 	ip := ipnet.IP
@@ -2012,7 +2022,7 @@ func NewIPAddressFromSegments(segments []*IPAddressSegment) (res *IPAddress, err
 	return NewIPAddressFromPrefixedSegments(segments, nil)
 }
 
-// newIPAddressFromSegments creates an address from the given segments and prefix length.
+// NewIPAddressFromPrefixedSegments creates an address from the given segments and prefix length.
 // If the segments are not consistently IPv4 or IPv6, or if there is not the correct number for the version,
 // then nil is returned.  An error is not returned because it is not clear with version was intended and so any error may be misleading as to what was incorrect.
 func NewIPAddressFromPrefixedSegments(segs []*IPAddressSegment, prefixLength PrefixLen) (res *IPAddress, err addrerr.AddressValueError) {

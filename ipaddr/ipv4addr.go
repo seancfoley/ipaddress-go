@@ -152,7 +152,9 @@ func initZeroIPv4() *IPv4Address {
 
 //
 //
-// IPv4Address is an IPv4 address, or a subnet of multiple IPv4 addresses.  Each segment can represent a single value or a range of values.
+// IPv4Address is an IPv4 address, or a subnet of multiple IPv4 addresses.
+// An IPv4 address is composed of 4 1-byte segments and can optionally have an associated prefix length.
+// Each segment can represent a single value or a range of values.
 // The zero value is 0.0.0.0
 type IPv4Address struct {
 	ipAddressInternal
@@ -302,6 +304,7 @@ func (addr *IPv4Address) GetDivisionCount() int {
 	return addr.init().getDivisionCount()
 }
 
+// GetIPVersion returns IPv4, the IP version of this address
 func (addr *IPv4Address) GetIPVersion() IPVersion {
 	return IPv4
 }
@@ -628,14 +631,22 @@ func (addr *IPv4Address) IsOneBit(bitIndex BitCount) bool {
 	return addr.init().isOneBit(bitIndex)
 }
 
+// PrefixEqual determines if the given address matches this address up to the prefix length of this address.
+// It returns whether the two addresses share the same range of prefix values.
 func (addr *IPv4Address) PrefixEqual(other AddressType) bool {
 	return addr.init().prefixEquals(other)
 }
 
+// PrefixContains returns whether the prefix values in the given address or subnet
+// are prefix values in this address or subnet, using the prefix length of this address or subnet.
+// If this address has no prefix length, the entire address is compared.
+//
+// It returns whether the prefix of this address contains all values of the same prefix length in the given address.
 func (addr *IPv4Address) PrefixContains(other AddressType) bool {
 	return addr.init().prefixContains(other)
 }
 
+// Contains returns whether this is the same type and version as the given address or subnet and whether it contains all addresses in the given address or subnet.
 func (addr *IPv4Address) Contains(other AddressType) bool {
 	if other == nil || other.ToAddressBase() == nil {
 		return true

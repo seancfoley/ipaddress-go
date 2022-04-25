@@ -102,7 +102,6 @@ type AddressItem interface {
 	Compare(item AddressItem) int
 
 	fmt.Stringer
-	fmt.Formatter
 }
 
 // AddressComponent represents all addresses, address sections, and address segments
@@ -147,9 +146,10 @@ var _, _ StandardDivGroupingType = &AddressDivisionGrouping{},
 type AddressDivisionSeries interface {
 	AddressItem
 
+	// GetDivisionCount returns the number of divisions
 	GetDivisionCount() int
 
-	// GetPrefixCountLen returns the count of prefixes in this series for the given prefix length.
+	// GetPrefixCount returns the count of prefixes in this series for its prefix length, or the total count if it has no prefix length
 	GetPrefixCount() *big.Int
 
 	// GetBlockCount returns the count of distinct values in the given number of initial (more significant) segments.
@@ -197,7 +197,13 @@ type AddressSegmentSeries interface { // Address and above, AddressSection and a
 
 	AddressDivisionSeries
 
+	// GetMaxSegmentValue returns the maximum possible segment value for this type of series.
+	//
+	// Note this is not the maximum of the range of segment values in this specific series,
+	// this is the maximum value of any segment for this series type and version, determined by the number of bits per segment.
 	GetMaxSegmentValue() SegInt
+
+	// GetSegmentCount returns the number of segments, which is the same as the division count since the segments are also the divisions
 	GetSegmentCount() int
 
 	// GetBitsPerSegment returns the number of bits comprising each segment in this series.  Segments in the same series are equal length.
@@ -214,6 +220,9 @@ type AddressSegmentSeries interface { // Address and above, AddressSection and a
 
 	GetSegmentStrings() []string
 
+	// GetGenericSegment returns the segment at the given index as an AddressSegmentType.
+	// The first segment is at index 0.
+	// GetGenericSegment will panic given a negative index or index larger than the segment count.
 	GetGenericSegment(index int) AddressSegmentType
 }
 
@@ -278,6 +287,9 @@ type IPv6AddressSegmentSeries interface {
 	// into the given slice, as much as can be fit into the slice, returning the number of segments copied
 	CopySubSegments(start, end int, segs []*IPv6AddressSegment) (count int)
 
+	// GetSegment returns the segment at the given index.
+	// The first segment is at index 0.
+	// GetSegment will panic given a negative index or index larger than the segment count.
 	GetSegment(index int) *IPv6AddressSegment
 }
 
@@ -355,6 +367,21 @@ type AddressSectionType interface {
 	Equal(AddressSectionType) bool
 	Contains(AddressSectionType) bool
 
+	// PrefixEqual determines if the given section matches this section up to the prefix length of this section.
+	// It returns whether the argument section has the same address section prefix values as this.
+	//
+	// The entire prefix of this section must be present in the other section to be comparable.
+	PrefixEqual(AddressSectionType) bool
+
+	// PrefixContains returns whether the prefix values in the given address section
+	// are prefix values in this address section, using the prefix length of this section.
+	// If this address section has no prefix length, the entire address is compared.
+	//
+	// It returns whether the prefix of this address contains all values of the same prefix length in the given address.
+	//
+	// All prefix bits of this section must be present in the other section to be comparable.
+	PrefixContains(AddressSectionType) bool
+
 	ToSectionBase() *AddressSection
 }
 
@@ -382,7 +409,17 @@ type AddressType interface {
 	// CompareSize returns a positive integer if this address has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
 	CompareSize(AddressType) int
 
+	// PrefixEqual determines if the given address matches this address up to the prefix length of this address.
+	// If this address has no prefix length, the entire address is compared.
+	//
+	// It returns whether the two addresses share the same range of prefix values.
 	PrefixEqual(AddressType) bool
+
+	// PrefixContains returns whether the prefix values in the given address or subnet
+	// are prefix values in this address or subnet, using the prefix length of this address or subnet.
+	// If this address has no prefix length, the entire address is compared.
+	//
+	// It returns whether the prefix of this address contains all values of the same prefix length in the given address.
 	PrefixContains(AddressType) bool
 
 	ToAddressBase() *Address
@@ -457,7 +494,10 @@ type IPAddressSeqRangeType interface {
 	// CompareSize returns a positive integer if this address has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
 	CompareSize(IPAddressSeqRangeType) int
 
+	// ContainsRange returns whether all the addresses in the given sequential range are also contained in this sequential range.
 	ContainsRange(IPAddressSeqRangeType) bool
+
+	// Contains returns whether this range contains all addresses in the given address or subnet.
 	Contains(IPAddressType) bool
 
 	// ToIP converts to an IPAddressSeqRange, a polymorphic type usable with all IP address sequential ranges.

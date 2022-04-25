@@ -603,33 +603,30 @@ func (addr *addressInternal) reverseSegments() *Address {
 	return addr.checkIdentity(addr.section.ReverseSegments())
 }
 
-// isIPv4() returns whether this matches an IPv4 address.
+// isIPv4 returns whether this matches an IPv4 address.
 // we allow nil receivers to allow this to be called following a failed conversion like ToIP()
 func (addr *addressInternal) isIPv4() bool {
 	return addr.section != nil && addr.section.matchesIPv4AddressType()
 }
 
-// isIPv6() returns whether this matches an IPv6 address.
+// isIPv6 returns whether this matches an IPv6 address.
 // we allow nil receivers to allow this to be called following a failed conversion like ToIP()
 func (addr *addressInternal) isIPv6() bool {
 	return addr.section != nil && addr.section.matchesIPv6AddressType()
 }
 
-// isIPv6() returns whether this matches an IPv6 address.
+// isIPv6 returns whether this matches an IPv6 address.
 // we allow nil receivers to allow this to be called following a failed conversion like ToIP()
 func (addr *addressInternal) isMAC() bool {
 	return addr.section != nil && addr.section.matchesMACAddressType()
 }
 
-// isIP() returns whether this matches an IP address.
+// isIP returns whether this matches an IP address.
 // It must be IPv4, IPv6, or the zero IPAddress which has no segments
 // we allow nil receivers to allow this to be called following a failed conversion like ToIP()
 func (addr *addressInternal) isIP() bool {
 	return addr.section == nil /* zero addr */ || addr.section.matchesIPAddressType()
 }
-
-// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
-// prefixEquals is next .
 
 func (addr *addressInternal) prefixEquals(other AddressType) bool {
 	otherAddr := other.ToAddressBase()
@@ -658,6 +655,9 @@ func (addr *addressInternal) prefixContains(other AddressType) bool {
 		// if it is IPv6 and has a zone, then it does not contain addresses from other zones
 		addr.isSameZone(otherAddr)
 }
+
+// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
+// contains and equals are next.
 
 func (addr *addressInternal) contains(other AddressType) bool {
 	if other == nil {
@@ -1056,7 +1056,7 @@ func (addr *addressInternal) format(state fmt.State, verb rune) {
 
 var zeroAddr = createAddress(zeroSection, NoZone)
 
-// Address represents a single address, or a collection of multiple addresses, such as with a subnet.
+// Address represents a single address, or a collection of multiple addresses, such as with an IP subnet.
 //
 // Addresses consist of a sequence of segments, each of equal bit-size.
 // The number of such segments and the bit-size are determined by the underlying version or type of the address, whether IPv4, IPv6, MAC, or other.
@@ -1069,11 +1069,11 @@ var zeroAddr = createAddress(zeroSection, NoZone)
 //
 // Any given specific address types can be converted to Address with the ToAddressBase method,
 // and then back again to their original types with methods like ToIPv6, ToIP, ToIPv4, and ToMAC.
-// When calling such a method, if the address was not originally constructed as the type returned from the method,
-// then the method will return nil.  Conversion methods work with nil pointers (returning nil) so that they can always be chained together safely.
+// When calling such a method on a given address, if the address was not originally constructed as the type returned from the method,
+// then the method will return nil.  Conversion methods work with nil pointers (returning nil) so that they can be chained together safely.
 //
 // This allows for polymorphic code that works with all addresses, such as with the address trie code in this library,
-// while still allowing for methods and code specific to each address type.
+// while still allowing for methods and code specific to each address version or type.
 //
 // You can also use the methods IsIPv6, IsIP, IsIPv4, and IsMAC,
 // which will return true if and only if the corresponding method ToIPv6, ToIP, ToIPv4, and ToMAC returns non-nil, respectively.
@@ -1114,14 +1114,22 @@ func (addr *Address) IsPrefixed() bool {
 	return addr != nil && addr.isPrefixed()
 }
 
+// PrefixEqual determines if the given address matches this address up to the prefix length of this address.
+// It returns whether the two addresses share the same range of prefix values.
 func (addr *Address) PrefixEqual(other AddressType) bool {
 	return addr.init().prefixEquals(other)
 }
 
+// PrefixContains returns whether the prefix values in the given address or subnet
+// are prefix values in this address or subnet, using the prefix length of this address or subnet.
+// If this address has no prefix length, the entire address is compared.
+//
+// It returns whether the prefix of this address contains all values of the same prefix length in the given address.
 func (addr *Address) PrefixContains(other AddressType) bool {
 	return addr.init().prefixContains(other)
 }
 
+// Contains returns whether this is the same type and version as the given address or subnet and whether it contains all addresses in the given address or subnet.
 func (addr *Address) Contains(other AddressType) bool {
 	if addr == nil {
 		return other == nil || other.ToAddressBase() == nil

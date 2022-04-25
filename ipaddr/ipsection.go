@@ -118,6 +118,7 @@ func (section *ipAddressSectionInternal) GetSegment(index int) *IPAddressSegment
 	return section.getDivision(index).ToIP()
 }
 
+// GetIPVersion returns the IP version of this address section
 func (section *ipAddressSectionInternal) GetIPVersion() IPVersion {
 	addrType := section.getAddrType()
 	if addrType.isIPv4() {
@@ -1473,10 +1474,21 @@ func (section *ipAddressSectionInternal) IsOneBit(prefixBitIndex BitCount) bool 
 	return section.addressSectionInternal.IsOneBit(prefixBitIndex)
 }
 
+// PrefixEqual determines if the given section matches this section up to the prefix length of this section.
+// It returns whether the argument section has the same address section prefix values as this.
+//
+// All prefix bits of this section must be present in the other section to be comparable, otherwise false is returned.
 func (section *ipAddressSectionInternal) PrefixEqual(other AddressSectionType) bool {
 	return section.addressSectionInternal.PrefixEqual(other)
 }
 
+// PrefixContains returns whether the prefix values in the given address section
+// are prefix values in this address section, using the prefix length of this section.
+// If this address section has no prefix length, the entire address is compared.
+//
+// It returns whether the prefix of this address contains all values of the same prefix length in the given address.
+//
+// All prefix bits of this section must be present in the other section to be comparable.
 func (section *ipAddressSectionInternal) PrefixContains(other AddressSectionType) bool {
 	return section.addressSectionInternal.PrefixContains(other)
 }
@@ -1491,6 +1503,9 @@ type IPAddressSection struct {
 	ipAddressSectionInternal
 }
 
+// Contains returns whether this is same type and version as the given address section and whether it contains all values in the given section.
+//
+// Sections must also have the same number of segments to be comparable, otherwise false is returned.
 func (section *IPAddressSection) Contains(other AddressSectionType) bool {
 	if section == nil {
 		return other == nil || other.ToSectionBase() == nil
@@ -1587,6 +1602,10 @@ func (section *IPAddressSection) GetBlockCount(segments int) *big.Int {
 	return section.addressDivisionGroupingBase.GetBlockCount(segments)
 }
 
+// IsAdaptiveZero returns true if the section was originally created as a zero-valued section (eg IPv4AddressSection{}),
+// meaning it was not constructed using a constructor function.
+// Such a grouping, which has no divisions or segments, is convertible to a zero-valued grouping of any type or version, whether IPv6, IPv4, MAC, etc
+// It is not considered equal to constructions of specific zero length sections or groupings like NewIPv4Section(nil) which can only represent a zero-length section of a single address type.
 func (section *IPAddressSection) IsAdaptiveZero() bool {
 	return section != nil && section.matchesZeroGrouping()
 }

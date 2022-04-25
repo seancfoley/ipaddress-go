@@ -373,7 +373,9 @@ func initZeroIPv6() *IPv6Address {
 
 //
 //
-// IPv6Address is an IPv6 address, or a subnet of multiple IPv6 addresses.  Each segment can represent a single value or a range of values.
+// IPv6Address is an IPv6 address, or a subnet of multiple IPv6 addresses.
+// An IPv6 address is composed of 8 2-byte segments and can optionally have an associated prefix length.
+// Each segment can represent a single value or a range of values.
 // The zero value is ::
 type IPv6Address struct {
 	ipAddressInternal
@@ -591,6 +593,7 @@ func (addr *IPv6Address) GetDivisionCount() int {
 	return addr.init().getDivisionCount()
 }
 
+// GetIPVersion returns IPv6, the IP version of this address
 func (addr *IPv6Address) GetIPVersion() IPVersion {
 	return IPv6
 }
@@ -901,14 +904,22 @@ func (addr *IPv6Address) IsOneBit(bitIndex BitCount) bool {
 	return addr.init().isOneBit(bitIndex)
 }
 
+// PrefixEqual determines if the given address matches this address up to the prefix length of this address.
+// It returns whether the two addresses share the same range of prefix values.
 func (addr *IPv6Address) PrefixEqual(other AddressType) bool {
 	return addr.init().prefixEquals(other)
 }
 
+// PrefixContains returns whether the prefix values in the given address or subnet
+// are prefix values in this address or subnet, using the prefix length of this address or subnet.
+// If this address has no prefix length, the entire address is compared.
+//
+// It returns whether the prefix of this address contains all values of the same prefix length in the given address.
 func (addr *IPv6Address) PrefixContains(other AddressType) bool {
 	return addr.init().prefixContains(other)
 }
 
+// Contains returns whether this is the same type and version as the given address or subnet and whether it contains all addresses in the given address or subnet.
 func (addr *IPv6Address) Contains(other AddressType) bool {
 	if other == nil || other.ToAddressBase() == nil {
 		return true

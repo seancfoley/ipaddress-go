@@ -497,14 +497,22 @@ func (addr *MACAddress) Compare(item AddressItem) int {
 	return CountComparator.Compare(addr, item)
 }
 
+// PrefixEqual determines if the given address matches this address up to the prefix length of this address.
+// It returns whether the two addresses share the same range of prefix values.
 func (addr *MACAddress) PrefixEqual(other AddressType) bool {
 	return addr.init().prefixEquals(other)
 }
 
+// PrefixContains returns whether the prefix values in the given address
+// are prefix values in this address, using the prefix length of this address.
+// If this address has no prefix length, the entire address is compared.
+//
+// It returns whether the prefix of this address contains all values of the same prefix length in the given address.
 func (addr *MACAddress) PrefixContains(other AddressType) bool {
 	return addr.init().prefixContains(other)
 }
 
+// Contains returns whether this is the same type and version as the given address or subnet and whether it contains all addresses in the given address or subnet.
 func (addr *MACAddress) Contains(other AddressType) bool {
 	if addr == nil {
 		return other == nil || other.ToAddressBase() == nil

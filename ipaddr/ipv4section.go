@@ -197,6 +197,9 @@ type IPv4AddressSection struct {
 	ipAddressSectionInternal
 }
 
+// Contains returns whether this is same type and version as the given address section and whether it contains all values in the given section.
+//
+// Sections must also have the same number of segments to be comparable, otherwise false is returned.
 func (section *IPv4AddressSection) Contains(other AddressSectionType) bool {
 	if section == nil {
 		return other == nil || other.ToSectionBase() == nil
@@ -241,6 +244,7 @@ func (section *IPv4AddressSection) GetBytesPerSegment() int {
 	return IPv4BytesPerSegment
 }
 
+// GetIPVersion returns IPv4, the IP version of this address section
 func (section *IPv4AddressSection) GetIPVersion() IPVersion {
 	return IPv4
 }
@@ -844,6 +848,10 @@ func (section *IPv4AddressSection) ReplaceLen(startIndex, endIndex int, replacem
 	return section.replaceLen(startIndex, endIndex, replacement.ToIP(), replacementStartIndex, replacementEndIndex, ipv4BitsToSegmentBitshift).ToIPv4()
 }
 
+// IsAdaptiveZero returns true if the section was originally created as a zero-valued section (eg IPv4AddressSection{}),
+// meaning it was not constructed using a constructor function.
+// Such a grouping, which has no divisions or segments, is convertible to a zero-valued grouping of any type or version, whether IPv6, IPv4, MAC, etc
+// It is not considered equal to constructions of specific zero length sections or groupings like NewIPv4Section(nil) which can only represent a zero-length section of a single address type.
 func (section *IPv4AddressSection) IsAdaptiveZero() bool {
 	return section != nil && section.matchesZeroGrouping()
 }

@@ -414,10 +414,14 @@ func (seg *ipAddressSegmentInternal) IsSinglePrefix(divisionPrefixLength BitCoun
 	return seg.addressSegmentInternal.IsSinglePrefix(divisionPrefixLength)
 }
 
+// PrefixContains returns whether the prefix values in the prefix of the given segment are also prefix values in this segment.
+// It returns whether the prefix of this segment contains the prefix of the given segment.
 func (seg *ipAddressSegmentInternal) PrefixContains(other AddressSegmentType, prefixLength BitCount) bool {
 	return seg.addressSegmentInternal.PrefixContains(other, prefixLength)
 }
 
+// PrefixEqual returns whether the prefix bits of this segment match the same bits of the given segment.
+// It returns whether the two segments share the same range of prefix values using the given prefix length.
 func (seg *ipAddressSegmentInternal) PrefixEqual(other AddressSegmentType, prefixLength BitCount) bool {
 	return seg.addressSegmentInternal.PrefixEqual(other, prefixLength)
 }
@@ -538,6 +542,7 @@ func (seg *IPAddressSegment) GetCount() *big.Int {
 	return seg.getCount()
 }
 
+// Contains returns whether this is same type and version as the given segment and whether it contains all values in the given segment.
 func (seg *IPAddressSegment) Contains(other AddressSegmentType) bool {
 	if seg == nil {
 		return other == nil || other.ToSegmentBase() == nil

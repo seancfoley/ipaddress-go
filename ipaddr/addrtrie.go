@@ -414,38 +414,32 @@ func (trie *AddressTrie) GetRoot() *AddressTrieNode {
 // Only nodes for which IsAdded() returns true are counted (those nodes corresponding to added addresses and prefix blocks).
 // When zero is returned, IsEmpty() returns true.
 func (trie *AddressTrie) Size() int {
-	//return trie.trie.Size()
 	return trie.toTrie().Size()
 }
 
 // NodeSize returns the number of nodes in the tree, which is always more than the number of elements.
 func (trie *AddressTrie) NodeSize() int {
-	//return trie.trie.NodeSize()
 	return trie.toTrie().NodeSize()
 }
 
 // IsEmpty returns true if there are not any added nodes within this tree
 func (trie *AddressTrie) IsEmpty() bool {
-	//return trie.trie.IsEmpty()
 	return trie.Size() == 0
 }
 
 // TreeString returns a visual representation of the tree with one node per line, with or without the non-added keys.
 func (trie *AddressTrie) TreeString(withNonAddedKeys bool) string {
-	//return trie.trie.TreeString(withNonAddedKeys)
 	return trie.toTrie().TreeString(withNonAddedKeys)
 }
 
 // String returns a visual representation of the tree with one node per line.
 func (trie *AddressTrie) String() string {
-	//return trie.trie.String()
 	return trie.toTrie().String()
 }
 
 // AddedNodesTreeString provides a flattened version of the trie showing only the contained added nodes and their containment structure, which is non-binary.
 // The root node is included, which may or may not be added.
 func (trie *AddressTrie) AddedNodesTreeString() string {
-	//return trie.trie.AddedNodesTreeString()
 	return trie.toTrie().AddedNodesTreeString()
 }
 
@@ -463,6 +457,7 @@ func (trie *AddressTrie) AddNode(addr *Address) *AddressTrieNode {
 	return trie.addNode(addr)
 }
 
+// AddTrie adds nodes for the keys in the trie with the root node as the passed in node.  To add both keys and values, use PutTrie.
 func (trie *AddressTrie) AddTrie(added *AddressTrieNode) *AddressTrieNode {
 	return trie.addTrie(added.tobase())
 }
@@ -475,36 +470,97 @@ func (trie *AddressTrie) ConstructAddedNodesTree() *AddressTrie {
 	return &AddressTrie{trie.constructAddedNodesTree()}
 }
 
+// Contains returns whether the given address or prefix block subnet is in the trie as an added element.
+//
+// If the argument is not a single address nor prefix block, this method will panic.
+// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+//
+// Returns true if the prefix block or address exists already in the trie, false otherwise.
+//
+// Use GetAddedNode to get the node for the address rather than just checking for its existence.
 func (trie *AddressTrie) Contains(addr *Address) bool {
 	return trie.contains(addr)
 }
 
+// Remove removes the given single address or prefix block subnet from the trie.
+//
+// Removing an element will not remove contained elements (nodes for contained blocks and addresses).
+//
+// If the argument is not a single address nor prefix block, this method will panic.
+// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+//
+// Returns true if the prefix block or address was removed, false if not already in the trie.
+//
+// You can also remove by calling GetAddedNode to get the node and then calling Remove on the node.
+//
+// When an address is removed, the corresponding node may remain in the trie if it remains a subnet block for two sub-nodes.
+// If the corresponding node can be removed from the trie, it will be.
 func (trie *AddressTrie) Remove(addr *Address) bool {
 	return trie.remove(addr)
 }
 
+// RemoveElementsContainedBy removes any single address or prefix block subnet from the trie that is contained in the given individual address or prefix block subnet.
+//
+// This goes further than Remove, not requiring a match to an inserted node, and also removing all the sub-nodes of any removed node or sub-node.
+//
+// For example, after inserting 1.2.3.0 and 1.2.3.1, passing 1.2.3.0/31 to RemoveElementsContainedBy will remove them both,
+// while the Remove method will remove nothing.
+// After inserting 1.2.3.0/31, then Remove will remove 1.2.3.0/31, but will leave 1.2.3.0 and 1.2.3.1 in the trie.
+//
+// It cannot partially delete a node, such as deleting a single address from a prefix block represented by a node.
+// It can only delete the whole node if the whole address or block represented by that node is contained in the given address or block.
+//
+// If the argument is not a single address nor prefix block, this method will panic.
+// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+//
+//Returns the root node of the sub-trie that was removed from the trie, or nil if nothing was removed.
 func (trie *AddressTrie) RemoveElementsContainedBy(addr *Address) *AddressTrieNode {
 	return trie.removeElementsContainedBy(addr)
 }
 
+// ElementsContainedBy checks if a part of this trie is contained by the given prefix block subnet or individual address.
+//
+// If the argument is not a single address nor prefix block, this method will panic.
+// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+//
+// Returns the root node of the contained sub-trie, or nil if no sub-trie is contained.
+// The node returned need not be an "added" node, see IsAdded for more details on added nodes.
+// The returned sub-trie is backed by this trie, so changes in this trie are reflected in those nodes and vice-versa.
 func (trie *AddressTrie) ElementsContainedBy(addr *Address) *AddressTrieNode {
 	return trie.elementsContainedBy(addr)
 }
 
+// ElementsContaining finds the trie nodes in the trie containing the given key and returns them as a linked list.
+// Only added nodes are added to the linked list
+//
+// If the argument is not a single address nor prefix block, this method will panic.
+//
+// If the argument is not a single address nor prefix block, this method will panic.
+// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
 func (trie *AddressTrie) ElementsContaining(addr *Address) *AddressTrieNode {
 	return trie.elementsContaining(addr)
 }
 
+// LongestPrefixMatch returns the address added to the trie with the longest matching prefix compared to the provided address, or nil if no matching address
 func (trie *AddressTrie) LongestPrefixMatch(addr *Address) *Address {
 	return trie.longestPrefixMatch(addr)
 }
 
 // only added nodes are added to the linked list
 
+// LongestPrefixMatchNode returns the node of address added to the trie with the longest matching prefix compared to the provided address, or nil if no matching address
 func (trie *AddressTrie) LongestPrefixMatchNode(addr *Address) *AddressTrieNode {
 	return trie.longestPrefixMatchNode(addr)
 }
 
+// ElementContains checks if a prefix block subnet or address in the trie contains the given subnet or address.
+//
+// If the argument is not a single address nor prefix block, this method will panic.
+// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+//
+// Returns true if the subnet or address is contained by a trie element, false otherwise.
+//
+// To get all the containing addresses, use ElementsContaining
 func (trie *AddressTrie) ElementContains(addr *Address) bool {
 	return trie.elementContains(addr)
 }
@@ -573,18 +629,46 @@ func (trie *AddressTrie) BlockSizeCachingAllNodeIterator() CachingAddressTrieNod
 	return trie.tobase().blockSizeCachingAllNodeIterator()
 }
 
+// ContainingFirstIterator returns an iterator that does a pre-order binary tree traversal of the added nodes.
+// All added nodes will be visited before their added sub-nodes.
+// For an address trie this means added containing subnet blocks will be visited before their added contained addresses and subnet blocks.
+//
+// Once a given node is visited, the iterator allows you to cache an object corresponding to the
+// lower or upper sub-node that can be retrieved when you later visit that sub-node.
+//
+// Objects are cached only with nodes to be visited.
+// So for this iterator that means an object will be cached with the first added lower or upper sub-node,
+// the next lower or upper sub-node to be visited,
+// which is not necessarily the direct lower or upper sub-node of a given node.
+//
+// The caching allows you to provide iteration context from a parent to its sub-nodes when iterating.
+// The caching and retrieval is done in constant-time and linear space (proportional to tree size).
 func (trie *AddressTrie) ContainingFirstIterator(forwardSubNodeOrder bool) CachingAddressTrieNodeIterator {
 	return trie.tobase().containingFirstIterator(forwardSubNodeOrder)
 }
 
+// ContainingFirstAllNodeIterator returns an iterator that does a pre-order binary tree traversal.
+// All nodes will be visited before their sub-nodes.
+// For an address trie this means containing subnet blocks will be visited before their contained addresses and subnet blocks.
+//
+// Once a given node is visited, the iterator allows you to cache an object corresponding to the
+// lower or upper sub-node that can be retrieved when you later visit that sub-node.
+// That allows you to provide iteration context from a parent to its sub-nodes when iterating.
+// The caching and retrieval is done in constant-time and linear space (proportional to tree size).
 func (trie *AddressTrie) ContainingFirstAllNodeIterator(forwardSubNodeOrder bool) CachingAddressTrieNodeIterator {
 	return trie.tobase().containingFirstAllNodeIterator(forwardSubNodeOrder)
 }
 
+// ContainedFirstIterator returns an iterator that does a post-order binary tree traversal of the added nodes.
+// All added sub-nodes will be visited before their parent nodes.
+// For an address trie this means contained addresses and subnets will be visited before their containing subnet blocks.
 func (trie *AddressTrie) ContainedFirstIterator(forwardSubNodeOrder bool) AddressTrieNodeIteratorRem {
 	return trie.tobase().containedFirstIterator(forwardSubNodeOrder)
 }
 
+// ContainedFirstAllNodeIterator returns an iterator that does a post-order binary tree traversal.
+// All sub-nodes will be visited before their parent nodes.
+// For an address trie this means contained addresses and subnets will be visited before their containing subnet blocks.
 func (trie *AddressTrie) ContainedFirstAllNodeIterator(forwardSubNodeOrder bool) AddressTrieNodeIterator {
 	return trie.tobase().containedFirstAllNodeIterator(forwardSubNodeOrder)
 }
@@ -631,14 +715,13 @@ func (trie *AddressTrie) CeilingAddedNode(addr *Address) *AddressTrieNode {
 	return trie.ceilingAddedNode(addr)
 }
 
+// Clone clones this trie
 func (trie *AddressTrie) Clone() *AddressTrie {
 	return trie.tobase().clone()
-	//return &AddressTrie{trie.clone()}
 }
 
 // Equal returns whether the given argument is a trie with a set of nodes with the same keys as in this trie
 func (trie *AddressTrie) Equal(other *AddressTrie) bool {
-	//return trie.equal(other.addressTrie)
 	return trie.toTrie().Equal(other.toTrie())
 }
 
@@ -753,38 +836,32 @@ func (trie *AssociativeAddressTrie) GetRoot() *AssociativeAddressTrieNode {
 // Only nodes for which IsAdded() returns true are counted (those nodes corresponding to added addresses and prefix blocks).
 // When zero is returned, IsEmpty() returns true.
 func (trie *AssociativeAddressTrie) Size() int {
-	//return trie.trie.Size()
 	return trie.toTrie().Size()
 }
 
 // NodeSize returns the number of nodes in the tree, which is always more than the number of elements.
 func (trie *AssociativeAddressTrie) NodeSize() int {
-	//return trie.trie.NodeSize()
 	return trie.toTrie().NodeSize()
 }
 
 // IsEmpty returns true if there are not any added nodes within this tree
 func (trie *AssociativeAddressTrie) IsEmpty() bool {
-	//return trie.trie.IsEmpty()
 	return trie.Size() == 0
 }
 
 // TreeString returns a visual representation of the tree with one node per line, with or without the non-added keys.
 func (trie *AssociativeAddressTrie) TreeString(withNonAddedKeys bool) string {
-	//return trie.trie.TreeString(withNonAddedKeys)
 	return trie.toTrie().TreeString(withNonAddedKeys)
 }
 
 // String returns a visual representation of the tree with one node per line.
 func (trie *AssociativeAddressTrie) String() string {
-	//return trie.trie.String()
 	return trie.toTrie().String()
 }
 
 // AddedNodesTreeString provides a flattened version of the trie showing only the contained added nodes and their containment structure, which is non-binary.
 // The root node is included, which may or may not be added.
 func (trie *AssociativeAddressTrie) AddedNodesTreeString() string {
-	//return trie.trie.AddedNodesTreeString()
 	return trie.toTrie().AddedNodesTreeString()
 }
 
@@ -792,14 +869,12 @@ func (trie *AssociativeAddressTrie) AddedNodesTreeString() string {
 // The iteration is in sorted element order.
 func (trie *AssociativeAddressTrie) Iterator() AddressIterator {
 	return trie.tobase().iterator()
-	//return trie.iterator()
 }
 
 // DescendingIterator returns an iterator that iterates through the elements of the subtrie with this node as the root.
 // The iteration is in reverse sorted element order.
 func (trie *AssociativeAddressTrie) DescendingIterator() AddressIterator {
 	return trie.tobase().descendingIterator()
-	//return trie.descendingIterator()
 }
 
 // Add adds the address to this trie.
@@ -808,6 +883,8 @@ func (trie *AssociativeAddressTrie) Add(addr *Address) bool {
 	return trie.add(addr)
 }
 
+// AddNode adds the address key to this trie.
+// The new or existing node for the address is returned.
 func (trie *AssociativeAddressTrie) AddNode(addr *Address) *AssociativeAddressTrieNode {
 	return trie.addNode(addr).ToAssociative()
 }
@@ -825,22 +902,73 @@ func (trie *AssociativeAddressTrie) ConstructAddedNodesTree() *AssociativeAddres
 	return &AssociativeAddressTrie{associativeAddressTrie{trie.constructAddedNodesTree()}}
 }
 
+// Contains returns whether the given address or prefix block subnet is in the trie as an added element.
+//
+// If the argument is not a single address nor prefix block, this method will panic.
+// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+//
+// Returns true if the prefix block or address exists already in the trie, false otherwise.
+//
+// Use GetAddedNode  to get the node for the address rather than just checking for its existence.
 func (trie *AssociativeAddressTrie) Contains(addr *Address) bool {
 	return trie.contains(addr)
 }
 
+// Remove removes the given single address or prefix block subnet from the trie.
+//
+// Removing an element will not remove contained elements (nodes for contained blocks and addresses).
+//
+// If the argument is not a single address nor prefix block, this method will panic.
+// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+//
+// Returns true if the prefix block or address was removed, false if not already in the trie.
+//
+// You can also remove by calling GetAddedNode to get the node and then calling Remove on the node.
+//
+// When an address is removed, the corresponding node may remain in the trie if it remains a subnet block for two sub-nodes.
+// If the corresponding node can be removed from the trie, it will be.
 func (trie *AssociativeAddressTrie) Remove(addr *Address) bool {
 	return trie.remove(addr)
 }
 
+// RemoveElementsContainedBy removes any single address or prefix block subnet from the trie that is contained in the given individual address or prefix block subnet.
+//
+// This goes further than Remove, not requiring a match to an inserted node, and also removing all the sub-nodes of any removed node or sub-node.
+//
+// For example, after inserting 1.2.3.0 and 1.2.3.1, passing 1.2.3.0/31 to RemoveElementsContainedBy will remove them both,
+// while the Remove method will remove nothing.
+// After inserting 1.2.3.0/31, then Remove will remove 1.2.3.0/31, but will leave 1.2.3.0 and 1.2.3.1 in the trie.
+//
+// It cannot partially delete a node, such as deleting a single address from a prefix block represented by a node.
+// It can only delete the whole node if the whole address or block represented by that node is contained in the given address or block.
+//
+// If the argument is not a single address nor prefix block, this method will panic.
+// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+//
+//Returns the root node of the sub-trie that was removed from the trie, or nil if nothing was removed.
 func (trie *AssociativeAddressTrie) RemoveElementsContainedBy(addr *Address) *AssociativeAddressTrieNode {
 	return trie.removeElementsContainedBy(addr).ToAssociative()
 }
 
+// ElementsContainedBy checks if a part of this trie is contained by the given prefix block subnet or individual address.
+//
+// If the argument is not a single address nor prefix block, this method will panic.
+// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+//
+// Returns the root node of the contained sub-trie, or nil if no sub-trie is contained.
+// The node returned need not be an "added" node, see IsAdded for more details on added nodes.
+// The returned sub-trie is backed by this trie, so changes in this trie are reflected in those nodes and vice-versa.
 func (trie *AssociativeAddressTrie) ElementsContainedBy(addr *Address) *AssociativeAddressTrieNode {
 	return trie.elementsContainedBy(addr).ToAssociative()
 }
 
+// ElementsContaining finds the trie nodes in the trie containing the given key and returns them as a linked list.
+// Only added nodes are added to the linked list
+//
+// If the argument is not a single address nor prefix block, this method will panic.
+//
+// If the argument is not a single address nor prefix block, this method will panic.
+// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
 func (trie *AssociativeAddressTrie) ElementsContaining(addr *Address) *AssociativeAddressTrieNode {
 	return trie.elementsContaining(addr).ToAssociative()
 }
@@ -857,6 +985,14 @@ func (trie *AssociativeAddressTrie) LongestPrefixMatchNode(addr *Address) *Assoc
 	return trie.longestPrefixMatchNode(addr).ToAssociative()
 }
 
+// ElementContains checks if a prefix block subnet or address in the trie contains the given subnet or address.
+//
+// If the argument is not a single address nor prefix block, this method will panic.
+// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+//
+// Returns true if the subnet or address is contained by a trie element, false otherwise.
+//
+// To get all the containing addresses, use ElementsContaining
 func (trie *AssociativeAddressTrie) ElementContains(addr *Address) bool {
 	return trie.elementContains(addr)
 }
@@ -873,8 +1009,20 @@ func (trie *AssociativeAddressTrie) GetNode(addr *Address) *AssociativeAddressTr
 	return trie.getNode(addr).ToAssociative()
 }
 
+// GetAddedNode gets trie nodes representing added elements.
+//
+// If the argument is not a single address nor prefix block, this method will panic.
+// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+//
+// Use Contains to check for the existence of a given address in the trie,
+// as well as GetNode to search for all nodes including those not added but also auto-generated nodes for subnet blocks.
 func (trie *AssociativeAddressTrie) GetAddedNode(addr *Address) *AssociativeAddressTrieNode {
 	return trie.getAddedNode(addr).ToAssociative()
+}
+
+// NodeIterator iterates through the added nodes of the sub-trie with this node as the root, in forward or reverse tree order.
+func (trie *AssociativeAddressTrie) NodeIterator(forward bool) AssociativeAddressTrieNodeIteratorRem {
+	return associativeAddressTrieNodeIteratorRem{trie.tobase().nodeIterator(forward)}
 }
 
 // AllNodeIterator returns an iterator that iterates through all the nodes of the trie in forward or reverse tree order.
@@ -901,58 +1049,97 @@ func (trie *AssociativeAddressTrie) BlockSizeCachingAllNodeIterator() CachingAss
 	return cachingAssociativeAddressTrieNodeIterator{trie.tobase().blockSizeCachingAllNodeIterator()}
 }
 
+// ContainingFirstIterator returns an iterator that does a pre-order binary tree traversal of the added nodes.
+// All added nodes will be visited before their added sub-nodes.
+// For an address trie this means added containing subnet blocks will be visited before their added contained addresses and subnet blocks.
+//
+// Once a given node is visited, the iterator allows you to cache an object corresponding to the
+// lower or upper sub-node that can be retrieved when you later visit that sub-node.
+//
+// Objects are cached only with nodes to be visited.
+// So for this iterator that means an object will be cached with the first added lower or upper sub-node,
+// the next lower or upper sub-node to be visited,
+// which is not necessarily the direct lower or upper sub-node of a given node.
+//
+// The caching allows you to provide iteration context from a parent to its sub-nodes when iterating.
+// The caching and retrieval is done in constant-time and linear space (proportional to tree size).
 func (trie *AssociativeAddressTrie) ContainingFirstIterator(forwardSubNodeOrder bool) CachingAssociativeAddressTrieNodeIterator {
 	return cachingAssociativeAddressTrieNodeIterator{trie.tobase().containingFirstIterator(forwardSubNodeOrder)}
 }
 
+// ContainingFirstAllNodeIterator returns an iterator that does a pre-order binary tree traversal.
+// All nodes will be visited before their sub-nodes.
+// For an address trie this means containing subnet blocks will be visited before their contained addresses and subnet blocks.
+//
+// Once a given node is visited, the iterator allows you to cache an object corresponding to the
+// lower or upper sub-node that can be retrieved when you later visit that sub-node.
+// That allows you to provide iteration context from a parent to its sub-nodes when iterating.
+// The caching and retrieval is done in constant-time and linear space (proportional to tree size).
 func (trie *AssociativeAddressTrie) ContainingFirstAllNodeIterator(forwardSubNodeOrder bool) CachingAssociativeAddressTrieNodeIterator {
 	return cachingAssociativeAddressTrieNodeIterator{trie.tobase().containingFirstAllNodeIterator(forwardSubNodeOrder)}
 }
 
+// ContainedFirstIterator returns an iterator that does a post-order binary tree traversal of the added nodes.
+// All added sub-nodes will be visited before their parent nodes.
+// For an address trie this means contained addresses and subnets will be visited before their containing subnet blocks.
 func (trie *AssociativeAddressTrie) ContainedFirstIterator(forwardSubNodeOrder bool) AssociativeAddressTrieNodeIteratorRem {
 	return associativeAddressTrieNodeIteratorRem{trie.tobase().containedFirstIterator(forwardSubNodeOrder)}
 }
 
+// ContainedFirstAllNodeIterator returns an iterator that does a post-order binary tree traversal.
+// All sub-nodes will be visited before their parent nodes.
+// For an address trie this means contained addresses and subnets will be visited before their containing subnet blocks.
 func (trie *AssociativeAddressTrie) ContainedFirstAllNodeIterator(forwardSubNodeOrder bool) AssociativeAddressTrieNodeIterator {
 	return associativeAddressTrieNodeIterator{trie.tobase().containedFirstAllNodeIterator(forwardSubNodeOrder)}
 }
 
-func (trie *AssociativeAddressTrie) NodeIterator(forward bool) AssociativeAddressTrieNodeIteratorRem {
-	return associativeAddressTrieNodeIteratorRem{trie.tobase().nodeIterator(forward)}
-}
-
+// FirstNode returns the first (lowest-valued) node in the trie or nil if the trie is empty
 func (trie *AssociativeAddressTrie) FirstNode() *AssociativeAddressTrieNode {
 	return toAssociativeAddressTrieNode(trie.trie.FirstNode())
 }
 
+// FirstAddedNode returns the first (lowest-valued) added node in the trie
+// or nil if there are no added entries in this tree
 func (trie *AssociativeAddressTrie) FirstAddedNode() *AssociativeAddressTrieNode {
 	return toAssociativeAddressTrieNode(trie.trie.FirstAddedNode())
 }
 
+// LastNode returns the last (highest-valued) node in the trie or nil if the trie is empty
 func (trie *AssociativeAddressTrie) LastNode() *AssociativeAddressTrieNode {
 	return toAssociativeAddressTrieNode(trie.trie.LastNode())
 }
 
+// LastAddedNode returns the last (highest-valued) added node in the sub-trie originating from this node,
+// or nil if there are no added entries in this tree
 func (trie *AssociativeAddressTrie) LastAddedNode() *AssociativeAddressTrieNode {
 	return toAssociativeAddressTrieNode(trie.trie.LastAddedNode())
 }
 
+// LowerAddedNode returns the added node whose address is the highest address strictly less than the given address,
+// or nil if there are no added entries in this tree
 func (trie *AssociativeAddressTrie) LowerAddedNode(addr *Address) *AssociativeAddressTrieNode {
 	return trie.lowerAddedNode(addr).ToAssociative()
 }
 
+// FloorAddedNode returns the added node whose address is the highest address less than or equal to the given address,
+// or nil if there are no added entries in this tree
 func (trie *AssociativeAddressTrie) FloorAddedNode(addr *Address) *AssociativeAddressTrieNode {
 	return trie.floorAddedNode(addr).ToAssociative()
 }
 
+// HigherAddedNode returns the added node whose address is the lowest address strictly greater than the given address,
+// or nil if there are no added entries in this tree
 func (trie *AssociativeAddressTrie) HigherAddedNode(addr *Address) *AssociativeAddressTrieNode {
 	return trie.higherAddedNode(addr).ToAssociative()
 }
 
+// CeilingAddedNode returns the added node whose address is the lowest address greater than or equal to the given address,
+// or nil if there are no added entries in this tree
 func (trie *AssociativeAddressTrie) CeilingAddedNode(addr *Address) *AssociativeAddressTrieNode {
 	return trie.ceilingAddedNode(addr).ToAssociative()
 }
 
+// Clone clones this trie
 func (trie *AssociativeAddressTrie) Clone() *AssociativeAddressTrie {
 	return trie.tobase().clone().ToAssociative()
 	//return &AssociativeAddressTrie{associativeAddressTrie{trie.clone()}}
@@ -971,27 +1158,102 @@ func (trie *AssociativeAddressTrie) DeepEqual(other *AssociativeAddressTrie) boo
 	//return trie.deepEqual(other.associativeAddressTrie)
 }
 
+// Put associates the specified value with the specified key in this map.
+//
+// If the argument is not a single address nor prefix block, this method will panic.
+// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+//
+// If this map previously contained a mapping for a key,
+// the old value is replaced by the specified value, and false is returned along with the old value.
+// If this map did not previously contain a mapping for the key, true is returned along with a nil value.
+// The boolean return value allows you to distinguish whether the address was previously mapped to nil or not mapped at all.
 func (trie *AssociativeAddressTrie) Put(addr *Address, value NodeValue) (bool, NodeValue) {
 	return trie.put(addr, value)
 }
 
-// PutTrie adds nodes for the keys and values in the trie with the root node as the passed in node.  To add only the keys, use AddTrie.
+// PutTrie adds nodes for the address keys and values in the trie with the root node as the passed in node.  To add only the keys, use AddTrie.
+//
+// For each added in the given node that does not exist in the trie, a copy of each node will be made,
+// the copy including the associated value, and the copy will be inserted into the trie.
+//
+// The address type/version of the keys must match.
+//
+// When adding one trie to another, this method is more efficient than adding each node of the first trie individually.
+// When using this method, searching for the location to add sub-nodes starts from the inserted parent node.
+//
+// Returns the node corresponding to the given sub-root node, whether it was already in the trie or not.
 func (trie *AssociativeAddressTrie) PutTrie(added *AssociativeAddressTrieNode) *AssociativeAddressTrieNode {
 	return trie.putTrie(added.toBase())
 }
 
+// PutNode associates the specified value with the specified key in this map.
+//
+// If the argument is not a single address nor prefix block, this method will panic.
+// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+//
+// Returns the node for the added address, whether it was already in the tree or not.
+//
+// If you wish to know whether the node was already there when adding, use PutNew, or before adding you can use GetAddedNode.
 func (trie *AssociativeAddressTrie) PutNode(addr *Address, value NodeValue) *AssociativeAddressTrieNode {
 	return trie.putNode(addr, value)
 }
 
+// Remap remaps node values in the trie.
+//
+// This will lookup the node corresponding to the given key.
+// It will call the remapping function with the key as the first argument, regardless of whether the node is found or not.
+//
+// If the node is not found, the value argument will be nil.
+// If the node is found, the value argument will be the node's value, which can also be nil.
+//
+// If the remapping function returns nil, then the matched node will be removed, if any.
+// If it returns a non-nil value, then it will either set the existing node to have that value,
+// or if there was no matched node, it will create a new node with that value.
+//
+// The method will return the node involved, which is either the matched node, or the newly created node,
+// or nil if there was no matched node nor newly created node.
+//
+// If the remapping function modifies the trie during its computation,
+// and the returned value specifies changes to be made,
+// then the trie will not be changed and a panic will ensue.
+//
+// If the argument is not a single address nor prefix block, this method will panic.
+// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
 func (trie *AssociativeAddressTrie) Remap(addr *Address, remapper func(NodeValue) NodeValue) *AssociativeAddressTrieNode {
 	return trie.remap(addr, remapper)
 }
 
+// RemapIfAbsent remaps node values in the trie, but only for nodes that do not exist or are mapped to nil.
+//
+// This will look up the node corresponding to the given key.
+// If the node is not found or mapped to nil, this will call the remapping function.
+//
+// If the remapping function returns a non-nil value, then it will either set the existing node to have that value,
+// or if there was no matched node, it will create a new node with that value.
+// If the remapping function returns nil, then it will do the same if insertNil is true, otherwise it will do nothing.
+//
+// The method will return the node involved, which is either the matched node, or the newly created node,
+// or nil if there was no matched node nor newly created node.
+//
+// If the remapping function modifies the trie during its computation,
+// and the returned value specifies changes to be made,
+// then the trie will not be changed and ConcurrentModificationException will be thrown instead.
+//
+// If the argument is not a single address nor prefix block, this method will panic.
+// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+//
+// insertNull indicates whether nil values returned from remapper should be inserted into the map, or whether nil values indicate no remapping
 func (trie *AssociativeAddressTrie) RemapIfAbsent(addr *Address, supplier func() NodeValue, insertNil bool) *AssociativeAddressTrieNode {
 	return trie.remapIfAbsent(addr, supplier, insertNil)
 }
 
+// Get gets the specified value for the specified key in this mapped trie or sub-trie.
+//
+// If the argument is not a single address nor prefix block, this method will panic.
+// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+//
+// Returns the value for the given key.
+// Returns nil if the contains no mapping for that key or if the mapped value is nil.
 func (trie *AssociativeAddressTrie) Get(addr *Address) NodeValue {
 	return trie.get(addr)
 }
@@ -999,6 +1261,7 @@ func (trie *AssociativeAddressTrie) Get(addr *Address) NodeValue {
 // For some reason Format must be here and not in addressTrieNode for nil node.
 // It panics in fmt code either way, but if in here then it is handled by a recover() call in fmt properly in the debugger.
 
+// Format implements the fmt.Formatter interface
 func (trie AssociativeAddressTrie) Format(state fmt.State, verb rune) {
 	trie.ToBase().Format(state, verb)
 }

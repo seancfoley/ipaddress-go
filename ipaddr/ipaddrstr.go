@@ -199,6 +199,8 @@ func (addrStr *IPAddressString) init() *IPAddressString {
 	return addrStr
 }
 
+// GetValidationOptions returns the validation options supplied when constructing this address string,
+// or the default options if no options were supplied.
 func (addrStr *IPAddressString) GetValidationOptions() addrstrparam.IPAddressStringParams {
 	return addrStr.init().params
 }
@@ -209,6 +211,8 @@ func (addrStr *IPAddressString) IsPrefixed() bool {
 	return addrStr.getNetworkPrefixLen() != nil
 }
 
+// GetNetworkPrefixLen returns the associated network prefix length.
+//
 // If this address is a valid address with an associated network prefix length then this returns that prefix length, otherwise returns nil.
 // The prefix length may be expressed explicitly with the notation "/xx" where xx is a decimal value, or it may be expressed implicitly as a network mask such as "/255.255.0.0"
 func (addrStr *IPAddressString) GetNetworkPrefixLen() PrefixLen {
@@ -241,25 +245,25 @@ func (addrStr *IPAddressString) IsAllAddresses() bool {
 	return addrStr.IsValid() && addrStr.addressProvider.isProvidingAllAddresses()
 }
 
-// IsEmpty() returns true if the address string is empty (zero-length).
+// IsEmpty returns true if the address string is empty (zero-length).
 func (addrStr *IPAddressString) IsEmpty() bool {
 	addrStr = addrStr.init()
 	return addrStr.IsValid() && addrStr.addressProvider.isProvidingEmpty()
 }
 
-// IsIPv4() returns true if the address is IPv4
+// IsIPv4 returns true if the address is IPv4
 func (addrStr *IPAddressString) IsIPv4() bool {
 	addrStr = addrStr.init()
 	return addrStr.IsValid() && addrStr.addressProvider.isProvidingIPv4()
 }
 
-// IsIPv6() returns true if the address is IPv6
+// IsIPv6 returns true if the address is IPv6
 func (addrStr *IPAddressString) IsIPv6() bool {
 	addrStr = addrStr.init()
 	return addrStr.IsValid() && addrStr.addressProvider.isProvidingIPv6()
 }
 
-// If this address string represents an IPv6 address, returns whether the lower 4 bytes were represented as IPv4
+// IsMixedIPv6 returns whether the lower 4 bytes of the address string are represented as IPv4, if this address string represents an IPv6 address.
 func (addrStr *IPAddressString) IsMixedIPv6() bool {
 	addrStr = addrStr.init()
 	return addrStr.IsIPv6() && addrStr.addressProvider.isProvidingMixedIPv6()
@@ -274,7 +278,7 @@ func (addrStr *IPAddressString) IsMixedIPv6() bool {
 
 // TODO LATER isMappedIPv4Address using prefixEquals like we added in Java, which requires a few tweals to containsProv method in parsedaddr.go
 
-// GetIPVersion returns the IP address version if {@link #isIPAddress()} returns true, otherwise returns nil
+// GetIPVersion returns the IP address version if this represents a valid IP address, otherwise it returns nil
 func (addrStr *IPAddressString) GetIPVersion() IPVersion {
 	if addrStr.IsValid() {
 		return addrStr.addressProvider.getProviderIPVersion()
@@ -282,7 +286,7 @@ func (addrStr *IPAddressString) GetIPVersion() IPVersion {
 	return IndeterminateIPVersion
 }
 
-// Returns whether this string represents a loopback IP address.
+// IsLoopback returns whether this string represents a loopback IP address.
 func (addrStr *IPAddressString) IsLoopback() bool {
 	val := addrStr.GetAddress()
 	return val != nil && val.IsLoopback()
@@ -343,11 +347,11 @@ func (addrStr *IPAddressString) IsValid() bool {
 	return !provider.isInvalid()
 }
 
-// GetAddress() returns the IP address if this IPAddressString represents an ip address.  Otherwise, it returns nil.
+// GetAddress returns the IP address if this IPAddressString represents an ip address.  Otherwise, it returns nil.
 //
-// Use ToAddress() for an equivalent method that returns an error when the format is invalid.
+// Use ToAddress for an equivalent method that returns an error when the format is invalid.
 //
-// If you have a prefixed address and you wish to get only the host without the prefix, use GetHostAddress()
+// If you have a prefixed address and you wish to get only the host without the prefix, use GetHostAddress
 func (addrStr *IPAddressString) GetAddress() *IPAddress {
 	provider, err := addrStr.getAddressProvider()
 	if err != nil {
@@ -357,15 +361,15 @@ func (addrStr *IPAddressString) GetAddress() *IPAddress {
 	return addr
 }
 
-// ToAddress() produces the IPAddress corresponding to this IPAddressString.
+// ToAddress produces the IPAddress corresponding to this IPAddressString.
 //
 // If this object does not represent a specific IPAddress or a ranged IPAddress, nil is returned
 //
 // If the string used to construct this object is not a known format (empty string, address, or range of addresses) then this method returns an error.
 //
-// An equivalent method that does not return the error is GetAddress()
+// An equivalent method that does not return the error is GetAddress.
 //
-// If you have a prefixed address and you wish to get only the host rather than the address with the prefix, use ToHostAddress()
+// If you have a prefixed address and you wish to get only the host rather than the address with the prefix, use ToHostAddress.
 //
 // The error can be addrerr.AddressStringError oraddrerr.IncompatibleAddressError
 func (addrStr *IPAddressString) ToAddress() (*IPAddress, addrerr.AddressError) {
@@ -529,6 +533,9 @@ func (addrStr *IPAddressString) ValidateVersion(version IPVersion) addrerr.Addre
 	return nil
 }
 
+// Compare compares this address string with another,
+// returning a negative number, zero, or a positive number if this address string is less than, equal to, or greater than the other.
+//
 // All address strings are comparable.  If two address strings are invalid, their strings are compared.
 // Otherwise, address strings are compared according to which type or version of string, and then within each type or version
 // they are compared using the comparison rules for addresses.
@@ -561,14 +568,14 @@ func (addrStr *IPAddressString) Compare(other *IPAddressString) int {
 	return strings.Compare(addrStr.String(), other.String())
 }
 
-// PrefixEqual is similar to Equal, but instead returns whether the prefix of this address matches the same of the given address,
-// using the prefix length of this address.
+// PrefixEqual is similar to Equal, but instead returns whether the prefix of this address string matches the same of the given address string,
+// using the prefix length of this address string.  It returns whether the argument address string has the same address prefix values as this.
 //
-// In other words, determines if the other address is in the same prefix subnet using the prefix length of this address.
+// In other words, it determines if the other address has the same prefix subnet using the prefix length of this address.
 //
-// If an address has no prefix length, the whole address is used as the prefix.
+// If an address has no prefix length, the whole address is compared.
 //
-// If this address string or the given address string is invalid, returns false.
+// If this address string or the given address string is invalid, it returns false.
 func (addrStr *IPAddressString) PrefixEqual(other *IPAddressString) bool {
 	// getting the prefix
 	addrStr = addrStr.init()
@@ -604,13 +611,13 @@ func (addrStr *IPAddressString) PrefixEqual(other *IPAddressString) bool {
 }
 
 // PrefixContains is similar to PrefixEqual, but instead returns whether the prefix of this address contains the same of the given address,
-// using the prefix length of this address.
+// using the prefix length of this address.  It returns whether the argument address string prefix values of that length are also prefix values in this address string.
 //
 // In other words, determines if the other address is in one of the same prefix subnets using the prefix length of this address.
 //
 // If an address has no prefix length, the whole address is used as the prefix.
 //
-// If this address string or the given address string is invalid, returns false.
+// If this address string or the given address string is invalid, it returns false.
 func (addrStr *IPAddressString) PrefixContains(other *IPAddressString) bool {
 	addrStr = addrStr.init()
 	other = other.init()
@@ -646,8 +653,8 @@ func (addrStr *IPAddressString) isUninitialized() bool {
 	return addrStr.init().addrData == nil
 }
 
-// Contains returns whether the address subnet identified by this address string contains the address identified by the given string.
-// If this address string or the given address string is invalid then returns false.
+// Contains returns whether the address or subnet identified by this address string contains the address or subnet identified by the given string.
+// If this address string or the given address string is invalid then Contains returns false.
 func (addrStr *IPAddressString) Contains(other *IPAddressString) bool {
 	addrStr = addrStr.init()
 	other = other.init()

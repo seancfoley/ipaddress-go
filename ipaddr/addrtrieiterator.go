@@ -38,14 +38,14 @@ func (iter addressKeyIterator) Remove() *Address {
 	return nil
 }
 
-// AddressTrieNodeIteratorRem iterates through an address trie, until both Next() returns nil and HasNext() returns false
+// AddressTrieNodeIterator iterates through an address trie, until both Next returns nil and HasNext returns false
 type AddressTrieNodeIterator interface {
 	HasNext
 
 	Next() *AddressTrieNode
 }
 
-// AddressTrieNodeIteratorRem iterates through an address trie, until both Next() returns nil and HasNext() returns false,
+// AddressTrieNodeIteratorRem iterates through an address trie, until both Next returns nil and HasNext returns false,
 // and also allows you to remove the node just visited
 type AddressTrieNodeIteratorRem interface {
 	AddressTrieNodeIterator

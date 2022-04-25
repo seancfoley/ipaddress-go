@@ -809,7 +809,7 @@ func (rng *IPAddressSeqRange) GetByteCount() int {
 	return rng.GetLower().GetByteCount()
 }
 
-// GetIP returns the lower IP address in the range as a net.IP
+// GetNetIP returns the lower IP address in the range as a net.IP
 func (rng *IPAddressSeqRange) GetNetIP() net.IP {
 	return rng.GetLower().GetNetIP()
 }
@@ -818,7 +818,7 @@ func (rng *IPAddressSeqRange) CopyNetIP(bytes net.IP) net.IP {
 	return rng.GetLower().CopyNetIP(bytes) // this changes the arg to 4 bytes if 16 bytes and ipv4
 }
 
-// GetUpperIP returns the upper IP address in the range as a net.IP
+// GetUpperNetIP returns the upper IP address in the range as a net.IP
 func (rng *IPAddressSeqRange) GetUpperNetIP() net.IP {
 	return rng.GetUpper().GetUpperNetIP()
 }
@@ -843,7 +843,7 @@ func (rng *IPAddressSeqRange) CopyUpperBytes(bytes []byte) []byte {
 	return rng.GetUpper().CopyUpperBytes(bytes)
 }
 
-// Contains returns whether the given address is within the range of this sequential range
+// Contains returns whether this range contains all addresses in the given address or subnet.
 func (rng *IPAddressSeqRange) Contains(other IPAddressType) bool {
 	if rng == nil {
 		return other == nil || other.ToAddressBase() == nil
@@ -851,7 +851,7 @@ func (rng *IPAddressSeqRange) Contains(other IPAddressType) bool {
 	return rng.init().contains(other)
 }
 
-// Contains returns whether all the addresses in the given sequential range are also contained in this sequential range
+// ContainsRange returns whether all the addresses in the given sequential range are also contained in this sequential range.
 func (rng *IPAddressSeqRange) ContainsRange(other IPAddressSeqRangeType) bool {
 	if rng == nil {
 		return other == nil || other.ToIP() == nil
