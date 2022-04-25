@@ -768,10 +768,12 @@ const (
 	IPv6                   IPVersion = "IPv6"
 )
 
+// IsIPv6 returns true if this represents version 6
 func (version IPVersion) IsIPv6() bool {
 	return strings.EqualFold(string(version), string(IPv6))
 }
 
+// IsIPv4 returns true if this represents version 4
 func (version IPVersion) IsIPv4() bool {
 	return strings.EqualFold(string(version), string(IPv4))
 }

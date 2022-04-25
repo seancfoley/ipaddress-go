@@ -1318,10 +1318,12 @@ func (section *ipAddressSectionInternal) IncludesZero() bool {
 	return section.addressSectionInternal.IncludesZero()
 }
 
+// IsMax returns whether this section matches exactly the maximum possible value, the value whose bits are all ones
 func (section *ipAddressSectionInternal) IsMax() bool {
 	return section.addressSectionInternal.IsMax()
 }
 
+// IncludesMax returns whether this section includes the max value, the value whose bits are all ones, within its range
 func (section *ipAddressSectionInternal) IncludesMax() bool {
 	return section.addressSectionInternal.IncludesMax()
 }
@@ -1611,10 +1613,12 @@ func (section *IPAddressSection) ToIPv4() *IPv4AddressSection {
 	return nil
 }
 
+// IsIPv4 returns true if this address section originated as an IPv4 section.  If so, use ToIPv4 to convert back to the IPv4-specific type.
 func (section *IPAddressSection) IsIPv4() bool { // we allow nil receivers to allow this to be called following a failed converion like ToIP()
 	return section != nil && section.matchesIPv4SectionType()
 }
 
+// IsIPv6 returns true if this address section originated as an IPv6 section.  If so, use ToIPv6 to convert back to the IPv6-specific type.
 func (section *IPAddressSection) IsIPv6() bool {
 	return section != nil && section.matchesIPv6SectionType()
 }
@@ -1661,8 +1665,8 @@ func (section *IPAddressSection) CopySubSegments(start, end int, segs []*IPAddre
 	return section.visitSubDivisions(start, end, func(index int, div *AddressDivision) bool { segs[index] = div.ToIP(); return false }, len(segs))
 }
 
-// CopySubSegments copies the existing segments from the given start index until but not including the segment at the given end index,
-// into the given slice, as much as can be fit into the slice, returning the number of segments copied
+// CopySegments copies the existing segments into the given slice,
+// as much as can be fit into the slice, returning the number of segments copied
 func (section *IPAddressSection) CopySegments(segs []*IPAddressSegment) (count int) {
 	return section.visitDivisions(func(index int, div *AddressDivision) bool { segs[index] = div.ToIP(); return false }, len(segs))
 }
@@ -1843,16 +1847,31 @@ func (section *IPAddressSection) CoverWithPrefixBlock() *IPAddressSection {
 	return section.coverWithPrefixBlock()
 }
 
+// ReverseBits returns a new section with the bits reversed.  Any prefix length is dropped.
+//
+// If the bits within a single segment cannot be reversed because the segment represents a range,
+// and reversing the segment values results in a range that is not contiguous, this returns an error.
+//
+// In practice this means that to be reversible, a range must include all values except possibly the largest and/or smallest, which reverse to themselves.
+//
+// If perByte is true, the bits are reversed within each byte, otherwise all the bits are reversed.
 func (section *IPAddressSection) ReverseBits(perByte bool) (*IPAddressSection, addrerr.IncompatibleAddressError) {
 	res, err := section.reverseBits(perByte)
 	return res.ToIP(), err
 }
 
+// ReverseBytes returns a new section with the bytes reversed.  Any prefix length is dropped.
+//
+// If each segment is more than 1 byte long, and the bytes within a single segment cannot be reversed because the segment represents a range,
+// and reversing the segment values results in a range that is not contiguous, then this returns an error.
+//
+// In practice this means that to be reversible, a range must include all values except possibly the largest and/or smallest, which reverse to themselves.
 func (section *IPAddressSection) ReverseBytes() (*IPAddressSection, addrerr.IncompatibleAddressError) {
 	res, err := section.reverseBytes(false)
 	return res.ToIP(), err
 }
 
+// ReverseSegments returns a new section with the segments reversed.
 func (section *IPAddressSection) ReverseSegments() *IPAddressSection {
 	if section.GetSegmentCount() <= 1 {
 		if section.IsPrefixed() {

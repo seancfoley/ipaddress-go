@@ -460,10 +460,12 @@ func (rng *ipAddressSeqRangeInternal) IncludesZero() bool {
 	return lower == nil || lower.IsZero()
 }
 
+// IsMax returns whether this sequential range spans from the max address, the address whose bits are all ones, to itself.
 func (rng *ipAddressSeqRangeInternal) IsMax() bool {
 	return rng.IncludesMax() && !rng.isMultiple()
 }
 
+// IncludesMax returns whether this sequential range's upper value is the max value, the value whose bits are all ones.
 func (rng *ipAddressSeqRangeInternal) IncludesMax() bool {
 	upper := rng.upper
 	return upper == nil || upper.IsMax()
@@ -910,14 +912,19 @@ func (rng *IPAddressSeqRange) PrefixIterator(prefLength BitCount) IPAddressSeqRa
 	return rng.init().prefixIterator(prefLength)
 }
 
+// ToIP is an identity method.
+//
+// ToIP can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (rng *IPAddressSeqRange) ToIP() *IPAddressSeqRange {
 	return rng
 }
 
+// IsIPv4 returns true if this sequential address range originated as an IPv4 sequential address range.  If so, use ToIPv4 to convert back to the IPv4-specific type.
 func (rng *IPAddressSeqRange) IsIPv4() bool { // returns false when lower is nil
 	return rng != nil && rng.GetLower().IsIPv4()
 }
 
+// IsIPv6 returns true if this sequential address range originated as an IPv6 sequential address range.  If so, use ToIPv6 to convert back to the IPv6-specific type.
 func (rng *IPAddressSeqRange) IsIPv6() bool { // returns false when lower is nil
 	return rng != nil && rng.GetLower().IsIPv6()
 }

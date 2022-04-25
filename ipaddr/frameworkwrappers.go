@@ -27,8 +27,6 @@ import (
 type ExtendedSegmentSeries interface {
 	AddressSegmentSeries
 
-	ToCustomString(stringOptions addrstr.StringOptions) string
-
 	// Unwrap returns the wrapped *Address or *AddressSection as an interface, AddressSegmentSeries
 	Unwrap() AddressSegmentSeries
 
@@ -51,14 +49,32 @@ type ExtendedSegmentSeries interface {
 	// GetSubSection returns a subsection of the full address section
 	GetSubSection(index, endIndex int) *AddressSection
 
+	// GetSegment returns the segment at the given index.
+	// The first segment is at index 0.
+	// GetSegment will panic given a negative index or index larger than the segment count.
 	GetSegment(index int) *AddressSegment
+
+	// GetSegments returns a slice with the address segments.  The returned slice is not backed by the same array as this section.
 	GetSegments() []*AddressSegment
+
+	// CopySegments copies the existing segments into the given slice,
+	// as much as can be fit into the slice, returning the number of segments copied
 	CopySegments(segs []*AddressSegment) (count int)
+
+	// CopySubSegments copies the existing segments from the given start index until but not including the segment at the given end index,
+	// into the given slice, as much as can be fit into the slice, returning the number of segments copied
 	CopySubSegments(start, end int, segs []*AddressSegment) (count int)
 
+	// IsIP returns true if this series originated as an IPv4 or IPv6 series, or a zero-length IP series.  If so, use ToIP to convert back to the IP-specific type.
 	IsIP() bool
+
+	// IsIPv4 returns true if this series originated as an IPv4 series.  If so, use ToIPv4 to convert back to the IPv4-specific type.
 	IsIPv4() bool
+
+	// IsIPv6 returns true if this series originated as an IPv6 series.  If so, use ToIPv6 to convert back to the IPv6-specific type.
 	IsIPv6() bool
+
+	// IsMAC returns true if this series originated as a MAC series.  If so, use ToMAC to convert back to the MAC-specific type.
 	IsMAC() bool
 
 	ToIP() IPAddressSegmentSeries
@@ -132,9 +148,26 @@ type ExtendedSegmentSeries interface {
 	SetPrefixLenZeroed(BitCount) (ExtendedSegmentSeries, addrerr.IncompatibleAddressError)
 	WithoutPrefixLen() ExtendedSegmentSeries
 
+	// ReverseBytes returns a new segment series with the bytes reversed.  Any prefix length is dropped.
+	//
+	// If each segment is more than 1 byte long, and the bytes within a single segment cannot be reversed because the segment represents a range,
+	// and reversing the segment values results in a range that is not contiguous, then this returns an error.
+	//
+	// In practice this means that to be reversible, a range must include all values except possibly the largest and/or smallest, which reverse to themselves.
 	ReverseBytes() (ExtendedSegmentSeries, addrerr.IncompatibleAddressError)
+
+	// ReverseBits returns a new segment series with the bits reversed.  Any prefix length is dropped.
+	//
+	// If the bits within a single segment cannot be reversed because the segment represents a range,
+	// and reversing the segment values results in a range that is not contiguous, this returns an error.
+	//
+	// In practice this means that to be reversible, a range must include all values except possibly the largest and/or smallest, which reverse to themselves.
 	ReverseBits(perByte bool) (ExtendedSegmentSeries, addrerr.IncompatibleAddressError)
+
+	// ReverseSegments returns a new series with the segments reversed.
 	ReverseSegments() ExtendedSegmentSeries
+
+	ToCustomString(stringOptions addrstr.StringOptions) string
 }
 
 // WrappedAddress is the implementation of ExtendedSegmentSeries for Address
@@ -299,10 +332,24 @@ func (addr WrappedAddress) AdjustPrefixLenZeroed(prefixLen BitCount) (ExtendedSe
 	return wrapAddrWithErr(addr.Address.AdjustPrefixLenZeroed(prefixLen))
 }
 
+// ReverseBytes returns a new segment series with the bytes reversed.  Any prefix length is dropped.
+//
+// If each segment is more than 1 byte long, and the bytes within a single segment cannot be reversed because the segment represents a range,
+// and reversing the segment values results in a range that is not contiguous, then this returns an error.
+//
+// In practice this means that to be reversible, a range must include all values except possibly the largest and/or smallest, which reverse to themselves.
 func (addr WrappedAddress) ReverseBytes() (ExtendedSegmentSeries, addrerr.IncompatibleAddressError) {
 	return wrapAddrWithErr(addr.Address.ReverseBytes())
 }
 
+// ReverseBits returns a new segment series with the bits reversed.  Any prefix length is dropped.
+//
+// If the bits within a single segment cannot be reversed because the segment represents a range,
+// and reversing the segment values results in a range that is not contiguous, this returns an error.
+//
+// In practice this means that to be reversible, a range must include all values except possibly the largest and/or smallest, which reverse to themselves.
+//
+// If perByte is true, the bits are reversed within each byte, otherwise all the bits are reversed.
 func (addr WrappedAddress) ReverseBits(perByte bool) (ExtendedSegmentSeries, addrerr.IncompatibleAddressError) {
 	a, err := addr.Address.ReverseBits(perByte)
 	if err != nil {
@@ -311,6 +358,7 @@ func (addr WrappedAddress) ReverseBits(perByte bool) (ExtendedSegmentSeries, add
 	return WrapAddress(a), nil
 }
 
+// ReverseSegments returns a new series with the segments reversed.
 func (addr WrappedAddress) ReverseSegments() ExtendedSegmentSeries {
 	return WrapAddress(addr.Address.ReverseSegments())
 }
@@ -476,14 +524,29 @@ func (section WrappedAddressSection) AdjustPrefixLenZeroed(adjustment BitCount) 
 	return wrapSectWithErr(section.AddressSection.AdjustPrefixLenZeroed(adjustment))
 }
 
+// ReverseBytes returns a new segment series with the bytes reversed.  Any prefix length is dropped.
+//
+// If each segment is more than 1 byte long, and the bytes within a single segment cannot be reversed because the segment represents a range,
+// and reversing the segment values results in a range that is not contiguous, then this returns an error.
+//
+// In practice this means that to be reversible, a range must include all values except possibly the largest and/or smallest, which reverse to themselves.
 func (section WrappedAddressSection) ReverseBytes() (ExtendedSegmentSeries, addrerr.IncompatibleAddressError) {
 	return wrapSectWithErr(section.AddressSection.ReverseBytes())
 }
 
+// ReverseBits returns a new segment series with the bits reversed.  Any prefix length is dropped.
+//
+// If the bits within a single segment cannot be reversed because the segment represents a range,
+// and reversing the segment values results in a range that is not contiguous, this returns an error.
+//
+// In practice this means that to be reversible, a range must include all values except possibly the largest and/or smallest, which reverse to themselves.
+//
+// If perByte is true, the bits are reversed within each byte, otherwise all the bits are reversed.
 func (section WrappedAddressSection) ReverseBits(perByte bool) (ExtendedSegmentSeries, addrerr.IncompatibleAddressError) {
 	return wrapSectWithErr(section.AddressSection.ReverseBits(perByte))
 }
 
+// ReverseSegments returns a new series with the segments reversed.
 func (section WrappedAddressSection) ReverseSegments() ExtendedSegmentSeries {
 	return WrapSection(section.AddressSection.ReverseSegments())
 }

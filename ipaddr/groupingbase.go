@@ -110,6 +110,7 @@ func (grouping *addressDivisionGroupingBase) IncludesZero() bool {
 	return true
 }
 
+// IsMax returns whether this grouping matches exactly the maximum possible value, the value whose bits are all ones
 func (grouping *addressDivisionGroupingBase) IsMax() bool {
 	divCount := grouping.GetDivisionCount()
 	for i := 0; i < divCount; i++ {
@@ -120,6 +121,7 @@ func (grouping *addressDivisionGroupingBase) IsMax() bool {
 	return true
 }
 
+// IncludesMax returns whether this grouping includes the max value, the value whose bits are all ones, within its range
 func (grouping *addressDivisionGroupingBase) IncludesMax() bool {
 	divCount := grouping.GetDivisionCount()
 	for i := 0; i < divCount; i++ {

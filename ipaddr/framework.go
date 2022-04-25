@@ -57,11 +57,13 @@ type AddressItem interface {
 	// IncludesZero returns whether this item includes the value of zero within its range
 	IncludesZero() bool
 
+	// IncludesMax returns whether this item includes the max value, the value whose bits are all ones, within its range
 	IncludesMax() bool
 
 	// IsZero returns whether this address item matches exactly the value of zero
 	IsZero() bool
 
+	// IsMax returns whether this address item matches exactly the maximum possible value, the value whose bits are all ones
 	IsMax() bool
 
 	// ContainsPrefixBlock returns whether the values of this item contains the prefix block for the given prefix length.
@@ -265,8 +267,15 @@ type IPv6AddressSegmentSeries interface {
 	GetNetworkSectionLen(BitCount) *IPv6AddressSection
 	GetHostSectionLen(BitCount) *IPv6AddressSection
 
+	// GetSegments returns a slice with the address segments.  The returned slice is not backed by the same array as the receiver.
 	GetSegments() []*IPv6AddressSegment
+
+	// CopySegments copies the existing segments into the given slice,
+	// as much as can be fit into the slice, returning the number of segments copied
 	CopySegments(segs []*IPv6AddressSegment) (count int)
+
+	// CopySubSegments copies the existing segments from the given start index until but not including the segment at the given end index,
+	// into the given slice, as much as can be fit into the slice, returning the number of segments copied
 	CopySubSegments(start, end int, segs []*IPv6AddressSegment) (count int)
 
 	GetSegment(index int) *IPv6AddressSegment
@@ -290,10 +299,20 @@ type IPv4AddressSegmentSeries interface {
 	GetNetworkSectionLen(BitCount) *IPv4AddressSection
 	GetHostSectionLen(BitCount) *IPv4AddressSection
 
+	// GetSegments returns a slice with the address segments.  The returned slice is not backed by the same array as the receiver.
 	GetSegments() []*IPv4AddressSegment
+
+	// CopySegments copies the existing segments into the given slice,
+	// as much as can be fit into the slice, returning the number of segments copied
 	CopySegments(segs []*IPv4AddressSegment) (count int)
+
+	// CopySubSegments copies the existing segments from the given start index until but not including the segment at the given end index,
+	// into the given slice, as much as can be fit into the slice, returning the number of segments copied
 	CopySubSegments(start, end int, segs []*IPv4AddressSegment) (count int)
 
+	// GetSegment returns the segment at the given index.
+	// The first segment is at index 0.
+	// GetSegment will panic given a negative index or index larger than the segment count.
 	GetSegment(index int) *IPv4AddressSegment
 }
 
@@ -308,10 +327,20 @@ type MACAddressSegmentSeries interface {
 	// GetSubSection returns a subsection of the full address section
 	GetSubSection(index, endIndex int) *MACAddressSection
 
+	// GetSegments returns a slice with the address segments.  The returned slice is not backed by the same array as the receiver.
 	GetSegments() []*MACAddressSegment
+
+	// CopySegments copies the existing segments into the given slice,
+	// as much as can be fit into the slice, returning the number of segments copied
 	CopySegments(segs []*MACAddressSegment) (count int)
+
+	// CopySubSegments copies the existing segments from the given start index until but not including the segment at the given end index,
+	// into the given slice, as much as can be fit into the slice, returning the number of segments copied
 	CopySubSegments(start, end int, segs []*MACAddressSegment) (count int)
 
+	// GetSegment returns the segment at the given index.
+	// The first segment is at index 0.
+	// GetSegment will panic given a negative index or index larger than the segment count.
 	GetSegment(index int) *MACAddressSegment
 }
 
@@ -401,7 +430,12 @@ type IPAddressType interface {
 	ipAddressRange
 
 	Wrap() WrappedIPAddress
+
+	// ToIP converts to an IPAddress, a polymorphic type usable with all IP addresses and subnets.
+	//
+	// ToIP can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 	ToIP() *IPAddress
+
 	ToAddressString() *IPAddressString
 }
 
@@ -425,6 +459,10 @@ type IPAddressSeqRangeType interface {
 
 	ContainsRange(IPAddressSeqRangeType) bool
 	Contains(IPAddressType) bool
+
+	// ToIP converts to an IPAddressSeqRange, a polymorphic type usable with all IP address sequential ranges.
+	//
+	// ToIP can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 	ToIP() *IPAddressSeqRange
 }
 

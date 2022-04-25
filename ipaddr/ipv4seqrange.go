@@ -254,10 +254,12 @@ func (rng *IPv4AddressSeqRange) IsFullRange() bool {
 	return rng.init().ipAddressSeqRangeInternal.IsFullRange()
 }
 
+// IsMax returns whether this sequential range spans from the max address, the address whose bits are all ones, to itself.
 func (rng *IPv4AddressSeqRange) IsMax() bool {
 	return rng.init().ipAddressSeqRangeInternal.IsMax()
 }
 
+// IncludesMax returns whether this sequential range's upper value is the max value, the value whose bits are all ones.
 func (rng *IPv4AddressSeqRange) IncludesMax() bool {
 	return rng.init().ipAddressSeqRangeInternal.IncludesMax()
 }
@@ -277,6 +279,9 @@ func (rng *IPv4AddressSeqRange) PrefixIterator(prefLength BitCount) IPv4AddressS
 	return &ipv4RangeIterator{rng.init().prefixIterator(prefLength)}
 }
 
+// ToIP converts to an IPAddressSeqRange, a polymorphic type usable with all IP address sequential ranges.
+//
+// ToIP can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (rng *IPv4AddressSeqRange) ToIP() *IPAddressSeqRange {
 	if rng != nil {
 		rng = rng.init()

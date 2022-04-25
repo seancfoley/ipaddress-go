@@ -37,19 +37,27 @@ const (
 type IPVersion string
 
 const (
+	// IndeterminateIPVersion represents an unspecified IP address version
 	IndeterminateIPVersion IPVersion = ""
-	IPv4                   IPVersion = "IPv4"
-	IPv6                   IPVersion = "IPv6"
+
+	// IPv4 represents Internet Protocol version 4
+	IPv4 IPVersion = "IPv4"
+
+	// IPv6 represents Internet Protocol version 6
+	IPv6 IPVersion = "IPv6"
 )
 
+// IsIPv6 returns true if this represents version 6
 func (version IPVersion) IsIPv6() bool {
 	return strings.EqualFold(string(version), string(IPv6))
 }
 
+// IsIPv4 returns true if this represents version 4
 func (version IPVersion) IsIPv4() bool {
 	return strings.EqualFold(string(version), string(IPv4))
 }
 
+// IsIndeterminate returns true if this represents an unspecified IP address version
 func (version IPVersion) IsIndeterminate() bool {
 	if len(version) == 4 {
 		// we allow mixed case in the event code is converted a string to IPVersion
@@ -698,14 +706,14 @@ func (addr *IPAddress) GetSection() *IPAddressSection {
 	return addr.init().section.ToIP()
 }
 
-// Gets the subsection from the series starting from the given index
+// GetTrailingSection gets the subsection from the series starting from the given index
 // The first segment is at index 0.
 func (addr *IPAddress) GetTrailingSection(index int) *IPAddressSection {
 	return addr.GetSection().GetTrailingSection(index)
 }
 
-//// Gets the subsection from the series starting from the given index and ending just before the give endIndex
-//// The first segment is at index 0.
+// GetSubSection gets the subsection from the series starting from the given index and ending just before the give endIndex
+// The first segment is at index 0.
 func (addr *IPAddress) GetSubSection(index, endIndex int) *IPAddressSection {
 	return addr.GetSection().GetSubSection(index, endIndex)
 }
@@ -740,8 +748,8 @@ func (addr *IPAddress) CopySubSegments(start, end int, segs []*IPAddressSegment)
 	return addr.GetSection().CopySubSegments(start, end, segs)
 }
 
-// CopySubSegments copies the existing segments from the given start index until but not including the segment at the given end index,
-// into the given slice, as much as can be fit into the slice, returning the number of segments copied
+// CopySegments copies the existing segments into the given slice,
+// as much as can be fit into the slice, returning the number of segments copied
 func (addr *IPAddress) CopySegments(segs []*IPAddressSegment) (count int) {
 	return addr.GetSection().CopySegments(segs)
 }
@@ -773,7 +781,7 @@ func (addr *IPAddress) GetGenericSegment(index int) AddressSegmentType {
 	return addr.getSegment(index)
 }
 
-// GetDivision returns the segment count
+// GetDivisionCount returns the segment count
 func (addr *IPAddress) GetDivisionCount() int {
 	return addr.getDivisionCount()
 }
@@ -980,10 +988,12 @@ func (addr *IPAddress) CopyUpperBytes(bytes []byte) []byte {
 	return addr.init().section.CopyUpperBytes(bytes)
 }
 
+// IsMax returns whether this address matches exactly the maximum possible value, the address whose bits are all ones
 func (addr *IPAddress) IsMax() bool {
 	return addr.init().section.IsMax()
 }
 
+// IncludesMax returns whether this address includes the max address, the address whose bits are all ones, within its range
 func (addr *IPAddress) IncludesMax() bool {
 	return addr.init().section.IncludesMax()
 }
@@ -1101,10 +1111,12 @@ func (addr *IPAddress) MatchesWithMask(other *IPAddress, mask *IPAddress) bool {
 	return false
 }
 
+// IsIPv4 returns true if this address or subnet originated as an IPv4 address or subnet.  If so, use ToIPv4 to convert back to the IPv4-specific type.
 func (addr *IPAddress) IsIPv4() bool {
 	return addr != nil && addr.isIPv4()
 }
 
+// IsIPv6 returns true if this address or subnet originated as an IPv6 address or subnet.  If so, use ToIPv6 to convert back to the IPv6-specific type.
 func (addr *IPAddress) IsIPv6() bool {
 	return addr != nil && addr.isIPv6()
 }
@@ -1120,6 +1132,9 @@ func (addr *IPAddress) ToAddressBase() *Address {
 	return (*Address)(unsafe.Pointer(addr))
 }
 
+// ToIP is an identity method.
+//
+// ToIP can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (addr *IPAddress) ToIP() *IPAddress {
 	return addr
 }
@@ -1331,7 +1346,7 @@ func (addr *IPAddress) Subtract(other *IPAddress) []*IPAddress {
 	return res
 }
 
-// Returns whether the address is link local, whether unicast or multicast.
+// IsLinkLocal returns whether the address is link local, whether unicast or multicast.
 func (addr *IPAddress) IsLinkLocal() bool {
 	if thisAddr := addr.ToIPv4(); thisAddr != nil {
 		return thisAddr.IsLinkLocal()
@@ -1352,12 +1367,12 @@ func (addr *IPAddress) IsLocal() bool {
 	return false
 }
 
-// The unspecified address is the address that is all zeros.
+// IsUnspecified returns true if zero.  The unspecified address is the address that is all zeros.
 func (addr *IPAddress) IsUnspecified() bool {
 	return addr.section != nil && addr.IsZero()
 }
 
-// Returns whether this address is the address which binds to any address on the local host.
+// IsAnyLocal returns whether this address is the address which binds to any address on the local host.
 // This is the address that has the value of 0, aka the unspecified address.
 func (addr *IPAddress) IsAnyLocal() bool {
 	return addr.section != nil && addr.IsZero()
@@ -1481,16 +1496,31 @@ func (addr *IPAddress) SpanWithSequentialBlocksTo(other *IPAddress) []*IPAddress
 	)
 }
 
+// ReverseBytes returns a new address with the bytes reversed.  Any prefix length is dropped.
+//
+// If each segment is more than 1 byte long, and the bytes within a single segment cannot be reversed because the segment represents a range,
+// and reversing the segment values results in a range that is not contiguous, then this returns an error.
+//
+// In practice this means that to be reversible, a segment range must include all values except possibly the largest and/or smallest, which reverse to themselves.
 func (addr *IPAddress) ReverseBytes() (*IPAddress, addrerr.IncompatibleAddressError) {
 	res, err := addr.init().reverseBytes()
 	return res.ToIP(), err
 }
 
+// ReverseBits returns a new address with the bits reversed.  Any prefix length is dropped.
+//
+// If the bits within a single segment cannot be reversed because the segment represents a range,
+// and reversing the segment values results in a range that is not contiguous, this returns an error.
+//
+// In practice this means that to be reversible, a segment range must include all values except possibly the largest and/or smallest, which reverse to themselves.
+//
+// If perByte is true, the bits are reversed within each byte, otherwise all the bits are reversed.
 func (addr *IPAddress) ReverseBits(perByte bool) (*IPAddress, addrerr.IncompatibleAddressError) {
 	res, err := addr.init().reverseBits(perByte)
 	return res.ToIP(), err
 }
 
+// ReverseSegments returns a new address with the segments reversed.
 func (addr *IPAddress) ReverseSegments() *IPAddress {
 	return addr.init().reverseSegments().ToIP()
 }

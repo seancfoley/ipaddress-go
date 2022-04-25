@@ -391,6 +391,14 @@ func (seg *addressSegmentInternal) reverseMultiValSeg(perByte bool) (res *Addres
 	return
 }
 
+// ReverseBits returns a segment with the bits reversed.
+//
+// If this segment represents a range of values that cannot be reversed, then this returns an error.
+//
+// To be reversible, a range must include all values except possibly the largest and/or smallest, which reverse to themselves.
+// Otherwise the result is not contiguous and thus cannot be represented by a sequential range of values.
+//
+// If perByte is true, the bits are reversed within each byte, otherwise all the bits are reversed.
 func (seg *addressSegmentInternal) ReverseBits(perByte bool) (res *AddressSegment, err addrerr.IncompatibleAddressError) {
 	if seg.divisionValues == nil {
 		res = seg.toAddressSegment()
@@ -432,6 +440,12 @@ func (seg *addressSegmentInternal) ReverseBits(perByte bool) (res *AddressSegmen
 	return
 }
 
+// ReverseBytes returns a segment with the bytes reversed.
+//
+// If this segment represents a range of values that cannot be reversed, then this returns an error.
+//
+// To be reversible, a range must include all values except possibly the largest and/or smallest, which reverse to themselves.
+// Otherwise the result is not contiguous and thus cannot be represented by a sequential range of values.
 func (seg *addressSegmentInternal) ReverseBytes() (res *AddressSegment, err addrerr.IncompatibleAddressError) {
 	byteCount := seg.GetByteCount()
 	if byteCount <= 1 {
@@ -626,10 +640,12 @@ func (seg *addressSegmentInternal) IncludesZero() bool {
 	return seg.addressDivisionInternal.IncludesZero()
 }
 
+// IsMax returns whether this segment matches exactly the maximum possible value, the value whose bits are all ones
 func (seg *addressSegmentInternal) IsMax() bool {
 	return seg.addressDivisionInternal.IsMax()
 }
 
+// IncludesMax returns whether this segment includes the max value, the value whose bits are all ones, within its range
 func (seg *addressSegmentInternal) IncludesMax() bool {
 	return seg.addressDivisionInternal.IncludesMax()
 }
@@ -733,18 +749,22 @@ func (seg *AddressSegment) GetCount() *big.Int {
 	return seg.getCount()
 }
 
+// IsIP returns true if this segment originated as an IPv4 or IPv6 segment, or a zero-valued IP segment.  If so, use ToIP to convert back to the IP-specific type.
 func (seg *AddressSegment) IsIP() bool {
 	return seg != nil && seg.matchesIPSegment()
 }
 
+// IsIPv4 returns true if this segment originated as an IPv4 segment.  If so, use ToIPv4 to convert back to the IPv4-specific type.
 func (seg *AddressSegment) IsIPv4() bool {
 	return seg != nil && seg.matchesIPv4Segment()
 }
 
+// IsIPv6 returns true if this segment originated as an IPv6 segment.  If so, use ToIPv6 to convert back to the IPv6-specific type.
 func (seg *AddressSegment) IsIPv6() bool {
 	return seg != nil && seg.matchesIPv6Segment()
 }
 
+// IsMAC returns true if this segment originated as a MAC segment.  If so, use ToMAC to convert back to the MAC-specific type.
 func (seg *AddressSegment) IsMAC() bool {
 	return seg != nil && seg.matchesMACSegment()
 }
@@ -756,6 +776,10 @@ func (seg *AddressSegment) Iterator() SegmentIterator {
 	return seg.iterator()
 }
 
+// ToIP converts to an IPAddressSegment if this division originated as an IPv4 or IPv6 segment, or a zero-valued IP segment.
+// If not, ToIP returns nil.
+//
+// ToIP can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (seg *AddressSegment) ToIP() *IPAddressSegment {
 	if seg.IsIP() {
 		return (*IPAddressSegment)(unsafe.Pointer(seg))

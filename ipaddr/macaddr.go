@@ -325,8 +325,8 @@ func (addr *MACAddress) CopySubSegments(start, end int, segs []*MACAddressSegmen
 	return addr.GetSection().CopySubSegments(start, end, segs)
 }
 
-// CopySubSegments copies the existing segments from the given start index until but not including the segment at the given end index,
-// into the given slice, as much as can be fit into the slice, returning the number of segments copied
+// CopySegments copies the existing segments into the given slice,
+// as much as can be fit into the slice, returning the number of segments copied
 func (addr *MACAddress) CopySegments(segs []*MACAddressSegment) (count int) {
 	return addr.GetSection().CopySegments(segs)
 }
@@ -371,10 +371,12 @@ func (addr *MACAddress) IsOneBit(bitIndex BitCount) bool {
 	return addr.init().isOneBit(bitIndex)
 }
 
+// IsMax returns whether this address matches exactly the maximum possible value, the address whose bits are all ones
 func (addr *MACAddress) IsMax() bool {
 	return addr.init().section.IsMax()
 }
 
+// IncludesMax returns whether this address includes the max address, the address whose bits are all ones, within its range
 func (addr *MACAddress) IncludesMax() bool {
 	return addr.init().section.IncludesMax()
 }
@@ -665,10 +667,19 @@ func (addr *MACAddress) Increment(increment int64) *MACAddress {
 	return addr.init().increment(increment).ToMAC()
 }
 
+// ReverseBytes returns a new address with the bytes reversed.  Any prefix length is dropped.
 func (addr *MACAddress) ReverseBytes() *MACAddress {
 	return addr.checkIdentity(addr.GetSection().ReverseBytes())
 }
 
+// ReverseBits returns a new address with the bits reversed.  Any prefix length is dropped.
+//
+// If the bits within a single segment cannot be reversed because the segment represents a range,
+// and reversing the segment values results in a range that is not contiguous, this returns an error.
+//
+// In practice this means that to be reversible, a segment range must include all values except possibly the largest and/or smallest, which reverse to themselves.
+//
+// If perByte is true, the bits are reversed within each byte, otherwise all the bits are reversed.
 func (addr *MACAddress) ReverseBits(perByte bool) (*MACAddress, addrerr.IncompatibleAddressError) {
 	res, err := addr.GetSection().ReverseBits(perByte)
 	if err != nil {
@@ -677,6 +688,7 @@ func (addr *MACAddress) ReverseBits(perByte bool) (*MACAddress, addrerr.Incompat
 	return addr.checkIdentity(res), nil
 }
 
+// ReverseSegments returns a new address with the segments reversed.
 func (addr *MACAddress) ReverseSegments() *MACAddress {
 	return addr.checkIdentity(addr.GetSection().ReverseSegments())
 }

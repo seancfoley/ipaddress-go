@@ -971,10 +971,12 @@ func (grouping *addressDivisionGroupingInternal) IncludesZero() bool {
 	return grouping.addressDivisionGroupingBase.IncludesZero()
 }
 
+// IsMax returns whether this grouping matches exactly the maximum possible value, the value whose bits are all ones
 func (grouping *addressDivisionGroupingInternal) IsMax() bool {
 	return grouping.addressDivisionGroupingBase.IsMax()
 }
 
+// IncludesMax returns whether this grouping includes the max value, the value whose bits are all ones, within its range
 func (grouping *addressDivisionGroupingInternal) IncludesMax() bool {
 	return grouping.addressDivisionGroupingBase.IncludesMax()
 }
@@ -1080,28 +1082,33 @@ func (grouping *AddressDivisionGrouping) IsSectionBase() bool {
 	return grouping != nil && grouping.isAddressSection()
 }
 
+// IsIP returns true if this address division grouping originated as an IPv4 or IPv6 section, or a zero-length IP section.  If so, use ToIP to convert back to the IP-specific type.
 func (grouping *AddressDivisionGrouping) IsIP() bool {
 	return grouping.ToSectionBase().IsIP()
 }
 
+// IsIPv4 returns true if this grouping originated as an IPv4 section.  If so, use ToIPv4 to convert back to the IPv4-specific type.
 func (grouping *AddressDivisionGrouping) IsIPv4() bool {
 	return grouping.ToSectionBase().IsIPv4()
 }
 
+// IsIPv6 returns true if this grouping originated as an IPv6 section.  If so, use ToIPv6 to convert back to the IPv6-specific type.
 func (grouping *AddressDivisionGrouping) IsIPv6() bool {
 	return grouping.ToSectionBase().IsIPv6()
 }
 
+// IsMixedIPv6v4 returns true if this grouping originated as a mixed IPv6-IPv4 grouping.  If so, use ToMixedIPv6v4 to convert back to the more specific grouping type.
 func (grouping *AddressDivisionGrouping) IsMixedIPv6v4() bool {
 	return grouping != nil && grouping.matchesIPv6v4MixedGroupingType()
 }
 
+// IsMAC returns true if this grouping originated as a MAC section.  If so, use ToMAC to convert back to the MAC-specific type.
 func (grouping *AddressDivisionGrouping) IsMAC() bool {
 	return grouping.ToSectionBase().IsMAC()
 }
 
-// ToSectionBase converts to an address section.
-// If the conversion cannot happen because this grouping did not originate as an address section, the result will be nil.
+// ToSectionBase converts to an address section if this grouping originated as an address section.
+// Otherwise, the result will be nil.
 func (grouping *AddressDivisionGrouping) ToSectionBase() *AddressSection {
 	if grouping == nil || !grouping.isAddressSection() {
 		return nil
@@ -1116,6 +1123,10 @@ func (grouping *AddressDivisionGrouping) ToMixedIPv6v4() *IPv6v4MixedAddressGrou
 	return nil
 }
 
+// ToIP converts to an IPAddressSection if this grouping originated as an IPv4 or IPv6 section, or a zero-valued IP section.
+// If not, ToIP returns nil.
+//
+// ToIP can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (grouping *AddressDivisionGrouping) ToIP() *IPAddressSection {
 	return grouping.ToSectionBase().ToIP()
 }

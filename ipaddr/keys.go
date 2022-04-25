@@ -277,11 +277,15 @@ func (key *AddressKey) String() string {
 	return key.ToAddress().String()
 }
 
+// IPAddressKey is a representation of IPAddress that is comparable as defined by the language specification.
+// See https://go.dev/ref/spec#Comparison_operators
+// It can be used as a map key.
+// The zero value is a zero-length address.
 type IPAddressKey struct {
 	AddressKey
 }
 
-// ToAddress converts to an address instance
+// ToIP converts to an IP address instance
 func (key *IPAddressKey) ToIP() *IPAddress {
 	return key.ToAddress().ToIP()
 }

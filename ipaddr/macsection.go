@@ -351,8 +351,8 @@ func (section *MACAddressSection) CopySubSegments(start, end int, segs []*MACAdd
 	return section.visitSubDivisions(start, end, func(index int, div *AddressDivision) bool { segs[index] = div.ToMAC(); return false }, len(segs))
 }
 
-// CopySubSegments copies the existing segments from the given start index until but not including the segment at the given end index,
-// into the given slice, as much as can be fit into the slice, returning the number of segments copied
+// CopySegments copies the existing segments into the given slice,
+// as much as can be fit into the slice, returning the number of segments copied
 func (section *MACAddressSection) CopySegments(segs []*MACAddressSegment) (count int) {
 	return section.visitDivisions(func(index int, div *AddressDivision) bool { segs[index] = div.ToMAC(); return false }, len(segs))
 }
@@ -520,15 +520,25 @@ func (section *MACAddressSection) Increment(incrementVal int64) *MACAddressSecti
 		section.getPrefixLen()).ToMAC()
 }
 
+// ReverseBits returns a new section with the bits reversed.  Any prefix length is dropped.
+//
+// If the bits within a single segment cannot be reversed because the segment represents a range,
+// and reversing the segment values results in a range that is not contiguous, this returns an error.
+//
+// In practice this means that to be reversible, a range must include all values except possibly the largest and/or smallest, which reverse to themselves.
+//
+// If perByte is true, the bits are reversed within each byte, otherwise all the bits are reversed.
 func (section *MACAddressSection) ReverseBits(perByte bool) (*MACAddressSection, addrerr.IncompatibleAddressError) {
 	res, err := section.reverseBits(perByte)
 	return res.ToMAC(), err
 }
 
+// ReverseBytes returns a new section with the bytes reversed.  Any prefix length is dropped.
 func (section *MACAddressSection) ReverseBytes() *MACAddressSection {
 	return section.ReverseSegments()
 }
 
+// ReverseSegments returns a new section with the segments reversed.
 func (section *MACAddressSection) ReverseSegments() *MACAddressSection {
 	if section.GetSegmentCount() <= 1 {
 		if section.IsPrefixed() {

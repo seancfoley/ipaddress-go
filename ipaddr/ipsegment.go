@@ -359,10 +359,12 @@ func (seg *ipAddressSegmentInternal) IncludesZero() bool {
 	return seg.addressSegmentInternal.IncludesZero()
 }
 
+// IsMax returns whether this segment matches exactly the maximum possible value, the value whose bits are all ones
 func (seg *ipAddressSegmentInternal) IsMax() bool {
 	return seg.addressSegmentInternal.IsMax()
 }
 
+// IncludesMax returns whether this segment includes the max value, the value whose bits are all ones, within its range
 func (seg *ipAddressSegmentInternal) IncludesMax() bool {
 	return seg.addressSegmentInternal.IncludesMax()
 }
@@ -480,10 +482,24 @@ func (seg *ipAddressSegmentInternal) ToHexString(with0xPrefix bool) (string, add
 	return seg.addressSegmentInternal.ToHexString(with0xPrefix)
 }
 
+// ReverseBits returns a segment with the bits reversed.
+//
+// If this segment represents a range of values that cannot be reversed, then this returns an error.
+//
+// To be reversible, a range must include all values except possibly the largest and/or smallest, which reverse to themselves.
+// Otherwise the result is not contiguous and thus cannot be represented by a sequential range of values.
+//
+// If perByte is true, the bits are reversed within each byte, otherwise all the bits are reversed.
 func (seg *ipAddressSegmentInternal) ReverseBits(perByte bool) (res *AddressSegment, err addrerr.IncompatibleAddressError) {
 	return seg.addressSegmentInternal.ReverseBits(perByte)
 }
 
+// ReverseBytes returns a segment with the bytes reversed.
+//
+// If this segment represents a range of values that cannot be reversed, then this returns an error.
+//
+// To be reversible, a range must include all values except possibly the largest and/or smallest, which reverse to themselves.
+// Otherwise the result is not contiguous and thus cannot be represented by a sequential range of values.
 func (seg *ipAddressSegmentInternal) ReverseBytes() (res *AddressSegment, err addrerr.IncompatibleAddressError) {
 	return seg.addressSegmentInternal.ReverseBytes()
 }
@@ -593,10 +609,12 @@ func (seg *IPAddressSegment) WithoutPrefixLen() *IPAddressSegment {
 	return seg.withoutPrefixLen()
 }
 
+// IsIPv4 returns true if this segment originated as an IPv4 segment.  If so, use ToIPv4 to convert back to the IPv4-specific type.
 func (seg *IPAddressSegment) IsIPv4() bool {
 	return seg != nil && seg.matchesIPv4Segment()
 }
 
+// IsIPv6 returns true if this segment originated as an IPv6 segment.  If so, use ToIPv6 to convert back to the IPv6-specific type.
 func (seg *IPAddressSegment) IsIPv6() bool {
 	return seg != nil && seg.matchesIPv6Segment()
 }

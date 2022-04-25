@@ -455,6 +455,16 @@ func (seg *IPv6AddressSegment) splitIntoMACSegments(segs []*AddressDivision, sta
 	})
 }
 
+// ReverseBits returns a segment with the bits reversed.
+//
+// If this segment represents a range of values that cannot be reversed, then this returns an error.
+//
+// To be reversible, a range must include all values except possibly the largest and/or smallest, which reverse to themselves.
+// Otherwise the result is not contiguous and thus cannot be represented by a sequential range of values.
+//
+// If perByte is true, the bits are reversed within each byte, otherwise all the bits are reversed.
+//
+// If perByte is true, the bits are reversed within each byte, otherwise all the bits are reversed.
 func (seg *IPv6AddressSegment) ReverseBits(perByte bool) (res *IPv6AddressSegment, err addrerr.IncompatibleAddressError) {
 	if seg.divisionValues == nil {
 		res = seg
@@ -479,6 +489,12 @@ func (seg *IPv6AddressSegment) ReverseBits(perByte bool) (res *IPv6AddressSegmen
 	return
 }
 
+// ReverseBytes returns a segment with the bytes reversed.
+//
+// If this segment represents a range of values that cannot be reversed, then this returns an error.
+//
+// To be reversible, a range must include all values except possibly the largest and/or smallest, which reverse to themselves.
+// Otherwise the result is not contiguous and thus cannot be represented by a sequential range of values.
 func (seg *IPv6AddressSegment) ReverseBytes() (res *IPv6AddressSegment, err addrerr.IncompatibleAddressError) {
 	if seg.divisionValues == nil {
 		res = seg
@@ -508,6 +524,9 @@ func (seg *IPv6AddressSegment) ToSegmentBase() *AddressSegment {
 	return seg.ToIP().ToSegmentBase()
 }
 
+// ToIP converts to an IPAddressSegment, a polymorphic type usable with all IP address segments.
+//
+// ToIP can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (seg *IPv6AddressSegment) ToIP() *IPAddressSegment {
 	if seg == nil {
 		return nil

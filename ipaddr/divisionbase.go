@@ -238,12 +238,12 @@ func (div *addressDivisionBase) IncludesZero() bool {
 	return vals.includesZero()
 }
 
-// IsMax returns whether this item matches the maximum possible value for the address type or version
+// IsMax returns whether this address matches exactly the maximum possible value, the value whose bits are all ones
 func (div *addressDivisionBase) IsMax() bool {
 	return !div.isMultiple() && div.includesMax()
 }
 
-// IncludesMax returns whether this item includes the maximum possible value for the address type or version within its range
+// IncludesMax returns whether this division includes the max value, the value whose bits are all ones, within its range
 func (div *addressDivisionBase) IncludesMax() bool {
 	vals := div.divisionValues
 	if vals == nil {

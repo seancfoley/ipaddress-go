@@ -578,9 +578,6 @@ func (addr *addressInternal) toPrefixBlockLen(prefLen BitCount) *Address {
 	return addr.checkIdentity(addr.section.toPrefixBlockLen(prefLen))
 }
 
-// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
-// toBlock is next.
-
 func (addr *addressInternal) toBlock(segmentIndex int, lower, upper SegInt) *Address {
 	return addr.checkIdentity(addr.section.toBlock(segmentIndex, lower, upper))
 }
@@ -601,6 +598,7 @@ func (addr *addressInternal) reverseBits(perByte bool) (*Address, addrerr.Incomp
 	return addr.checkIdentity(sect), nil
 }
 
+// reverseSegments returns a new address with the segments reversed.
 func (addr *addressInternal) reverseSegments() *Address {
 	return addr.checkIdentity(addr.section.ReverseSegments())
 }
@@ -629,6 +627,9 @@ func (addr *addressInternal) isMAC() bool {
 func (addr *addressInternal) isIP() bool {
 	return addr.section == nil /* zero addr */ || addr.section.matchesIPAddressType()
 }
+
+// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
+// prefixEquals is next .
 
 func (addr *addressInternal) prefixEquals(other AddressType) bool {
 	otherAddr := other.ToAddressBase()
@@ -707,6 +708,7 @@ func (addr *IPAddress) equalsSameVersion(other *IPAddress) bool {
 		addr.isSameZone(otherAddr)
 }
 
+// withoutPrefixLen returns the same address but with no associated prefix length.
 func (addr *addressInternal) withoutPrefixLen() *Address {
 	return addr.checkIdentity(addr.section.withoutPrefixLen())
 }
@@ -907,6 +909,8 @@ func (addr *addressInternal) blockIterator(segmentCount int) AddressIterator {
 		iterator)
 }
 
+// sequentialBlockIterator iterates through the minimal number of maximum-sized blocks comprising this subnet
+// a block is sequential if given any two addresses in the block, any intervening address between the two is also in the block
 func (addr *addressInternal) sequentialBlockIterator() AddressIterator {
 	return addr.blockIterator(addr.getSequentialBlockIndex())
 }
@@ -1325,10 +1329,12 @@ func (addr *Address) CopyUpperBytes(bytes []byte) []byte {
 	return addr.init().section.CopyUpperBytes(bytes)
 }
 
+// IsMax returns whether this address matches exactly the maximum possible value, the address whose bits are all ones
 func (addr *Address) IsMax() bool {
 	return addr.init().section.IsMax()
 }
 
+// IncludesMax returns whether this address includes the max address, the address whose bits are all ones, within its range
 func (addr *Address) IncludesMax() bool {
 	return addr.init().section.IncludesMax()
 }
@@ -1474,14 +1480,29 @@ func (addr *Address) Increment(increment int64) *Address {
 	return addr.init().increment(increment)
 }
 
+// ReverseBytes returns a new address with the bytes reversed.  Any prefix length is dropped.
+//
+// If each segment is more than 1 byte long, and the bytes within a single segment cannot be reversed because the segment represents a range,
+// and reversing the segment values results in a range that is not contiguous, then this returns an error.
+//
+// In practice this means that to be reversible, a segment range must include all values except possibly the largest and/or smallest, which reverse to themselves.
 func (addr *Address) ReverseBytes() (*Address, addrerr.IncompatibleAddressError) {
 	return addr.init().reverseBytes()
 }
 
+// ReverseBits returns a new address with the bits reversed.  Any prefix length is dropped.
+//
+// If the bits within a single segment cannot be reversed because the segment represents a range,
+// and reversing the segment values results in a range that is not contiguous, this returns an error.
+//
+// In practice this means that to be reversible, a segment range must include all values except possibly the largest and/or smallest, which reverse to themselves.
+//
+// If perByte is true, the bits are reversed within each byte, otherwise all the bits are reversed.
 func (addr *Address) ReverseBits(perByte bool) (*Address, addrerr.IncompatibleAddressError) {
 	return addr.init().reverseBits(perByte)
 }
 
+// ReverseSegments returns a new address with the segments reversed.
 func (addr *Address) ReverseSegments() *Address {
 	return addr.init().reverseSegments()
 }
@@ -1595,26 +1616,38 @@ func (addr *Address) ToAddressString() HostIdentifierString {
 	return nil
 }
 
+// IsIPv4 returns true if this address or subnet originated as an IPv4 address or subnet.  If so, use ToIPv4 to convert back to the IPv4-specific type.
 func (addr *Address) IsIPv4() bool {
 	return addr != nil && addr.isIPv4()
 }
 
+// IsIPv6 returns true if this address or subnet originated as an IPv6 address or subnet.  If so, use ToIPv6 to convert back to the IPv6-specific type.
 func (addr *Address) IsIPv6() bool {
 	return addr != nil && addr.isIPv6()
 }
 
+// IsIP returns true if this address or subnet originated as an IPv4 or IPv6 address or subnet, or a zero-valued IP.  If so, use ToIP to convert back to the IP-specific type.
 func (addr *Address) IsIP() bool {
 	return addr != nil && addr.isIP()
 }
 
+// IsMAC returns true if this address or address collection originated as a MAC address or address collection.  If so, use ToMAC to convert back to the MAC-specific type.
 func (addr *Address) IsMAC() bool {
 	return addr != nil && addr.isMAC()
 }
+
+// TODO go downwards through the remaining conversion methods...
+// I've done the "Is" conversion checkers, and ToIP.  But not ToAddressBase, ToIPv4, ToIPv6, ToSectionBase, ToDivGrouping, ToMAC, ToDiv, ToSegmentBase.
+// ToIP is a model for both upward (eg from Address) and downward (Eg from IPv6Address) conversions
 
 func (addr *Address) ToAddressBase() *Address {
 	return addr
 }
 
+// ToIP converts to an IPAddress if this address or subnet originated as an IPv4 or IPv6 address or subnet, or a zero-valued IP.
+// If not, ToIP returns nil.
+//
+// ToIP can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (addr *Address) ToIP() *IPAddress {
 	if addr.IsIP() {
 		return (*IPAddress)(unsafe.Pointer(addr))

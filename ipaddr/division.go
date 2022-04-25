@@ -871,10 +871,12 @@ func (div *addressDivisionInternal) IncludesZero() bool {
 	return div.addressDivisionBase.IncludesZero()
 }
 
+// IsMax returns whether this division matches exactly the maximum possible value, the value whose bits are all ones
 func (div *addressDivisionInternal) IsMax() bool {
 	return div.addressDivisionBase.IsMax()
 }
 
+// IncludesMax returns whether this division includes the max value, the value whose bits are all ones, within its range
 func (div *addressDivisionInternal) IncludesMax() bool {
 	return div.addressDivisionBase.IncludesMax()
 }
@@ -972,22 +974,30 @@ func (div *AddressDivision) IsSegmentBase() bool {
 	return div != nil && div.matchesSegment()
 }
 
+// IsIP returns true if this division originated as an IPv4 or IPv6 segment, or a zero-valued IP segment.  If so, use ToIP to convert back to the IP-specific type.
 func (div *AddressDivision) IsIP() bool {
 	return div != nil && div.matchesIPSegment()
 }
 
+// IsIPv4 returns true if this division originated as an IPv4 segment.  If so, use ToIPv4 to convert back to the IPv4-specific type.
 func (div *AddressDivision) IsIPv4() bool {
 	return div != nil && div.matchesIPv4Segment()
 }
 
+// IsIPv6 returns true if this division originated as an IPv6 segment.  If so, use ToIPv6 to convert back to the IPv6-specific type.
 func (div *AddressDivision) IsIPv6() bool {
 	return div != nil && div.matchesIPv6Segment()
 }
 
+// IsMAC returns true if this division originated as a MAC segment.  If so, use ToMAC to convert back to the MAC-specific type.
 func (div *AddressDivision) IsMAC() bool {
 	return div != nil && div.matchesMACSegment()
 }
 
+// ToIP converts to an IPAddressSegment if this division originated as an IPv4 or IPv6 segment, or a zero-valued IP segment.
+// If not, ToIP returns nil.
+//
+// ToIP can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (div *AddressDivision) ToIP() *IPAddressSegment {
 	if div.IsIP() {
 		return (*IPAddressSegment)(unsafe.Pointer(div))
