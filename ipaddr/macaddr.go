@@ -417,19 +417,52 @@ func (addr *MACAddress) WithoutPrefixLen() *MACAddress {
 	return addr.init().withoutPrefixLen().ToMAC()
 }
 
+// SetPrefixLen sets the prefix length.
+//
+// A prefix length will not be set to a value lower than zero or beyond the bit length of the address.
+// The provided prefix length will be adjusted to these boundaries if necessary.
 func (addr *MACAddress) SetPrefixLen(prefixLen BitCount) *MACAddress {
 	return addr.init().setPrefixLen(prefixLen).ToMAC()
 }
+
+// SetPrefixLenZeroed sets the prefix length.
+//
+// A prefix length will not be set to a value lower than zero or beyond the bit length of the address.
+// The provided prefix length will be adjusted to these boundaries if necessary.
+//
+// If this address has a prefix length, and the prefix length is increased when setting the new prefix length, the bits moved within the prefix become zero.
+// If this address has a prefix length, and the prefix length is decreased when setting the new prefix length, the bits moved outside the prefix become zero.
+//
+// In other words, bits that move from one side of the prefix length to the other (ie bits moved into the prefix or outside the prefix) are zeroed.
+//
+// If the result cannot be zeroed because zeroing out bits results in a non-contiguous segment, an error is returned.
 
 func (addr *MACAddress) SetPrefixLenZeroed(prefixLen BitCount) (*MACAddress, addrerr.IncompatibleAddressError) {
 	res, err := addr.init().setPrefixLenZeroed(prefixLen)
 	return res.ToMAC(), err
 }
 
+// AdjustPrefixLen increases or decreases the prefix length by the given increment.
+//
+// A prefix length will not be adjusted lower than zero or beyond the bit length of the address.
+//
+// If this address has no prefix length, then the prefix length will be set to the adjustment if positive,
+// or it will be set to the adjustment added to the bit count if negative.
 func (addr *MACAddress) AdjustPrefixLen(prefixLen BitCount) *MACAddress {
 	return addr.init().adjustPrefixLen(prefixLen).ToMAC()
 }
 
+// AdjustPrefixLenZeroed increases or decreases the prefix length by the given increment while zeroing out the bits that have moved into or outside the prefix.
+//
+// A prefix length will not be adjusted lower than zero or beyond the bit length of the address.
+//
+// If this address has no prefix length, then the prefix length will be set to the adjustment if positive,
+// or it will be set to the adjustment added to the bit count if negative.
+//
+// When prefix length is increased, the bits moved within the prefix become zero.
+// When a prefix length is decreased, the bits moved outside the prefix become zero.
+//
+// If the result cannot be zeroed because zeroing out bits results in a non-contiguous segment, an error is returned.
 func (addr *MACAddress) AdjustPrefixLenZeroed(prefixLen BitCount) (*MACAddress, addrerr.IncompatibleAddressError) {
 	res, err := addr.init().adjustPrefixLenZeroed(prefixLen)
 	return res.ToMAC(), err

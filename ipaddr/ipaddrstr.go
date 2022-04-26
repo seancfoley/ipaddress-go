@@ -739,15 +739,14 @@ func (addrStr *IPAddressString) Equal(other *IPAddressString) bool {
 	return false
 }
 
-// AdjustPrefixLen increases or decreases prefix length by the given increment.
+// AdjustPrefixLen increases or decreases the prefix length by the given increment.
 //
 // If the address string has prefix length 0 and represents all addresses of the same version,
 // and the prefix length is being decreased, then the address representing all addresses of any version is returned.
 //
 // When there is an associated address value and the prefix length is increased, the bits moved within the prefix become zero,
 // and if prefix length is extended beyond the segment series boundary, it is removed.
-// When there is an associated address value
-// and the prefix length is decreased, the bits moved outside the prefix become zero.
+// When there is an associated address value and the prefix length is decreased, the bits moved outside the prefix become zero.
 //
 // If the address string represents a prefix block, then the result will also represent a prefix block.
 func (addrStr *IPAddressString) AdjustPrefixLen(adjustment BitCount) (*IPAddressString, addrerr.IncompatibleAddressError) {

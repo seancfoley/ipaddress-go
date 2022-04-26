@@ -483,19 +483,55 @@ func (addr *IPv4Address) WithoutPrefixLen() *IPv4Address {
 	return addr.init().withoutPrefixLen().ToIPv4()
 }
 
+// SetPrefixLen sets the prefix length.
+//
+// A prefix length will not be set to a value lower than zero or beyond the bit length of the address.
+// The provided prefix length will be adjusted to these boundaries if necessary.
 func (addr *IPv4Address) SetPrefixLen(prefixLen BitCount) *IPv4Address {
 	return addr.init().setPrefixLen(prefixLen).ToIPv4()
 }
+
+// SetPrefixLenZeroed sets the prefix length.
+//
+// A prefix length will not be set to a value lower than zero or beyond the bit length of the address.
+// The provided prefix length will be adjusted to these boundaries if necessary.
+//
+// If this address has a prefix length, and the prefix length is increased when setting the new prefix length, the bits moved within the prefix become zero.
+// If this address has a prefix length, and the prefix length is decreased when setting the new prefix length, the bits moved outside the prefix become zero.
+//
+// In other words, bits that move from one side of the prefix length to the other (ie bits moved into the prefix or outside the prefix) are zeroed.
+//
+// If the result cannot be zeroed because zeroing out bits results in a non-contiguous segment, an error is returned.
 
 func (addr *IPv4Address) SetPrefixLenZeroed(prefixLen BitCount) (*IPv4Address, addrerr.IncompatibleAddressError) {
 	res, err := addr.init().setPrefixLenZeroed(prefixLen)
 	return res.ToIPv4(), err
 }
 
+// AdjustPrefixLen increases or decreases the prefix length by the given increment.
+//
+// A prefix length will not be adjusted lower than zero or beyond the bit length of the address.
+//
+// If this address has no prefix length, then the prefix length will be set to the adjustment if positive,
+// or it will be set to the adjustment added to the bit count if negative.
 func (addr *IPv4Address) AdjustPrefixLen(prefixLen BitCount) *IPv4Address {
 	return addr.init().adjustPrefixLen(prefixLen).ToIPv4()
 }
 
+// AdjustPrefixLenZeroed increases or decreases the prefix length by the given increment while zeroing out the bits that have moved into or outside the prefix.
+//
+// A prefix length will not be adjusted lower than zero or beyond the bit length of the address.
+//
+// If this address has no prefix length, then the prefix length will be set to the adjustment if positive,
+// or it will be set to the adjustment added to the bit count if negative.
+//
+// When prefix length is increased, the bits moved within the prefix become zero.
+// When a prefix length is decreased, the bits moved outside the prefix become zero.
+//
+// For example, 1.2.0.0/16 adjusted by -8 becomes 1.0.0.0/8.
+// 1.2.0.0/16 adjusted by 8 becomes 1.2.0.0/24
+//
+// If the result cannot be zeroed because zeroing out bits results in a non-contiguous segment, an error is returned.
 func (addr *IPv4Address) AdjustPrefixLenZeroed(prefixLen BitCount) (*IPv4Address, addrerr.IncompatibleAddressError) {
 	res, err := addr.init().adjustPrefixLenZeroed(prefixLen)
 	return res.ToIPv4(), err

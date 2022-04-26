@@ -710,9 +710,6 @@ func (addr *addressInternal) withoutPrefixLen() *Address {
 	return addr.checkIdentity(addr.section.withoutPrefixLen())
 }
 
-// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
-// adjustPrefixLen is next.
-
 func (addr *addressInternal) adjustPrefixLen(prefixLen BitCount) *Address {
 	return addr.checkIdentity(addr.section.adjustPrefixLen(prefixLen))
 }
@@ -736,6 +733,9 @@ func (addr *addressInternal) setPrefixLenZeroed(prefixLen BitCount) (res *Addres
 	}
 	return
 }
+
+// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
+// AssignPrefixForSingleBlock and AssignMinPrefixForBlock are next.
 
 func (addr *addressInternal) assignPrefixForSingleBlock() *Address {
 	newPrefix := addr.GetPrefixLenForSingleBlock()
@@ -1378,18 +1378,54 @@ func (addr *Address) WithoutPrefixLen() *Address {
 	return addr.init().withoutPrefixLen()
 }
 
+// SetPrefixLen sets the prefix length.
+//
+// A prefix length will not be set to a value lower than zero or beyond the bit length of the address.
+// The provided prefix length will be adjusted to these boundaries if necessary.
 func (addr *Address) SetPrefixLen(prefixLen BitCount) *Address {
 	return addr.init().setPrefixLen(prefixLen)
 }
+
+// SetPrefixLenZeroed sets the prefix length.
+//
+// A prefix length will not be set to a value lower than zero or beyond the bit length of the address.
+// The provided prefix length will be adjusted to these boundaries if necessary.
+//
+// If this address has a prefix length, and the prefix length is increased when setting the new prefix length, the bits moved within the prefix become zero.
+// If this address has a prefix length, and the prefix length is decreased when setting the new prefix length, the bits moved outside the prefix become zero.
+//
+// In other words, bits that move from one side of the prefix length to the other (ie bits moved into the prefix or outside the prefix) are zeroed.
+//
+// If the result cannot be zeroed because zeroing out bits results in a non-contiguous segment, an error is returned.
 
 func (addr *Address) SetPrefixLenZeroed(prefixLen BitCount) (*Address, addrerr.IncompatibleAddressError) {
 	return addr.init().setPrefixLenZeroed(prefixLen)
 }
 
+// AdjustPrefixLen increases or decreases the prefix length by the given increment.
+//
+// A prefix length will not be adjusted lower than zero or beyond the bit length of the address.
+//
+// If this address has no prefix length, then the prefix length will be set to the adjustment if positive,
+// or it will be set to the adjustment added to the bit count if negative.
 func (addr *Address) AdjustPrefixLen(prefixLen BitCount) *Address {
 	return addr.adjustPrefixLen(prefixLen).ToAddressBase()
 }
 
+// AdjustPrefixLenZeroed increases or decreases the prefix length by the given increment while zeroing out the bits that have moved into or outside the prefix.
+//
+// A prefix length will not be adjusted lower than zero or beyond the bit length of the address.
+//
+// If this address has no prefix length, then the prefix length will be set to the adjustment if positive,
+// or it will be set to the adjustment added to the bit count if negative.
+//
+// When prefix length is increased, the bits moved within the prefix become zero.
+// When a prefix length is decreased, the bits moved outside the prefix become zero.
+//
+// For example, 1.2.0.0/16 adjusted by -8 becomes 1.0.0.0/8.
+// 1.2.0.0/16 adjusted by 8 becomes 1.2.0.0/24
+//
+// If the result cannot be zeroed because zeroing out bits results in a non-contiguous segment, an error is returned.
 func (addr *Address) AdjustPrefixLenZeroed(prefixLen BitCount) (*Address, addrerr.IncompatibleAddressError) {
 	res, err := addr.adjustPrefixLenZeroed(prefixLen)
 	return res.ToAddressBase(), err

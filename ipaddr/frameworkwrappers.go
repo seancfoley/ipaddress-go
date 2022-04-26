@@ -149,9 +149,42 @@ type ExtendedSegmentSeries interface {
 	PrefixIterator() ExtendedSegmentSeriesIterator
 	PrefixBlockIterator() ExtendedSegmentSeriesIterator
 
+	// AdjustPrefixLen increases or decreases the prefix length by the given increment.
+	//
+	// A prefix length will not be adjusted lower than zero or beyond the bit length of the series.
+	//
+	// If this series has no prefix length, then the prefix length will be set to the adjustment if positive,
+	// or it will be set to the adjustment added to the bit count if negative.
 	AdjustPrefixLen(BitCount) ExtendedSegmentSeries
+
+	// AdjustPrefixLenZeroed increases or decreases the prefix length by the given increment while zeroing out the bits that have moved into or outside the prefix.
+	//
+	// A prefix length will not be adjusted lower than zero or beyond the bit length of the series.
+	//
+	// If this series has no prefix length, then the prefix length will be set to the adjustment if positive,
+	// or it will be set to the adjustment added to the bit count if negative.
+	//
+	// When prefix length is increased, the bits moved within the prefix become zero.
+	// When a prefix length is decreased, the bits moved outside the prefix become zero.
 	AdjustPrefixLenZeroed(BitCount) (ExtendedSegmentSeries, addrerr.IncompatibleAddressError)
+
+	// SetPrefixLen sets the prefix length.
+	//
+	// A prefix length will not be set to a value lower than zero or beyond the bit length of the series.
+	// The provided prefix length will be adjusted to these boundaries if necessary.
 	SetPrefixLen(BitCount) ExtendedSegmentSeries
+
+	// SetPrefixLenZeroed sets the prefix length.
+	//
+	// A prefix length will not be set to a value lower than zero or beyond the bit length of the series.
+	// The provided prefix length will be adjusted to these boundaries if necessary.
+	//
+	// If this series has a prefix length, and the prefix length is increased when setting the new prefix length, the bits moved within the prefix become zero.
+	// If this series has a prefix length, and the prefix length is decreased when setting the new prefix length, the bits moved outside the prefix become zero.
+	//
+	// In other words, bits that move from one side of the prefix length to the other (ie bits moved into the prefix or outside the prefix) are zeroed.
+	//
+	// If the result cannot be zeroed because zeroing out bits results in a non-contiguous segment, an error is returned.
 	SetPrefixLenZeroed(BitCount) (ExtendedSegmentSeries, addrerr.IncompatibleAddressError)
 
 	// WithoutPrefixLen provides the same address series but with no prefix length.  The values remain unchanged.
@@ -332,18 +365,48 @@ func (addr WrappedAddress) CompareSize(other ExtendedSegmentSeries) int {
 	return addr.GetCount().Cmp(other.GetCount())
 }
 
+// SetPrefixLen sets the prefix length.
+//
+// A prefix length will not be set to a value lower than zero or beyond the bit length of the series.
+// The provided prefix length will be adjusted to these boundaries if necessary.
 func (addr WrappedAddress) SetPrefixLen(prefixLen BitCount) ExtendedSegmentSeries {
 	return WrapAddress(addr.Address.SetPrefixLen(prefixLen))
 }
 
+// SetPrefixLenZeroed sets the prefix length.
+//
+// A prefix length will not be set to a value lower than zero or beyond the bit length of the series.
+// The provided prefix length will be adjusted to these boundaries if necessary.
+//
+// If this series has a prefix length, and the prefix length is increased when setting the new prefix length, the bits moved within the prefix become zero.
+// If this series has a prefix length, and the prefix length is decreased when setting the new prefix length, the bits moved outside the prefix become zero.
+//
+// In other words, bits that move from one side of the prefix length to the other (ie bits moved into the prefix or outside the prefix) are zeroed.
+//
+// If the result cannot be zeroed because zeroing out bits results in a non-contiguous segment, an error is returned.
 func (addr WrappedAddress) SetPrefixLenZeroed(prefixLen BitCount) (ExtendedSegmentSeries, addrerr.IncompatibleAddressError) {
 	return wrapAddrWithErr(addr.Address.SetPrefixLenZeroed(prefixLen))
 }
 
+// AdjustPrefixLen increases or decreases the prefix length by the given increment.
+//
+// A prefix length will not be adjusted lower than zero or beyond the bit length of the series.
+//
+// If this series has no prefix length, then the prefix length will be set to the adjustment if positive,
+// or it will be set to the adjustment added to the bit count if negative.
 func (addr WrappedAddress) AdjustPrefixLen(prefixLen BitCount) ExtendedSegmentSeries {
 	return WrapAddress(addr.Address.AdjustPrefixLen(prefixLen))
 }
 
+// AdjustPrefixLenZeroed increases or decreases the prefix length by the given increment while zeroing out the bits that have moved into or outside the prefix.
+//
+// A prefix length will not be adjusted lower than zero or beyond the bit length of the series.
+//
+// If this series has no prefix length, then the prefix length will be set to the adjustment if positive,
+// or it will be set to the adjustment added to the bit count if negative.
+//
+// When prefix length is increased, the bits moved within the prefix become zero.
+// When a prefix length is decreased, the bits moved outside the prefix become zero.
 func (addr WrappedAddress) AdjustPrefixLenZeroed(prefixLen BitCount) (ExtendedSegmentSeries, addrerr.IncompatibleAddressError) {
 	return wrapAddrWithErr(addr.Address.AdjustPrefixLenZeroed(prefixLen))
 }
@@ -531,18 +594,48 @@ func (section WrappedAddressSection) Equal(other ExtendedSegmentSeries) bool {
 	return ok && section.AddressSection.Equal(s)
 }
 
+// SetPrefixLen sets the prefix length.
+//
+// A prefix length will not be set to a value lower than zero or beyond the bit length of the series.
+// The provided prefix length will be adjusted to these boundaries if necessary.
 func (section WrappedAddressSection) SetPrefixLen(prefixLen BitCount) ExtendedSegmentSeries {
 	return WrapSection(section.AddressSection.SetPrefixLen(prefixLen))
 }
 
+// SetPrefixLenZeroed sets the prefix length.
+//
+// A prefix length will not be set to a value lower than zero or beyond the bit length of the series.
+// The provided prefix length will be adjusted to these boundaries if necessary.
+//
+// If this series has a prefix length, and the prefix length is increased when setting the new prefix length, the bits moved within the prefix become zero.
+// If this series has a prefix length, and the prefix length is decreased when setting the new prefix length, the bits moved outside the prefix become zero.
+//
+// In other words, bits that move from one side of the prefix length to the other (ie bits moved into the prefix or outside the prefix) are zeroed.
+//
+// If the result cannot be zeroed because zeroing out bits results in a non-contiguous segment, an error is returned.
 func (section WrappedAddressSection) SetPrefixLenZeroed(prefixLen BitCount) (ExtendedSegmentSeries, addrerr.IncompatibleAddressError) {
 	return wrapSectWithErr(section.AddressSection.SetPrefixLenZeroed(prefixLen))
 }
 
+// AdjustPrefixLen increases or decreases the prefix length by the given increment.
+//
+// A prefix length will not be adjusted lower than zero or beyond the bit length of the series.
+//
+// If this series has no prefix length, then the prefix length will be set to the adjustment if positive,
+// or it will be set to the adjustment added to the bit count if negative.
 func (section WrappedAddressSection) AdjustPrefixLen(adjustment BitCount) ExtendedSegmentSeries {
 	return WrapSection(section.AddressSection.AdjustPrefixLen(adjustment))
 }
 
+// AdjustPrefixLenZeroed increases or decreases the prefix length by the given increment while zeroing out the bits that have moved into or outside the prefix.
+//
+// A prefix length will not be adjusted lower than zero or beyond the bit length of the series.
+//
+// If this series has no prefix length, then the prefix length will be set to the adjustment if positive,
+// or it will be set to the adjustment added to the bit count if negative.
+//
+// When prefix length is increased, the bits moved within the prefix become zero.
+// When a prefix length is decreased, the bits moved outside the prefix become zero.
 func (section WrappedAddressSection) AdjustPrefixLenZeroed(adjustment BitCount) (ExtendedSegmentSeries, addrerr.IncompatibleAddressError) {
 	return wrapSectWithErr(section.AddressSection.AdjustPrefixLenZeroed(adjustment))
 }

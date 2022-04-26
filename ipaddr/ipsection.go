@@ -550,7 +550,7 @@ func (section *ipAddressSectionInternal) adjustPrefixLength(adjustment BitCount,
 	if adjustment == 0 && section.isPrefixed() {
 		return section.toIPAddressSection(), nil
 	}
-	prefix := section.getAdjustedPrefix(adjustment, true, true)
+	prefix := section.getAdjustedPrefix(adjustment)
 	sec, err := section.setPrefixLength(prefix, withZeros)
 	return sec.ToIP(), err
 }
@@ -1746,19 +1746,51 @@ func (section *IPAddressSection) WithoutPrefixLen() *IPAddressSection {
 	return section.withoutPrefixLen()
 }
 
+// SetPrefixLen sets the prefix length.
+//
+// A prefix length will not be set to a value lower than zero or beyond the bit length of the address section.
+// The provided prefix length will be adjusted to these boundaries if necessary.
 func (section *IPAddressSection) SetPrefixLen(prefixLen BitCount) *IPAddressSection {
 	return section.setPrefixLen(prefixLen).ToIP()
 }
 
+// SetPrefixLenZeroed sets the prefix length.
+//
+// A prefix length will not be set to a value lower than zero or beyond the bit length of the address section.
+// The provided prefix length will be adjusted to these boundaries if necessary.
+//
+// If this address section has a prefix length, and the prefix length is increased when setting the new prefix length, the bits moved within the prefix become zero.
+// If this address section has a prefix length, and the prefix length is decreased when setting the new prefix length, the bits moved outside the prefix become zero.
+//
+// In other words, bits that move from one side of the prefix length to the other (ie bits moved into the prefix or outside the prefix) are zeroed.
+//
+// If the result cannot be zeroed because zeroing out bits results in a non-contiguous segment, an error is returned.
 func (section *IPAddressSection) SetPrefixLenZeroed(prefixLen BitCount) (*IPAddressSection, addrerr.IncompatibleAddressError) {
 	res, err := section.setPrefixLenZeroed(prefixLen)
 	return res.ToIP(), err
 }
 
+// AdjustPrefixLen increases or decreases the prefix length by the given increment.
+//
+// A prefix length will not be adjusted lower than zero or beyond the bit length of the address section.
+//
+// If this address section has no prefix length, then the prefix length will be set to the adjustment if positive,
+// or it will be set to the adjustment added to the bit count if negative.
 func (section *IPAddressSection) AdjustPrefixLen(prefixLen BitCount) *IPAddressSection {
 	return section.adjustPrefixLen(prefixLen)
 }
 
+// AdjustPrefixLenZeroed increases or decreases the prefix length by the given increment while zeroing out the bits that have moved into or outside the prefix.
+//
+// A prefix length will not be adjusted lower than zero or beyond the bit length of the address section.
+//
+// If this address section has no prefix length, then the prefix length will be set to the adjustment if positive,
+// or it will be set to the adjustment added to the bit count if negative.
+//
+// When prefix length is increased, the bits moved within the prefix become zero.
+// When a prefix length is decreased, the bits moved outside the prefix become zero.
+//
+// If the result cannot be zeroed because zeroing out bits results in a non-contiguous segment, an error is returned.
 func (section *IPAddressSection) AdjustPrefixLenZeroed(prefixLen BitCount) (*IPAddressSection, addrerr.IncompatibleAddressError) {
 	return section.adjustPrefixLenZeroed(prefixLen)
 }

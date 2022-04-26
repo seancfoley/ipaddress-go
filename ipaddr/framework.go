@@ -369,7 +369,7 @@ type AddressSectionType interface {
 	// They must match:
 	//  - type/version (IPv4, IPv6, MAC, etc)
 	//  - segment counts
-	//. - bits per segment
+	//  - bits per segment
 	//  - segment value ranges
 	// Prefix lengths are ignored.
 	Equal(AddressSectionType) bool
