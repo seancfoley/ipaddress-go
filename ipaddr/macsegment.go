@@ -313,6 +313,8 @@ func (seg *MACAddressSegment) Iterator() MACSegmentIterator {
 	return macSegmentIterator{seg.init().iterator()}
 }
 
+// PrefixBlockIterator provides an iterator to iterate through the individual prefix blocks of the given prefix length,
+// one for each prefix of that length in the segment.
 func (seg *MACAddressSegment) PrefixBlockIterator(segmentPrefixLen BitCount) MACSegmentIterator {
 	return macSegmentIterator{seg.init().prefixedBlockIterator(segmentPrefixLen)}
 }

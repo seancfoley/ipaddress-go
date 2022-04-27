@@ -527,6 +527,8 @@ func main() {
 		"1.2.252-255.*",
 		"1.2.3.4/16",
 	}
+	fmt.Println()
+	fmt.Println()
 	fmt.Println("AssignPrefixForSingleBlock")
 	for _, t := range testers {
 		addr := ipaddr.NewIPAddressString(t).GetAddress()

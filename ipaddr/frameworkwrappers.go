@@ -166,6 +166,11 @@ type ExtendedSegmentSeries interface {
 	Iterator() ExtendedSegmentSeriesIterator
 
 	PrefixIterator() ExtendedSegmentSeriesIterator
+
+	// PrefixBlockIterator provides an iterator to iterate through the individual prefix blocks, one for each prefix of this series.
+	// Each iterated series will be a prefix block with the same prefix length as this series.
+	//
+	// If this series has no prefix length, then this is equivalent to Iterator.
 	PrefixBlockIterator() ExtendedSegmentSeriesIterator
 
 	// AdjustPrefixLen increases or decreases the prefix length by the given increment.
@@ -275,6 +280,10 @@ func (addr WrappedAddress) PrefixIterator() ExtendedSegmentSeriesIterator {
 	return addressSeriesIterator{addr.Address.PrefixIterator()}
 }
 
+// PrefixBlockIterator provides an iterator to iterate through the individual prefix blocks, one for each prefix of this series.
+// Each iterated series will be a prefix block with the same prefix length as this series.
+//
+// If this series has no prefix length, then this is equivalent to Iterator.
 func (addr WrappedAddress) PrefixBlockIterator() ExtendedSegmentSeriesIterator {
 	return addressSeriesIterator{addr.Address.PrefixBlockIterator()}
 }
@@ -520,6 +529,10 @@ func (section WrappedAddressSection) PrefixIterator() ExtendedSegmentSeriesItera
 	return sectionSeriesIterator{section.AddressSection.PrefixIterator()}
 }
 
+// PrefixBlockIterator provides an iterator to iterate through the individual prefix blocks, one for each prefix of this series.
+// Each iterated series will be a prefix block with the same prefix length as this series.
+//
+// If this series has no prefix length, then this is equivalent to Iterator.
 func (section WrappedAddressSection) PrefixBlockIterator() ExtendedSegmentSeriesIterator {
 	return sectionSeriesIterator{section.AddressSection.PrefixBlockIterator()}
 }

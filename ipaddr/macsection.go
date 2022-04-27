@@ -498,6 +498,10 @@ func (section *MACAddressSection) PrefixIterator() MACSectionIterator {
 	return macSectionIterator{section.prefixIterator(false)}
 }
 
+// PrefixBlockIterator provides an iterator to iterate through the individual prefix blocks, one for each prefix of this address section.
+// Each iterated address section will be a prefix block with the same prefix length as this address section.
+//
+// If this address section has no prefix length, then this is equivalent to Iterator.
 func (section *MACAddressSection) PrefixBlockIterator() MACSectionIterator {
 	return macSectionIterator{section.prefixIterator(true)}
 }

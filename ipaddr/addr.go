@@ -1503,6 +1503,10 @@ func (addr *Address) PrefixIterator() AddressIterator {
 	return addr.prefixIterator(false)
 }
 
+// PrefixBlockIterator provides an iterator to iterate through the individual prefix blocks, one for each prefix of this address or subnet.
+// Each iterated address or subnet will be a prefix block with the same prefix length as this address or subnet.
+//
+// If this address has no prefix length, then this is equivalent to Iterator.
 func (addr *Address) PrefixBlockIterator() AddressIterator {
 	return addr.prefixIterator(true)
 }

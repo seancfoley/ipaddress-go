@@ -671,6 +671,10 @@ func (addr *MACAddress) PrefixIterator() MACAddressIterator {
 	return macAddressIterator{addr.init().prefixIterator(false)}
 }
 
+// PrefixBlockIterator provides an iterator to iterate through the individual prefix blocks, one for each prefix of this address or subnet.
+// Each iterated address or subnet will be a prefix block with the same prefix length as this address or subnet.
+//
+// If this address has no prefix length, then this is equivalent to Iterator.
 func (addr *MACAddress) PrefixBlockIterator() MACAddressIterator {
 	return macAddressIterator{addr.init().prefixIterator(true)}
 }

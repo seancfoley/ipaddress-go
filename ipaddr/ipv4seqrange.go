@@ -280,6 +280,8 @@ func (rng *IPv4AddressSeqRange) Iterator() IPv4AddressIterator {
 	return ipv4AddressIterator{rng.init().iterator()}
 }
 
+// PrefixBlockIterator provides an iterator to iterate through the individual prefix blocks of the given prefix length,
+// one for each prefix of that length in the address range.
 func (rng *IPv4AddressSeqRange) PrefixBlockIterator(prefLength BitCount) IPv4AddressIterator {
 	return &ipv4AddressIterator{rng.init().prefixBlockIterator(prefLength)}
 }

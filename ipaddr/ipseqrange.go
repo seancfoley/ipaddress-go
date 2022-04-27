@@ -909,6 +909,8 @@ func (rng *IPAddressSeqRange) Iterator() IPAddressIterator {
 	return &ipAddrIterator{rng.init().iterator()}
 }
 
+// PrefixBlockIterator provides an iterator to iterate through the individual prefix blocks of the given prefix length,
+// one for each prefix of that length in the address range.
 func (rng *IPAddressSeqRange) PrefixBlockIterator(prefLength BitCount) IPAddressIterator {
 	return &ipAddrIterator{rng.init().prefixBlockIterator(prefLength)}
 }

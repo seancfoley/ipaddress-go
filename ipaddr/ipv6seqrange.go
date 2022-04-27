@@ -282,6 +282,8 @@ func (rng *IPv6AddressSeqRange) Iterator() IPv6AddressIterator {
 	return ipv6AddressIterator{rng.init().iterator()}
 }
 
+// PrefixBlockIterator provides an iterator to iterate through the individual prefix blocks of the given prefix length,
+// one for each prefix of that length in the address range.
 func (rng *IPv6AddressSeqRange) PrefixBlockIterator(prefLength BitCount) IPv6AddressIterator {
 	return &ipv6AddressIterator{rng.init().prefixBlockIterator(prefLength)}
 }
