@@ -42,6 +42,7 @@ func (p IPv6Partition) ForEach(action func(*IPv6Address)) {
 	})
 }
 
+// Iterator provides an iterator to iterate through each element of the partition.
 func (p IPv6Partition) Iterator() IPv6AddressIterator {
 	return ipv6IPAddressIterator{p.p.Iterator()}
 }
@@ -92,6 +93,7 @@ func (p IPv4Partition) ForEach(action func(*IPv4Address)) {
 	})
 }
 
+// Iterator provides an iterator to iterate through each element of the partition.
 func (p IPv4Partition) Iterator() IPv4AddressIterator {
 	return ipv4IPAddressIterator{p.p.Iterator()}
 }
@@ -165,6 +167,7 @@ func (p *Partition) ForEach(action func(*IPAddress)) {
 	}
 }
 
+// Iterator provides an iterator to iterate through each element of the partition.
 func (p *Partition) Iterator() IPAddressIterator {
 	if p.iterator == nil {
 		item := p.single

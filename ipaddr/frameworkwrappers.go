@@ -84,7 +84,10 @@ type ExtendedSegmentSeries interface {
 	// IsMAC returns true if this series originated as a MAC series.  If so, use ToMAC to convert back to the MAC-specific type.
 	IsMAC() bool
 
+	// ToIP converts to an IPAddressSegmentSeries if this series originated as IPv4 or IPv6, or a zero-valued IP.
+	// If not, ToIP returns nil.
 	ToIP() IPAddressSegmentSeries
+
 	ToIPv4() IPv4AddressSegmentSeries
 	ToIPv6() IPv6AddressSegmentSeries
 	ToMAC() MACAddressSegmentSeries
@@ -142,10 +145,26 @@ type ExtendedSegmentSeries interface {
 	// which will be the same series if it represents a single value.
 	GetUpper() ExtendedSegmentSeries
 
+	// AssignPrefixForSingleBlock returns the equivalent prefix block that matches exactly the range of values in this series.
+	// The returned block will have an assigned prefix length indicating the prefix length for the block.
+	//
+	// There may be no such series - it is required that the range of values match the range of a prefix block.
+	// If there is no such series, then nil is returned.
 	AssignPrefixForSingleBlock() ExtendedSegmentSeries
+
+	// AssignMinPrefixForBlock returns an equivalent series, assigned the smallest prefix length possible,
+	// such that the prefix block for that prefix length is in this series.
+	//
+	// In other words, this method assigns a prefix length to this series matching the largest prefix block in this series.
 	AssignMinPrefixForBlock() ExtendedSegmentSeries
 
+	// Iterator provides an iterator to iterate through the individual series of this series.
+	//
+	// When iterating, the prefix length is preserved.  Remove it using WithoutPrefixLen prior to iterating if you wish to drop it from all individual series.
+	//
+	// Call IsMultiple to determine if this instance represents multiple series, or GetCount for the count.
 	Iterator() ExtendedSegmentSeriesIterator
+
 	PrefixIterator() ExtendedSegmentSeriesIterator
 	PrefixBlockIterator() ExtendedSegmentSeriesIterator
 
@@ -233,6 +252,8 @@ func (addr WrappedAddress) ToIPv6() IPv6AddressSegmentSeries {
 	return addr.Address.ToIPv6()
 }
 
+// ToIP converts to an IP address if this originated as IPv4 or IPv6, or a zero-valued IP.
+// If not, ToIP returns nil.
 func (addr WrappedAddress) ToIP() IPAddressSegmentSeries {
 	return addr.Address.ToIP()
 }
@@ -241,6 +262,11 @@ func (addr WrappedAddress) ToMAC() MACAddressSegmentSeries {
 	return addr.Address.ToMAC()
 }
 
+// Iterator provides an iterator to iterate through the individual series of this series.
+//
+// When iterating, the prefix length is preserved.  Remove it using WithoutPrefixLen prior to iterating if you wish to drop it from all individual series.
+//
+// Call IsMultiple to determine if this instance represents multiple series, or GetCount for the count.
 func (addr WrappedAddress) Iterator() ExtendedSegmentSeriesIterator {
 	return addressSeriesIterator{addr.Address.Iterator()}
 }
@@ -324,10 +350,19 @@ func (addr WrappedAddress) GetSection() *AddressSection {
 	return addr.Address.GetSection()
 }
 
+// AssignPrefixForSingleBlock returns the equivalent prefix block that matches exactly the range of values in this series.
+// The returned block will have an assigned prefix length indicating the prefix length for the block.
+//
+// There may be no such series - it is required that the range of values match the range of a prefix block.
+// If there is no such series, then nil is returned.
 func (addr WrappedAddress) AssignPrefixForSingleBlock() ExtendedSegmentSeries {
 	return convAddrToIntf(addr.Address.AssignPrefixForSingleBlock())
 }
 
+// AssignMinPrefixForBlock returns an equivalent series, assigned the smallest prefix length possible,
+// such that the prefix block for that prefix length is in this series.
+//
+// In other words, this method assigns a prefix length to this series matching the largest prefix block in this series.
 func (addr WrappedAddress) AssignMinPrefixForBlock() ExtendedSegmentSeries {
 	return WrapAddress(addr.Address.AssignMinPrefixForBlock())
 }
@@ -462,6 +497,8 @@ func (section WrappedAddressSection) ToIPv6() IPv6AddressSegmentSeries {
 	return section.AddressSection.ToIPv6()
 }
 
+// ToIP converts to an IP address section if this originated as IPv4 or IPv6, or a zero-valued IP.
+// If not, ToIP returns nil.
 func (section WrappedAddressSection) ToIP() IPAddressSegmentSeries {
 	return section.AddressSection.ToIP()
 }
@@ -470,6 +507,11 @@ func (section WrappedAddressSection) ToMAC() MACAddressSegmentSeries {
 	return section.AddressSection.ToMAC()
 }
 
+// Iterator provides an iterator to iterate through the individual series of this series.
+//
+// When iterating, the prefix length is preserved.  Remove it using WithoutPrefixLen prior to iterating if you wish to drop it from all individual series.
+//
+// Call IsMultiple to determine if this instance represents multiple series, or GetCount for the count.
 func (section WrappedAddressSection) Iterator() ExtendedSegmentSeriesIterator {
 	return sectionSeriesIterator{section.AddressSection.Iterator()}
 }
@@ -553,10 +595,19 @@ func (section WrappedAddressSection) GetSection() *AddressSection {
 	return section.AddressSection
 }
 
+// AssignPrefixForSingleBlock returns the equivalent prefix block that matches exactly the range of values in this series.
+// The returned block will have an assigned prefix length indicating the prefix length for the block.
+//
+// There may be no such series - it is required that the range of values match the range of a prefix block.
+// If there is no such series, then nil is returned.
 func (section WrappedAddressSection) AssignPrefixForSingleBlock() ExtendedSegmentSeries {
 	return convSectToIntf(section.AddressSection.AssignPrefixForSingleBlock())
 }
 
+// AssignMinPrefixForBlock returns an equivalent series, assigned the smallest prefix length possible,
+// such that the prefix block for that prefix length is in this series.
+//
+// In other words, this method assigns a prefix length to this series matching the largest prefix block in this series.
 func (section WrappedAddressSection) AssignMinPrefixForBlock() ExtendedSegmentSeries {
 	return WrapSection(section.AddressSection.AssignMinPrefixForBlock())
 }

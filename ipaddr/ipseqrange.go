@@ -899,6 +899,9 @@ func (rng *IPAddressSeqRange) GetUpperValue() *big.Int {
 	return rng.GetUpper().GetValue()
 }
 
+// Iterator provides an iterator to iterate through the individual addresses of this address range.
+//
+// Call GetCount for the count.
 func (rng *IPAddressSeqRange) Iterator() IPAddressIterator {
 	if rng == nil {
 		return ipAddrIterator{nilAddrIterator()}

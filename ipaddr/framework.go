@@ -503,7 +503,7 @@ var _, _, _ IPAddressType = &IPAddress{},
 	&IPv4Address{},
 	&IPv6Address{}
 
-// IPAddressType represents any IP address sequential range, all of which can be represented by the base type IPAddressSeqRange.
+// IPAddressSeqRangeType represents any IP address sequential range, all of which can be represented by the base type IPAddressSeqRange.
 // This includes IPv4AddressSeqRange and IPv6AddressSeqRange.
 type IPAddressSeqRangeType interface {
 	AddressItem
@@ -536,10 +536,10 @@ var _, _, _ IPAddressSeqRangeType = &IPAddressSeqRange{},
 // HostIdentifierString represents a string that is used to identify a host.
 type HostIdentifierString interface {
 
-	// provides a normalized String representation for the host identified by this HostIdentifierString instance
+	// ToNormalizedString provides a normalized String representation for the host identified by this HostIdentifierString instance
 	ToNormalizedString() string
 
-	// returns whether the wrapped string is a valid identifier for a host
+	// IsValid returns whether the wrapped string is a valid identifier for a host
 	IsValid() bool
 
 	fmt.Stringer

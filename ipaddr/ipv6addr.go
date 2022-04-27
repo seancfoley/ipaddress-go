@@ -813,10 +813,19 @@ func (addr *IPv6Address) AdjustPrefixLenZeroed(prefixLen BitCount) (*IPv6Address
 	return res.ToIPv6(), err
 }
 
+// AssignPrefixForSingleBlock returns the equivalent prefix block that matches exactly the range of values in this address.
+// The returned block will have an assigned prefix length indicating the prefix length for the block.
+//
+// There may be no such address - it is required that the range of values match the range of a prefix block.
+// If there is no such address, then nil is returned.
 func (addr *IPv6Address) AssignPrefixForSingleBlock() *IPv6Address {
 	return addr.init().assignPrefixForSingleBlock().ToIPv6()
 }
 
+// AssignMinPrefixForBlock returns an equivalent subnet, assigned the smallest prefix length possible,
+// such that the prefix block for that prefix length is in this subnet.
+//
+// In other words, this method assigns a prefix length to this subnet matching the largest prefix block in this subnet.
 func (addr *IPv6Address) AssignMinPrefixForBlock() *IPv6Address {
 	return addr.init().assignMinPrefixForBlock().ToIPv6()
 }
@@ -827,6 +836,7 @@ func (addr *IPv6Address) AssignMinPrefixForBlock() *IPv6Address {
 // If it is a single address, any prefix length is removed and the address is returned.
 // Otherwise, nil is returned.
 // This method provides the address formats used by tries.
+// ToSinglePrefixBlockOrAddress is quite similar to AssignPrefixForSingleBlock, which always returns prefixed addresses, while this does not.
 func (addr *IPv6Address) ToSinglePrefixBlockOrAddress() *IPv6Address {
 	return addr.init().toSinglePrefixBlockOrAddress().ToIPv6()
 }
@@ -1253,6 +1263,11 @@ func (addr *IPv6Address) IsLoopback() bool {
 	return addr.GetSegment(i).Matches(1)
 }
 
+// Iterator provides an iterator to iterate through the individual addresses of this address or subnet.
+//
+// When iterating, the prefix length is preserved.  Remove it using WithoutPrefixLen prior to iterating if you wish to drop it from all individual addresses.
+//
+// Call IsMultiple to determine if this instance represents multiple addresses, or GetCount for the count.
 func (addr *IPv6Address) Iterator() IPv6AddressIterator {
 	if addr == nil {
 		return ipv6AddressIterator{nilAddrIterator()}

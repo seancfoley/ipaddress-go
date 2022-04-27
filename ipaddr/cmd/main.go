@@ -516,6 +516,28 @@ func main() {
 		trie.NodeSize(),
 		trie.BlockSizeAllNodeIterator(true).Next(),
 		trie.ContainedFirstAllNodeIterator(true).Next())
+
+	testers := []string{
+		"1.2.3.4",
+		"1.2.*.*",
+		"1.2.*.0/24",
+		"1.2.*.4",
+		"1.2.0-1.*",
+		"1.2.1-2.*",
+		"1.2.252-255.*",
+		"1.2.3.4/16",
+	}
+	fmt.Println("AssignPrefixForSingleBlock")
+	for _, t := range testers {
+		addr := ipaddr.NewIPAddressString(t).GetAddress()
+		fmt.Printf("%s\n", addr.AssignPrefixForSingleBlock())
+	}
+	fmt.Println()
+	fmt.Println("AssignMinPrefixForBlock")
+	for _, t := range testers {
+		addr := ipaddr.NewIPAddressString(t).GetAddress()
+		fmt.Printf("%s\n", addr.AssignMinPrefixForBlock())
+	}
 }
 
 func splitIntoBlocks(one, two string) {

@@ -150,14 +150,31 @@ type ExtendedIPSegmentSeries interface {
 	// For example, for "1.2-3.4.5-6", the series "1.3.4.6" is returned.
 	GetUpper() ExtendedIPSegmentSeries
 
+	// AssignPrefixForSingleBlock returns the equivalent prefix block that matches exactly the range of values in this series.
+	// The returned block will have an assigned prefix length indicating the prefix length for the block.
+	//
+	// There may be no such series - it is required that the range of values match the range of a prefix block.
+	// If there is no such series, then nil is returned.
 	AssignPrefixForSingleBlock() ExtendedIPSegmentSeries
+
+	// AssignMinPrefixForBlock returns an equivalent series, assigned the smallest prefix length possible,
+	// such that the prefix block for that prefix length is in this series.
+	//
+	// In other words, this method assigns a prefix length to this series matching the largest prefix block in this series.
 	AssignMinPrefixForBlock() ExtendedIPSegmentSeries
+
+	// Iterator provides an iterator to iterate through the individual series of this series.
+	//
+	// When iterating, the prefix length is preserved.  Remove it using WithoutPrefixLen prior to iterating if you wish to drop it from all individual series.
+	//
+	// Call IsMultiple to determine if this instance represents multiple series, or GetCount for the count.
+	Iterator() ExtendedIPSegmentSeriesIterator
+
+	PrefixIterator() ExtendedIPSegmentSeriesIterator
+	PrefixBlockIterator() ExtendedIPSegmentSeriesIterator
 
 	SequentialBlockIterator() ExtendedIPSegmentSeriesIterator
 	BlockIterator(segmentCount int) ExtendedIPSegmentSeriesIterator
-	Iterator() ExtendedIPSegmentSeriesIterator
-	PrefixIterator() ExtendedIPSegmentSeriesIterator
-	PrefixBlockIterator() ExtendedIPSegmentSeriesIterator
 
 	SpanWithPrefixBlocks() []ExtendedIPSegmentSeries
 	SpanWithSequentialBlocks() []ExtendedIPSegmentSeries
@@ -235,6 +252,7 @@ type WrappedIPAddress struct {
 	*IPAddress
 }
 
+// Unwrap returns the wrapped *IPAddress as an interface, IPAddressSegmentSeries
 func (addr WrappedIPAddress) Unwrap() IPAddressSegmentSeries {
 	res := addr.IPAddress
 	if res == nil {
@@ -267,6 +285,11 @@ func (addr WrappedIPAddress) BlockIterator(segmentCount int) ExtendedIPSegmentSe
 	return ipaddressSeriesIterator{addr.IPAddress.BlockIterator(segmentCount)}
 }
 
+// Iterator provides an iterator to iterate through the individual series of this series.
+//
+// When iterating, the prefix length is preserved.  Remove it using WithoutPrefixLen prior to iterating if you wish to drop it from all individual series.
+//
+// Call IsMultiple to determine if this instance represents multiple series, or GetCount for the count.
 func (addr WrappedIPAddress) Iterator() ExtendedIPSegmentSeriesIterator {
 	return ipaddressSeriesIterator{addr.IPAddress.Iterator()}
 }
@@ -372,10 +395,19 @@ func (addr WrappedIPAddress) GetSection() *IPAddressSection {
 	return addr.IPAddress.GetSection()
 }
 
+// AssignPrefixForSingleBlock returns the equivalent prefix block that matches exactly the range of values in this series.
+// The returned block will have an assigned prefix length indicating the prefix length for the block.
+//
+// There may be no such series - it is required that the range of values match the range of a prefix block.
+// If there is no such series, then nil is returned.
 func (addr WrappedIPAddress) AssignPrefixForSingleBlock() ExtendedIPSegmentSeries {
 	return convIPAddrToIntf(addr.IPAddress.AssignPrefixForSingleBlock())
 }
 
+// AssignMinPrefixForBlock returns an equivalent series, assigned the smallest prefix length possible,
+// such that the prefix block for that prefix length is in this series.
+//
+// In other words, this method assigns a prefix length to this series matching the largest prefix block in this series.
 func (addr WrappedIPAddress) AssignMinPrefixForBlock() ExtendedIPSegmentSeries {
 	return wrapIPAddress(addr.IPAddress.AssignMinPrefixForBlock())
 }
@@ -504,6 +536,7 @@ type WrappedIPAddressSection struct {
 	*IPAddressSection
 }
 
+// Unwrap returns the wrapped *IPAddressSection as an interface, IPAddressSegmentSeries
 func (section WrappedIPAddressSection) Unwrap() IPAddressSegmentSeries {
 	res := section.IPAddressSection
 	if res == nil {
@@ -536,6 +569,11 @@ func (section WrappedIPAddressSection) BlockIterator(segmentCount int) ExtendedI
 	return ipsectionSeriesIterator{section.IPAddressSection.BlockIterator(segmentCount)}
 }
 
+// Iterator provides an iterator to iterate through the individual series of this series.
+//
+// When iterating, the prefix length is preserved.  Remove it using WithoutPrefixLen prior to iterating if you wish to drop it from all individual series.
+//
+// Call IsMultiple to determine if this instance represents multiple series, or GetCount for the count.
 func (section WrappedIPAddressSection) Iterator() ExtendedIPSegmentSeriesIterator {
 	return ipsectionSeriesIterator{section.IPAddressSection.Iterator()}
 }
@@ -641,10 +679,19 @@ func (section WrappedIPAddressSection) GetSection() *IPAddressSection {
 	return section.IPAddressSection
 }
 
+// AssignPrefixForSingleBlock returns the equivalent prefix block that matches exactly the range of values in this series.
+// The returned block will have an assigned prefix length indicating the prefix length for the block.
+//
+// There may be no such series - it is required that the range of values match the range of a prefix block.
+// If there is no such series, then nil is returned.
 func (section WrappedIPAddressSection) AssignPrefixForSingleBlock() ExtendedIPSegmentSeries {
 	return convIPSectToIntf(section.IPAddressSection.AssignPrefixForSingleBlock())
 }
 
+// AssignMinPrefixForBlock returns an equivalent series, assigned the smallest prefix length possible,
+// such that the prefix block for that prefix length is in this series.
+//
+// In other words, this method assigns a prefix length to this series matching the largest prefix block in this series.
 func (section WrappedIPAddressSection) AssignMinPrefixForBlock() ExtendedIPSegmentSeries {
 	return wrapIPSection(section.IPAddressSection.AssignMinPrefixForBlock())
 }

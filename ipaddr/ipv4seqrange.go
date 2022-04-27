@@ -270,6 +270,9 @@ func (rng *IPv4AddressSeqRange) IncludesMax() bool {
 	return rng.init().ipAddressSeqRangeInternal.IncludesMax()
 }
 
+// Iterator provides an iterator to iterate through the individual addresses of this address range.
+//
+// Call GetCount for the count.
 func (rng *IPv4AddressSeqRange) Iterator() IPv4AddressIterator {
 	if rng == nil {
 		return ipv4AddressIterator{nilAddrIterator()}

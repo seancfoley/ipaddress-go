@@ -1809,10 +1809,19 @@ func (section *IPAddressSection) ToPrefixBlockLen(prefLen BitCount) *IPAddressSe
 	return section.toPrefixBlockLen(prefLen).ToIP()
 }
 
+// AssignPrefixForSingleBlock returns the equivalent prefix block that matches exactly the range of values in this address section.
+// The returned block will have an assigned prefix length indicating the prefix length for the block.
+//
+// There may be no such address section - it is required that the range of values match the range of a prefix block.
+// If there is no such address section, then nil is returned.
 func (section *IPAddressSection) AssignPrefixForSingleBlock() *IPAddressSection {
 	return section.assignPrefixForSingleBlock().ToIP()
 }
 
+// AssignMinPrefixForBlock returns an equivalent address section, assigned the smallest prefix length possible,
+// such that the prefix block for that prefix length is in this address section.
+//
+// In other words, this method assigns a prefix length to this address section matching the largest prefix block in this address section.
 func (section *IPAddressSection) AssignMinPrefixForBlock() *IPAddressSection {
 	return section.assignMinPrefixForBlock().ToIP()
 }
@@ -1823,6 +1832,11 @@ func (section *IPAddressSection) ToBlock(segmentIndex int, lower, upper SegInt) 
 	return section.toBlock(segmentIndex, lower, upper).ToIP()
 }
 
+// Iterator provides an iterator to iterate through the individual address sections of this address section.
+//
+// When iterating, the prefix length is preserved.  Remove it using WithoutPrefixLen prior to iterating if you wish to drop it from all individual address sections.
+//
+// Call IsMultiple to determine if this instance represents multiple address sections, or GetCount for the count.
 func (section *IPAddressSection) Iterator() IPSectionIterator {
 	if section == nil {
 		return ipSectionIterator{nilSectIterator()}

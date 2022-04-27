@@ -588,6 +588,11 @@ func (seg *IPAddressSegment) ToHostSegment(segmentPrefixLength PrefixLen) *IPAdd
 	return seg.toHostDivision(segmentPrefixLength, false).ToIP()
 }
 
+// Iterator provides an iterator to iterate through the individual address segments of this address segment.
+//
+// When iterating, the prefix length is preserved.  Remove it using WithoutPrefixLen prior to iterating if you wish to drop it from all individual address sesgment.
+//
+// Call IsMultiple to determine if this instance represents multiple address segments, or GetValueCount for the count.
 func (seg *IPAddressSegment) Iterator() IPSegmentIterator {
 	if seg == nil {
 		return ipSegmentIterator{nilSegIterator()}

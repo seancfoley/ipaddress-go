@@ -734,9 +734,6 @@ func (addr *addressInternal) setPrefixLenZeroed(prefixLen BitCount) (res *Addres
 	return
 }
 
-// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
-// AssignPrefixForSingleBlock and AssignMinPrefixForBlock are next.
-
 func (addr *addressInternal) assignPrefixForSingleBlock() *Address {
 	newPrefix := addr.GetPrefixLenForSingleBlock()
 	if newPrefix == nil {
@@ -762,8 +759,8 @@ func (addr *addressInternal) toSinglePrefixBlockOrAddress() *Address {
 			return addr.toAddress()
 		}
 		return addr.withoutPrefixLen()
-	} else if addr.IsSinglePrefixBlock() {
-		return addr.toAddress()
+		//} else if addr.IsSinglePrefixBlock() {
+		//	return addr.toAddress()
 	} else {
 		series := addr.assignPrefixForSingleBlock()
 		if series != nil {
@@ -808,6 +805,9 @@ func (addr *addressInternal) addrIterator(excludeFunc func([]*AddressDivision) b
 		false,
 		iterator)
 }
+
+// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
+// the extra iterators are next: PrefixIterator, PrefixBlockIterator, BlockIterator(int), SequentialBlockIterator
 
 func (addr *addressInternal) prefixIterator(isBlockIterator bool) AddressIterator {
 	prefLen := addr.getPrefixLen()
@@ -1431,12 +1431,39 @@ func (addr *Address) AdjustPrefixLenZeroed(prefixLen BitCount) (*Address, addrer
 	return res.ToAddressBase(), err
 }
 
+// AssignPrefixForSingleBlock returns the equivalent prefix block that matches exactly the range of values in this address.
+// The returned block will have an assigned prefix length indicating the prefix length for the block.
+//
+// There may be no such address - it is required that the range of values match the range of a prefix block.
+// If there is no such address, then nil is returned.
+//
+// Examples:
+// 1.2.3.4 returns 1.2.3.4/32
+// 1.2.*.* returns 1.2.0.0/16
+// 1.2.*.0/24 returns 1.2.0.0/16
+// 1.2.*.4 returns nil
+// 1.2.0-1.* returns 1.2.0.0/23
+// 1.2.1-2.* returns nil
+// 1.2.252-255.* returns 1.2.252.0/22
+// 1.2.3.4/16 returns 1.2.3.4/32
 func (addr *Address) AssignPrefixForSingleBlock() *Address {
 	return addr.init().assignPrefixForSingleBlock()
 }
 
-// AssignMinPrefixForBlock return an equivalent address with the smallest CIDR prefix possible (largest network),
-// such that the range of values are the prefix block for that prefix.
+// AssignMinPrefixForBlock returns an equivalent subnet, assigned the smallest prefix length possible,
+// such that the prefix block for that prefix length is in this subnet.
+//
+// In other words, this method assigns a prefix length to this subnet matching the largest prefix block in this subnet.
+//
+// Examples:
+// 1.2.3.4 returns 1.2.3.4/32
+// 1.2.*.* returns 1.2.0.0/16
+// 1.2.*.0/24 returns 1.2.0.0/16
+// 1.2.*.4 returns 1.2.*.4/32
+// 1.2.0-1.* returns 1.2.0.0/23
+// 1.2.1-2.* returns 1.2.1-2.0/24
+// 1.2.252-255.* returns 1.2.252.0/22
+// 1.2.3.4/16 returns 1.2.3.4/32
 func (addr *Address) AssignMinPrefixForBlock() *Address {
 	return addr.init().assignMinPrefixForBlock()
 }
@@ -1447,6 +1474,7 @@ func (addr *Address) AssignMinPrefixForBlock() *Address {
 // If it is a single address, any prefix length is removed and the address is returned.
 // Otherwise, nil is returned.
 // This method provides the address formats used by tries.
+// ToSinglePrefixBlockOrAddress is quite similar to AssignPrefixForSingleBlock, which always returns prefixed addresses, while this does not.
 func (addr *Address) ToSinglePrefixBlockOrAddress() *Address {
 	return addr.init().toSinglePrefixBlockOrAddress()
 }
@@ -1459,6 +1487,11 @@ func (addr *Address) GetMaxSegmentValue() SegInt {
 	return addr.init().getMaxSegmentValue()
 }
 
+// Iterator provides an iterator to iterate through the individual addresses of this address or subnet.
+//
+// When iterating, the prefix length is preserved.  Remove it using WithoutPrefixLen prior to iterating if you wish to drop it from all individual addresses.
+//
+// Call IsMultiple to determine if this instance represents multiple addresses, or GetCount for the count.
 func (addr *Address) Iterator() AddressIterator {
 	if addr == nil {
 		return nilAddrIterator()

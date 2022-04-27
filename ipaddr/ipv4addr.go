@@ -537,10 +537,39 @@ func (addr *IPv4Address) AdjustPrefixLenZeroed(prefixLen BitCount) (*IPv4Address
 	return res.ToIPv4(), err
 }
 
+// AssignPrefixForSingleBlock returns the equivalent prefix block that matches exactly the range of values in this address.
+// The returned block will have an assigned prefix length indicating the prefix length for the block.
+//
+// There may be no such address - it is required that the range of values match the range of a prefix block.
+// If there is no such address, then nil is returned.
+//
+// Examples:
+// 1.2.3.4 returns 1.2.3.4/32
+// 1.2.*.* returns 1.2.0.0/16
+// 1.2.*.0/24 returns 1.2.0.0/16
+// 1.2.*.4 returns nil
+// 1.2.0-1.* returns 1.2.0.0/23
+// 1.2.1-2.* returns nil
+// 1.2.252-255.* returns 1.2.252.0/22
+// 1.2.3.4/16 returns 1.2.3.4/32
 func (addr *IPv4Address) AssignPrefixForSingleBlock() *IPv4Address {
 	return addr.init().assignPrefixForSingleBlock().ToIPv4()
 }
 
+// AssignMinPrefixForBlock returns an equivalent subnet, assigned the smallest prefix length possible,
+// such that the prefix block for that prefix length is in this subnet.
+//
+// In other words, this method assigns a prefix length to this subnet matching the largest prefix block in this subnet.
+//
+// Examples:
+// 1.2.3.4 returns 1.2.3.4/32
+// 1.2.*.* returns 1.2.0.0/16
+// 1.2.*.0/24 returns 1.2.0.0/16
+// 1.2.*.4 returns 1.2.*.4/32
+// 1.2.0-1.* returns 1.2.0.0/23
+// 1.2.1-2.* returns 1.2.1-2.0/24
+// 1.2.252-255.* returns 1.2.252.0/22
+// 1.2.3.4/16 returns 1.2.3.4/32
 func (addr *IPv4Address) AssignMinPrefixForBlock() *IPv4Address {
 	return addr.init().assignMinPrefixForBlock().ToIPv4()
 }
@@ -551,6 +580,7 @@ func (addr *IPv4Address) AssignMinPrefixForBlock() *IPv4Address {
 // If it is a single address, any prefix length is removed and the address is returned.
 // Otherwise, nil is returned.
 // This method provides the address formats used by tries.
+// ToSinglePrefixBlockOrAddress is quite similar to AssignPrefixForSingleBlock, which always returns prefixed addresses, while this does not.
 func (addr *IPv4Address) ToSinglePrefixBlockOrAddress() *IPv4Address {
 	return addr.init().toSinglePrefixBlockOrAddress().ToIPv4()
 }
@@ -885,6 +915,11 @@ func (addr *IPv4Address) IsLoopback() bool {
 	return addr.section != nil && addr.GetSegment(0).Matches(127)
 }
 
+// Iterator provides an iterator to iterate through the individual addresses of this address or subnet.
+//
+// When iterating, the prefix length is preserved.  Remove it using WithoutPrefixLen prior to iterating if you wish to drop it from all individual addresses.
+//
+// Call IsMultiple to determine if this instance represents multiple addresses, or GetCount for the count.
 func (addr *IPv4Address) Iterator() IPv4AddressIterator {
 	if addr == nil {
 		return ipv4AddressIterator{nilAddrIterator()}

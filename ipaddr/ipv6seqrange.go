@@ -272,6 +272,9 @@ func (rng *IPv6AddressSeqRange) IncludesMax() bool {
 	return rng.init().ipAddressSeqRangeInternal.IncludesMax()
 }
 
+// Iterator provides an iterator to iterate through the individual addresses of this address range.
+//
+// Call GetCount for the count.
 func (rng *IPv6AddressSeqRange) Iterator() IPv6AddressIterator {
 	if rng == nil {
 		return ipv6AddressIterator{nilAddrIterator()}

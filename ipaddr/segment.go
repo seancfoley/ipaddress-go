@@ -777,6 +777,9 @@ func (seg *AddressSegment) IsMAC() bool {
 	return seg != nil && seg.matchesMACSegment()
 }
 
+// Iterator provides an iterator to iterate through the individual address segments of this address segment.
+//
+// Call IsMultiple to determine if this instance represents multiple address segments, or GetValueCount for the count.
 func (seg *AddressSegment) Iterator() SegmentIterator {
 	if seg == nil {
 		return nilSegIterator()

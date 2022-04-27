@@ -468,10 +468,19 @@ func (addr *MACAddress) AdjustPrefixLenZeroed(prefixLen BitCount) (*MACAddress, 
 	return res.ToMAC(), err
 }
 
+// AssignPrefixForSingleBlock returns the equivalent prefix block that matches exactly the range of values in this address.
+// The returned block will have an assigned prefix length indicating the prefix length for the block.
+//
+// There may be no such address - it is required that the range of values match the range of a prefix block.
+// If there is no such address, then nil is returned.
 func (addr *MACAddress) AssignPrefixForSingleBlock() *MACAddress {
 	return addr.init().assignPrefixForSingleBlock().ToMAC()
 }
 
+// AssignMinPrefixForBlock returns an equivalent subnet, assigned the smallest prefix length possible,
+// such that the prefix block for that prefix length is in this subnet.
+//
+// In other words, this method assigns a prefix length to this subnet matching the largest prefix block in this subnet.
 func (addr *MACAddress) AssignMinPrefixForBlock() *MACAddress {
 	return addr.init().assignMinPrefixForBlock().ToMAC()
 }
@@ -482,6 +491,7 @@ func (addr *MACAddress) AssignMinPrefixForBlock() *MACAddress {
 // If it is a single address, any prefix length is removed and the address is returned.
 // Otherwise, nil is returned.
 // This method provides the address formats used by tries.
+// ToSinglePrefixBlockOrAddress is quite similar to AssignPrefixForSingleBlock, which always returns prefixed addresses, while this does not.
 func (addr *MACAddress) ToSinglePrefixBlockOrAddress() *MACAddress {
 	return addr.init().toSinglePrefixBlockOrAddress().ToMAC()
 }
@@ -645,6 +655,11 @@ func (addr *MACAddress) IsLocal() bool {
 	return addr.GetSegment(0).MatchesWithMask(2, 0x2)
 }
 
+// Iterator provides an iterator to iterate through the individual addresses of this address or subnet.
+//
+// When iterating, the prefix length is preserved.  Remove it using WithoutPrefixLen prior to iterating if you wish to drop it from all individual addresses.
+//
+// Call IsMultiple to determine if this instance represents multiple addresses, or GetCount for the count.
 func (addr *MACAddress) Iterator() MACAddressIterator {
 	if addr == nil {
 		return macAddressIterator{nilAddrIterator()}
