@@ -86,7 +86,7 @@ type AddressItem interface {
 
 	// GetMinPrefixLenForBlock returns the smallest prefix length possible such that this item includes the block of all values for that prefix length.
 	//
-	// If the entire range can be dictated this way, then this method returns the same value as {@link #GetPrefixLenForSingleBlock()}.
+	// If the entire range can be dictated this way, then this method returns the same value as GetPrefixLenForSingleBlock.
 	//
 	// There may be a single prefix, or multiple possible prefix values in this item for the returned prefix length.
 	// Use GetPrefixLenForSingleBlock to avoid the case of multiple prefix values.

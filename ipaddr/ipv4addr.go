@@ -927,6 +927,13 @@ func (addr *IPv4Address) Iterator() IPv4AddressIterator {
 	return ipv4AddressIterator{addr.init().addrIterator(nil)}
 }
 
+// PrefixIterator provides an iterator to iterate through the individual prefixes of this subnet,
+// each iterated element spanning the range of values for its prefix.
+//
+// It is similar to the prefix block iterator, except for possibly the first and last iterated elements, which might not be prefix blocks,
+// instead constraining themselves to values from this subnet.
+//
+// If the subnet has no prefix length, then this is equivalent to Iterator.
 func (addr *IPv4Address) PrefixIterator() IPv4AddressIterator {
 	return ipv4AddressIterator{addr.init().prefixIterator(false)}
 }

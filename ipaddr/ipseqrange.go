@@ -497,7 +497,7 @@ func (rng *ipAddressSeqRangeInternal) format(state fmt.State, verb rune) {
 // Iterates through the range of prefixes in this range instance using the given prefix length.
 //
 // Since a range between two arbitrary addresses cannot always be represented with a single IPAddress instance,
-// the returned iterator iterates through {@link IPAddressSeqRange} instances.
+// the returned iterator iterates through IPAddressSeqRange instances.
 //
 // For instance, if iterating from 1.2.3.4 to 1.2.4.5 with prefix 8, the range shares the same prefix 1,
 // but the range cannot be represented by the address 1.2.3-4.4-5 which does not include 1.2.3.255 or 1.2.4.0 both of which are in the original range.
@@ -915,6 +915,11 @@ func (rng *IPAddressSeqRange) PrefixBlockIterator(prefLength BitCount) IPAddress
 	return &ipAddrIterator{rng.init().prefixBlockIterator(prefLength)}
 }
 
+// PrefixIterator provides an iterator to iterate through the individual prefixes of the given prefix length in this address range,
+// each iterated element spanning the range of values for its prefix.
+//
+// It is similar to the prefix block iterator, except for possibly the first and last iterated elements, which might not be prefix blocks,
+// instead constraining themselves to values from this range.
 func (rng *IPAddressSeqRange) PrefixIterator(prefLength BitCount) IPAddressSeqRangeIterator {
 	return rng.init().prefixIterator(prefLength)
 }

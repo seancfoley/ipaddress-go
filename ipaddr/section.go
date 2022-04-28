@@ -2436,6 +2436,13 @@ func (section *AddressSection) Iterator() SectionIterator {
 	return section.sectionIterator(nil)
 }
 
+// PrefixIterator provides an iterator to iterate through the individual prefixes of this address section,
+// each iterated element spanning the range of values for its prefix.
+//
+// It is similar to the prefix block iterator, except for possibly the first and last iterated elements, which might not be prefix blocks,
+// instead constraining themselves to values from this address section.
+//
+// If the series has no prefix length, then this is equivalent to Iterator.
 func (section *AddressSection) PrefixIterator() SectionIterator {
 	return section.prefixIterator(false)
 }

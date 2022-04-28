@@ -521,7 +521,7 @@ func (addr *IPv6Address) GetIPv4AddressSection(startIndex, endIndex int) (*IPv4A
 	return addr.init().GetSection().GetIPv4AddressSection(startIndex, endIndex)
 }
 
-// Get6To4IPv4Address Returns the second and third segments as an {@link IPv4Address}.
+// Get6To4IPv4Address Returns the second and third segments as an IPv4Address.
 func (addr *IPv6Address) Get6To4IPv4Address() (*IPv4Address, addrerr.IncompatibleAddressError) {
 	return addr.GetEmbeddedIPv4AddressAt(2)
 }
@@ -1275,6 +1275,13 @@ func (addr *IPv6Address) Iterator() IPv6AddressIterator {
 	return ipv6AddressIterator{addr.init().addrIterator(nil)}
 }
 
+// PrefixIterator provides an iterator to iterate through the individual prefixes of this subnet,
+// each iterated element spanning the range of values for its prefix.
+//
+// It is similar to the prefix block iterator, except for possibly the first and last iterated elements, which might not be prefix blocks,
+// instead constraining themselves to values from this subnet.
+//
+// If the subnet has no prefix length, then this is equivalent to Iterator.
 func (addr *IPv6Address) PrefixIterator() IPv6AddressIterator {
 	return ipv6AddressIterator{addr.init().prefixIterator(false)}
 }

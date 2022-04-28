@@ -625,7 +625,7 @@ func (host *HostName) Equal(other *HostName) bool {
 // If this represents a host name string, the domain name segments are separated into the returned array,
 // with the top-level domain name (right-most segment) as the last array element.
 //
-// The individual segment strings are normalized in the same way as {@link #toNormalizedString()}
+// The individual segment strings are normalized in the same way as ToNormalizedString.
 //
 // Ports, service name strings, prefix lengths, and masks are all omitted from the returned array.
 func (host *HostName) GetNormalizedLabels() []string {
@@ -717,7 +717,7 @@ func (host *HostName) ResolvesToSelf() bool {
 }
 
 // IsSelf returns whether this represents a host or address representing the same host.
-// Also see isLocalHost() and {@link #isLoopback()}
+// Also see isLocalHost and IsLoopback
 func (host *HostName) IsSelf() bool {
 	return host.IsLocalHost() || host.IsLoopback()
 }

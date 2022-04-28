@@ -16,9 +16,11 @@
 
 package ipaddr
 
-// AddrIterator iterates through IP addresses, subnets and ranges
+// AddrIterator iterates through addresses, subnets and address ranges
 type AddressIterator interface {
 	HasNext
+
+	// Next returns the next address, or nil if there is none left.
 	Next() *Address
 }
 
@@ -111,9 +113,11 @@ func rangeAddrIterator(
 	return addrIterator(single, original, prefixLen, valsAreMultiple, iterator)
 }
 
-// IPv4AddressIterator iterates through IP addresses, subnets and ranges
+// IPAddressIterator iterates through IP subnets and ranges
 type IPAddressIterator interface {
 	HasNext
+
+	// Next returns the next IP address, or nil if there is none left.
 	Next() *IPAddress
 }
 
@@ -141,9 +145,11 @@ func (iter *ipAddrSliceIterator) Next() (res *IPAddress) {
 	return
 }
 
-// IPv4AddressIterator iterates through IPv4 addresses, subnets and ranges
+// IPv4AddressIterator iterates through IPv4 subnets and ranges
 type IPv4AddressIterator interface {
 	HasNext
+
+	// Next returns the next IPv4 address, or nil if there is none left.
 	Next() *IPv4Address
 }
 
@@ -163,9 +169,11 @@ func (iter ipv4IPAddressIterator) Next() *IPv4Address {
 	return iter.IPAddressIterator.Next().ToIPv4()
 }
 
-// IPv6AddressIterator iterates through IPv4 addresses, subnets and ranges
+// IPv6AddressIterator iterates through IPv6 subnets and ranges
 type IPv6AddressIterator interface {
 	HasNext
+
+	// Next returns the next IPv6 address, or nil if there is none left.
 	Next() *IPv6Address
 }
 
@@ -185,9 +193,11 @@ func (iter ipv6IPAddressIterator) Next() *IPv6Address {
 	return iter.IPAddressIterator.Next().ToIPv6()
 }
 
-// MACAddressIterator iterates through MAC addresses, subnets and ranges
+// MACAddressIterator iterates through MAC address collections
 type MACAddressIterator interface {
 	HasNext
+
+	// Next returns the next MAC address, or nil if there is none left.
 	Next() *MACAddress
 }
 
@@ -199,13 +209,19 @@ func (iter macAddressIterator) Next() *MACAddress {
 	return iter.AddressIterator.Next().ToMAC()
 }
 
+// ExtendedSegmentSeriesIterator iterates through either addresses or address sections
 type ExtendedSegmentSeriesIterator interface {
 	HasNext
+
+	// Next returns the next section or address, or nil if there is none left
 	Next() ExtendedSegmentSeries
 }
 
+// ExtendedIPSegmentSeriesIterator iterates through either IP addresses or IP address sections
 type ExtendedIPSegmentSeriesIterator interface {
 	HasNext
+
+	// Next returns the next IP section or IP address, or nil if there is none left
 	Next() ExtendedIPSegmentSeries
 }
 
@@ -241,10 +257,11 @@ func (iter ipsectionSeriesIterator) Next() ExtendedIPSegmentSeries {
 	return wrapIPSection(iter.IPSectionIterator.Next())
 }
 
-type UnwrappedIPAddressIterator struct {
+// WrappedIPAddressIterator converts an IP address iterator to an address iterator
+type WrappedIPAddressIterator struct {
 	IPAddressIterator
 }
 
-func (iter UnwrappedIPAddressIterator) Next() *Address {
+func (iter WrappedIPAddressIterator) Next() *Address {
 	return iter.IPAddressIterator.Next().ToAddressBase()
 }

@@ -865,7 +865,7 @@ func (node *IPv4AddressAssociativeTrieNode) RemoveNode(addr *IPv4Address) bool {
 //
 // Goes further than Remove, not requiring a match to an inserted node, and also removing all the sub-nodes of any removed node or sub-node.
 //
-// For example, after inserting 1.2.3.0 and 1.2.3.1, passing 1.2.3.0/31 to {@link #removeElementsContainedBy(Address)} will remove them both,
+// For example, after inserting 1.2.3.0 and 1.2.3.1, passing 1.2.3.0/31 to RemoveElementsContainedBy will remove them both,
 // while the Remove method will remove nothing.
 // After inserting 1.2.3.0/31, then #remove(Address) will remove 1.2.3.0/31, but will leave 1.2.3.0 and 1.2.3.1 in the trie.
 //

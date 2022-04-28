@@ -165,6 +165,13 @@ type ExtendedSegmentSeries interface {
 	// Call IsMultiple to determine if this instance represents multiple series, or GetCount for the count.
 	Iterator() ExtendedSegmentSeriesIterator
 
+	// PrefixIterator provides an iterator to iterate through the individual prefixes of this series,
+	// each iterated element spanning the range of values for its prefix.
+	//
+	// It is similar to the prefix block iterator, except for possibly the first and last iterated elements, which might not be prefix blocks,
+	// instead constraining themselves to values from this series.
+	//
+	// If the series has no prefix length, then this is equivalent to Iterator.
 	PrefixIterator() ExtendedSegmentSeriesIterator
 
 	// PrefixBlockIterator provides an iterator to iterate through the individual prefix blocks, one for each prefix of this series.
@@ -276,6 +283,13 @@ func (addr WrappedAddress) Iterator() ExtendedSegmentSeriesIterator {
 	return addressSeriesIterator{addr.Address.Iterator()}
 }
 
+// PrefixIterator provides an iterator to iterate through the individual prefixes of this series,
+// each iterated element spanning the range of values for its prefix.
+//
+// It is similar to the prefix block iterator, except for possibly the first and last iterated elements, which might not be prefix blocks,
+// instead constraining themselves to values from this series.
+//
+// If the series has no prefix length, then this is equivalent to Iterator.
 func (addr WrappedAddress) PrefixIterator() ExtendedSegmentSeriesIterator {
 	return addressSeriesIterator{addr.Address.PrefixIterator()}
 }
@@ -525,6 +539,13 @@ func (section WrappedAddressSection) Iterator() ExtendedSegmentSeriesIterator {
 	return sectionSeriesIterator{section.AddressSection.Iterator()}
 }
 
+// PrefixIterator provides an iterator to iterate through the individual prefixes of this series,
+// each iterated element spanning the range of values for its prefix.
+//
+// It is similar to the prefix block iterator, except for possibly the first and last iterated elements, which might not be prefix blocks,
+// instead constraining themselves to values from this series.
+//
+// If the series has no prefix length, then this is equivalent to Iterator.
 func (section WrappedAddressSection) PrefixIterator() ExtendedSegmentSeriesIterator {
 	return sectionSeriesIterator{section.AddressSection.PrefixIterator()}
 }

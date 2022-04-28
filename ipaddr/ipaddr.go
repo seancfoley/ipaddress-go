@@ -616,6 +616,8 @@ func (addr *ipAddressInternal) ContainsSinglePrefixBlock(prefixLen BitCount) boo
 // Use GetPrefixLenForSingleBlock to avoid the case of multiple prefix values.
 //
 // If this represents just a single address, returns the bit length of this address.
+//
+// See AssignMinPrefixForBlock for some examples.
 func (addr *ipAddressInternal) GetMinPrefixLenForBlock() BitCount {
 	return addr.addressInternal.GetMinPrefixLenForBlock()
 }
@@ -1262,6 +1264,13 @@ func (addr *IPAddress) Iterator() IPAddressIterator {
 	return ipAddrIterator{addr.init().addrIterator(nil)}
 }
 
+// PrefixIterator provides an iterator to iterate through the individual prefixes of this subnet,
+// each iterated element spanning the range of values for its prefix.
+//
+// It is similar to the prefix block iterator, except for possibly the first and last iterated elements, which might not be prefix blocks,
+// instead constraining themselves to values from this subnet.
+//
+// If the subnet has no prefix length, then this is equivalent to Iterator.
 func (addr *IPAddress) PrefixIterator() IPAddressIterator {
 	return ipAddrIterator{addr.init().prefixIterator(false)}
 }

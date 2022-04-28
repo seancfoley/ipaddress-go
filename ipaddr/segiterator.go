@@ -17,11 +17,15 @@
 package ipaddr
 
 type HasNext interface {
+	// HasNext returns true if there is another address to iterate, false otherwise
 	HasNext() bool
 }
 
+// SegmentIterator iterates through address segments
 type SegmentIterator interface {
 	HasNext
+
+	// Next returns the next address segment, or nil if there is none left.
 	Next() *AddressSegment
 }
 
@@ -197,8 +201,11 @@ func segIterator(
 	}
 }
 
+// IPSegmentIterator iterates through IP address segments
 type IPSegmentIterator interface {
 	HasNext
+
+	// Next returns the next IP address segment, or nil if there is none left.
 	Next() *IPAddressSegment
 }
 
@@ -210,6 +217,7 @@ func (iter ipSegmentIterator) Next() *IPAddressSegment {
 	return iter.SegmentIterator.Next().ToIP()
 }
 
+// WrappedIPSegmentIterator converts an IP address segment iterator to an address segment iterator
 type WrappedIPSegmentIterator struct {
 	IPSegmentIterator
 }
@@ -218,8 +226,11 @@ func (iter WrappedIPSegmentIterator) Next() *AddressSegment {
 	return iter.IPSegmentIterator.Next().ToSegmentBase()
 }
 
+// IPv4SegmentIterator iterates through IPv4 address segments
 type IPv4SegmentIterator interface {
 	HasNext
+
+	// Next returns the next IPv6 address segment, or nil if there is none left.
 	Next() *IPv4AddressSegment
 }
 
@@ -231,8 +242,11 @@ func (iter ipv4SegmentIterator) Next() *IPv4AddressSegment {
 	return iter.SegmentIterator.Next().ToIPv4()
 }
 
+// IPv6SegmentIterator iterates through IPv6 address segments
 type IPv6SegmentIterator interface {
 	HasNext
+
+	// Next returns the next IPv6 address segment, or nil if there is none left.
 	Next() *IPv6AddressSegment
 }
 
@@ -244,8 +258,11 @@ func (iter ipv6SegmentIterator) Next() *IPv6AddressSegment {
 	return iter.SegmentIterator.Next().ToIPv6()
 }
 
+// MACSegmentIterator iterates through MAC address segments
 type MACSegmentIterator interface {
 	HasNext
+
+	// Next returns the next MAC address segment, or nil if there is none left.
 	Next() *MACAddressSegment
 }
 

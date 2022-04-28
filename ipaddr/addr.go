@@ -424,7 +424,7 @@ func (addr *addressInternal) toString() string {
 // Individual addresses are sequential and CIDR prefix blocks are sequential.
 // The subnet 1.2.3-4.5 is not sequential, since the two addresses it represents, 1.2.3.5 and 1.2.4.5, are not (1.2.3.6 is in-between the two but not in the subnet).
 //
-// With any IP address subnet, you can use {@link IPAddress#sequentialBlockIterator()} to convert any subnet to a collection of sequential subnets.
+// With any IP address subnet, you can use SequentialBlockIterator to convert any subnet to a collection of sequential subnets.
 func (addr *addressInternal) IsSequential() bool {
 	section := addr.section
 	if section == nil {
@@ -806,9 +806,6 @@ func (addr *addressInternal) addrIterator(excludeFunc func([]*AddressDivision) b
 		iterator)
 }
 
-// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
-// the extra iterators are next: PrefixIterator, PrefixBlockIterator, BlockIterator(int), SequentialBlockIterator
-
 func (addr *addressInternal) prefixIterator(isBlockIterator bool) AddressIterator {
 	prefLen := addr.getPrefixLen()
 	if prefLen == nil {
@@ -872,6 +869,9 @@ func (addr *addressInternal) prefixIterator(isBlockIterator bool) AddressIterato
 		address.getPrefixLen(),
 		iterator)
 }
+
+// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
+// these iterators are next: BlockIterator(int), SequentialBlockIterator
 
 func (addr *addressInternal) blockIterator(segmentCount int) AddressIterator {
 	if segmentCount < 0 {
@@ -1499,6 +1499,13 @@ func (addr *Address) Iterator() AddressIterator {
 	return addr.addrIterator(nil)
 }
 
+// PrefixIterator provides an iterator to iterate through the individual prefixes of this subnet,
+// each iterated element spanning the range of values for its prefix.
+//
+// It is similar to the prefix block iterator, except for possibly the first and last iterated elements, which might not be prefix blocks,
+// instead constraining themselves to values from this subnet.
+//
+// If the subnet has no prefix length, then this is equivalent to Iterator.
 func (addr *Address) PrefixIterator() AddressIterator {
 	return addr.prefixIterator(false)
 }

@@ -354,10 +354,21 @@ func (seg *IPv4AddressSegment) PrefixBlockIterator() IPv4SegmentIterator {
 	return ipv4SegmentIterator{seg.init().prefixBlockIterator()}
 }
 
+// PrefixedBlockIterator provides an iterator to iterate through the individual prefix blocks of the given prefix length in this segment,
+// one for each prefix of this address or subnet.
+//
+// It is similar to PrefixBlockIterator except that this method allows you to specify the prefix length.
 func (seg *IPv4AddressSegment) PrefixedBlockIterator(segmentPrefixLen BitCount) IPv4SegmentIterator {
 	return ipv4SegmentIterator{seg.init().prefixedBlockIterator(segmentPrefixLen)}
 }
 
+// PrefixIterator provides an iterator to iterate through the individual prefixes of this segment,
+// each iterated element spanning the range of values for its prefix.
+//
+// It is similar to the prefix block iterator, except for possibly the first and last iterated elements, which might not be prefix blocks,
+// instead constraining themselves to values from this segment.
+//
+// If this address segment has no prefix length, then this is equivalent to Iterator.
 func (seg *IPv4AddressSegment) PrefixIterator() IPv4SegmentIterator {
 	return ipv4SegmentIterator{seg.init().prefixIterator()}
 }

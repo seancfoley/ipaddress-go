@@ -110,7 +110,7 @@ func (trie *MACAddressTrie) AddNode(addr *MACAddress) *MACAddressTrieNode {
 
 // ConstructAddedNodesTree provides an associative trie in which the root and each added node are mapped to a list of their respective direct added sub-nodes.
 // This trie provides an alternative non-binary tree structure of the added nodes.
-// It is used by {@link #toAddedNodesTreeString()} to produce a string showing the alternative structure.
+// It is used by ToAddedNodesTreeString to produce a string showing the alternative structure.
 // If there are no non-added nodes in this trie, then the alternative tree structure provided by this method is the same as the original trie.
 func (trie *MACAddressTrie) ConstructAddedNodesTree() *MACAddressTrie {
 	return &MACAddressTrie{trie.constructAddedNodesTree()}
@@ -504,7 +504,7 @@ func (trie *MACAddressAssociativeTrie) AddNode(addr *MACAddress) *MACAddressAsso
 
 // ConstructAddedNodesTree provides an associative trie in which the root and each added node are mapped to a list of their respective direct added sub-nodes.
 // This trie provides an alternative non-binary tree structure of the added nodes.
-// It is used by {@link #toAddedNodesTreeString()} to produce a string showing the alternative structure.
+// It is used by ToAddedNodesTreeString to produce a string showing the alternative structure.
 // If there are no non-added nodes in this trie, then the alternative tree structure provided by this method is the same as the original trie.
 func (trie *MACAddressAssociativeTrie) ConstructAddedNodesTree() *MACAddressAssociativeTrie {
 	return &MACAddressAssociativeTrie{associativeAddressTrie{trie.constructAddedNodesTree()}}

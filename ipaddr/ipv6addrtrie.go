@@ -110,7 +110,7 @@ func (trie *IPv6AddressTrie) AddNode(addr *IPv6Address) *IPv6AddressTrieNode {
 
 // ConstructAddedNodesTree provides an associative trie in which the root and each added node are mapped to a list of their respective direct added sub-nodes.
 // This trie provides an alternative non-binary tree structure of the added nodes.
-// It is used by {@link #toAddedNodesTreeString()} to produce a string showing the alternative structure.
+// It is used by ToAddedNodesTreeString to produce a string showing the alternative structure.
 // If there are no non-added nodes in this trie, then the alternative tree structure provided by this method is the same as the original trie.
 func (trie *IPv6AddressTrie) ConstructAddedNodesTree() *IPv6AddressTrie {
 	return &IPv6AddressTrie{trie.constructAddedNodesTree()}
@@ -495,7 +495,7 @@ func (trie *IPv6AddressAssociativeTrie) AddNode(addr *IPv6Address) *IPv6AddressA
 
 // ConstructAddedNodesTree provides an associative trie in which the root and each added node are mapped to a list of their respective direct added sub-nodes.
 // This trie provides an alternative non-binary tree structure of the added nodes.
-// It is used by {@link #toAddedNodesTreeString()} to produce a string showing the alternative structure.
+// It is used by ToAddedNodesTreeString to produce a string showing the alternative structure.
 // If there are no non-added nodes in this trie, then the alternative tree structure provided by this method is the same as the original trie.
 func (trie *IPv6AddressAssociativeTrie) ConstructAddedNodesTree() *IPv6AddressAssociativeTrie {
 	return &IPv6AddressAssociativeTrie{associativeAddressTrie{trie.constructAddedNodesTree()}}
