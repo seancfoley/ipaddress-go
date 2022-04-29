@@ -988,10 +988,16 @@ func (grouping *addressDivisionGroupingInternal) IsFullRange() bool {
 	return grouping.addressDivisionGroupingBase.IsFullRange()
 }
 
+// GetSequentialBlockIndex gets the minimal division index for which all following divisions are full-range blocks.
+//
+// The division at this index is not a full-range block unless all divisions are full-range.
+// The division at this index and all following divisions form a sequential range.
+// For the full grouping to be sequential, the preceding divisions must be single-valued.
 func (grouping *addressDivisionGroupingInternal) GetSequentialBlockIndex() int {
 	return grouping.addressDivisionGroupingBase.GetSequentialBlockIndex()
 }
 
+// GetSequentialBlockCount provides the count of elements from the sequential block iterator, the minimal number of sequential address division groupings that comprise this address division grouping
 func (grouping *addressDivisionGroupingInternal) GetSequentialBlockCount() *big.Int {
 	return grouping.addressDivisionGroupingBase.GetSequentialBlockCount()
 }

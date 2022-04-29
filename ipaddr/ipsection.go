@@ -1336,10 +1336,16 @@ func (section *ipAddressSectionInternal) IsFullRange() bool {
 	return section.addressSectionInternal.IsFullRange()
 }
 
+// GetSequentialBlockIndex gets the minimal segment index for which all following segments are full-range blocks.
+//
+// The segment at this index is not a full-range block itself, unless all segments are full-range.
+// The segment at this index and all following segments form a sequential range.
+// For the full address section to be sequential, the preceding segments must be single-valued.
 func (section *ipAddressSectionInternal) GetSequentialBlockIndex() int {
 	return section.addressSectionInternal.GetSequentialBlockIndex()
 }
 
+// GetSequentialBlockCount provides the count of elements from the sequential block iterator, the minimal number of sequential address sections that comprise this address section
 func (section *ipAddressSectionInternal) GetSequentialBlockCount() *big.Int {
 	return section.addressSectionInternal.GetSequentialBlockCount()
 }
@@ -1863,10 +1869,17 @@ func (section *IPAddressSection) PrefixBlockIterator() IPSectionIterator {
 	return ipSectionIterator{section.prefixIterator(true)}
 }
 
+// BlockIterator Iterates through the address sections that can be obtained by iterating through all the upper segments up to the given segment count.
+// The segments following remain the same in all iterated sections.
 func (section *IPAddressSection) BlockIterator(segmentCount int) IPSectionIterator {
 	return ipSectionIterator{section.blockIterator(segmentCount)}
 }
 
+// SequentialBlockIterator iterates through the sequential address sections that make up this address section.
+//
+// Practically, this means finding the count of segments for which the segments that follow are not full range, and then using BlockIterator with that segment count.
+//
+// Use GetSequentialBlockCount to get the number of iterated elements.
 func (section *IPAddressSection) SequentialBlockIterator() IPSectionIterator {
 	return ipSectionIterator{section.sequentialBlockIterator()}
 }

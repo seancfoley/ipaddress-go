@@ -185,7 +185,15 @@ type ExtendedIPSegmentSeries interface {
 	// If this series has no prefix length, then this is equivalent to Iterator.
 	PrefixBlockIterator() ExtendedIPSegmentSeriesIterator
 
+	// SequentialBlockIterator iterates through the sequential series that make up this series.
+	//
+	// Practically, this means finding the count of segments for which the segments that follow are not full range, and then using BlockIterator with that segment count.
+	//
+	// Use GetSequentialBlockCount to get the number of iterated elements.
 	SequentialBlockIterator() ExtendedIPSegmentSeriesIterator
+
+	// BlockIterator Iterates through the series that can be obtained by iterating through all the upper segments up to the given segment count.
+	// The segments following remain the same in all iterated series.
 	BlockIterator(segmentCount int) ExtendedIPSegmentSeriesIterator
 
 	SpanWithPrefixBlocks() []ExtendedIPSegmentSeries
@@ -289,10 +297,17 @@ func (addr WrappedIPAddress) GetHostMask() ExtendedIPSegmentSeries {
 	return wrapIPAddress(addr.IPAddress.GetHostMask())
 }
 
+// SequentialBlockIterator iterates through the sequential series that make up this series.
+//
+// Practically, this means finding the count of segments for which the segments that follow are not full range, and then using BlockIterator with that segment count.
+//
+// Use GetSequentialBlockCount to get the number of iterated elements.
 func (addr WrappedIPAddress) SequentialBlockIterator() ExtendedIPSegmentSeriesIterator {
 	return ipaddressSeriesIterator{addr.IPAddress.SequentialBlockIterator()}
 }
 
+// BlockIterator Iterates through the series that can be obtained by iterating through all the upper segments up to the given segment count.
+// The segments following remain the same in all iterated series.
 func (addr WrappedIPAddress) BlockIterator(segmentCount int) ExtendedIPSegmentSeriesIterator {
 	return ipaddressSeriesIterator{addr.IPAddress.BlockIterator(segmentCount)}
 }
@@ -584,10 +599,17 @@ func (section WrappedIPAddressSection) GetHostMask() ExtendedIPSegmentSeries {
 	return wrapIPSection(section.IPAddressSection.GetHostMask())
 }
 
+// SequentialBlockIterator iterates through the sequential series that make up this series.
+//
+// Practically, this means finding the count of segments for which the segments that follow are not full range, and then using BlockIterator with that segment count.
+//
+// Use GetSequentialBlockCount to get the number of iterated elements.
 func (section WrappedIPAddressSection) SequentialBlockIterator() ExtendedIPSegmentSeriesIterator {
 	return ipsectionSeriesIterator{section.IPAddressSection.SequentialBlockIterator()}
 }
 
+// BlockIterator Iterates through the series that can be obtained by iterating through all the upper segments up to the given segment count.
+// The segments following remain the same in all iterated series.
 func (section WrappedIPAddressSection) BlockIterator(segmentCount int) ExtendedIPSegmentSeriesIterator {
 	return ipsectionSeriesIterator{section.IPAddressSection.BlockIterator(segmentCount)}
 }

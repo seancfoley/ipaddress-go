@@ -946,18 +946,36 @@ func (addr *IPv4Address) PrefixBlockIterator() IPv4AddressIterator {
 	return ipv4AddressIterator{addr.init().prefixIterator(true)}
 }
 
+// BlockIterator iterates through the addresses that can be obtained by iterating through all the upper segments up to the given segment count.
+// The segments following remain the same in all iterated addresses.
+//
+// For instance, given the IPv4 subnet 1-2.3-4.5-6.7, given the count argument 2,
+// it will iterate through 1.3.5-6.7, 1.4.5-6.7, 2.3.5-6.7, 2.4.5-6.7
 func (addr *IPv4Address) BlockIterator(segmentCount int) IPv4AddressIterator {
 	return ipv4AddressIterator{addr.init().blockIterator(segmentCount)}
 }
 
+// SequentialBlockIterator iterates through the sequential subnets or addresses that make up this address or subnet.
+//
+// Practically, this means finding the count of segments for which the segments that follow are not full range, and then using BlockIterator with that segment count.
+//
+// For instance, given the IPv4 subnet 1-2.3-4.5-6.7-8, it will iterate through 1.3.5.7-8, 1.3.6.7-8, 1.4.5.7-8, 1.4.6.7-8, 2.3.5.7-8, 2.3.6.7-8, 2.4.6.7-8, 2.4.6.7-8.
+//
+// Use GetSequentialBlockCount to get the number of iterated elements.
 func (addr *IPv4Address) SequentialBlockIterator() IPv4AddressIterator {
 	return ipv4AddressIterator{addr.init().sequentialBlockIterator()}
 }
 
+// GetSequentialBlockIndex gets the minimal segment index for which all following segments are full-range blocks.
+//
+// The segment at this index is not a full-range block itself, unless all segments are full-range.
+// The segment at this index and all following segments form a sequential range.
+// For the full subnet to be sequential, the preceding segments must be single-valued.
 func (addr *IPv4Address) GetSequentialBlockIndex() int {
 	return addr.init().getSequentialBlockIndex()
 }
 
+// GetSequentialBlockCount provides the count of elements from the sequential block iterator, the minimal number of sequential subnets that comprise this subnet
 func (addr *IPv4Address) GetSequentialBlockCount() *big.Int {
 	return addr.getSequentialBlockCount()
 }

@@ -155,7 +155,14 @@ type AddressDivisionSeries interface {
 	// GetBlockCount returns the count of distinct values in the given number of initial (more significant) segments.
 	GetBlockCount(divisionCount int) *big.Int
 
+	// GetSequentialBlockIndex gets the minimal division index for which all following divisions are full-range blocks.
+	//
+	// The division at this index is not a full-range block unless all divisions are full-range.
+	// The division at this index and all following divisions form a sequential range.
+	// For the full series to be sequential, the preceding divisions must be single-valued.
 	GetSequentialBlockIndex() int
+
+	// GetSequentialBlockCount provides the count of elements from the sequential block iterator, the minimal number of sequential address division series that comprise this address division series
 	GetSequentialBlockCount() *big.Int
 
 	// IsSequential returns  whether the series represents a range of values that are sequential.

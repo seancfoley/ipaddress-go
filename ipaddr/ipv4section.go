@@ -683,10 +683,17 @@ func (section *IPv4AddressSection) PrefixBlockIterator() IPv4SectionIterator {
 	return ipv4SectionIterator{section.prefixIterator(true)}
 }
 
+// BlockIterator Iterates through the address sections that can be obtained by iterating through all the upper segments up to the given segment count.
+// The segments following remain the same in all iterated sections.
 func (section *IPv4AddressSection) BlockIterator(segmentCount int) IPv4SectionIterator {
 	return ipv4SectionIterator{section.blockIterator(segmentCount)}
 }
 
+// SequentialBlockIterator iterates through the sequential address sections that make up this address section.
+//
+// Practically, this means finding the count of segments for which the segments that follow are not full range, and then using BlockIterator with that segment count.
+//
+// Use GetSequentialBlockCount to get the number of iterated elements.
 func (section *IPv4AddressSection) SequentialBlockIterator() IPv4SectionIterator {
 	return ipv4SectionIterator{section.sequentialBlockIterator()}
 }
