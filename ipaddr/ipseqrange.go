@@ -760,6 +760,10 @@ func (rng *IPAddressSeqRange) String() string {
 	return rng.ToString((*IPAddress).String, DefaultSeqRangeSeparator, (*IPAddress).String)
 }
 
+// Format implements fmt.Formatter interface.
+//
+// It prints the string as "lower -> upper" where lower and upper are the formatted strings for the lowest and highest addresses in the range, given by GetLower and GetUpper.
+// The formats, flags, and other specifications supported are those supported by Format in IPAddress.
 func (rng IPAddressSeqRange) Format(state fmt.State, verb rune) {
 	rng.init().format(state, verb)
 }
@@ -771,10 +775,14 @@ func (rng *IPAddressSeqRange) ToString(lowerStringer func(*IPAddress) string, se
 	return rng.init().toString(lowerStringer, separator, upperStringer)
 }
 
+// ToNormalizedString produces a normalized string for the address range.
+// It has the format "lower -> upper" where lower and upper are the normalized strings for the lowest and highest addresses in the range, given by GetLower and GetUpper.
 func (rng *IPAddressSeqRange) ToNormalizedString() string {
 	return rng.ToString((*IPAddress).ToNormalizedString, DefaultSeqRangeSeparator, (*IPAddress).ToNormalizedString)
 }
 
+// ToCanonicalString produces a canonical string for the address range.
+// It has the format "lower -> upper" where lower and upper are the canonical strings for the lowest and highest addresses in the range, given by GetLower and GetUpper.
 func (rng *IPAddressSeqRange) ToCanonicalString() string {
 	return rng.ToString((*IPAddress).ToCanonicalString, DefaultSeqRangeSeparator, (*IPAddress).ToCanonicalString)
 }

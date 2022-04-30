@@ -1562,6 +1562,18 @@ func (addr *IPv6Address) toEUISegments(extended bool) ([]*AddressDivision, addre
 	return newSegs, nil
 }
 
+// Format implements fmt.Formatter interface. It accepts the formats
+// 'v' for the default address and section format (either the normalized or canonical string),
+// 's' (string) for the same,
+// 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
+// 'd' (decimal), 'x' (lowercase hexadecimal), and
+// 'X' (uppercase hexadecimal).
+// Also supported are some of fmt's format flags for integral types.
+// Sign control is not supported since addresses and sections are never negative.
+// '#' for an alternate format is supported, which is leading zero for octal and for hexadecimal,
+// a leading "0x" or "0X" for "%#x" and "%#X" respectively,
+// Also supported is specification of minimum digits precision, output field width,
+// space or zero padding, and '-' for left or right justification.
 func (addr IPv6Address) Format(state fmt.State, verb rune) {
 	addr.init().format(state, verb)
 }
@@ -1574,6 +1586,7 @@ func (addr *IPv6Address) String() string {
 	return addr.init().addressInternal.toString()
 }
 
+// GetSegmentStrings returns an array with the strings of each segment being the string that is normalized with wildcards.
 func (addr *IPv6Address) GetSegmentStrings() []string {
 	if addr == nil {
 		return nil
@@ -1581,6 +1594,16 @@ func (addr *IPv6Address) GetSegmentStrings() []string {
 	return addr.init().getSegmentStrings()
 }
 
+// ToCanonicalString produces a canonical string for the address.
+//
+// For IPv6, RFC 5952 describes canonical string representation.
+// https://en.wikipedia.org/wiki/IPv6_address#Representation
+// http://tools.ietf.org/html/rfc5952
+//
+// Each address has a unique canonical string, not counting the prefix length.
+// With IP addresses, the prefix length can cause two equal addresses to have different strings, for example "1.2.3.4/16" and "1.2.3.4".
+// It can also cause two different addresses to have the same string, such as "1.2.0.0/16" for the individual address "1.2.0.0" and also the prefix block "1.2.*.*".
+// Use ToCanonicalWildcardString for a unique string for each IP address and subnet.
 func (addr *IPv6Address) ToCanonicalString() string {
 	if addr == nil {
 		return nilString()
@@ -1588,6 +1611,14 @@ func (addr *IPv6Address) ToCanonicalString() string {
 	return addr.init().toCanonicalString()
 }
 
+// ToNormalizedString produces a normalized string for the address.
+//
+// For IPv6, it differs from the canonical string.  Zero segments are not compressed.
+//
+// Each address has a unique normalized string, not counting the prefix length.
+// With IP addresses, the prefix length can cause two equal addresses to have different strings, for example "1.2.3.4/16" and "1.2.3.4".
+// It can also cause two different addresses to have the same string, such as "1.2.0.0/16" for the individual address "1.2.0.0" and also the prefix block "1.2.*.*".
+// Use the method ToNormalizedWildcardString for a unique string for each IP address and subnet.
 func (addr *IPv6Address) ToNormalizedString() string {
 	if addr == nil {
 		return nilString()
@@ -1595,6 +1626,9 @@ func (addr *IPv6Address) ToNormalizedString() string {
 	return addr.init().toNormalizedString()
 }
 
+// ToCompressedString produces a short representation of this address while remaining within the confines of standard representation(s) of the address.
+//
+// For IPv6, it differs from the canonical string.  It compresses the maximum number of zeros and/or host segments with the IPv6 compression notation '::'.
 func (addr *IPv6Address) ToCompressedString() string {
 	if addr == nil {
 		return nilString()
@@ -1665,6 +1699,10 @@ func (addr *IPv6Address) ToReverseDNSString() (string, addrerr.IncompatibleAddre
 	return addr.init().toReverseDNSString()
 }
 
+// ToHexString writes this address as a single hexadecimal value (possibly two values if a range that is not a prefixed block),
+// the number of digits according to the bit count, with or without a preceding "0x" prefix.
+//
+// If a subnet cannot be written as a single prefix block or a range of two values, an error is returned.
 func (addr *IPv6Address) ToHexString(with0xPrefix bool) (string, addrerr.IncompatibleAddressError) {
 	if addr == nil {
 		return nilString(), nil
@@ -1672,6 +1710,10 @@ func (addr *IPv6Address) ToHexString(with0xPrefix bool) (string, addrerr.Incompa
 	return addr.init().toHexString(with0xPrefix)
 }
 
+// ToOctalString writes this address as a single octal value (possibly two values if a range that is not a prefixed block),
+// the number of digits according to the bit count, with or without a preceding "0" prefix.
+//
+// If a subnet cannot be written as a single prefix block or a range of two values, an error is returned.
 func (addr *IPv6Address) ToOctalString(with0Prefix bool) (string, addrerr.IncompatibleAddressError) {
 	if addr == nil {
 		return nilString(), nil
@@ -1679,6 +1721,10 @@ func (addr *IPv6Address) ToOctalString(with0Prefix bool) (string, addrerr.Incomp
 	return addr.init().toOctalString(with0Prefix)
 }
 
+// ToBinaryString writes this address as a single binary value (possibly two values if a range that is not a prefixed block),
+// the number of digits according to the bit count, with or without a preceding "0b" prefix.
+//
+// If a subnet cannot be written as a single prefix block or a range of two values, an error is returned.
 func (addr *IPv6Address) ToBinaryString(with0bPrefix bool) (string, addrerr.IncompatibleAddressError) {
 	if addr == nil {
 		return nilString(), nil

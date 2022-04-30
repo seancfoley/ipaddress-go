@@ -656,6 +656,10 @@ var (
 	spaceDelimitedParams = new(addrstr.MACStringOptionsBuilder).SetSeparator(MacSpaceSegmentSeparator).SetExpandedSegments(true).ToOptions()
 )
 
+// ToHexString writes this address section as a single hexadecimal value (possibly two values if a range),
+// the number of digits according to the bit count, with or without a preceding "0x" prefix.
+//
+// If a multiple-valued section cannot be written as a range of two values, an error is returned.
 func (section *MACAddressSection) ToHexString(with0xPrefix bool) (string, addrerr.IncompatibleAddressError) {
 	if section == nil {
 		return nilString(), nil
@@ -663,6 +667,10 @@ func (section *MACAddressSection) ToHexString(with0xPrefix bool) (string, addrer
 	return section.toHexString(with0xPrefix)
 }
 
+// ToOctalString writes this address section as a single octal value (possibly two values if a range),
+// the number of digits according to the bit count, with or without a preceding "0" prefix.
+//
+// If a multiple-valued section cannot be written as a single prefix block or a range of two values, an error is returned.
 func (section *MACAddressSection) ToOctalString(with0Prefix bool) (string, addrerr.IncompatibleAddressError) {
 	if section == nil {
 		return nilString(), nil
@@ -670,6 +678,10 @@ func (section *MACAddressSection) ToOctalString(with0Prefix bool) (string, addre
 	return section.toOctalString(with0Prefix)
 }
 
+// ToBinaryString writes this address section as a single binary value (possibly two values if a range),
+// the number of digits according to the bit count, with or without a preceding "0b" prefix.
+//
+// If a multiple-valued section cannot be written as a range of two values, an error is returned.
 func (section *MACAddressSection) ToBinaryString(with0bPrefix bool) (string, addrerr.IncompatibleAddressError) {
 	if section == nil {
 		return nilString(), nil
@@ -677,9 +689,10 @@ func (section *MACAddressSection) ToBinaryString(with0bPrefix bool) (string, add
 	return section.toBinaryString(with0bPrefix)
 }
 
-// ToCanonicalString produces a canonical string.
+// ToCanonicalString produces a canonical string for the address section.
 //
-//If this section has a prefix length, it will be included in the string.
+// For MAC, it uses the canonical standardized IEEE 802 MAC address representation of xx-xx-xx-xx-xx-xx.  An example is "01-23-45-67-89-ab".
+// For range segments, '|' is used: 11-22-33|44-55-66
 func (section *MACAddressSection) ToCanonicalString() string {
 	if section == nil {
 		return nilString()
@@ -694,6 +707,10 @@ func (section *MACAddressSection) ToCanonicalString() string {
 		})
 }
 
+// ToNormalizedString produces a normalized string for the address section.
+//
+// For MAC, it differs from the canonical string.  It uses the most common representation of MAC addresses: xx:xx:xx:xx:xx:xx.  An example is "01:23:45:67:89:ab".
+// For range segments, '-' is used: 11:22:33-44:55:66
 func (section *MACAddressSection) ToNormalizedString() string {
 	if section == nil {
 		return nilString()
@@ -709,6 +726,9 @@ func (section *MACAddressSection) ToNormalizedString() string {
 		})
 }
 
+// ToCompressedString produces a short representation of this address section while remaining within the confines of standard representation(s) of the address.
+//
+// For MAC, it differs from the canonical string.  It produces a shorter string for the address that has no leading zeros.
 func (section *MACAddressSection) ToCompressedString() string {
 	if section == nil {
 		return nilString()
@@ -812,6 +832,7 @@ func (section *MACAddressSection) String() string {
 	return section.toString()
 }
 
+// GetSegmentStrings returns an array with the strings of each segment being the string that is normalized with wildcards.
 func (section *MACAddressSection) GetSegmentStrings() []string {
 	if section == nil {
 		return nil

@@ -241,6 +241,18 @@ func (div *addressDivisionInternal) toString() string { // this can be moved to 
 	return div.toStringOpts(opts)
 }
 
+// Format implements fmt.Formatter interface. It accepts the formats
+// 'v' for the default address and section format (either the normalized or canonical string),
+// 's' (string) for the same,
+// 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
+// 'd' (decimal), 'x' (lowercase hexadecimal), and
+// 'X' (uppercase hexadecimal).
+// Also supported are some of fmt's format flags for integral types.
+// Sign control is not supported since addresses and sections are never negative.
+// '#' for an alternate format is supported, which is leading zero for octal and for hexadecimal,
+// a leading "0x" or "0X" for "%#x" and "%#X" respectively,
+// Also supported is specification of minimum digits precision, output field width,
+// space or zero padding, and '-' for left or right justification.
 func (div addressDivisionInternal) Format(state fmt.State, verb rune) {
 	switch verb {
 	case 's', 'v':

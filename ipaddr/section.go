@@ -1239,6 +1239,19 @@ var (
 
 // Format is intentionally the only method with non-pointer receivers.  It is not intended to be called directly, it is intended for use by the fmt package.
 // When called by a function in the fmt package, nil values are detected before this method is called, avoiding a panic when calling this method.
+
+// Format implements fmt.Formatter interface. It accepts the formats
+// 'v' for the default address and section format (either the normalized or canonical string),
+// 's' (string) for the same,
+// 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
+// 'd' (decimal), 'x' (lowercase hexadecimal), and
+// 'X' (uppercase hexadecimal).
+// Also supported are some of fmt's format flags for integral types.
+// Sign control is not supported since addresses and sections are never negative.
+// '#' for an alternate format is supported, which is leading zero for octal and for hexadecimal,
+// a leading "0x" or "0X" for "%#x" and "%#X" respectively,
+// Also supported is specification of minimum digits precision, output field width,
+// space or zero padding, and '-' for left or right justification.
 func (section addressSectionInternal) Format(state fmt.State, verb rune) {
 	section.format(state, verb, NoZone, false)
 }
@@ -2542,6 +2555,17 @@ func (section *AddressSection) String() string {
 	return section.toString()
 }
 
+// ToCanonicalString produces a canonical string for the address section.
+//
+// For IPv4, dotted octet format, also known as dotted decimal format, is used.
+// https://datatracker.ietf.org/doc/html/draft-main-ipaddr-text-rep-00#section-2.1
+//
+// For IPv6, RFC 5952 describes canonical string representation.
+// https://en.wikipedia.org/wiki/IPv6_address#Representation
+// http://tools.ietf.org/html/rfc5952
+//
+// For MAC, it uses the canonical standardized IEEE 802 MAC address representation of xx-xx-xx-xx-xx-xx.  An example is "01-23-45-67-89-ab".
+// For range segments, '|' is used: 11-22-33|44-55-66
 func (section *AddressSection) ToCanonicalString() string {
 	if section == nil {
 		return nilString()
@@ -2549,6 +2573,14 @@ func (section *AddressSection) ToCanonicalString() string {
 	return section.toCanonicalString()
 }
 
+// ToNormalizedString produces a normalized string for the address section.
+//
+// For IPv4, it is the same as the canonical string.
+//
+// For IPv6, it differs from the canonical string.  Zero segments are not compressed.
+//
+// For MAC, it differs from the canonical string.  It uses the most common representation of MAC addresses: xx:xx:xx:xx:xx:xx.  An example is "01:23:45:67:89:ab".
+// For range segments, '-' is used: 11:22:33-44:55:66
 func (section *AddressSection) ToNormalizedString() string {
 	if section == nil {
 		return nilString()
@@ -2556,6 +2588,13 @@ func (section *AddressSection) ToNormalizedString() string {
 	return section.toNormalizedString()
 }
 
+// ToCompressedString produces a short representation of this address section while remaining within the confines of standard representation(s) of the address.
+//
+// For IPv4, it is the same as the canonical string.
+//
+// For IPv6, it differs from the canonical string.  It compresses the maximum number of zeros and/or host segments with the IPv6 compression notation '::'.
+//
+// For MAC, it differs from the canonical string.  It produces a shorter string for the address that has no leading zeros.
 func (section *AddressSection) ToCompressedString() string {
 	if section == nil {
 		return nilString()
@@ -2563,6 +2602,10 @@ func (section *AddressSection) ToCompressedString() string {
 	return section.toCompressedString()
 }
 
+// ToHexString writes this address section as a single hexadecimal value (possibly two values if a range that is not a prefixed block),
+// the number of digits according to the bit count, with or without a preceding "0x" prefix.
+//
+// If a multiple-valued section cannot be written as a single prefix block or a range of two values, an error is returned.
 func (section *AddressSection) ToHexString(with0xPrefix bool) (string, addrerr.IncompatibleAddressError) {
 	if section == nil {
 		return nilString(), nil
@@ -2570,6 +2613,10 @@ func (section *AddressSection) ToHexString(with0xPrefix bool) (string, addrerr.I
 	return section.toHexString(with0xPrefix)
 }
 
+// ToOctalString writes this address section as a single octal value (possibly two values if a range),
+// the number of digits according to the bit count, with or without a preceding "0" prefix.
+//
+// If a multiple-valued section cannot be written as a single prefix block or a range of two values, an error is returned.
 func (section *AddressSection) ToOctalString(with0Prefix bool) (string, addrerr.IncompatibleAddressError) {
 	if section == nil {
 		return nilString(), nil
@@ -2577,6 +2624,10 @@ func (section *AddressSection) ToOctalString(with0Prefix bool) (string, addrerr.
 	return section.toOctalString(with0Prefix)
 }
 
+// ToBinaryString writes this address section as a single binary value (possibly two values if a range that is not a prefixed block),
+// the number of digits according to the bit count, with or without a preceding "0b" prefix.
+//
+// If a multiple-valued section cannot be written as a single prefix block or a range of two values, an error is returned.
 func (section *AddressSection) ToBinaryString(with0bPrefix bool) (string, addrerr.IncompatibleAddressError) {
 	if section == nil {
 		return nilString(), nil
@@ -2591,6 +2642,7 @@ func (section *AddressSection) ToCustomString(stringOptions addrstr.StringOption
 	return section.toCustomString(stringOptions)
 }
 
+// GetSegmentStrings returns an array with the strings of each segment being the string that is normalized with wildcards.
 func (section *AddressSection) GetSegmentStrings() []string {
 	if section == nil {
 		return nil

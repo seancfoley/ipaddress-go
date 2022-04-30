@@ -308,6 +308,15 @@ func (addrStr *IPAddressString) String() string {
 	return addrStr.str
 }
 
+// ToNormalizedString produces a normalized string for the address.
+//
+// For IPv4, it is the same as the canonical string.
+//
+// For IPv6, it differs from the canonical string.  Zero segments are not compressed.
+//
+// If the address has a prefix length, it will be included in the string.
+//
+// If the original string is not a valid address string, the original string is used.
 func (addrStr *IPAddressString) ToNormalizedString() string {
 	addrStr = addrStr.init()
 	if addrStr.IsValid() {

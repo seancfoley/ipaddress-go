@@ -1160,6 +1160,10 @@ func (section *IPv6AddressSection) String() string {
 	return section.toString()
 }
 
+// ToHexString writes this address section as a single hexadecimal value (possibly two values if a range that is not a prefixed block),
+// the number of digits according to the bit count, with or without a preceding "0x" prefix.
+//
+// If a multiple-valued section cannot be written as a single prefix block or a range of two values, an error is returned.
 func (section *IPv6AddressSection) ToHexString(with0xPrefix bool) (string, addrerr.IncompatibleAddressError) {
 	if section == nil {
 		return nilString(), nil
@@ -1167,6 +1171,10 @@ func (section *IPv6AddressSection) ToHexString(with0xPrefix bool) (string, addre
 	return section.toHexString(with0xPrefix)
 }
 
+// ToOctalString writes this address section as a single octal value (possibly two values if a range that is not a prefixed block),
+// the number of digits according to the bit count, with or without a preceding "0" prefix.
+//
+// If a multiple-valued section cannot be written as a single prefix block or a range of two values, an error is returned.
 func (section *IPv6AddressSection) ToOctalString(with0Prefix bool) (string, addrerr.IncompatibleAddressError) {
 	if section == nil {
 		return nilString(), nil
@@ -1174,6 +1182,10 @@ func (section *IPv6AddressSection) ToOctalString(with0Prefix bool) (string, addr
 	return section.toOctalString(with0Prefix)
 }
 
+// ToBinaryString writes this address section as a single binary value (possibly two values if a range that is not a prefixed block),
+// the number of digits according to the bit count, with or without a preceding "0b" prefix.
+//
+// If a multiple-valued section cannot be written as a single prefix block or a range of two values, an error is returned.
 func (section *IPv6AddressSection) ToBinaryString(with0bPrefix bool) (string, addrerr.IncompatibleAddressError) {
 	if section == nil {
 		return nilString(), nil
@@ -1181,7 +1193,11 @@ func (section *IPv6AddressSection) ToBinaryString(with0bPrefix bool) (string, ad
 	return section.toBinaryString(with0bPrefix)
 }
 
-// ToCanonicalString produces a canonical string.
+// ToCanonicalString produces a canonical string for the address section.
+//
+// For IPv6, RFC 5952 describes canonical string representation.
+// https://en.wikipedia.org/wiki/IPv6_address#Representation
+// http://tools.ietf.org/html/rfc5952
 //
 //If this section has a prefix length, it will be included in the string.
 func (section *IPv6AddressSection) ToCanonicalString() string {
@@ -1198,9 +1214,11 @@ func (section *IPv6AddressSection) ToCanonicalString() string {
 		})
 }
 
-// ToNormalizedString produces a normalized string.
+// ToNormalizedString produces a normalized string for the address section.
 //
-//If this section has a prefix length, it will be included in the string.
+// For IPv6, it differs from the canonical string.  Zero segments are not compressed.
+//
+// If this section has a prefix length, it will be included in the string.
 func (section *IPv6AddressSection) ToNormalizedString() string {
 	if section == nil {
 		return nilString()
@@ -1215,6 +1233,9 @@ func (section *IPv6AddressSection) ToNormalizedString() string {
 		})
 }
 
+// ToCompressedString produces a short representation of this address section while remaining within the confines of standard representation(s) of the address.
+//
+// For IPv6, it differs from the canonical string.  It compresses the maximum number of zeros and/or host segments with the IPv6 compression notation '::'.
 func (section *IPv6AddressSection) ToCompressedString() string {
 	if section == nil {
 		return nilString()
@@ -1519,6 +1540,7 @@ func (section *IPv6AddressSection) toNormalizedMixedString(mixedParams *ipv6v4Mi
 	return result, nil
 }
 
+// GetSegmentStrings returns an array with the strings of each segment being the string that is normalized with wildcards.
 func (section *IPv6AddressSection) GetSegmentStrings() []string {
 	if section == nil {
 		return nil

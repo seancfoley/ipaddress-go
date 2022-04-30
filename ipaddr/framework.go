@@ -115,7 +115,13 @@ type AddressComponent interface { //AddressSegment and above, AddressSegmentSeri
 	// IsOneBit will panic if bitIndex < 0, or if it is larger than the bit count of this address component.
 	IsOneBit(index BitCount) bool
 
+	// ToHexString writes this address component as a single hexadecimal value (possibly two values if a range that is not a prefixed block),
+	// the number of digits according to the bit count, with or without a preceding "0x" prefix.
+	//
+	// If a multiple-valued component cannot be written as a single prefix block or a range of two values, an error is returned.
 	ToHexString(bool) (string, addrerr.IncompatibleAddressError)
+
+	// ToNormalizedString produces a string that is consistent for all address components of the same type and version,
 	ToNormalizedString() string
 }
 
@@ -219,12 +225,45 @@ type AddressSegmentSeries interface { // Address and above, AddressSection and a
 	// GetBytesPerSegment returns the number of bytes comprising each segment in this series.  Segments in the same series are equal length.
 	GetBytesPerSegment() int
 
+	// ToCanonicalString produces a canonical string for the address series.
+	//
+	// For IPv4, dotted octet format, also known as dotted decimal format, is used.
+	// https://datatracker.ietf.org/doc/html/draft-main-ipaddr-text-rep-00#section-2.1
+	//
+	// For IPv6, RFC 5952 describes canonical string representation.
+	// https://en.wikipedia.org/wiki/IPv6_address#Representation
+	// http://tools.ietf.org/html/rfc5952
+	//
+	// For MAC, it uses the canonical standardized IEEE 802 MAC address representation of xx-xx-xx-xx-xx-xx.  An example is "01-23-45-67-89-ab".
+	// For range segments, '|' is used: 11-22-33|44-55-66
+	//
+	// Each address has a unique canonical string, not counting the prefix length.
+	// With IP addresses and sections, the prefix length is included in the string, and the prefix length can cause two equal addresses to have different strings, for example "1.2.3.4/16" and "1.2.3.4".
+	// It can also cause two different addresses to have the same string, such as "1.2.0.0/16" for the individual address "1.2.0.0" and also the prefix block "1.2.*.*".
 	ToCanonicalString() string
+
+	// ToCompressedString produces a short representation of this series while remaining within the confines of standard representation(s) of the series.
+	//
+	// For IPv4, it is the same as the canonical string.
+	//
+	// For IPv6, it differs from the canonical string.  It compresses the maximum number of zeros and/or host segments with the IPv6 compression notation '::'.
+	//
+	// For MAC, it differs from the canonical string.  It produces a shorter string for the address that has no leading zeros.
 	ToCompressedString() string
 
+	// ToBinaryString writes this address series as a single binary value (possibly two values if a range that is not a prefixed block),
+	// the number of digits according to the bit count, with or without a preceding "0b" prefix.
+	//
+	// If a multiple-valued series cannot be written as a single prefix block or a range of two values, an error is returned.
 	ToBinaryString(with0bPrefix bool) (string, addrerr.IncompatibleAddressError)
+
+	// ToOctalString writes this address series as a single octal value (possibly two values if a range that is not a prefixed block),
+	// the number of digits according to the bit count, with or without a preceding "0" prefix.
+	//
+	// If a multiple-valued series cannot be written as a single prefix block or a range of two values, an error is returned.
 	ToOctalString(withPrefix bool) (string, addrerr.IncompatibleAddressError)
 
+	// GetSegmentStrings returns an array with the strings of each segment being the string that is normalized with wildcards.
 	GetSegmentStrings() []string
 
 	// GetGenericSegment returns the segment at the given index as an AddressSegmentType.
@@ -529,6 +568,18 @@ type IPAddressSeqRangeType interface {
 
 	// Contains returns whether this range contains all IP addresses in the given address or subnet.
 	Contains(IPAddressType) bool
+
+	// Equal returns whether the given sequential address range is equal to this sequential address range.
+	// Two sequential address ranges are equal if their lower and upper range boundaries are equal.
+	Equal(IPAddressSeqRangeType) bool
+
+	// ToCanonicalString produces a canonical string for the address range.
+	// It has the format "lower -> upper" where lower and upper are the canonical strings for the lowest and highest addresses in the range, given by GetLower and GetUpper.
+	ToCanonicalString() string
+
+	// ToNormalizedString produces a normalized string for the address range.
+	// It has the format "lower -> upper" where lower and upper are the normalized strings for the lowest and highest addresses in the range, given by GetLower and GetUpper.
+	ToNormalizedString() string
 
 	// ToIP converts to an IPAddressSeqRange, a polymorphic type usable with all IP address sequential ranges.
 	//

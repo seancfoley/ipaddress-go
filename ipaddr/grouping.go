@@ -363,7 +363,7 @@ func (grouping *addressDivisionGroupingInternal) matchesMACSectionType() bool {
 	return grouping.getAddrType().isMAC() || grouping.matchesZeroGrouping()
 }
 
-// Format implements fmt.Formatter. It accepts the formats
+// Format implements fmt.Formatter interface. It accepts the formats
 // 'v' for the default address and section format (either the normalized or canonical string),
 // 's' (string) for the same,
 // 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
@@ -371,10 +371,10 @@ func (grouping *addressDivisionGroupingInternal) matchesMACSectionType() bool {
 // 'X' (uppercase hexadecimal).
 // Also supported are some of fmt's format flags for integral types.
 // Sign control is not supported since addresses and sections are never negative.
-// '#' for alternate format is supported, which is leading zero in octal and for hexadecimal,
+// '#' for an alternate format is supported, which is leading zero for octal and for hexadecimal,
 // a leading "0x" or "0X" for "%#x" and "%#X" respectively,
-// Also supported is specification of minimum digits precision, output field
-// width, space or zero padding, and '-' for left or right justification.
+// Also supported is specification of minimum digits precision, output field width,
+// space or zero padding, and '-' for left or right justification.
 func (grouping addressDivisionGroupingInternal) Format(state fmt.State, verb rune) {
 	if sect := grouping.toAddressSection(); sect != nil {
 		sect.Format(state, verb)

@@ -729,6 +729,7 @@ func (trie *AddressTrie) Equal(other *AddressTrie) bool {
 // It panics in fmt code either way, but if in here then it is handled by a recover() call in fmt properly.
 // Seems to be a problem only in the debugger.
 
+// Format implements the fmt.Formatter interface.
 func (trie AddressTrie) Format(state fmt.State, verb rune) {
 	// without this, prints like {{{{<nil>}}}} or {{{{0xc00014ca50}}}}
 	// which is done by printValue in print.go of fmt

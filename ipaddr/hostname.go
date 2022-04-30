@@ -455,7 +455,7 @@ func (host *HostName) GetService() string {
 	return ""
 }
 
-// ToNormalizedString provides a normalized string which is lowercase for host strings, and which is a normalized string for addresses.
+// ToNormalizedString provides a normalized string which is lowercase for host strings, and which is the normalized string for addresses.
 func (host *HostName) ToNormalizedString() string {
 	host = host.init()
 	str := host.normalizedString

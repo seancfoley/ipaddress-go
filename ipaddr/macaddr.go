@@ -933,10 +933,23 @@ func (addr *MACAddress) String() string {
 	return addr.init().addressInternal.toString()
 }
 
+// Format implements fmt.Formatter interface. It accepts the formats
+// 'v' for the default address and section format (either the normalized or canonical string),
+// 's' (string) for the same,
+// 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
+// 'd' (decimal), 'x' (lowercase hexadecimal), and
+// 'X' (uppercase hexadecimal).
+// Also supported are some of fmt's format flags for integral types.
+// Sign control is not supported since addresses and sections are never negative.
+// '#' for an alternate format is supported, which is leading zero for octal and for hexadecimal,
+// a leading "0x" or "0X" for "%#x" and "%#X" respectively,
+// Also supported is specification of minimum digits precision, output field width,
+// space or zero padding, and '-' for left or right justification.
 func (addr MACAddress) Format(state fmt.State, verb rune) {
 	addr.init().format(state, verb)
 }
 
+// GetSegmentStrings returns an array with the strings of each segment being the string that is normalized with wildcards.
 func (addr *MACAddress) GetSegmentStrings() []string {
 	if addr == nil {
 		return nil
@@ -944,6 +957,12 @@ func (addr *MACAddress) GetSegmentStrings() []string {
 	return addr.init().getSegmentStrings()
 }
 
+// ToCanonicalString produces a canonical string for the address.
+//
+// For MAC, it uses the canonical standardized IEEE 802 MAC address representation of xx-xx-xx-xx-xx-xx.  An example is "01-23-45-67-89-ab".
+// For range segments, '|' is used: 11-22-33|44-55-66
+//
+// Each MAC address has a unique canonical string.
 func (addr *MACAddress) ToCanonicalString() string {
 	if addr == nil {
 		return nilString()
@@ -951,6 +970,12 @@ func (addr *MACAddress) ToCanonicalString() string {
 	return addr.init().toCanonicalString()
 }
 
+// ToNormalizedString produces a normalized string for the address.
+//
+// For MAC, it differs from the canonical string.  It uses the most common representation of MAC addresses: xx:xx:xx:xx:xx:xx.  An example is "01:23:45:67:89:ab".
+// For range segments, '-' is used: 11:22:33-44:55:66
+//
+// Each address has a unique normalized string.
 func (addr *MACAddress) ToNormalizedString() string {
 	if addr == nil {
 		return nilString()
@@ -958,6 +983,9 @@ func (addr *MACAddress) ToNormalizedString() string {
 	return addr.init().toNormalizedString()
 }
 
+// ToCompressedString produces a short representation of this address while remaining within the confines of standard representation(s) of the address.
+//
+// For MAC, it differs from the canonical string.  It produces a shorter string for the address that has no leading zeros.
 func (addr *MACAddress) ToCompressedString() string {
 	if addr == nil {
 		return nilString()
@@ -965,6 +993,10 @@ func (addr *MACAddress) ToCompressedString() string {
 	return addr.init().toCompressedString()
 }
 
+// ToHexString writes this address as a single hexadecimal value (possibly two values if a range),
+// the number of digits according to the bit count, with or without a preceding "0x" prefix.
+//
+// If an address collection cannot be written as a range of two values, an error is returned.
 func (addr *MACAddress) ToHexString(with0xPrefix bool) (string, addrerr.IncompatibleAddressError) {
 	if addr == nil {
 		return nilString(), nil
@@ -972,6 +1004,10 @@ func (addr *MACAddress) ToHexString(with0xPrefix bool) (string, addrerr.Incompat
 	return addr.init().toHexString(with0xPrefix)
 }
 
+// ToOctalString writes this address as a single octal value (possibly two values if a range),
+// the number of digits according to the bit count, with or without a preceding "0" prefix.
+//
+// If a multiple-valued address collection cannot be written as a single prefix block or a range of two values, an error is returned.
 func (addr *MACAddress) ToOctalString(with0Prefix bool) (string, addrerr.IncompatibleAddressError) {
 	if addr == nil {
 		return nilString(), nil
@@ -979,6 +1015,10 @@ func (addr *MACAddress) ToOctalString(with0Prefix bool) (string, addrerr.Incompa
 	return addr.init().toOctalString(with0Prefix)
 }
 
+// ToBinaryString writes this address as a single binary value (possibly two values if a range that is not a prefixed block),
+// the number of digits according to the bit count, with or without a preceding "0b" prefix.
+//
+// If an address collection cannot be written as a range of two values, an error is returned.
 func (addr *MACAddress) ToBinaryString(with0bPrefix bool) (string, addrerr.IncompatibleAddressError) {
 	if addr == nil {
 		return nilString(), nil

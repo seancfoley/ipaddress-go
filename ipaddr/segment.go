@@ -340,6 +340,8 @@ var (
 
 // We do not need to "override" ToNormalizedString() and ToHexString(bool) because neither prints leading zeros according to bit count, so zero segments of type IPv4/IPv6/MAC are printed consistently
 
+// ToNormalizedString produces a string that is consistent for all address segments of the same type and version.
+// IPv4 segments use base 10, while other segment types use base 16.
 func (seg *addressSegmentInternal) ToNormalizedString() string {
 	stringer := func() string {
 		switch seg.getDefaultTextualRadix() {
@@ -357,6 +359,10 @@ func (seg *addressSegmentInternal) ToNormalizedString() string {
 	return stringer()
 }
 
+// ToHexString writes this address segment as a single hexadecimal value (possibly two values if a range that is not a prefixed block),
+// the number of digits according to the bit count, with or without a preceding "0x" prefix.
+//
+// For segments, the error is always nil.
 func (seg *addressSegmentInternal) ToHexString(with0xPrefix bool) (string, addrerr.IncompatibleAddressError) {
 	var stringer func() string
 	if with0xPrefix {
