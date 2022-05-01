@@ -2145,6 +2145,7 @@ func (section *IPAddressSection) ToCompressedWildcardString() string {
 	return section.toCompressedWildcardString()
 }
 
+// ToCustomString creates a customized string from this address section according to the given string option parameters
 func (section *IPAddressSection) ToCustomString(stringOptions addrstr.IPStringOptions) string {
 	if section == nil {
 		return nilString()

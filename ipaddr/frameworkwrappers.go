@@ -240,6 +240,7 @@ type ExtendedSegmentSeries interface {
 	// ReverseSegments returns a new series with the segments reversed.
 	ReverseSegments() ExtendedSegmentSeries
 
+	// ToCustomString creates a customized string from this series according to the given string option parameters
 	ToCustomString(stringOptions addrstr.StringOptions) string
 }
 

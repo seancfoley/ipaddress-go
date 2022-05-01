@@ -1099,6 +1099,14 @@ func (addr *IPv6Address) ToSequentialRange() *IPv6AddressSeqRange {
 		addr.isMultiple()).ToIPv6()
 }
 
+// ToAddressString retrieves or generates an IPAddressString instance for this IPAddress instance.
+// This may be the IPAddressString this instance was generated from, if it was generated from an IPAddressString.
+//
+// In general, users are intended to create IPAddress instances from IPAddressString instances,
+// while the reverse direction is generally not common and not useful, except under specific circumstances.
+//
+// However, the reverse direction can be useful under certain circumstances,
+// such as when maintaining a collection of HostIdentifierString instances.
 func (addr *IPv6Address) ToAddressString() *IPAddressString {
 	return addr.init().ToIP().ToAddressString()
 }
@@ -1494,10 +1502,20 @@ func (addr *IPv6Address) Replace(startIndex int, replacement *IPv6AddressSection
 	return addr.checkIdentity(addr.GetSection().ReplaceLen(startIndex, endIndex, replacement, replacementIndex, replacementIndex+count))
 }
 
+// GetLeadingBitCount returns the number of consecutive leading one or zero bits.
+// If ones is true, returns the number of consecutive leading one bits.
+// Otherwise, returns the number of consecutive leading zero bits.
+//
+// This method applies to the lower value of the range if this is a subnet representing multiple values.
 func (addr *IPv6Address) GetLeadingBitCount(ones bool) BitCount {
 	return addr.GetSection().GetLeadingBitCount(ones)
 }
 
+// GetTrailingBitCount returns the number of consecutive trailing one or zero bits.
+// If ones is true, returns the number of consecutive trailing zero bits.
+// Otherwise, returns the number of consecutive trailing one bits.
+//
+// This method applies to the lower value of the range if this is a subnet representing multiple values.
 func (addr *IPv6Address) GetTrailingBitCount(ones bool) BitCount {
 	return addr.GetSection().GetTrailingBitCount(ones)
 }
@@ -1769,7 +1787,8 @@ func (addr *IPv6Address) ToMixedString() (string, addrerr.IncompatibleAddressErr
 
 }
 
-// ToCustomString produces a string given the string options.
+// ToCustomString creates a customized string from this address or subnet according to the given string option parameters
+//
 // Errors can result from split digits with ranged values, or mixed IPv4/v6 with ranged values, when a range cannot be split up.
 // Options without split digits or mixed addresses do not produce errors.
 // Single addresses do not produce errors.

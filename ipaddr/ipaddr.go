@@ -135,6 +135,7 @@ func (version IPVersion) GetBitsPerSegment() BitCount {
 	return 0
 }
 
+// GetByteCount returns the number of bytes comprising an address of this IP Version.
 func (version IPVersion) GetByteCount() int {
 	if version.IsIPv4() {
 		return IPv4ByteCount
@@ -144,6 +145,7 @@ func (version IPVersion) GetByteCount() int {
 	return 0
 }
 
+// GetSegmentCount returns the number of segments comprising an address of this IP Version: 4 for IPv4 and 8 for IPv6.
 func (version IPVersion) GetSegmentCount() int {
 	if version.IsIPv4() {
 		return IPv4SegmentCount
@@ -214,6 +216,9 @@ func (addr *ipAddressInternal) getNetworkPrefixLen() PrefixLen {
 func (addr *ipAddressInternal) GetNetworkPrefixLen() PrefixLen {
 	return addr.getNetworkPrefixLen().copy()
 }
+
+// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
+// IncludesZeroHost and IncludesMaxHost is next
 
 func (addr *ipAddressInternal) IncludesZeroHost() bool {
 	section := addr.section
@@ -1835,6 +1840,7 @@ func (addr *IPAddress) ToBinaryString(with0bPrefix bool) (string, addrerr.Incomp
 	return addr.init().toBinaryString(with0bPrefix)
 }
 
+// ToCustomString creates a customized string from this address or subnet according to the given string option parameters
 func (addr *IPAddress) ToCustomString(stringOptions addrstr.IPStringOptions) string {
 	if addr == nil {
 		return nilString()
@@ -1842,16 +1848,14 @@ func (addr *IPAddress) ToCustomString(stringOptions addrstr.IPStringOptions) str
 	return addr.GetSection().toCustomZonedString(stringOptions, addr.zone)
 }
 
-// ToAddressString retrieves or generates an IPAddressString object for this IPAddress object.
+// ToAddressString retrieves or generates an IPAddressString instance for this IPAddress instance.
 // This may be the IPAddressString this instance was generated from, if it was generated from an IPAddressString.
 //
-// In general, users are intended to create IPAddress objects from IPAddressString objects,
-// while the reverse direction is generally not all that useful, except under specific circumstances.
+// In general, users are intended to create IPAddress instances from IPAddressString instances,
+// while the reverse direction is generally not common and not useful, except under specific circumstances.
 //
-// Not all IPAddressString objects can be converted to IPAddress objects.
-//
-// So it may be useful to store a set of address strings as a collection of IPAddressString objects, rather than IPAddress objects,
-// which is one reason you might wish to obtain an IPAddressString from an IPAddress.
+// However, the reverse direction can be useful under certain circumstances,
+// such as when maintaining a collection of HostIdentifierString instances.
 func (addr *IPAddress) ToAddressString() *IPAddressString {
 	addr = addr.init()
 	cache := addr.cache
@@ -1937,10 +1941,20 @@ func (addr *IPAddress) IncludesMaxHostLen(networkPrefixLength BitCount) bool {
 	return addr.init().includesMaxHostLen(networkPrefixLength)
 }
 
+// GetLeadingBitCount returns the number of consecutive leading one or zero bits.
+// If ones is true, returns the number of consecutive leading one bits.
+// Otherwise, returns the number of consecutive leading zero bits.
+//
+// This method applies to the lower value of the range if this is a subnet representing multiple values.
 func (addr *IPAddress) GetLeadingBitCount(ones bool) BitCount {
 	return addr.GetSection().GetLeadingBitCount(ones)
 }
 
+// GetTrailingBitCount returns the number of consecutive trailing one or zero bits.
+// If ones is true, returns the number of consecutive trailing zero bits.
+// Otherwise, returns the number of consecutive trailing one bits.
+//
+// This method applies to the lower value of the range if this is a subnet representing multiple values.
 func (addr *IPAddress) GetTrailingBitCount(ones bool) BitCount {
 	return addr.GetSection().GetTrailingBitCount(ones)
 }

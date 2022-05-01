@@ -265,6 +265,7 @@ type ExtendedIPSegmentSeries interface {
 	// ReverseSegments returns a new series with the segments reversed.
 	ReverseSegments() ExtendedIPSegmentSeries
 
+	// ToCustomString creates a customized string from this series according to the given string option parameters
 	ToCustomString(stringOptions addrstr.IPStringOptions) string
 }
 

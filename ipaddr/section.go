@@ -2076,7 +2076,7 @@ func (section *addressSectionInternal) IsSequential() bool {
 // If ones is true, returns the number of consecutive leading one bits.
 // Otherwise, returns the number of consecutive leading zero bits.
 //
-// This method applies only to the lower value of the range if this division represents multiple values.
+// This method applies to the lower value of the range if this section represents multiple values.
 func (section *addressSectionInternal) GetLeadingBitCount(ones bool) BitCount {
 	count := section.GetSegmentCount()
 	if count == 0 {
@@ -2098,6 +2098,11 @@ func (section *addressSectionInternal) GetLeadingBitCount(ones bool) BitCount {
 	return prefixLen
 }
 
+// GetTrailingBitCount returns the number of consecutive trailing one or zero bits.
+// If ones is true, returns the number of consecutive trailing zero bits.
+// Otherwise, returns the number of consecutive trailing one bits.
+//
+// This method applies to the lower value of the range if this section represents multiple values.
 func (section *addressSectionInternal) GetTrailingBitCount(ones bool) BitCount {
 	count := section.GetSegmentCount()
 	if count == 0 {
@@ -2649,6 +2654,7 @@ func (section *AddressSection) ToBinaryString(with0bPrefix bool) (string, addrer
 	return section.toBinaryString(with0bPrefix)
 }
 
+// ToCustomString creates a customized string from this address section according to the given string option parameters
 func (section *AddressSection) ToCustomString(stringOptions addrstr.StringOptions) string {
 	if section == nil {
 		return nilString()

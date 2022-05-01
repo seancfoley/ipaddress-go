@@ -1075,6 +1075,7 @@ func (addr *MACAddress) ToColonDelimitedString() string {
 	return addr.init().GetSection().ToColonDelimitedString()
 }
 
+// ToCustomString creates a customized string from this address or address collection according to the given string option parameters
 func (addr *MACAddress) ToCustomString(stringOptions addrstr.StringOptions) string {
 	if addr == nil {
 		return nilString()
@@ -1082,6 +1083,14 @@ func (addr *MACAddress) ToCustomString(stringOptions addrstr.StringOptions) stri
 	return addr.init().GetSection().toCustomString(stringOptions)
 }
 
+// ToAddressString retrieves or generates a MACAddressString instance for this MACAddress instance.
+// This may be the MACAddressString this instance was generated from, if it was generated from an MACAddressString.
+//
+// In general, users are intended to create MACAddress instances from MACAddressString instances,
+// while the reverse direction is generally not common and not useful, except under specific circumstances.
+//
+// However, the reverse direction can be useful under certain circumstances,
+// such as when maintaining a collection of MACAddressString instances.
 func (addr *MACAddress) ToAddressString() *MACAddressString {
 	addr = addr.init()
 	cache := addr.cache

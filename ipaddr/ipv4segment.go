@@ -321,7 +321,7 @@ func (seg *IPv4AddressSegment) GetTrailingBitCount(ones bool) BitCount {
 	return seg.init().ipAddressSegmentInternal.GetTrailingBitCount(ones)
 }
 
-//	GetLeadingBitCount returns the number of consecutive leading one or zero bits.
+// GetLeadingBitCount returns the number of consecutive leading one or zero bits.
 // If ones is true, returns the number of consecutive leading one bits.
 // Otherwise, returns the number of consecutive leading zero bits.
 //

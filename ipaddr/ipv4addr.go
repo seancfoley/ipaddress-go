@@ -848,6 +848,14 @@ func (addr *IPv4Address) ToNetworkAddress() (*IPv4Address, addrerr.IncompatibleA
 	return addr.ToZeroHost()
 }
 
+// ToAddressString retrieves or generates an IPAddressString instance for this IPAddress instance.
+// This may be the IPAddressString this instance was generated from, if it was generated from an IPAddressString.
+//
+// In general, users are intended to create IPAddress instances from IPAddressString instances,
+// while the reverse direction is generally not common and not useful, except under specific circumstances.
+//
+// However, the reverse direction can be useful under certain circumstances,
+// such as when maintaining a collection of HostIdentifierString instances.
 func (addr *IPv4Address) ToAddressString() *IPAddressString {
 	return addr.init().ToIP().ToAddressString()
 }
@@ -1147,10 +1155,20 @@ func (addr *IPv4Address) Replace(startIndex int, replacement *IPv4AddressSection
 	return addr.checkIdentity(addr.GetSection().ReplaceLen(startIndex, endIndex, replacement, replacementIndex, replacementIndex+count))
 }
 
+// GetLeadingBitCount returns the number of consecutive leading one or zero bits.
+// If ones is true, returns the number of consecutive leading one bits.
+// Otherwise, returns the number of consecutive leading zero bits.
+//
+// This method applies to the lower value of the range if this is a subnet representing multiple values.
 func (addr *IPv4Address) GetLeadingBitCount(ones bool) BitCount {
 	return addr.GetSection().GetLeadingBitCount(ones)
 }
 
+// GetTrailingBitCount returns the number of consecutive trailing one or zero bits.
+// If ones is true, returns the number of consecutive trailing zero bits.
+// Otherwise, returns the number of consecutive trailing one bits.
+//
+// This method applies to the lower value of the range if this is a subnet representing multiple values.
 func (addr *IPv4Address) GetTrailingBitCount(ones bool) BitCount {
 	return addr.GetSection().GetTrailingBitCount(ones)
 }
@@ -1410,6 +1428,7 @@ func (addr *IPv4Address) ToInetAtonJoinedString(radix Inet_aton_radix, joinedCou
 	return addr.GetSection().ToInetAtonJoinedString(radix, joinedCount)
 }
 
+// ToCustomString creates a customized string from this address or subnet according to the given string option parameters
 func (addr *IPv4Address) ToCustomString(stringOptions addrstr.IPStringOptions) string {
 	if addr == nil {
 		return nilString()

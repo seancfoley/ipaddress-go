@@ -33,7 +33,16 @@ type AddressItem interface {
 	// GetUpperValue returns the highest individual address item in the address item range as an integer value
 	GetUpperValue() *big.Int
 
+	// CopyBytes copies the value of the lowest individual address item in this address item range into a byte slice.
+	//
+	// If the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+	// Otherwise, a new slice is created and returned with the value.
 	CopyBytes(bytes []byte) []byte
+
+	// CopyUpperBytes copies the value of the highest individual address item in this address item range into a byte slice.
+	//
+	// If the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+	// Otherwise, a new slice is created and returned with the value.
 	CopyUpperBytes(bytes []byte) []byte
 
 	// Bytes returns the lowest individual address item in the address item range as a byte slice
@@ -298,7 +307,18 @@ type IPAddressSegmentSeries interface { // IPAddress and above, IPAddressSection
 
 	GetBlockMaskPrefixLen(network bool) PrefixLen
 
+	// GetLeadingBitCount returns the number of consecutive leading one or zero bits.
+	// If ones is true, returns the number of consecutive leading one bits.
+	// Otherwise, returns the number of consecutive leading zero bits.
+	//
+	// This method applies to the lower value of the range if this series represents multiple values.
 	GetLeadingBitCount(ones bool) BitCount
+
+	// GetTrailingBitCount returns the number of consecutive trailing one or zero bits.
+	// If ones is true, returns the number of consecutive trailing zero bits.
+	// Otherwise, returns the number of consecutive trailing one bits.
+	//
+	// This method applies to the lower value of the range if this series represents multiple values.
 	GetTrailingBitCount(ones bool) BitCount
 
 	ToFullString() string

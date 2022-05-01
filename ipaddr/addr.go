@@ -1651,13 +1651,20 @@ func (addr *Address) IsLocal() bool {
 	return false
 }
 
-// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
-// GetLeadingBitCount and GetTrailingBitCount is next
-
+// GetLeadingBitCount returns the number of consecutive leading one or zero bits.
+// If ones is true, returns the number of consecutive leading one bits.
+// Otherwise, returns the number of consecutive leading zero bits.
+//
+// This method applies to the lower address of the range if this is a subnet representing multiple values.
 func (addr *Address) GetLeadingBitCount(ones bool) BitCount {
 	return addr.GetSection().GetLeadingBitCount(ones)
 }
 
+// GetTrailingBitCount returns the number of consecutive trailing one or zero bits.
+// If ones is true, returns the number of consecutive trailing zero bits.
+// Otherwise, returns the number of consecutive trailing one bits.
+//
+// This method applies to the lower value of the range if this is a subnet representing multiple values.
 func (addr *Address) GetTrailingBitCount(ones bool) BitCount {
 	return addr.GetSection().GetTrailingBitCount(ones)
 }
@@ -1784,6 +1791,7 @@ func (addr *Address) ToBinaryString(with0bPrefix bool) (string, addrerr.Incompat
 	return addr.init().toBinaryString(with0bPrefix)
 }
 
+// ToCustomString creates a customized string from this address or subnet according to the given string option parameters
 func (addr *Address) ToCustomString(stringOptions addrstr.StringOptions) string {
 	if addr == nil {
 		return nilString()
@@ -1791,6 +1799,14 @@ func (addr *Address) ToCustomString(stringOptions addrstr.StringOptions) string 
 	return addr.GetSection().toCustomStringZoned(stringOptions, addr.zone)
 }
 
+// ToAddressString retrieves or generates a HostIdentifierString instance for this Address object.
+//
+// This same Address instance can be retrieved from the resulting HostIdentifierString object using the GetAddress method.
+//
+// In general, users create Address instances from IPAddressString or MACAddressString instances,
+// while the reverse direction is generally not common and not useful.
+//
+// However, the reverse direction can be useful under certain circumstances, such as when maintaining a collection of HostIdentifierString instances.
 func (addr *Address) ToAddressString() HostIdentifierString {
 	if addr.isIP() {
 		return addr.ToIP().ToAddressString()
