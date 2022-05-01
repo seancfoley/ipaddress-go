@@ -1244,6 +1244,10 @@ func (addr *IPAddress) GetIPVersion() IPVersion {
 	return addr.getIPVersion()
 }
 
+// ToAddressBase converts to an Address, a polymorphic type usable with all addresses and subnets.
+// Afterwards, you can convert back with ToIP.
+//
+// ToAddressBase can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (addr *IPAddress) ToAddressBase() *Address {
 	if addr != nil {
 		addr = addr.init()
@@ -1258,6 +1262,10 @@ func (addr *IPAddress) ToIP() *IPAddress {
 	return addr
 }
 
+// ToIPv6 converts to an IPv6Address if this address or subnet originated as an IPv6 address or subnet.
+// If not, ToIPv6 returns nil.
+//
+// ToIPv6 can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (addr *IPAddress) ToIPv6() *IPv6Address {
 	if addr.IsIPv6() {
 		return (*IPv6Address)(addr)
@@ -1265,6 +1273,10 @@ func (addr *IPAddress) ToIPv6() *IPv6Address {
 	return nil
 }
 
+// ToIPv4 converts to an IPv4Address if this address or subnet originated as an IPv4 address or subnet.
+// If not, ToIPv4 returns nil.
+//
+// ToIPv4 can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (addr *IPAddress) ToIPv4() *IPv4Address {
 	if addr.IsIPv4() {
 		return (*IPv4Address)(addr)
@@ -1272,8 +1284,18 @@ func (addr *IPAddress) ToIPv4() *IPv4Address {
 	return nil
 }
 
+// Wrap wraps this IP address, returning a WrappedIPAddress, an implementation of ExtendedIPSegmentSeries,
+// which can be used to write code that works with both IP addresses and IP address sections.
+// Wrap can be called with a nil receiver, wrapping a nil address.
 func (addr *IPAddress) Wrap() WrappedIPAddress {
 	return wrapIPAddress(addr)
+}
+
+// WrapAddress wraps this IP address, returning a WrappedAddress, an implementation of ExtendedSegmentSeries,
+// which can be used to write code that works with both addresses and address sections.
+// WrapAddress can be called with a nil receiver, wrapping a nil address.
+func (addr *IPAddress) WrapAddress() WrappedAddress {
+	return wrapAddress(addr.ToAddressBase())
 }
 
 // GetMaxSegmentValue returns the maximum possible segment value for this type of address.

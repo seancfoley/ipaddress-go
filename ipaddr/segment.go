@@ -777,7 +777,7 @@ func (seg *AddressSegment) GetCount() *big.Int {
 	return seg.getCount()
 }
 
-// IsIP returns true if this segment originated as an IPv4 or IPv6 segment, or a zero-valued IP segment.  If so, use ToIP to convert back to the IP-specific type.
+// IsIP returns true if this segment originated as an IPv4 or IPv6 segment, or an implicitly zero-valued IP segment.  If so, use ToIP to convert back to the IP-specific type.
 func (seg *AddressSegment) IsIP() bool {
 	return seg != nil && seg.matchesIPSegment()
 }
@@ -807,7 +807,7 @@ func (seg *AddressSegment) Iterator() SegmentIterator {
 	return seg.iterator()
 }
 
-// ToIP converts to an IPAddressSegment if this division originated as an IPv4 or IPv6 segment, or a zero-valued IP segment.
+// ToIP converts to an IPAddressSegment if this division originated as an IPv4 or IPv6 segment, or an implicitly zero-valued IP segment.
 // If not, ToIP returns nil.
 //
 // ToIP can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
@@ -818,6 +818,10 @@ func (seg *AddressSegment) ToIP() *IPAddressSegment {
 	return nil
 }
 
+// ToIPv4 converts to an IPv4AddressSegment if this segment originated as an IPv4 segment.
+// If not, ToIPv4 returns nil.
+//
+// ToIPv4 can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (seg *AddressSegment) ToIPv4() *IPv4AddressSegment {
 	if seg.IsIPv4() {
 		return (*IPv4AddressSegment)(unsafe.Pointer(seg))
@@ -825,6 +829,10 @@ func (seg *AddressSegment) ToIPv4() *IPv4AddressSegment {
 	return nil
 }
 
+// ToIPv6 converts to an IPv6AddressSegment if this segment originated as an IPv6 segment.
+// If not, ToIPv6 returns nil.
+//
+// ToIPv6 can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (seg *AddressSegment) ToIPv6() *IPv6AddressSegment {
 	if seg.IsIPv6() {
 		return (*IPv6AddressSegment)(unsafe.Pointer(seg))
@@ -832,6 +840,10 @@ func (seg *AddressSegment) ToIPv6() *IPv6AddressSegment {
 	return nil
 }
 
+// ToMAC converts to a MACAddressSegment if this segment originated as a MAC segment.
+// If not, ToMAC returns nil.
+//
+// ToMAC can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (seg *AddressSegment) ToMAC() *MACAddressSegment {
 	if seg.IsMAC() {
 		return (*MACAddressSegment)(seg)
@@ -839,10 +851,17 @@ func (seg *AddressSegment) ToMAC() *MACAddressSegment {
 	return nil
 }
 
+// ToSegmentBase is an identity method.
+//
+// ToSegmentBase can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (seg *AddressSegment) ToSegmentBase() *AddressSegment {
 	return seg
 }
 
+// ToDiv converts to an AddressDivision, a polymorphic type usable with all address segments and divisions.
+// Afterwards, you can convert back with ToSegmentBase.
+//
+// ToDiv can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (seg *AddressSegment) ToDiv() *AddressDivision {
 	return (*AddressDivision)(unsafe.Pointer(seg))
 }

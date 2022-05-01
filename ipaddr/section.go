@@ -2390,9 +2390,9 @@ func (section *AddressSection) ToBlock(segmentIndex int, lower, upper SegInt) *A
 	return section.toBlock(segmentIndex, lower, upper)
 }
 
-// IsAdaptiveZero returns true if the section was originally created as a zero-valued section (eg IPv4AddressSection{}),
+// IsAdaptiveZero returns true if the section was originally created as an implicitly zero-valued section (eg IPv4AddressSection{}),
 // meaning it was not constructed using a constructor function.
-// Such a grouping, which has no divisions or segments, is convertible to a zero-valued grouping of any type or version, whether IPv6, IPv4, MAC, etc
+// Such a grouping, which has no divisions or segments, is convertible to an implicitly zero-valued grouping of any type or version, whether IPv6, IPv4, MAC, etc
 // It is not considered equal to constructions of specific zero length sections or groupings like NewIPv4Section(nil) which can only represent a zero-length section of a single address type.
 func (section *AddressSection) IsAdaptiveZero() bool {
 	return section != nil && section.matchesZeroGrouping()
@@ -2418,11 +2418,15 @@ func (section *AddressSection) IsMAC() bool {
 	return section != nil && section.matchesMACSectionType()
 }
 
+// ToDivGrouping converts to an AddressDivisionGrouping, a polymorphic type usable with all address sections and division groupings.
+// Afterwards, you can convert back with ToSectionBase.
+//
+// ToDivGrouping can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (section *AddressSection) ToDivGrouping() *AddressDivisionGrouping {
 	return (*AddressDivisionGrouping)(unsafe.Pointer(section))
 }
 
-// ToIP converts to an IPAddressSection if this address section originated as an IPv4 or IPv6 section, or a zero-valued IP section.
+// ToIP converts to an IPAddressSection if this address section originated as an IPv4 or IPv6 section, or an implicitly zero-valued IP section.
 // If not, ToIP returns nil.
 //
 // ToIP can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
@@ -2433,6 +2437,10 @@ func (section *AddressSection) ToIP() *IPAddressSection {
 	return nil
 }
 
+// ToIPv6 converts to an IPv6AddressSection if this section originated as an IPv6 section.
+// If not, ToIPv6 returns nil.
+//
+// ToIPv6 can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (section *AddressSection) ToIPv6() *IPv6AddressSection {
 	if section.IsIPv6() {
 		return (*IPv6AddressSection)(unsafe.Pointer(section))
@@ -2440,6 +2448,10 @@ func (section *AddressSection) ToIPv6() *IPv6AddressSection {
 	return nil
 }
 
+// ToIPv4 converts to an IPv4AddressSection if this section originated as an IPv4 section.
+// If not, ToIPv4 returns nil.
+//
+// ToIPv4 can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (section *AddressSection) ToIPv4() *IPv4AddressSection {
 	if section.IsIPv4() {
 		return (*IPv4AddressSection)(unsafe.Pointer(section))
@@ -2447,6 +2459,10 @@ func (section *AddressSection) ToIPv4() *IPv4AddressSection {
 	return nil
 }
 
+// ToMAC converts to a MACAddressSection if this section originated as a MAC section.
+// If not, ToMAC returns nil.
+//
+// ToMAC can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (section *AddressSection) ToMAC() *MACAddressSection {
 	if section.IsMAC() {
 		return (*MACAddressSection)(unsafe.Pointer(section))
@@ -2454,12 +2470,17 @@ func (section *AddressSection) ToMAC() *MACAddressSection {
 	return nil
 }
 
+// ToSectionBase is an identity method.
+//
+// ToSectionBase can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (section *AddressSection) ToSectionBase() *AddressSection {
 	return section
 }
 
+// Wrap wraps this address section, returning a WrappedAddressSection, an implementation of ExtendedSegmentSeries,
+// which can be used to write code that works with both addresses and address sections.
 func (section *AddressSection) Wrap() WrappedAddressSection {
-	return WrapSection(section)
+	return wrapSection(section)
 }
 
 // Iterator provides an iterator to iterate through the individual address sections of this address section.

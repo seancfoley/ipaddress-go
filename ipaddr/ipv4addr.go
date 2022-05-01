@@ -1436,11 +1436,16 @@ func (addr *IPv4Address) ToCustomString(stringOptions addrstr.IPStringOptions) s
 	return addr.GetSection().toCustomZonedString(stringOptions, addr.zone)
 }
 
+// ToAddressBase converts to an Address, a polymorphic type usable with all addresses and subnets.
+// Afterwards, you can convert back with ToIPv4.
+//
+// ToAddressBase can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (addr *IPv4Address) ToAddressBase() *Address {
 	return addr.ToIP().ToAddressBase()
 }
 
 // ToIP converts to an IPAddress, a polymorphic type usable with all IP addresses and subnets.
+// Afterwards, you can convert back with ToIPv4.
 //
 // ToIP can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (addr *IPv4Address) ToIP() *IPAddress {
@@ -1450,8 +1455,18 @@ func (addr *IPv4Address) ToIP() *IPAddress {
 	return (*IPAddress)(addr)
 }
 
+// Wrap wraps this IP address, returning a WrappedIPAddress, an implementation of ExtendedIPSegmentSeries,
+// which can be used to write code that works with both IP addresses and IP address sections.
+// Wrap can be called with a nil receiver, wrapping a nil address.
 func (addr *IPv4Address) Wrap() WrappedIPAddress {
 	return wrapIPAddress(addr.ToIP())
+}
+
+// WrapAddress wraps this IP address, returning a WrappedAddress, an implementation of ExtendedSegmentSeries,
+// which can be used to write code that works with both addresses and address sections.
+// WrapAddress can be called with a nil receiver, wrapping a nil address.
+func (addr *IPv4Address) WrapAddress() WrappedAddress {
+	return wrapAddress(addr.ToAddressBase())
 }
 
 // ToKey creates the associated address key.

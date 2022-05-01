@@ -1283,8 +1283,18 @@ func (section *ipAddressSectionInternal) toCustomZonedString(stringOptions addrs
 	return toNormalizedIPZonedString(stringOptions, section.toIPAddressSection(), zone)
 }
 
+// Wrap wraps this IP address section, returning a WrappedIPAddressSection, an implementation of ExtendedIPSegmentSeries,
+// which can be used to write code that works with both IP addresses and IP address sections.
+// Wrap can be called with a nil receiver, wrapping a nil address section.
 func (section *ipAddressSectionInternal) Wrap() WrappedIPAddressSection {
 	return wrapIPSection(section.toIPAddressSection())
+}
+
+// WrapSection wraps this IP address section, returning a WrappedAddressSection, an implementation of ExtendedSegmentSeries,
+// which can be used to write code that works with both addresses and address sections.
+// WrapSection can be called with a nil receiver, wrapping a nil address section.
+func (section *ipAddressSectionInternal) WrapSection() WrappedAddressSection {
+	return wrapSection(section.toAddressSection())
 }
 
 func (section *ipAddressSectionInternal) toIPAddressSection() *IPAddressSection {
@@ -1629,22 +1639,34 @@ func (section *IPAddressSection) GetBlockCount(segments int) *big.Int {
 	return section.addressDivisionGroupingBase.GetBlockCount(segments)
 }
 
-// IsAdaptiveZero returns true if the section was originally created as a zero-valued section (eg IPv4AddressSection{}),
+// IsAdaptiveZero returns true if the section was originally created as an implicitly zero-valued section (eg IPv4AddressSection{}),
 // meaning it was not constructed using a constructor function.
-// Such a grouping, which has no divisions or segments, is convertible to a zero-valued grouping of any type or version, whether IPv6, IPv4, MAC, etc
+// Such a grouping, which has no divisions or segments, is convertible to an implicitly zero-valued grouping of any type or version, whether IPv6, IPv4, MAC, etc
 // It is not considered equal to constructions of specific zero length sections or groupings like NewIPv4Section(nil) which can only represent a zero-length section of a single address type.
 func (section *IPAddressSection) IsAdaptiveZero() bool {
 	return section != nil && section.matchesZeroGrouping()
 }
 
+// ToDivGrouping converts to an AddressDivisionGrouping, a polymorphic type usable with all address sections and division groupings.
+// Afterwards, you can convert back with ToIP.
+//
+// ToDivGrouping can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (section *IPAddressSection) ToDivGrouping() *AddressDivisionGrouping {
 	return section.ToSectionBase().ToDivGrouping()
 }
 
+// ToSectionBase converts to an AddressSection, a polymorphic type usable with all address sections.
+// Afterwards, you can convert back with ToIP.
+//
+// ToSectionBase can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (section *IPAddressSection) ToSectionBase() *AddressSection {
 	return (*AddressSection)(unsafe.Pointer(section))
 }
 
+// ToIPv6 converts to an IPv6AddressSection if this section originated as an IPv6 section.
+// If not, ToIPv6 returns nil.
+//
+// ToIPv6 can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (section *IPAddressSection) ToIPv6() *IPv6AddressSection {
 	if section.IsIPv6() {
 		return (*IPv6AddressSection)(section)
@@ -1652,6 +1674,10 @@ func (section *IPAddressSection) ToIPv6() *IPv6AddressSection {
 	return nil
 }
 
+// ToIPv4 converts to an IPv4AddressSection if this section originated as an IPv4 section.
+// If not, ToIPv4 returns nil.
+//
+// ToIPv4 can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (section *IPAddressSection) ToIPv4() *IPv4AddressSection {
 	if section.IsIPv4() {
 		return (*IPv4AddressSection)(section)

@@ -375,16 +375,26 @@ func (section *MACAddressSection) GetSegment(index int) *MACAddressSegment {
 	return section.getDivision(index).ToMAC()
 }
 
+// ToDivGrouping converts to an AddressDivisionGrouping, a polymorphic type usable with all address sections and division groupings.
+// Afterwards, you can convert back with ToMAC.
+//
+// ToDivGrouping can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (section *MACAddressSection) ToDivGrouping() *AddressDivisionGrouping {
 	return section.ToSectionBase().ToDivGrouping()
 }
 
+// ToSectionBase converts to an AddressSection, a polymorphic type usable with all address sections.
+// Afterwards, you can convert back with ToMAC.
+//
+// ToSectionBase can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (section *MACAddressSection) ToSectionBase() *AddressSection {
 	return (*AddressSection)(section)
 }
 
+// Wrap wraps this address section, returning a WrappedAddressSection, an implementation of ExtendedSegmentSeries,
+// which can be used to write code that works with both addresses and address sections.
 func (section *MACAddressSection) Wrap() WrappedAddressSection {
-	return WrapSection(section.ToSectionBase())
+	return wrapSection(section.ToSectionBase())
 }
 
 // GetTrailingSection gets the subsection from the series starting from the given index.
@@ -528,9 +538,9 @@ func (section *MACAddressSection) IncrementBoundary(increment int64) *MACAddress
 	return section.incrementBoundary(increment).ToMAC()
 }
 
-// IsAdaptiveZero returns true if the section was originally created as a zero-valued section (eg MACAddressSection{}),
+// IsAdaptiveZero returns true if the section was originally created as an implicitly zero-valued section (eg MACAddressSection{}),
 // meaning it was not constructed using a constructor function.
-// Such a grouping, which has no divisions or segments, is convertible to a zero-valued grouping of any type or version, whether IPv6, IPv4, MAC, etc
+// Such a grouping, which has no divisions or segments, is convertible to an implicitly zero-valued grouping of any type or version, whether IPv6, IPv4, MAC, etc
 // It is not considered equal to constructions of specific zero length sections or groupings like NewIPv4Section(nil) which can only represent a zero-length section of a single address type.
 func (section *MACAddressSection) IsAdaptiveZero() bool {
 	return section != nil && section.matchesZeroGrouping()

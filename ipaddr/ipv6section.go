@@ -1113,9 +1113,9 @@ func (section *IPv6AddressSection) ReplaceLen(startIndex, endIndex int, replacem
 	return section.replaceLen(startIndex, endIndex, replacement.ToIP(), replacementStartIndex, replacementEndIndex, ipv6BitsToSegmentBitshift).ToIPv6()
 }
 
-// IsAdaptiveZero returns true if the section was originally created as a zero-valued section or grouping (eg IPv4AddressSection{}),
+// IsAdaptiveZero returns true if the section was originally created as an implicitly zero-valued section or grouping (eg IPv4AddressSection{}),
 // meaning it was not constructed using a constructor function.
-// Such a grouping, which has no divisions or segments, is convertible to a zero-valued grouping of any type or version, whether IPv6, IPv4, MAC, etc
+// Such a grouping, which has no divisions or segments, is convertible to an implicitly zero-valued grouping of any type or version, whether IPv6, IPv4, MAC, etc
 // It is not considered equal to constructions of specific zero length sections or groupings like NewIPv4Section(nil) which can only represent a zero-length section of a single address type.
 func (section *IPv6AddressSection) IsAdaptiveZero() bool {
 	return section != nil && section.matchesZeroGrouping()
@@ -1132,6 +1132,8 @@ var (
 	uncWildcards = new(addrstr.WildcardOptionsBuilder).SetWildcardOptions(addrstr.WildcardsNetworkOnly).SetWildcards(
 		new(addrstr.WildcardsBuilder).SetRangeSeparator(IPv6UncRangeSeparatorStr).SetWildcard(SegmentWildcardStr).ToWildcards()).ToOptions()
 	base85Wildcards = new(addrstr.WildcardsBuilder).SetRangeSeparator(AlternativeRangeSeparatorStr).ToWildcards()
+	_               = uncWildcards
+	_               = base85Wildcards
 
 	mixedParams         = new(addrstr.IPv6StringOptionsBuilder).SetMixed(true).SetCompressOptions(compressMixed).ToOptions()
 	ipv6FullParams      = new(addrstr.IPv6StringOptionsBuilder).SetExpandedSegments(true).SetWildcardOptions(wildcardsRangeOnlyNetworkOnly).ToOptions()
@@ -1253,7 +1255,7 @@ func (section *IPv6AddressSection) ToCompressedString() string {
 }
 
 // This produces the mixed IPv6/IPv4 string.  It is the shortest such string (ie fully compressed).
-// For some address sections with ranges of values in the IPv4 part of the address, there is not mixed string, and an error is returned.
+// For some address sections with ranges of values in the IPv4 part of the address, there is no mixed string, and an error is returned.
 func (section *IPv6AddressSection) toMixedString() (string, addrerr.IncompatibleAddressError) {
 	cache := section.getStringCache()
 	if cache == nil {
@@ -1551,10 +1553,18 @@ func (section *IPv6AddressSection) GetSegmentStrings() []string {
 	return section.getSegmentStrings()
 }
 
+// ToDivGrouping converts to an AddressDivisionGrouping, a polymorphic type usable with all address sections and division groupings.
+// Afterwards, you can convert back with ToIPv6.
+//
+// ToDivGrouping can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (section *IPv6AddressSection) ToDivGrouping() *AddressDivisionGrouping {
 	return section.ToSectionBase().ToDivGrouping()
 }
 
+// ToSectionBase converts to an AddressSection, a polymorphic type usable with all address sections.
+// Afterwards, you can convert back with ToIPv6.
+//
+// ToSectionBase can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (section *IPv6AddressSection) ToSectionBase() *AddressSection {
 	return section.ToIP().ToSectionBase()
 }
@@ -1786,13 +1796,17 @@ func (grouping *IPv6v4MixedAddressGrouping) IsPrefixed() bool {
 	return grouping != nil && grouping.isPrefixed()
 }
 
-// IsAdaptiveZero returns true if the grouping was originally created as a zero-valued grouping (eg IPv6v4MixedAddressGrouping{}),
+// IsAdaptiveZero returns true if the grouping was originally created as an implicitly zero-valued grouping (eg IPv6v4MixedAddressGrouping{}),
 // meaning it was not constructed using a constructor function.
-// Such a grouping, which has no divisions or segments, is convertible to a zero-valued grouping of any type or version, whether IPv6, IPv4, MAC, etc
+// Such a grouping, which has no divisions or segments, is convertible to an implicitly zero-valued grouping of any type or version, whether IPv6, IPv4, MAC, etc
 func (grouping *IPv6v4MixedAddressGrouping) IsAdaptiveZero() bool {
 	return grouping != nil && grouping.matchesZeroGrouping()
 }
 
+// ToDivGrouping converts to an AddressDivisionGrouping, a polymorphic type usable with all address sections and division groupings.
+// Afterwards, you can convert back with ToMixedIPv6v4.
+//
+// ToDivGrouping can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (grouping *IPv6v4MixedAddressGrouping) ToDivGrouping() *AddressDivisionGrouping {
 	return (*AddressDivisionGrouping)(grouping)
 }

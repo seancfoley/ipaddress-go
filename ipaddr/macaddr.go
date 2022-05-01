@@ -1108,6 +1108,10 @@ func (addr *MACAddress) ToAddressString() *MACAddressString {
 	return hostIdStr.(*MACAddressString)
 }
 
+// ToAddressBase converts to an Address, a polymorphic type usable with all addresses and subnets.
+// Afterwards, you can convert back with ToMAC.
+//
+// ToAddressBase can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (addr *MACAddress) ToAddressBase() *Address {
 	if addr != nil {
 		addr = addr.init()
@@ -1115,8 +1119,10 @@ func (addr *MACAddress) ToAddressBase() *Address {
 	return (*Address)(addr)
 }
 
+// Wrap wraps this address, returning a WrappedAddress, an implementation of ExtendedSegmentSeries,
+// which can be used to write code that works with both addresses and address sections.
 func (addr *MACAddress) Wrap() WrappedAddress {
-	return WrapAddress(addr.ToAddressBase())
+	return wrapAddress(addr.ToAddressBase())
 }
 
 // ToKey creates the associated address key.

@@ -45,7 +45,7 @@ func (trie *MACAddressTrie) ToAssociative() *MACAddressAssociativeTrie {
 	return (*MACAddressAssociativeTrie)(unsafe.Pointer(trie))
 }
 
-// GetRoot returns the root node of this trie, which can be nil for a zero-valued uninitialized trie, but not for any other trie
+// GetRoot returns the root node of this trie, which can be nil for an implicitly zero-valued uninitialized trie, but not for any other trie
 func (trie *MACAddressTrie) GetRoot() *MACAddressTrieNode {
 	return trie.getRoot().ToMAC()
 }
@@ -440,7 +440,7 @@ func (trie *MACAddressAssociativeTrie) ToAssociativeBase() *AssociativeAddressTr
 	return (*AssociativeAddressTrie)(trie)
 }
 
-// GetRoot returns the root node of this trie, which can be nil for a zero-valued uninitialized trie, but not for any other trie
+// GetRoot returns the root node of this trie, which can be nil for an implicitly zero-valued uninitialized trie, but not for any other trie
 func (trie *MACAddressAssociativeTrie) GetRoot() *MACAddressAssociativeTrieNode {
 	return trie.getRoot().ToMACAssociative()
 }

@@ -60,7 +60,7 @@ func (trie *addressTrie) Clear() {
 	trie.trie.Clear()
 }
 
-// GetRoot returns the root node of this trie, which can be nil for a zero-valued uninitialized trie, but not for any other trie
+// GetRoot returns the root node of this trie, which can be nil for an implicitly zero-valued uninitialized trie, but not for any other trie
 func (trie *addressTrie) getRoot() *AddressTrieNode {
 	return toAddressTrieNode(trie.trie.GetRoot())
 }
@@ -338,8 +338,8 @@ func (trie *AddressTrie) ToIPv4() *IPv4AddressTrie {
 	return nil
 }
 
-// ToIPv6 converts this trie to an IPv4 trie.  If this trie has no root, or the trie has an IPv4 root, the trie can be converted, otherwise, this method returns nil.
-// The underlying trie does not change.  The IPv4 type simply provides type safety, because you cannot mix different address versions or types in the same trie.
+// ToIPv6 converts this trie to an IPv6 trie.  If this trie has no root, or the trie has an IPv6 root, the trie can be converted, otherwise, this method returns nil.
+// The underlying trie does not change.  The IPv6 type simply provides type safety, because you cannot mix different address versions or types in the same trie.
 // Mixing versions and or types will cause a panic.
 func (trie *AddressTrie) ToIPv6() *IPv6AddressTrie {
 	if trie != nil {
@@ -350,8 +350,8 @@ func (trie *AddressTrie) ToIPv6() *IPv6AddressTrie {
 	return nil
 }
 
-// ToMAC converts this trie to an IPv4 trie.  If this trie has no root, or the trie has an IPv4 root, the trie can be converted, otherwise, this method returns nil.
-// The underlying trie does not change.  The IPv4 type simply provides type safety, because you cannot mix different address versions or types in the same trie.
+// ToMAC converts this trie to an MAC trie.  If this trie has no root, or the trie has an MAC root, the trie can be converted, otherwise, this method returns nil.
+// The underlying trie does not change.  The MAC type simply provides type safety, because you cannot mix different address versions or types in the same trie.
 // Mixing versions and or types will cause a panic.
 func (trie *AddressTrie) ToMAC() *MACAddressTrie {
 	if trie != nil {
@@ -362,7 +362,7 @@ func (trie *AddressTrie) ToMAC() *MACAddressTrie {
 	return nil
 }
 
-// ToAssociative converts this trie to an IPv4 associative trie.  The underlying trie does not change.
+// ToAssociative converts this trie to an associative trie.  The underlying trie does not change.
 // Associative tries provide additional API to associate each node with a mapped value.
 func (trie *AddressTrie) ToAssociative() *AssociativeAddressTrie {
 	return (*AssociativeAddressTrie)(unsafe.Pointer(trie))
@@ -380,8 +380,8 @@ func (trie *AddressTrie) ToIPv4Associative() *IPv4AddressAssociativeTrie {
 	return nil
 }
 
-// ToIPv6Associative converts this trie to an IPv4 associative trie.  If this trie has no root, or the trie has an IPv4 root, the trie can be converted, otherwise, this method returns nil.
-// The underlying trie does not change.  The IPv4 type simply provides type safety, because you cannot mix different address versions or types in the same trie.
+// ToIPv6Associative converts this trie to an IPv6 associative trie.  If this trie has no root, or the trie has an IPv6 root, the trie can be converted, otherwise, this method returns nil.
+// The underlying trie does not change.  The IPv6 type simply provides type safety, because you cannot mix different address versions or types in the same trie.
 // Mixing versions and or types will cause a panic.
 func (trie *AddressTrie) ToIPv6Associative() *IPv6AddressAssociativeTrie {
 	if trie != nil {
@@ -392,8 +392,8 @@ func (trie *AddressTrie) ToIPv6Associative() *IPv6AddressAssociativeTrie {
 	return nil
 }
 
-// ToMACAssociative converts this trie to an IPv4 associative trie.  If this trie has no root, or the trie has an IPv4 root, the trie can be converted, otherwise, this method returns nil.
-// The underlying trie does not change.  The IPv4 type simply provides type safety, because you cannot mix different address versions or types in the same trie.
+// ToMACAssociative converts this trie to an MAC associative trie.  If this trie has no root, or the trie has an MAC root, the trie can be converted, otherwise, this method returns nil.
+// The underlying trie does not change.  The MAC type simply provides type safety, because you cannot mix different address versions or types in the same trie.
 // Mixing versions and or types will cause a panic.
 func (trie *AddressTrie) ToMACAssociative() *MACAddressAssociativeTrie {
 	if trie != nil {
@@ -404,7 +404,7 @@ func (trie *AddressTrie) ToMACAssociative() *MACAddressAssociativeTrie {
 	return nil
 }
 
-// GetRoot returns the root node of this trie, which can be nil for a zero-valued uninitialized trie, but not for any other trie
+// GetRoot returns the root node of this trie, which can be nil for an implicitly zero-valued uninitialized trie, but not for any other trie
 func (trie *AddressTrie) GetRoot() *AddressTrieNode {
 	return trie.getRoot()
 }
@@ -827,7 +827,7 @@ func (trie *AssociativeAddressTrie) ToIPv4() *IPv4AddressAssociativeTrie {
 	return nil
 }
 
-// GetRoot returns the root node of this trie, which can be nil for a zero-valued uninitialized trie, but not for any other trie
+// GetRoot returns the root node of this trie, which can be nil for an implicitly zero-valued uninitialized trie, but not for any other trie
 func (trie *AssociativeAddressTrie) GetRoot() *AssociativeAddressTrieNode {
 	return trie.getRoot().ToAssociative()
 }

@@ -145,9 +145,9 @@ type AddressComponent interface { //AddressSegment and above, AddressSegmentSeri
 type StandardDivGroupingType interface {
 	AddressDivisionSeries
 
-	// IsAdaptiveZero returns true if the division grouping was originally created as a zero-valued section or grouping (eg IPv4AddressSection{}),
+	// IsAdaptiveZero returns true if the division grouping was originally created as an implicitly zero-valued section or grouping (eg IPv4AddressSection{}),
 	// meaning it was not constructed using a constructor function.
-	// Such a grouping, which has no divisions or segments, is convertible to a zero-valued grouping of any type or version, whether IPv6, IPv4, MAC, etc
+	// Such a grouping, which has no divisions or segments, is convertible to an implicitly zero-valued grouping of any type or version, whether IPv6, IPv4, MAC, etc
 	IsAdaptiveZero() bool
 
 	// CompareSize compares the counts of two division groupings, the number of individual division groupings within.
@@ -157,6 +157,9 @@ type StandardDivGroupingType interface {
 	// CompareSize returns a positive integer if this address division grouping has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
 	CompareSize(StandardDivGroupingType) int
 
+	// ToDivGrouping converts to an AddressDivisionGrouping, a polymorphic type usable with all address sections and division groupings.
+	//
+	// ToDivGrouping implementations can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 	ToDivGrouping() *AddressDivisionGrouping
 }
 
@@ -466,6 +469,9 @@ type AddressSectionType interface {
 	// All prefix bits of this section must be present in the other section to be comparable.
 	PrefixContains(AddressSectionType) bool
 
+	// ToSectionBase converts to an AddressSection, a polymorphic type usable with all address sections.
+	//
+	// ToSectionBase implementations can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 	ToSectionBase() *AddressSection
 }
 
@@ -479,7 +485,7 @@ var _, _, _, _, _ AddressSectionType = &AddressSection{},
 
 // AddressType represents any address, all of which can be represented by the base type Address.
 // This includes IPAddress, IPv4Address, IPv6Address, and MACAddress.
-// It can be useful as a parameter for functions to take any address type, while inside the function you can convert to *Address using ToAddress()
+// It can be useful as a parameter for functions to take any address type, while inside the function you can convert to *Address using ToAddressBase
 type AddressType interface {
 	AddressSegmentSeries
 
@@ -510,6 +516,9 @@ type AddressType interface {
 	// It returns whether the prefix of this address contains all values of the same prefix length in the given address.
 	PrefixContains(AddressType) bool
 
+	// ToAddressBase converts to an Address, a polymorphic type usable with all addresses and subnets.
+	//
+	// ToAddressBase implementations can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 	ToAddressBase() *Address
 }
 
@@ -561,6 +570,8 @@ type IPAddressType interface {
 
 	ipAddressRange
 
+	// Wrap wraps this IP address, returning a WrappedIPAddress, an implementation of ExtendedIPSegmentSeries,
+	// which can be used to write code that works with both IP addresses and IP address sections.
 	Wrap() WrappedIPAddress
 
 	// ToIP converts to an IPAddress, a polymorphic type usable with all IP addresses and subnets.

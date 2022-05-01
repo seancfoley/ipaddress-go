@@ -161,7 +161,7 @@ func (a addressTrieKey) ToMinUpper() tree.TrieKey {
 }
 
 func getSegmentPrefLen(
-	addr AddressSegmentSeries,
+	_ AddressSegmentSeries,
 	prefLen PrefixLen,
 	bitsPerSegment,
 	bitsMatchedSoFar BitCount,
@@ -378,6 +378,10 @@ func (node *AddressTrieNode) toTrieNode() *tree.BinTrieNode {
 	return (*tree.BinTrieNode)(unsafe.Pointer(node))
 }
 
+// ToIPv4 converts to an IPv4AddressTrieNode if this node originated as an IPv4 address trie node.
+// If not, ToIPv4 returns nil.
+//
+// ToIPv4 can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (node *AddressTrieNode) ToIPv4() *IPv4AddressTrieNode {
 	if node == nil || node.GetKey().IsIPv4() {
 		return (*IPv4AddressTrieNode)(node)
@@ -385,6 +389,10 @@ func (node *AddressTrieNode) ToIPv4() *IPv4AddressTrieNode {
 	return nil
 }
 
+// ToIPv6 converts to an IPv6AddressTrieNode if this node originated as an IPv6 address trie node.
+// If not, ToIPv6 returns nil.
+//
+// ToIPv6 can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (node *AddressTrieNode) ToIPv6() *IPv6AddressTrieNode {
 	if node == nil || node.GetKey().IsIPv6() {
 		return (*IPv6AddressTrieNode)(node)
@@ -392,6 +400,10 @@ func (node *AddressTrieNode) ToIPv6() *IPv6AddressTrieNode {
 	return nil
 }
 
+// ToMAC converts to an MACAddressTrieNode if this node originated as an MAC address trie node.
+// If not, ToMAC returns nil.
+//
+// ToMAC can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (node *AddressTrieNode) ToMAC() *MACAddressTrieNode {
 	if node == nil || node.GetKey().IsMAC() {
 		return (*MACAddressTrieNode)(node)
@@ -866,6 +878,10 @@ func (node *AssociativeAddressTrieNode) ToBase() *AddressTrieNode {
 	return (*AddressTrieNode)(node)
 }
 
+// ToIPv4 converts to an IPv4AddressAssociativeTrieNode if this node originated as an IPv4 address trie node.
+// If not, ToIPv4 returns nil.
+//
+// ToIPv4 can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (node *AssociativeAddressTrieNode) ToIPv4() *IPv4AddressAssociativeTrieNode {
 	if node == nil || node.GetKey().IsIPv4() {
 		return (*IPv4AddressAssociativeTrieNode)(node)
@@ -873,6 +889,10 @@ func (node *AssociativeAddressTrieNode) ToIPv4() *IPv4AddressAssociativeTrieNode
 	return nil
 }
 
+// ToIPv6 converts to an IPv6AddressAssociativeTrieNode if this node originated as an IPv6 address trie node.
+// If not, ToIPv6 returns nil.
+//
+// ToIPv6 can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (node *AssociativeAddressTrieNode) ToIPv6() *IPv6AddressAssociativeTrieNode {
 	if node == nil || node.GetKey().IsIPv6() {
 		return (*IPv6AddressAssociativeTrieNode)(node)
@@ -880,6 +900,10 @@ func (node *AssociativeAddressTrieNode) ToIPv6() *IPv6AddressAssociativeTrieNode
 	return nil
 }
 
+// ToMAC converts to an MACAddressAssociativeTrieNode if this node originated as a MAC address trie node.
+// If not, ToMAC returns nil.
+//
+// ToMAC can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (node *AssociativeAddressTrieNode) ToMAC() *MACAddressAssociativeTrieNode {
 	if node == nil || node.GetKey().IsMAC() {
 		return (*MACAddressAssociativeTrieNode)(node)

@@ -557,15 +557,24 @@ func (seg *IPv6AddressSegment) ReverseBytes() (res *IPv6AddressSegment, err addr
 	return
 }
 
+// ToDiv converts to an AddressDivision, a polymorphic type usable with all address segments and divisions.
+// Afterwards, you can convert back with ToIPv6.
+//
+// ToDiv can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (seg *IPv6AddressSegment) ToDiv() *AddressDivision {
 	return seg.ToIP().ToDiv()
 }
 
+// ToSegmentBase converts to an AddressSegment, a polymorphic type usable with all address segments.
+// Afterwards, you can convert back with ToIPv6.
+//
+// ToSegmentBase can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (seg *IPv6AddressSegment) ToSegmentBase() *AddressSegment {
 	return seg.ToIP().ToSegmentBase()
 }
 
 // ToIP converts to an IPAddressSegment, a polymorphic type usable with all IP address segments.
+// Afterwards, you can convert back with ToIPv6.
 //
 // ToIP can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (seg *IPv6AddressSegment) ToIP() *IPAddressSegment {

@@ -45,7 +45,7 @@ func (trie *IPv4AddressTrie) ToAssociative() *IPv4AddressAssociativeTrie {
 	return (*IPv4AddressAssociativeTrie)(unsafe.Pointer(trie))
 }
 
-// GetRoot returns the root node of this trie, which can be nil for a zero-valued uninitialized trie, but not for any other trie
+// GetRoot returns the root node of this trie, which can be nil for an implicitly zero-valued uninitialized trie, but not for any other trie
 func (trie *IPv4AddressTrie) GetRoot() *IPv4AddressTrieNode {
 	return trie.getRoot().ToIPv4()
 }
@@ -431,7 +431,7 @@ func (trie *IPv4AddressAssociativeTrie) ToAssociativeBase() *AssociativeAddressT
 	return (*AssociativeAddressTrie)(trie)
 }
 
-// GetRoot returns the root node of this trie, which can be nil for a zero-valued uninitialized trie, but not for any other trie
+// GetRoot returns the root node of this trie, which can be nil for an implicitly zero-valued uninitialized trie, but not for any other trie
 func (trie *IPv4AddressAssociativeTrie) GetRoot() *IPv4AddressAssociativeTrieNode {
 	return trie.getRoot().ToIPv4Associative()
 }

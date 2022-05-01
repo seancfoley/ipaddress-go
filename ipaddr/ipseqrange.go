@@ -963,6 +963,10 @@ func (rng *IPAddressSeqRange) IsIPv6() bool { // returns false when lower is nil
 	return rng != nil && rng.GetLower().IsIPv6()
 }
 
+// ToIPv4 converts to an IPv4AddressSeqRange if this address range originated as an IPv4 address range.
+// If not, ToIPv4 returns nil.
+//
+// ToIPv4 can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (rng *IPAddressSeqRange) ToIPv4() *IPv4AddressSeqRange {
 	if rng.IsIPv4() {
 		return (*IPv4AddressSeqRange)(rng)
@@ -970,6 +974,10 @@ func (rng *IPAddressSeqRange) ToIPv4() *IPv4AddressSeqRange {
 	return nil
 }
 
+// ToIPv6 converts to an IPv6AddressSeqRange if this address range originated as an IPv6 address range.
+// If not, ToIPv6 returns nil.
+//
+// ToIPv6 can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (rng *IPAddressSeqRange) ToIPv6() *IPv6AddressSeqRange {
 	if rng.IsIPv6() {
 		return (*IPv6AddressSeqRange)(rng)

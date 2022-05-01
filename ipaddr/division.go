@@ -996,11 +996,12 @@ func (div *AddressDivision) GetMaxValue() DivInt {
 	return div.getMaxValue()
 }
 
+// IsSegmentBase returns true if this division originated as an address segment, and this can be converted back with ToSegmentBase.
 func (div *AddressDivision) IsSegmentBase() bool {
 	return div != nil && div.matchesSegment()
 }
 
-// IsIP returns true if this division originated as an IPv4 or IPv6 segment, or a zero-valued IP segment.  If so, use ToIP to convert back to the IP-specific type.
+// IsIP returns true if this division originated as an IPv4 or IPv6 segment, or an implicitly zero-valued IP segment.  If so, use ToIP to convert back to the IP-specific type.
 func (div *AddressDivision) IsIP() bool {
 	return div != nil && div.matchesIPSegment()
 }
@@ -1020,7 +1021,7 @@ func (div *AddressDivision) IsMAC() bool {
 	return div != nil && div.matchesMACSegment()
 }
 
-// ToIP converts to an IPAddressSegment if this division originated as an IPv4 or IPv6 segment, or a zero-valued IP segment.
+// ToIP converts to an IPAddressSegment if this division originated as an IPv4 or IPv6 segment, or an implicitly zero-valued IP segment.
 // If not, ToIP returns nil.
 //
 // ToIP can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
@@ -1031,6 +1032,10 @@ func (div *AddressDivision) ToIP() *IPAddressSegment {
 	return nil
 }
 
+// ToIPv4 converts to an IPv4AddressSegment if this division originated as an IPv4 segment.
+// If not, ToIPv4 returns nil.
+//
+// ToIPv4 can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (div *AddressDivision) ToIPv4() *IPv4AddressSegment {
 	if div.IsIPv4() {
 		return (*IPv4AddressSegment)(unsafe.Pointer(div))
@@ -1038,6 +1043,10 @@ func (div *AddressDivision) ToIPv4() *IPv4AddressSegment {
 	return nil
 }
 
+// ToIPv6 converts to an IPv6AddressSegment if this division originated as an IPv6 segment.
+// If not, ToIPv6 returns nil.
+//
+// ToIPv6 can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (div *AddressDivision) ToIPv6() *IPv6AddressSegment {
 	if div.IsIPv6() {
 		return (*IPv6AddressSegment)(unsafe.Pointer(div))
@@ -1045,6 +1054,10 @@ func (div *AddressDivision) ToIPv6() *IPv6AddressSegment {
 	return nil
 }
 
+// ToMAC converts to a MACAddressSegment if this division originated as a MAC segment.
+// If not, ToMAC returns nil.
+//
+// ToMAC can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (div *AddressDivision) ToMAC() *MACAddressSegment {
 	if div.IsMAC() {
 		return (*MACAddressSegment)(unsafe.Pointer(div))
@@ -1052,6 +1065,10 @@ func (div *AddressDivision) ToMAC() *MACAddressSegment {
 	return nil
 }
 
+// ToSegmentBase converts to an AddressSegment if this division originated as a segment.
+// If not, ToSegmentBase returns nil.
+//
+// ToSegmentBase can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (div *AddressDivision) ToSegmentBase() *AddressSegment {
 	if div.IsSegmentBase() {
 		return (*AddressSegment)(unsafe.Pointer(div))
@@ -1059,6 +1076,9 @@ func (div *AddressDivision) ToSegmentBase() *AddressSegment {
 	return nil
 }
 
+// ToDiv is an identity method.
+//
+// ToDiv can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (div *AddressDivision) ToDiv() *AddressDivision {
 	return div
 }
@@ -1077,6 +1097,10 @@ func (div *AddressDivision) GetWildcardString() string {
 	return div.getWildcardString()
 }
 
+// String produces a string that is useful when a division string is provided with no context.
+// It uses a string prefix for octal or hex (0 or 0x), and does not use the wildcard '*', because division size is variable, and so '*' is ambiguous.
+// GetWildcardString is more appropriate in context with other segments or divisions.  It does not use a string prefix and uses '*' for full-range segments.
+// GetString is more appropriate in context with prefix lengths, it uses zeros instead of wildcards for prefix block ranges.
 func (div *AddressDivision) String() string {
 	if div == nil {
 		return nilString()

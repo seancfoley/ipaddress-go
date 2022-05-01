@@ -22,7 +22,7 @@ import (
 )
 
 // ExtendedSegmentSeries wraps either an Address or AddressSection.
-// ExtendedSegmentSeries can be used to write code that works with both Addresses and Address Sections,
+// ExtendedSegmentSeries can be used to write code that works with both addresses and address sections,
 // going further than AddressSegmentSeries to offer additional methods with the series types in their signature.
 type ExtendedSegmentSeries interface {
 	AddressSegmentSeries
@@ -84,7 +84,7 @@ type ExtendedSegmentSeries interface {
 	// IsMAC returns true if this series originated as a MAC series.  If so, use ToMAC to convert back to the MAC-specific type.
 	IsMAC() bool
 
-	// ToIP converts to an IPAddressSegmentSeries if this series originated as IPv4 or IPv6, or a zero-valued IP.
+	// ToIP converts to an IPAddressSegmentSeries if this series originated as IPv4 or IPv6, or an implicitly zero-valued IP.
 	// If not, ToIP returns nil.
 	ToIP() IPAddressSegmentSeries
 
@@ -265,7 +265,7 @@ func (addr WrappedAddress) ToIPv6() IPv6AddressSegmentSeries {
 	return addr.Address.ToIPv6()
 }
 
-// ToIP converts to an IP address if this originated as IPv4 or IPv6, or a zero-valued IP.
+// ToIP converts to an IP address if this originated as IPv4 or IPv6, or an implicitly zero-valued IP.
 // If not, ToIP returns nil.
 func (addr WrappedAddress) ToIP() IPAddressSegmentSeries {
 	return addr.Address.ToIP()
@@ -306,7 +306,7 @@ func (addr WrappedAddress) PrefixBlockIterator() ExtendedSegmentSeriesIterator {
 // ToBlock creates a new series block by changing the segment at the given index to have the given lower and upper value,
 // and changing the following segments to be full-range.
 func (addr WrappedAddress) ToBlock(segmentIndex int, lower, upper SegInt) ExtendedSegmentSeries {
-	return WrapAddress(addr.Address.ToBlock(segmentIndex, lower, upper))
+	return wrapAddress(addr.Address.ToBlock(segmentIndex, lower, upper))
 }
 
 // ToPrefixBlock returns the series with the same prefix as this series while the remaining bits span all values.
@@ -314,13 +314,13 @@ func (addr WrappedAddress) ToBlock(segmentIndex int, lower, upper SegInt) Extend
 //
 // If this series has no prefix, this series is returned.
 func (addr WrappedAddress) ToPrefixBlock() ExtendedSegmentSeries {
-	return WrapAddress(addr.Address.ToPrefixBlock())
+	return wrapAddress(addr.Address.ToPrefixBlock())
 }
 
 // ToPrefixBlockLen returns the series with the same prefix of the given length as this series while the remaining bits span all values.
 // The returned series will be the block of all series with the same prefix.
 func (addr WrappedAddress) ToPrefixBlockLen(prefLen BitCount) ExtendedSegmentSeries {
-	return WrapAddress(addr.Address.ToPrefixBlockLen(prefLen))
+	return wrapAddress(addr.Address.ToPrefixBlockLen(prefLen))
 }
 
 // Increment returns the item that is the given increment upwards into the range,
@@ -361,13 +361,13 @@ func (addr WrappedAddress) IncrementBoundary(i int64) ExtendedSegmentSeries {
 // GetLower returns the series in the range with the lowest numeric value,
 // which will be the same series if it represents a single value.
 func (addr WrappedAddress) GetLower() ExtendedSegmentSeries {
-	return WrapAddress(addr.Address.GetLower())
+	return wrapAddress(addr.Address.GetLower())
 }
 
 // GetUpper returns the series in the range with the highest numeric value,
 // which will be the same series if it represents a single value.
 func (addr WrappedAddress) GetUpper() ExtendedSegmentSeries {
-	return WrapAddress(addr.Address.GetUpper())
+	return wrapAddress(addr.Address.GetUpper())
 }
 
 // GetSection returns the backing section for this series, comprising all segments.
@@ -389,12 +389,12 @@ func (addr WrappedAddress) AssignPrefixForSingleBlock() ExtendedSegmentSeries {
 //
 // In other words, this method assigns a prefix length to this series matching the largest prefix block in this series.
 func (addr WrappedAddress) AssignMinPrefixForBlock() ExtendedSegmentSeries {
-	return WrapAddress(addr.Address.AssignMinPrefixForBlock())
+	return wrapAddress(addr.Address.AssignMinPrefixForBlock())
 }
 
 // WithoutPrefixLen provides the same address series but with no prefix length.  The values remain unchanged.
 func (addr WrappedAddress) WithoutPrefixLen() ExtendedSegmentSeries {
-	return WrapAddress(addr.Address.WithoutPrefixLen())
+	return wrapAddress(addr.Address.WithoutPrefixLen())
 }
 
 // Contains returns whether this is same type and version as the given address series and whether it contains all values in the given series.
@@ -430,7 +430,7 @@ func (addr WrappedAddress) CompareSize(other ExtendedSegmentSeries) int {
 // A prefix length will not be set to a value lower than zero or beyond the bit length of the series.
 // The provided prefix length will be adjusted to these boundaries if necessary.
 func (addr WrappedAddress) SetPrefixLen(prefixLen BitCount) ExtendedSegmentSeries {
-	return WrapAddress(addr.Address.SetPrefixLen(prefixLen))
+	return wrapAddress(addr.Address.SetPrefixLen(prefixLen))
 }
 
 // SetPrefixLenZeroed sets the prefix length.
@@ -455,7 +455,7 @@ func (addr WrappedAddress) SetPrefixLenZeroed(prefixLen BitCount) (ExtendedSegme
 // If this series has no prefix length, then the prefix length will be set to the adjustment if positive,
 // or it will be set to the adjustment added to the bit count if negative.
 func (addr WrappedAddress) AdjustPrefixLen(prefixLen BitCount) ExtendedSegmentSeries {
-	return WrapAddress(addr.Address.AdjustPrefixLen(prefixLen))
+	return wrapAddress(addr.Address.AdjustPrefixLen(prefixLen))
 }
 
 // AdjustPrefixLenZeroed increases or decreases the prefix length by the given increment while zeroing out the bits that have moved into or outside the prefix.
@@ -494,12 +494,12 @@ func (addr WrappedAddress) ReverseBits(perByte bool) (ExtendedSegmentSeries, add
 	if err != nil {
 		return nil, err
 	}
-	return WrapAddress(a), nil
+	return wrapAddress(a), nil
 }
 
 // ReverseSegments returns a new series with the segments reversed.
 func (addr WrappedAddress) ReverseSegments() ExtendedSegmentSeries {
-	return WrapAddress(addr.Address.ReverseSegments())
+	return wrapAddress(addr.Address.ReverseSegments())
 }
 
 type WrappedAddressSection struct {
@@ -522,7 +522,7 @@ func (section WrappedAddressSection) ToIPv6() IPv6AddressSegmentSeries {
 	return section.AddressSection.ToIPv6()
 }
 
-// ToIP converts to an IP address section if this originated as IPv4 or IPv6, or a zero-valued IP.
+// ToIP converts to an IP address section if this originated as IPv4 or IPv6, or an implicitly zero-valued IP.
 // If not, ToIP returns nil.
 func (section WrappedAddressSection) ToIP() IPAddressSegmentSeries {
 	return section.AddressSection.ToIP()
@@ -563,7 +563,7 @@ func (section WrappedAddressSection) PrefixBlockIterator() ExtendedSegmentSeries
 // ToBlock creates a new series block by changing the segment at the given index to have the given lower and upper value,
 // and changing the following segments to be full-range.
 func (section WrappedAddressSection) ToBlock(segmentIndex int, lower, upper SegInt) ExtendedSegmentSeries {
-	return WrapSection(section.AddressSection.ToBlock(segmentIndex, lower, upper))
+	return wrapSection(section.AddressSection.ToBlock(segmentIndex, lower, upper))
 }
 
 // ToPrefixBlock returns the series with the same prefix as this series while the remaining bits span all values.
@@ -571,13 +571,13 @@ func (section WrappedAddressSection) ToBlock(segmentIndex int, lower, upper SegI
 //
 // If this series has no prefix, this series is returned.
 func (section WrappedAddressSection) ToPrefixBlock() ExtendedSegmentSeries {
-	return WrapSection(section.AddressSection.ToPrefixBlock())
+	return wrapSection(section.AddressSection.ToPrefixBlock())
 }
 
 // ToPrefixBlockLen returns the series with the same prefix of the given length as this series while the remaining bits span all values.
 // The returned series will be the block of all series with the same prefix.
 func (section WrappedAddressSection) ToPrefixBlockLen(prefLen BitCount) ExtendedSegmentSeries {
-	return WrapSection(section.AddressSection.ToPrefixBlockLen(prefLen))
+	return wrapSection(section.AddressSection.ToPrefixBlockLen(prefLen))
 }
 
 // Increment returns the item that is the given increment upwards into the range,
@@ -618,13 +618,13 @@ func (section WrappedAddressSection) IncrementBoundary(i int64) ExtendedSegmentS
 // GetLower returns the series in the range with the lowest numeric value,
 // which will be the same series if it represents a single value.
 func (section WrappedAddressSection) GetLower() ExtendedSegmentSeries {
-	return WrapSection(section.AddressSection.GetLower())
+	return wrapSection(section.AddressSection.GetLower())
 }
 
 // GetUpper returns the series in the range with the highest numeric value,
 // which will be the same series if it represents a single value.
 func (section WrappedAddressSection) GetUpper() ExtendedSegmentSeries {
-	return WrapSection(section.AddressSection.GetUpper())
+	return wrapSection(section.AddressSection.GetUpper())
 }
 
 // GetSection returns the backing section for this series, comprising all segments.
@@ -646,12 +646,12 @@ func (section WrappedAddressSection) AssignPrefixForSingleBlock() ExtendedSegmen
 //
 // In other words, this method assigns a prefix length to this series matching the largest prefix block in this series.
 func (section WrappedAddressSection) AssignMinPrefixForBlock() ExtendedSegmentSeries {
-	return WrapSection(section.AddressSection.AssignMinPrefixForBlock())
+	return wrapSection(section.AddressSection.AssignMinPrefixForBlock())
 }
 
 // WithoutPrefixLen provides the same address series but with no prefix length.  The values remain unchanged.
 func (section WrappedAddressSection) WithoutPrefixLen() ExtendedSegmentSeries {
-	return WrapSection(section.AddressSection.WithoutPrefixLen())
+	return wrapSection(section.AddressSection.WithoutPrefixLen())
 }
 
 // Contains returns whether this is same type and version as the given address series and whether it contains all values in the given series.
@@ -687,7 +687,7 @@ func (section WrappedAddressSection) Equal(other ExtendedSegmentSeries) bool {
 // A prefix length will not be set to a value lower than zero or beyond the bit length of the series.
 // The provided prefix length will be adjusted to these boundaries if necessary.
 func (section WrappedAddressSection) SetPrefixLen(prefixLen BitCount) ExtendedSegmentSeries {
-	return WrapSection(section.AddressSection.SetPrefixLen(prefixLen))
+	return wrapSection(section.AddressSection.SetPrefixLen(prefixLen))
 }
 
 // SetPrefixLenZeroed sets the prefix length.
@@ -712,7 +712,7 @@ func (section WrappedAddressSection) SetPrefixLenZeroed(prefixLen BitCount) (Ext
 // If this series has no prefix length, then the prefix length will be set to the adjustment if positive,
 // or it will be set to the adjustment added to the bit count if negative.
 func (section WrappedAddressSection) AdjustPrefixLen(adjustment BitCount) ExtendedSegmentSeries {
-	return WrapSection(section.AddressSection.AdjustPrefixLen(adjustment))
+	return wrapSection(section.AddressSection.AdjustPrefixLen(adjustment))
 }
 
 // AdjustPrefixLenZeroed increases or decreases the prefix length by the given increment while zeroing out the bits that have moved into or outside the prefix.
@@ -752,7 +752,7 @@ func (section WrappedAddressSection) ReverseBits(perByte bool) (ExtendedSegmentS
 
 // ReverseSegments returns a new series with the segments reversed.
 func (section WrappedAddressSection) ReverseSegments() ExtendedSegmentSeries {
-	return WrapSection(section.AddressSection.ReverseSegments())
+	return wrapSection(section.AddressSection.ReverseSegments())
 }
 
 var _ ExtendedSegmentSeries = WrappedAddress{}
@@ -763,34 +763,34 @@ func convAddrToIntf(addr *Address) ExtendedSegmentSeries {
 	if addr == nil {
 		return nil
 	}
-	return WrapAddress(addr)
+	return wrapAddress(addr)
 }
 
 func convSectToIntf(sect *AddressSection) ExtendedSegmentSeries {
 	if sect == nil {
 		return nil
 	}
-	return WrapSection(sect)
+	return wrapSection(sect)
 }
 
 func wrapSectWithErr(section *AddressSection, err addrerr.IncompatibleAddressError) (ExtendedSegmentSeries, addrerr.IncompatibleAddressError) {
 	if err == nil {
-		return WrapSection(section), nil
+		return wrapSection(section), nil
 	}
 	return nil, err
 }
 
 func wrapAddrWithErr(addr *Address, err addrerr.IncompatibleAddressError) (ExtendedSegmentSeries, addrerr.IncompatibleAddressError) {
 	if err == nil {
-		return WrapAddress(addr), nil
+		return wrapAddress(addr), nil
 	}
 	return nil, err
 }
 
-func WrapAddress(addr *Address) WrappedAddress {
+func wrapAddress(addr *Address) WrappedAddress {
 	return WrappedAddress{addr}
 }
 
-func WrapSection(section *AddressSection) WrappedAddressSection {
+func wrapSection(section *AddressSection) WrappedAddressSection {
 	return WrappedAddressSection{section}
 }

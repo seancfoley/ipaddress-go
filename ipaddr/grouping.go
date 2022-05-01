@@ -334,32 +334,32 @@ func (grouping *addressDivisionGroupingInternal) matchesZeroGrouping() bool {
 
 func (grouping *addressDivisionGroupingInternal) matchesAddrSectionType() bool {
 	addrType := grouping.getAddrType()
-	// because there are no init() conversions for IPv6/IPV4/MAC sections, a zero-valued IPv6/IPV4/MAC or zero IP section has addr type nil
+	// because there are no init() conversions for IPv6/IPV4/MAC sections, an implicitly zero-valued IPv6/IPV4/MAC or zero IP section has addr type nil
 	return addrType.isIP() || addrType.isMAC() || grouping.matchesZeroGrouping()
 }
 
 func (grouping *addressDivisionGroupingInternal) matchesIPv6SectionType() bool {
-	// because there are no init() conversions for IPv6 sections, a zero-valued IPV6 section has addr type nil
+	// because there are no init() conversions for IPv6 sections, an implicitly zero-valued IPV6 section has addr type nil
 	return grouping.getAddrType().isIPv6() || grouping.matchesZeroGrouping()
 }
 
 func (grouping *addressDivisionGroupingInternal) matchesIPv6v4MixedGroupingType() bool {
-	// because there are no init() conversions for IPv6v4MixedGrouping groupings, a zero-valued IPv6v4MixedGrouping has addr type nil
+	// because there are no init() conversions for IPv6v4MixedGrouping groupings, an implicitly zero-valued IPv6v4MixedGrouping has addr type nil
 	return grouping.getAddrType().isIPv6v4Mixed() || grouping.matchesZeroGrouping()
 }
 
 func (grouping *addressDivisionGroupingInternal) matchesIPv4SectionType() bool {
-	// because there are no init() conversions for IPV4 sections, a zero-valued IPV4 section has addr type nil
+	// because there are no init() conversions for IPV4 sections, an implicitly zero-valued IPV4 section has addr type nil
 	return grouping.getAddrType().isIPv4() || grouping.matchesZeroGrouping()
 }
 
 func (grouping *addressDivisionGroupingInternal) matchesIPSectionType() bool {
-	// because there are no init() conversions for IPv6 or IPV4 sections, a zero-valued IPv4, IPv6 or IP section has addr type nil
+	// because there are no init() conversions for IPv6 or IPV4 sections, an implicitly zero-valued IPv4, IPv6 or IP section has addr type nil
 	return grouping.getAddrType().isIP() || grouping.matchesZeroGrouping()
 }
 
 func (grouping *addressDivisionGroupingInternal) matchesMACSectionType() bool {
-	// because there are no init() conversions for MAC sections, a zero-valued MAC section has addr type nil
+	// because there are no init() conversions for MAC sections, an implicitly zero-valued MAC section has addr type nil
 	return grouping.getAddrType().isMAC() || grouping.matchesZeroGrouping()
 }
 
@@ -1127,6 +1127,8 @@ func (grouping *AddressDivisionGrouping) IsMAC() bool {
 
 // ToSectionBase converts to an address section if this grouping originated as an address section.
 // Otherwise, the result will be nil.
+//
+// ToSectionBase can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (grouping *AddressDivisionGrouping) ToSectionBase() *AddressSection {
 	if grouping == nil || !grouping.isAddressSection() {
 		return nil
@@ -1134,6 +1136,10 @@ func (grouping *AddressDivisionGrouping) ToSectionBase() *AddressSection {
 	return (*AddressSection)(unsafe.Pointer(grouping))
 }
 
+// ToMixedIPv6v4 converts to a mixed IPv6/4 address section if this grouping originated as a mixed IPv6/4 address section.
+// Otherwise, the result will be nil.
+//
+// ToMixedIPv6v4 can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (grouping *AddressDivisionGrouping) ToMixedIPv6v4() *IPv6v4MixedAddressGrouping {
 	if grouping.matchesIPv6v4MixedGroupingType() {
 		return (*IPv6v4MixedAddressGrouping)(grouping)
@@ -1141,7 +1147,7 @@ func (grouping *AddressDivisionGrouping) ToMixedIPv6v4() *IPv6v4MixedAddressGrou
 	return nil
 }
 
-// ToIP converts to an IPAddressSection if this grouping originated as an IPv4 or IPv6 section, or a zero-valued IP section.
+// ToIP converts to an IPAddressSection if this grouping originated as an IPv4 or IPv6 section, or an implicitly zero-valued IP section.
 // If not, ToIP returns nil.
 //
 // ToIP can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
@@ -1149,18 +1155,33 @@ func (grouping *AddressDivisionGrouping) ToIP() *IPAddressSection {
 	return grouping.ToSectionBase().ToIP()
 }
 
+// ToIPv6 converts to an IPv6AddressSection if this grouping originated as an IPv6 section.
+// If not, ToIPv6 returns nil.
+//
+// ToIPv6 can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (grouping *AddressDivisionGrouping) ToIPv6() *IPv6AddressSection {
 	return grouping.ToSectionBase().ToIPv6()
 }
 
+// ToIPv4 converts to an IPv4AddressSection if this grouping originated as an IPv4 section.
+// If not, ToIPv4 returns nil.
+//
+// ToIPv4 can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (grouping *AddressDivisionGrouping) ToIPv4() *IPv4AddressSection {
 	return grouping.ToSectionBase().ToIPv4()
 }
 
+// ToMAC converts to a MACAddressSection if this grouping originated as a MAC section.
+// If not, ToMAC returns nil.
+//
+// ToMAC can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (grouping *AddressDivisionGrouping) ToMAC() *MACAddressSection {
 	return grouping.ToSectionBase().ToMAC()
 }
 
+// ToDivGrouping is an identity method.
+//
+// ToDivGrouping can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (grouping *AddressDivisionGrouping) ToDivGrouping() *AddressDivisionGrouping {
 	return grouping
 }

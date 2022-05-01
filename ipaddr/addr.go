@@ -1826,7 +1826,7 @@ func (addr *Address) IsIPv6() bool {
 	return addr != nil && addr.isIPv6()
 }
 
-// IsIP returns true if this address or subnet originated as an IPv4 or IPv6 address or subnet, or a zero-valued IP.  If so, use ToIP to convert back to the IP-specific type.
+// IsIP returns true if this address or subnet originated as an IPv4 or IPv6 address or subnet, or an implicitly zero-valued IP.  If so, use ToIP to convert back to the IP-specific type.
 func (addr *Address) IsIP() bool {
 	return addr != nil && addr.isIP()
 }
@@ -1836,15 +1836,14 @@ func (addr *Address) IsMAC() bool {
 	return addr != nil && addr.isMAC()
 }
 
-// TODO go downwards through the remaining conversion methods...
-// I've done the "Is" conversion checkers, and ToIP.  But not ToAddressBase, ToIPv4, ToIPv6, ToSectionBase, ToDivGrouping, ToMAC, ToDiv, ToSegmentBase.
-// ToIP is a model for both upward (eg from Address) and downward (Eg from IPv6Address) conversions
-
+// ToAddressBase is an identity method.
+//
+// ToAddressBase can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (addr *Address) ToAddressBase() *Address {
 	return addr
 }
 
-// ToIP converts to an IPAddress if this address or subnet originated as an IPv4 or IPv6 address or subnet, or a zero-valued IP.
+// ToIP converts to an IPAddress if this address or subnet originated as an IPv4 or IPv6 address or subnet, or an implicitly zero-valued IP.
 // If not, ToIP returns nil.
 //
 // ToIP can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
@@ -1855,6 +1854,10 @@ func (addr *Address) ToIP() *IPAddress {
 	return nil
 }
 
+// ToIPv6 converts to an IPv6Address if this address or subnet originated as an IPv6 address or subnet.
+// If not, ToIPv6 returns nil.
+//
+// ToIPv6 can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (addr *Address) ToIPv6() *IPv6Address {
 	if addr.IsIPv6() {
 		return (*IPv6Address)(unsafe.Pointer(addr))
@@ -1862,6 +1865,10 @@ func (addr *Address) ToIPv6() *IPv6Address {
 	return nil
 }
 
+// ToIPv4 converts to an IPv4Address if this address or subnet originated as an IPv4 address or subnet.
+// If not, ToIPv4 returns nil.
+//
+// ToIPv4 can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (addr *Address) ToIPv4() *IPv4Address {
 	if addr.IsIPv4() {
 		return (*IPv4Address)(unsafe.Pointer(addr))
@@ -1869,6 +1876,10 @@ func (addr *Address) ToIPv4() *IPv4Address {
 	return nil
 }
 
+// ToMAC converts to a MACAddress if this address or subnet originated as a MAC address or subnet.
+// If not, ToMAC returns nil.
+//
+// ToMAC can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (addr *Address) ToMAC() *MACAddress {
 	if addr.IsMAC() {
 		return (*MACAddress)(addr)
@@ -1876,8 +1887,10 @@ func (addr *Address) ToMAC() *MACAddress {
 	return nil
 }
 
+// Wrap wraps this address, returning a WrappedAddress, an implementation of ExtendedSegmentSeries,
+// which can be used to write code that works with both addresses and address sections.
 func (addr *Address) Wrap() WrappedAddress {
-	return WrapAddress(addr.init())
+	return wrapAddress(addr.init())
 }
 
 // ToKey creates the associated address key.

@@ -700,10 +700,18 @@ func (section *IPv4AddressSection) SequentialBlockIterator() IPv4SectionIterator
 	return ipv4SectionIterator{section.sequentialBlockIterator()}
 }
 
+// ToDivGrouping converts to an AddressDivisionGrouping, a polymorphic type usable with all address sections and division groupings.
+// Afterwards, you can convert back with ToIPv4.
+//
+// ToDivGrouping can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (section *IPv4AddressSection) ToDivGrouping() *AddressDivisionGrouping {
 	return section.ToSectionBase().ToDivGrouping()
 }
 
+// ToSectionBase converts to an AddressSection, a polymorphic type usable with all address sections.
+// Afterwards, you can convert back with ToIPv4.
+//
+// ToSectionBase can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (section *IPv4AddressSection) ToSectionBase() *AddressSection {
 	return section.ToIP().ToSectionBase()
 }
@@ -922,9 +930,9 @@ func (section *IPv4AddressSection) ReplaceLen(startIndex, endIndex int, replacem
 	return section.replaceLen(startIndex, endIndex, replacement.ToIP(), replacementStartIndex, replacementEndIndex, ipv4BitsToSegmentBitshift).ToIPv4()
 }
 
-// IsAdaptiveZero returns true if the section was originally created as a zero-valued section (eg IPv4AddressSection{}),
+// IsAdaptiveZero returns true if the section was originally created as an implicitly zero-valued section (eg IPv4AddressSection{}),
 // meaning it was not constructed using a constructor function.
-// Such a grouping, which has no divisions or segments, is convertible to a zero-valued grouping of any type or version, whether IPv6, IPv4, MAC, etc
+// Such a grouping, which has no divisions or segments, is convertible to an implicitly zero-valued grouping of any type or version, whether IPv6, IPv4, MAC, etc
 // It is not considered equal to constructions of specific zero length sections or groupings like NewIPv4Section(nil) which can only represent a zero-length section of a single address type.
 func (section *IPv4AddressSection) IsAdaptiveZero() bool {
 	return section != nil && section.matchesZeroGrouping()

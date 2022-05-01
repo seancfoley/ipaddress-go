@@ -42,6 +42,9 @@ type DivisionType interface {
 type StandardDivisionType interface {
 	DivisionType
 
+	// ToDiv converts to an AddressDivision, a polymorphic type usable with all address segments and divisions.
+	//
+	// ToDiv implementations can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 	ToDiv() *AddressDivision
 }
 
@@ -62,6 +65,9 @@ type AddressSegmentType interface {
 	// GetUpperSegmentValue returns the upper segment value as a SegInt, the same value as the DivInt value returned by getUpperDivisionValue()
 	GetUpperSegmentValue() SegInt
 
+	// ToSegmentBase converts to an AddressSegment, a polymorphic type usable with all address segments.
+	//
+	// ToSegmentBase implementations can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 	ToSegmentBase() *AddressSegment
 }
 
