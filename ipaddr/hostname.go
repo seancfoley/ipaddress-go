@@ -799,6 +799,8 @@ func (host *HostName) ToNetIPAddr() *net.IPAddr {
 	return nil
 }
 
+// Compare returns a negative integer, zero, or a positive integer if this host name is less than, equal, or greater than the given host name.
+// Any address item is comparable to any other.
 func (host *HostName) Compare(other *HostName) int {
 	if host == other {
 		return 0

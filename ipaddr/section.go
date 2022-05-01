@@ -2029,26 +2029,38 @@ func (section *addressSectionInternal) GetPrefixLenForSingleBlock() PrefixLen {
 	return section.addressDivisionGroupingInternal.GetPrefixLenForSingleBlock()
 }
 
+// GetValue returns the lowest individual address section in this address section as an integer value
 func (section *addressSectionInternal) GetValue() *big.Int {
 	return section.addressDivisionGroupingInternal.GetValue()
 }
 
+// GetUpperValue returns the highest individual address section in this address section as an integer value
 func (section *addressSectionInternal) GetUpperValue() *big.Int {
 	return section.addressDivisionGroupingInternal.GetUpperValue()
 }
 
+// Bytes returns the lowest individual address section in this address section as a byte slice
 func (section *addressSectionInternal) Bytes() []byte {
 	return section.addressDivisionGroupingInternal.Bytes()
 }
 
+// UpperBytes returns the highest individual address section in this address section as a byte slice
 func (section *addressSectionInternal) UpperBytes() []byte {
 	return section.addressDivisionGroupingInternal.UpperBytes()
 }
 
+// CopyBytes copies the value of the lowest individual address section in the section into a byte slice.
+//
+// If the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// Otherwise, a new slice is created and returned with the value.
 func (section *addressSectionInternal) CopyBytes(bytes []byte) []byte {
 	return section.addressDivisionGroupingInternal.CopyBytes(bytes)
 }
 
+// CopyUpperBytes copies the value of the highest individual address section in the section into a byte slice.
+//
+// If the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// Otherwise, a new slice is created and returned with the value.
 func (section *addressSectionInternal) CopyUpperBytes(bytes []byte) []byte {
 	return section.addressDivisionGroupingInternal.CopyUpperBytes(bytes)
 }
@@ -2142,6 +2154,8 @@ func (section *AddressSection) Equal(other AddressSectionType) bool {
 	return section.equal(other)
 }
 
+// Compare returns a negative integer, zero, or a positive integer if this address section is less than, equal, or greater than the given item.
+// Any address item is comparable to any other.  All address items use CountComparator to compare.
 func (section *AddressSection) Compare(item AddressItem) int {
 	return CountComparator.Compare(section, item)
 }

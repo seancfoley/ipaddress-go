@@ -325,26 +325,38 @@ func (seg *ipAddressSegmentInternal) GetByteCount() int {
 	return seg.addressSegmentInternal.GetByteCount()
 }
 
+// GetValue returns the lowest value in the address segment range as a big integer
 func (seg *ipAddressSegmentInternal) GetValue() *BigDivInt {
 	return seg.addressSegmentInternal.GetValue()
 }
 
+// GetUpperValue returns the highest value in the address segment range as a big integer
 func (seg *ipAddressSegmentInternal) GetUpperValue() *BigDivInt {
 	return seg.addressSegmentInternal.GetUpperValue()
 }
 
+// Bytes returns the lowest value in the address segment range as a byte slice
 func (seg *ipAddressSegmentInternal) Bytes() []byte {
 	return seg.addressSegmentInternal.Bytes()
 }
 
+// UpperBytes returns the highest value in the address segment range as a byte slice
 func (seg *ipAddressSegmentInternal) UpperBytes() []byte {
 	return seg.addressSegmentInternal.UpperBytes()
 }
 
+// CopyBytes copies the lowest value in the address segment range into a byte slice.
+//
+// If the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// Otherwise, a new slice is created and returned with the value.
 func (seg *ipAddressSegmentInternal) CopyBytes(bytes []byte) []byte {
 	return seg.addressSegmentInternal.CopyBytes(bytes)
 }
 
+// CopyUpperBytes copies the highest value in the address segment range into a byte slice.
+//
+// If the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// Otherwise, a new slice is created and returned with the value.
 func (seg *ipAddressSegmentInternal) CopyUpperBytes(bytes []byte) []byte {
 	return seg.addressSegmentInternal.CopyUpperBytes(bytes)
 }
@@ -569,6 +581,8 @@ func (seg *IPAddressSegment) Equal(other AddressSegmentType) bool {
 	return seg.equal(other)
 }
 
+// Compare returns a negative integer, zero, or a positive integer if this address segment is less than, equal, or greater than the given item.
+// Any address item is comparable to any other.  All address items use CountComparator to compare.
 func (seg *IPAddressSegment) Compare(item AddressItem) int {
 	return CountComparator.Compare(seg, item)
 }

@@ -344,6 +344,8 @@ func (comp AddressComparator) CompareRanges(one, two IPAddressSeqRangeType) int 
 	return comp.compareLargeValues(r1.GetUpperValue(), r1.GetValue(), r2.GetUpperValue(), r2.GetValue())
 }
 
+// Compare returns a negative integer, zero, or a positive integer if address item one is less than, equal, or greater than address item two.
+// Any address item is comparable to any other.
 func (comp AddressComparator) Compare(one, two AddressItem) int {
 	if one == nil {
 		if two == nil {

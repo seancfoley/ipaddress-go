@@ -1134,9 +1134,8 @@ func (addr *Address) Contains(other AddressType) bool {
 	return addr.init().contains(other)
 }
 
-// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
-// Compare is next
-
+// Compare returns a negative integer, zero, or a positive integer if this address or subnet is less than, equal, or greater than the given item.
+// Any address item is comparable to any other.  All address items use CountComparator to compare.
 func (addr *Address) Compare(item AddressItem) int {
 	return CountComparator.Compare(addr, item)
 }
@@ -1213,6 +1212,7 @@ func (addr *Address) TrieDecrement() *Address {
 	return addr.trieDecrement()
 }
 
+// GetSection returns the backing section for this address or subnet, comprising all segments.
 func (addr *Address) GetSection() *AddressSection {
 	return addr.init().section
 }
@@ -1315,26 +1315,38 @@ func (addr *Address) GetUpper() *Address {
 	return addr.init().getUpper()
 }
 
+// GetValue returns the lowest address in this subnet or address collection as an integer value
 func (addr *Address) GetValue() *big.Int {
 	return addr.init().section.GetValue()
 }
 
+// GetUpperValue returns the highest address in this subnet or address collection as an integer value
 func (addr *Address) GetUpperValue() *big.Int {
 	return addr.init().section.GetUpperValue()
 }
 
+// Bytes returns the lowest address in this subnet or address collection as a byte slice
 func (addr *Address) Bytes() []byte {
 	return addr.init().section.Bytes()
 }
 
+// UpperBytes returns the highest address in this subnet or address collection as a byte slice
 func (addr *Address) UpperBytes() []byte {
 	return addr.init().section.UpperBytes()
 }
 
+// CopyBytes copies the value of the lowest individual address in the subnet into a byte slice.
+//
+// If the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// Otherwise, a new slice is created and returned with the value.
 func (addr *Address) CopyBytes(bytes []byte) []byte {
 	return addr.init().section.CopyBytes(bytes)
 }
 
+// CopyUpperBytes copies the value of the highest individual address in the subnet into a byte slice.
+//
+// if the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// Otherwise, a new slice is created and returned with the value.
 func (addr *Address) CopyUpperBytes(bytes []byte) []byte {
 	return addr.init().section.CopyUpperBytes(bytes)
 }
@@ -1399,7 +1411,6 @@ func (addr *Address) SetPrefixLen(prefixLen BitCount) *Address {
 // In other words, bits that move from one side of the prefix length to the other (ie bits moved into the prefix or outside the prefix) are zeroed.
 //
 // If the result cannot be zeroed because zeroing out bits results in a non-contiguous segment, an error is returned.
-
 func (addr *Address) SetPrefixLenZeroed(prefixLen BitCount) (*Address, addrerr.IncompatibleAddressError) {
 	return addr.init().setPrefixLenZeroed(prefixLen)
 }
@@ -1639,6 +1650,9 @@ func (addr *Address) IsLocal() bool {
 	}
 	return false
 }
+
+// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
+// GetLeadingBitCount and GetTrailingBitCount is next
 
 func (addr *Address) GetLeadingBitCount(ones bool) BitCount {
 	return addr.GetSection().GetLeadingBitCount(ones)

@@ -90,7 +90,7 @@ func (p *PrefixBitCount) Matches(other BitCount) bool {
 	return p != nil && p.bitCount() == other
 }
 
-// Compare compares PrefixLen values, returning -1, 0, or 1 if the receiver is less than, equal to, or greater than the argument.
+// Compare compares PrefixLen values, returning -1, 0, or 1 if this prefix length is less than, equal to, or greater than the given prefix length.
 // This method is intended for the PrefixLen type.  BitCount values should be compared with ==, >, <, >= and <= operators.
 func (p *PrefixBitCount) Compare(other PrefixLen) int {
 	if p == nil {

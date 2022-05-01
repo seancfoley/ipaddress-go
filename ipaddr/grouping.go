@@ -645,6 +645,7 @@ func (grouping *addressDivisionGroupingInternal) GetPrefixLenForSingleBlock() Pr
 	return *res
 }
 
+// GetValue returns the lowest individual address division grouping in this address division grouping as an integer value
 func (grouping *addressDivisionGroupingInternal) GetValue() *big.Int {
 	if grouping.hasNoDivisions() {
 		return bigZero()
@@ -652,6 +653,7 @@ func (grouping *addressDivisionGroupingInternal) GetValue() *big.Int {
 	return bigZero().SetBytes(grouping.getBytes())
 }
 
+// GetUpperValue returns the highest individual address division grouping in this address division grouping as an integer value
 func (grouping *addressDivisionGroupingInternal) GetUpperValue() *big.Int {
 	if grouping.hasNoDivisions() {
 		return bigZero()
@@ -659,6 +661,7 @@ func (grouping *addressDivisionGroupingInternal) GetUpperValue() *big.Int {
 	return bigZero().SetBytes(grouping.getUpperBytes())
 }
 
+// Bytes returns the lowest individual division grouping in this grouping as a byte slice
 func (grouping *addressDivisionGroupingInternal) Bytes() []byte {
 	if grouping.hasNoDivisions() {
 		return emptyBytes
@@ -667,6 +670,7 @@ func (grouping *addressDivisionGroupingInternal) Bytes() []byte {
 	return cloneBytes(cached)
 }
 
+// UpperBytes returns the highest individual division grouping in this grouping as a byte slice
 func (grouping *addressDivisionGroupingInternal) UpperBytes() []byte {
 	if grouping.hasNoDivisions() {
 		return emptyBytes
@@ -675,12 +679,12 @@ func (grouping *addressDivisionGroupingInternal) UpperBytes() []byte {
 	return cloneBytes(cached)
 }
 
-// CopyBytes gets the value for the lowest address in the range represented by this address division grouping.
+// CopyBytes copies the value of the lowest division grouping in the range into a byte slice
 //
-// If the value fits in the given slice, the same slice is returned with the value.
-// Otherwise, a new slice is allocated and returned with the value.
+// if the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// Otherwise, a new slice is created and returned with the value.
 //
-// You can use getBitCount() to determine the required array length for the bytes.
+// You can use GetByteCount to determine the required array length for the bytes.
 func (grouping *addressDivisionGroupingInternal) CopyBytes(bytes []byte) []byte {
 	if grouping.hasNoDivisions() {
 		if bytes != nil {
@@ -691,6 +695,12 @@ func (grouping *addressDivisionGroupingInternal) CopyBytes(bytes []byte) []byte 
 	return getBytesCopy(bytes, grouping.getBytes())
 }
 
+// CopyUpperBytes copies the value of the highest division grouping in the range into a byte slice
+//
+// if the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// Otherwise, a new slice is created and returned with the value.
+//
+// You can use GetByteCount to determine the required array length for the bytes.
 func (grouping *addressDivisionGroupingInternal) CopyUpperBytes(bytes []byte) []byte {
 	if grouping.hasNoDivisions() {
 		if bytes != nil {
@@ -1013,6 +1023,8 @@ type AddressDivisionGrouping struct {
 	addressDivisionGroupingInternal
 }
 
+// Compare returns a negative integer, zero, or a positive integer if this address division grouping is less than, equal, or greater than the given item.
+// Any address item is comparable to any other.  All address items use CountComparator to compare.
 func (grouping *AddressDivisionGrouping) Compare(item AddressItem) int {
 	return CountComparator.Compare(grouping, item)
 }

@@ -221,6 +221,8 @@ func (section *IPv4AddressSection) Equal(other AddressSectionType) bool {
 	return section.equal(other)
 }
 
+// Compare returns a negative integer, zero, or a positive integer if this address section is less than, equal, or greater than the given item.
+// Any address item is comparable to any other.  All address items use CountComparator to compare.
 func (section *IPv4AddressSection) Compare(item AddressItem) int {
 	return CountComparator.Compare(section, item)
 }

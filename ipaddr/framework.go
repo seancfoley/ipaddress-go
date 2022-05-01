@@ -27,13 +27,19 @@ import (
 // AddressItem represents all addresses, division groupings, divisions, and sequential ranges.
 // Any address item can be compared to any other.
 type AddressItem interface {
+	// GetValue returns the lowest individual address item in the address item range as an integer value
 	GetValue() *big.Int
+
+	// GetUpperValue returns the highest individual address item in the address item range as an integer value
 	GetUpperValue() *big.Int
 
 	CopyBytes(bytes []byte) []byte
 	CopyUpperBytes(bytes []byte) []byte
 
+	// Bytes returns the lowest individual address item in the address item range as a byte slice
 	Bytes() []byte
+
+	// UpperBytes returns the highest individual address item in the address item range as a byte slice
 	UpperBytes() []byte
 
 	// GetCount provides the number of address items represented by this AddressItem, for example the subnet size for IP addresses
@@ -97,8 +103,8 @@ type AddressItem interface {
 	// GetPrefixCountLen returns the count of the number of distinct values within the prefix part of the range of values for this item
 	GetPrefixCountLen(BitCount) *big.Int
 
-	// Compare returns a negative integer, zero, or a positive integer if this instance is less than, equal, or greater than the give item.
-	// Any address item is comparable to any other.
+	// Compare returns a negative integer, zero, or a positive integer if this address item is less than, equal, or greater than the given item.
+	// Any address item is comparable to any other.  All address items use CountComparator to compare.
 	Compare(item AddressItem) int
 
 	fmt.Stringer
@@ -230,7 +236,7 @@ type AddressSegmentSeries interface { // Address and above, AddressSection and a
 	// For IPv4, dotted octet format, also known as dotted decimal format, is used.
 	// https://datatracker.ietf.org/doc/html/draft-main-ipaddr-text-rep-00#section-2.1
 	//
-	// For IPv6, RFC 5952 describes canonical string representation.
+	// For IPv6, RFC 5952 describes the canonical string representation.
 	// https://en.wikipedia.org/wiki/IPv6_address#Representation
 	// http://tools.ietf.org/html/rfc5952
 	//

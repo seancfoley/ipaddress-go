@@ -334,6 +334,8 @@ func (section *IPv6AddressSection) Equal(other AddressSectionType) bool {
 	return section.equal(other)
 }
 
+// Compare returns a negative integer, zero, or a positive integer if this address section is less than, equal, or greater than the given item.
+// Any address item is comparable to any other.  All address items use CountComparator to compare.
 func (section *IPv6AddressSection) Compare(item AddressItem) int {
 	return CountComparator.Compare(section, item)
 }
@@ -1738,6 +1740,8 @@ type IPv6v4MixedAddressGrouping struct {
 	addressDivisionGroupingInternal
 }
 
+// Compare returns a negative integer, zero, or a positive integer if this address division grouping is less than, equal, or greater than the given item.
+// Any address item is comparable to any other.  All address items use CountComparator to compare.
 func (grouping *IPv6v4MixedAddressGrouping) Compare(item AddressItem) int {
 	return CountComparator.Compare(grouping, item)
 }

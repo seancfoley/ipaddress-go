@@ -47,7 +47,7 @@ type ExtendedIPSegmentSeries interface {
 	// CompareSize returns a positive integer if this address series has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
 	CompareSize(ExtendedIPSegmentSeries) int
 
-	// GetSection returns the full address section
+	// GetSection returns the backing section for this series, comprising all segments.
 	GetSection() *IPAddressSection
 
 	// GetTrailingSection returns an ending subsection of the full address section
@@ -429,6 +429,7 @@ func (addr WrappedIPAddress) GetUpper() ExtendedIPSegmentSeries {
 	return wrapIPAddress(addr.IPAddress.GetUpper())
 }
 
+// GetSection returns the backing section for this series, comprising all segments.
 func (addr WrappedIPAddress) GetSection() *IPAddressSection {
 	return addr.IPAddress.GetSection()
 }
@@ -731,6 +732,7 @@ func (section WrappedIPAddressSection) GetUpper() ExtendedIPSegmentSeries {
 	return wrapIPSection(section.IPAddressSection.GetUpper())
 }
 
+// GetSection returns the backing section for this series, comprising all segments.
 func (section WrappedIPAddressSection) GetSection() *IPAddressSection {
 	return section.IPAddressSection
 }

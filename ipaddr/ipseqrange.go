@@ -835,18 +835,28 @@ func (rng *IPAddressSeqRange) CopyUpperNetIP(bytes net.IP) net.IP {
 	return rng.GetUpper().CopyUpperNetIP(bytes) // this changes the arg to 4 bytes if 16 bytes and ipv4
 }
 
+// Bytes returns the lowest address in the range, the one with the lowest numeric value, as a byte slice
 func (rng *IPAddressSeqRange) Bytes() []byte {
 	return rng.GetLower().Bytes()
 }
 
+// CopyBytes copies the value of the lowest address in the range into a byte slice.
+//
+// If the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// Otherwise, a new slice is created and returned with the value.
 func (rng *IPAddressSeqRange) CopyBytes(bytes []byte) []byte {
 	return rng.GetLower().CopyBytes(bytes)
 }
 
+// UpperBytes returns the highest address in the range, the one with the highest numeric value, as a byte slice
 func (rng *IPAddressSeqRange) UpperBytes() []byte {
 	return rng.GetUpper().UpperBytes()
 }
 
+// CopyUpperBytes copies the value of the highest address in the range into a byte slice.
+//
+// If the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// Otherwise, a new slice is created and returned with the value.
 func (rng *IPAddressSeqRange) CopyUpperBytes(bytes []byte) []byte {
 	return rng.GetUpper().CopyUpperBytes(bytes)
 }
@@ -876,6 +886,8 @@ func (rng *IPAddressSeqRange) Equal(other IPAddressSeqRangeType) bool {
 	return rng.init().equals(other)
 }
 
+// Compare returns a negative integer, zero, or a positive integer if this sequential address range is less than, equal, or greater than the given item.
+// Any address item is comparable to any other.  All address items use CountComparator to compare.
 func (rng *IPAddressSeqRange) Compare(item AddressItem) int {
 	if rng != nil {
 		rng = rng.init()
@@ -899,10 +911,12 @@ func (rng *IPAddressSeqRange) CompareSize(other IPAddressSeqRangeType) int {
 	return rng.compareSize(other)
 }
 
+// GetValue returns the lowest address in the range, the one with the lowest numeric value, as an integer
 func (rng *IPAddressSeqRange) GetValue() *big.Int {
 	return rng.GetLower().GetValue()
 }
 
+// GetUpperValue returns the highest address in the range, the one with the highest numeric value, as an integer
 func (rng *IPAddressSeqRange) GetUpperValue() *big.Int {
 	return rng.GetUpper().GetValue()
 }
@@ -984,7 +998,7 @@ func (rng *IPAddressSeqRange) SpanWithSequentialBlocks() []*IPAddress {
 	return res
 }
 
-// Joins the given ranges into the fewest number of ranges.
+// Join joins the given ranges into the fewest number of ranges.
 // The returned array will be sorted by ascending lowest range value.
 func (rng *IPAddressSeqRange) Join(ranges ...*IPAddressSeqRange) []*IPAddressSeqRange {
 	ranges = append(append(make([]*IPAddressSeqRange, 0, len(ranges)+1), ranges...), rng)

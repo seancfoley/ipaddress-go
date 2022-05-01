@@ -109,6 +109,7 @@ func (div *addressDivisionBase) GetByteCount() int {
 	return vals.getByteCount()
 }
 
+// GetValue returns the lowest value in the address division range as a big integer
 func (div *addressDivisionBase) GetValue() *BigDivInt {
 	vals := div.divisionValues
 	if vals == nil {
@@ -117,6 +118,7 @@ func (div *addressDivisionBase) GetValue() *BigDivInt {
 	return vals.getValue()
 }
 
+// GetUpperValue returns the highest value in the address division range as a big integer
 func (div *addressDivisionBase) GetUpperValue() *BigDivInt {
 	vals := div.divisionValues
 	if vals == nil {
@@ -125,6 +127,7 @@ func (div *addressDivisionBase) GetUpperValue() *BigDivInt {
 	return vals.getUpperValue()
 }
 
+// Bytes returns the lowest value in the address division range as a byte slice
 func (div *addressDivisionBase) Bytes() []byte {
 	if div.divisionValues == nil {
 		return emptyBytes
@@ -133,6 +136,7 @@ func (div *addressDivisionBase) Bytes() []byte {
 	return cloneBytes(cached)
 }
 
+// UpperBytes returns the highest value in the address division range as a byte slice
 func (div *addressDivisionBase) UpperBytes() []byte {
 	if div.divisionValues == nil {
 		return emptyBytes
@@ -141,6 +145,10 @@ func (div *addressDivisionBase) UpperBytes() []byte {
 	return cloneBytes(cached)
 }
 
+// CopyBytes copies the lowest value in the address division range into a byte slice.
+//
+// If the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// Otherwise, a new slice is created and returned with the value.
 func (div *addressDivisionBase) CopyBytes(bytes []byte) []byte {
 	if div.divisionValues == nil {
 		if bytes != nil {
@@ -152,6 +160,10 @@ func (div *addressDivisionBase) CopyBytes(bytes []byte) []byte {
 	return getBytesCopy(bytes, cached)
 }
 
+// CopyUpperBytes copies the highest value in the address division range into a byte slice.
+//
+// If the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// Otherwise, a new slice is created and returned with the value.
 func (div *addressDivisionBase) CopyUpperBytes(bytes []byte) []byte {
 	if div.divisionValues == nil {
 		if bytes != nil {

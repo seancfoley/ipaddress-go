@@ -717,6 +717,7 @@ func (addr *IPAddress) String() string {
 	return addr.init().ipAddressInternal.toString()
 }
 
+// GetSection returns the backing section for this address or subnet, comprising all segments.
 func (addr *IPAddress) GetSection() *IPAddressSection {
 	return addr.init().section.ToIP()
 }
@@ -1023,10 +1024,12 @@ func (addr *IPAddress) ToSinglePrefixBlockOrAddress() *IPAddress {
 	return addr.init().toSinglePrefixBlockOrAddress().ToIP()
 }
 
+// GetValue returns the lowest address in this subnet or address as an integer value
 func (addr *IPAddress) GetValue() *big.Int {
 	return addr.init().section.GetValue()
 }
 
+// GetUpperValue returns the highest address in this subnet or address as an integer value
 func (addr *IPAddress) GetUpperValue() *big.Int {
 	return addr.init().section.GetUpperValue()
 }
@@ -1060,18 +1063,28 @@ func (addr *IPAddress) CopyUpperNetIP(ip net.IP) net.IP {
 	return addr.CopyUpperBytes(ip)
 }
 
+// Bytes returns the lowest address in this subnet or address as a byte slice
 func (addr *IPAddress) Bytes() []byte {
 	return addr.init().section.Bytes()
 }
 
+// UpperBytes returns the highest address in this subnet or address as a byte slice
 func (addr *IPAddress) UpperBytes() []byte {
 	return addr.init().section.UpperBytes()
 }
 
+// CopyBytes copies the value of the lowest individual address in the subnet into a byte slice
+//
+// if the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// Otherwise, a new slice is created and returned with the value.
 func (addr *IPAddress) CopyBytes(bytes []byte) []byte {
 	return addr.init().section.CopyBytes(bytes)
 }
 
+// CopyUpperBytes copies the value of the highest individual address in the subnet into a byte slice.
+//
+// if the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// Otherwise, a new slice is created and returned with the value.
 func (addr *IPAddress) CopyUpperBytes(bytes []byte) []byte {
 	return addr.init().section.CopyUpperBytes(bytes)
 }
@@ -1122,6 +1135,8 @@ func (addr *IPAddress) Contains(other AddressType) bool {
 	return addr.init().contains(other)
 }
 
+// Compare returns a negative integer, zero, or a positive integer if this address or subnet is less than, equal, or greater than the given item.
+// Any address item is comparable to any other.  All address items use CountComparator to compare.
 func (addr *IPAddress) Compare(item AddressItem) int {
 	return CountComparator.Compare(addr, item)
 }

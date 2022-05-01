@@ -241,10 +241,12 @@ func (addr *MACAddress) checkIdentity(section *MACAddressSection) *MACAddress {
 	return newMACAddress(section)
 }
 
+// GetValue returns the lowest address in this subnet or address as an integer value
 func (addr *MACAddress) GetValue() *big.Int {
 	return addr.init().section.GetValue()
 }
 
+// GetUpperValue returns the highest address in this subnet or address as an integer value
 func (addr *MACAddress) GetUpperValue() *big.Int {
 	return addr.init().section.GetUpperValue()
 }
@@ -287,22 +289,33 @@ func (addr *MACAddress) CopyUpperHardwareAddr(bytes net.HardwareAddr) net.Hardwa
 	return addr.CopyUpperBytes(bytes)
 }
 
+// Bytes returns the lowest address in this address or address collection as a byte slice
 func (addr *MACAddress) Bytes() []byte {
 	return addr.init().section.Bytes()
 }
 
+// UpperBytes returns the highest address in this address or address collection as a byte slice
 func (addr *MACAddress) UpperBytes() []byte {
 	return addr.init().section.UpperBytes()
 }
 
+// CopyBytes copies the value of the lowest individual address in the address collection into a byte slice
+//
+// if the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// Otherwise, a new slice is created and returned with the value.
 func (addr *MACAddress) CopyBytes(bytes []byte) []byte {
 	return addr.init().section.CopyBytes(bytes)
 }
 
+// CopyUpperBytes copies the value of the highest individual address in the address collection into a byte slice.
+//
+// if the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// Otherwise, a new slice is created and returned with the value.
 func (addr *MACAddress) CopyUpperBytes(bytes []byte) []byte {
 	return addr.init().section.CopyUpperBytes(bytes)
 }
 
+// GetSection returns the backing section for this address or address collection, comprising all segments.
 func (addr *MACAddress) GetSection() *MACAddressSection {
 	return addr.init().section.ToMAC()
 }
@@ -537,6 +550,8 @@ func (addr *MACAddress) GetPrefixLenForSingleBlock() PrefixLen {
 	return addr.init().addressInternal.GetPrefixLenForSingleBlock()
 }
 
+// Compare returns a negative integer, zero, or a positive integer if this address or address collection is less than, equal, or greater than the given item.
+// Any address item is comparable to any other.  All address items use CountComparator to compare.
 func (addr *MACAddress) Compare(item AddressItem) int {
 	return CountComparator.Compare(addr, item)
 }

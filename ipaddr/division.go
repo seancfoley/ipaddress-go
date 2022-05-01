@@ -849,26 +849,38 @@ func (div *addressDivisionInternal) GetByteCount() int {
 	return div.addressDivisionBase.GetByteCount()
 }
 
+// GetValue returns the lowest value in the address division range as a big integer
 func (div *addressDivisionInternal) GetValue() *BigDivInt {
 	return div.addressDivisionBase.GetValue()
 }
 
+// GetUpperValue returns the highest value in the address division range as a big integer
 func (div *addressDivisionInternal) GetUpperValue() *BigDivInt {
 	return div.addressDivisionBase.GetUpperValue()
 }
 
+// Bytes returns the lowest value in the address division range as a byte slice
 func (div *addressDivisionInternal) Bytes() []byte {
 	return div.addressDivisionBase.Bytes()
 }
 
+// UpperBytes returns the highest value in the address division range as a byte slice
 func (div *addressDivisionInternal) UpperBytes() []byte {
 	return div.addressDivisionBase.UpperBytes()
 }
 
+// CopyBytes copies the lowest value in the address division range into a byte slice.
+//
+// If the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// Otherwise, a new slice is created and returned with the value.
 func (div *addressDivisionInternal) CopyBytes(bytes []byte) []byte {
 	return div.addressDivisionBase.CopyBytes(bytes)
 }
 
+// CopyUpperBytes copies the highest value in the address division range into a byte slice.
+//
+// If the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// Otherwise, a new slice is created and returned with the value.
 func (div *addressDivisionInternal) CopyUpperBytes(bytes []byte) []byte {
 	return div.addressDivisionBase.CopyUpperBytes(bytes)
 }
@@ -931,12 +943,12 @@ type AddressDivision struct {
 
 //Note: many of the methods below are not public to addressDivisionInternal because segments have corresponding methods using segment values
 
-// GetDivisionValue returns the lower division value
+// GetDivisionValue returns the lower division value in the range
 func (div *AddressDivision) GetDivisionValue() DivInt {
 	return div.getDivisionValue()
 }
 
-// GetUpperDivisionValue returns the upper division value
+// GetUpperDivisionValue returns the upper division value in the range
 func (div *AddressDivision) GetUpperDivisionValue() DivInt {
 	return div.getUpperDivisionValue()
 }
@@ -959,6 +971,8 @@ func (div *AddressDivision) GetCount() *big.Int {
 	return div.getCount()
 }
 
+// Compare returns a negative integer, zero, or a positive integer if this address division is less than, equal, or greater than the given item.
+// Any address item is comparable to any other.  All address items use CountComparator to compare.
 func (div *AddressDivision) Compare(item AddressItem) int {
 	return CountComparator.Compare(div, item)
 }

@@ -47,7 +47,7 @@ type ExtendedSegmentSeries interface {
 	// CompareSize returns a positive integer if this address series has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
 	CompareSize(ExtendedSegmentSeries) int
 
-	// GetSection returns the full address section
+	// GetSection returns the backing section for this series, comprising all segments.
 	GetSection() *AddressSection
 
 	// GetTrailingSection returns an ending subsection of the full address section
@@ -369,6 +369,7 @@ func (addr WrappedAddress) GetUpper() ExtendedSegmentSeries {
 	return WrapAddress(addr.Address.GetUpper())
 }
 
+// GetSection returns the backing section for this series, comprising all segments.
 func (addr WrappedAddress) GetSection() *AddressSection {
 	return addr.Address.GetSection()
 }
@@ -625,6 +626,7 @@ func (section WrappedAddressSection) GetUpper() ExtendedSegmentSeries {
 	return WrapSection(section.AddressSection.GetUpper())
 }
 
+// GetSection returns the backing section for this series, comprising all segments.
 func (section WrappedAddressSection) GetSection() *AddressSection {
 	return section.AddressSection
 }
