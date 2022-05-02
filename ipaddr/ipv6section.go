@@ -585,15 +585,36 @@ func (section *IPv6AddressSection) ToZeroHostLen(prefixLength BitCount) (*IPv6Ad
 	return res.ToIPv6(), err
 }
 
+// ToZeroNetwork converts the address section to one in which all individual address sections have a network of zero,
+// the network being the bits within the prefix length.
+// If the address section has no prefix length, then it returns an all-zero address section.
+//
+// The returned address section will have the same prefix length.
 func (section *IPv6AddressSection) ToZeroNetwork() *IPv6AddressSection {
 	return section.toZeroNetwork().ToIPv6()
 }
 
+// ToMaxHost converts the address section to one in which all individual address sections have a host of all one-bits, the max value,
+// the host being the bits following the prefix length.
+// If the address section has no prefix length, then it returns an all-ones section, the max address section.
+//
+// The returned address section will have the same prefix and prefix length.
+//
+// This returns an error if the address section is a range of address sections which cannot be converted to a range in which all sections have max hosts,
+// because the conversion results in a segment that is not a sequential range of values.
 func (section *IPv6AddressSection) ToMaxHost() (*IPv6AddressSection, addrerr.IncompatibleAddressError) {
 	res, err := section.toMaxHost()
 	return res.ToIPv6(), err
 }
 
+// ToMaxHostLen converts the address section to one in which all individual address sections have a host of all one-bits, the max host,
+// the host being the bits following the given prefix length.
+// If this section has the same prefix length, then the resulting section will too, otherwise the resulting section will have no prefix length.
+//
+// For instance, the zero host of 1.2.3.4 for the prefix length 16 is the address 1.2.255.255.
+//
+// This returns an error if the section is a range of address sections which cannot be converted to a range in which all address sections have max hosts,
+// because the conversion results in a segment that is not a sequential range of values.
 func (section *IPv6AddressSection) ToMaxHostLen(prefixLength BitCount) (*IPv6AddressSection, addrerr.IncompatibleAddressError) {
 	res, err := section.toMaxHostLen(prefixLength)
 	return res.ToIPv6(), err

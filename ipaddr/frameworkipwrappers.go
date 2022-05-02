@@ -132,8 +132,33 @@ type ExtendedIPSegmentSeries interface {
 	// because the conversion results in a series segment that is not a sequential range of values.
 	ToZeroHost() (ExtendedIPSegmentSeries, addrerr.IncompatibleAddressError)
 
+	// ToMaxHostLen converts the series to one in which all individual series have a host of all one-bits, the max host,
+	// the host being the bits following the given prefix length.
+	// If this series has the same prefix length, then the resulting series will too, otherwise the resulting series will have no prefix length.
+	//
+	// For instance, the zero host of 1.2.3.4 for the prefix length 16 is the address 1.2.255.255.
+	//
+	// This returns an error if the series is a range which cannot be converted to a range in which all individual elements have max hosts,
+	// because the conversion results in a series segment that is not a sequential range of values.
 	ToMaxHostLen(BitCount) (ExtendedIPSegmentSeries, addrerr.IncompatibleAddressError)
+
+	// ToMaxHost converts the series to one in which all individual series have a host of all one-bits, the max value,
+	// the host being the bits following the prefix length.
+	// If the series has no prefix length, then it returns an all-ones series, the max series.
+	//
+	// The returned series will have the same prefix length.
+	//
+	// For instance, the max host of 1.2.3.4/16 gives the broadcast address 1.2.255.255/16.
+	//
+	// This returns an error if the series is a range which cannot be converted to a range in which all individual elements have max hosts,
+	// because the conversion results in a series segment that is not a sequential range of values.
 	ToMaxHost() (ExtendedIPSegmentSeries, addrerr.IncompatibleAddressError)
+
+	// ToZeroNetwork converts the series to one in which all individual addresses or address sections have a network of zero,
+	// the network being the bits within the prefix length.
+	// If the series has no prefix length, then it returns an all-zero series.
+	//
+	// The returned series will have the same prefix length.
 	ToZeroNetwork() ExtendedIPSegmentSeries
 
 	// Increment returns the item that is the given increment upwards into the range,
@@ -421,14 +446,37 @@ func (addr WrappedIPAddress) ToZeroHost() (ExtendedIPSegmentSeries, addrerr.Inco
 	return wrapIPAddrWithErr(addr.IPAddress.ToZeroHost()) // in IPAddress/Section/Segment
 }
 
+// ToMaxHostLen converts the address or subnet to one in which all individual addresses have a host of all one-bits, the max host,
+// the host being the bits following the given prefix length.
+// If this address or subnet has the same prefix length, then the resulting one will too, otherwise the resulting series will have no prefix length.
+//
+// For instance, the zero host of 1.2.3.4 for the prefix length 16 is the address 1.2.255.255.
+//
+// This returns an error if the address or subnet is a range which cannot be converted to a range in which all individual addresses have max hosts,
+// because the conversion results in a series segment that is not a sequential range of values.
 func (addr WrappedIPAddress) ToMaxHostLen(bitCount BitCount) (ExtendedIPSegmentSeries, addrerr.IncompatibleAddressError) {
 	return wrapIPAddrWithErr(addr.IPAddress.ToMaxHostLen(bitCount))
 }
 
+// ToMaxHost converts the subnet to one in which all individual addresses have a host of all one-bits, the max value,
+// the host being the bits following the prefix length.
+// If the subnet has no prefix length, then it returns an all-ones address, the max address.
+//
+// The returned series will have the same prefix length.
+//
+// For instance, the max host of 1.2.3.4/16 gives the broadcast address 1.2.255.255/16.
+//
+// This returns an error if the series is a range which cannot be converted to a range in which all individual elements have max hosts,
+// because the conversion results in a series segment that is not a sequential range of values.
 func (addr WrappedIPAddress) ToMaxHost() (ExtendedIPSegmentSeries, addrerr.IncompatibleAddressError) {
 	return wrapIPAddrWithErr(addr.IPAddress.ToMaxHost())
 }
 
+// ToZeroNetwork converts the address or subnet to one in which all individual addresses have a network of zero,
+// the network being the bits within the prefix length.
+// If the address or subnet has no prefix length, then it returns an all-zero address.
+//
+// The returned address or subnet will have the same prefix length.
 func (addr WrappedIPAddress) ToZeroNetwork() ExtendedIPSegmentSeries {
 	return wrapIPAddress(addr.IPAddress.ToZeroNetwork()) //IPAddress/Section.  ToZeroHost() is in IPAddress/Section/Segment
 }
@@ -747,14 +795,33 @@ func (section WrappedIPAddressSection) ToZeroHost() (ExtendedIPSegmentSeries, ad
 	return wrapIPSectWithErr(section.IPAddressSection.ToZeroHost())
 }
 
+// ToMaxHostLen converts the address section to one in which all individual address sections have a host of all one-bits, the max host,
+// the host being the bits following the given prefix length.
+// If this address section has the same prefix length, then the resulting series will too, otherwise the resulting series will have no prefix length.
+//
+// This returns an error if the address section is a range which cannot be converted to a range in which all individual address sections have max hosts,
+// because the conversion results in a series segment that is not a sequential range of values.
 func (section WrappedIPAddressSection) ToMaxHostLen(bitCount BitCount) (ExtendedIPSegmentSeries, addrerr.IncompatibleAddressError) {
 	return wrapIPSectWithErr(section.IPAddressSection.ToMaxHostLen(bitCount))
 }
 
+// ToMaxHost converts the address section to one in which all individual address sections have a host of all one-bits, the max value,
+// the host being the bits following the prefix length.
+// If the section has no prefix length, then it returns an all-ones section, the max address section.
+//
+// The returned series will have the same prefix length.
+//
+// This returns an error if the series is a range which cannot be converted to a range in which all individual elements have max hosts,
+// because the conversion results in a series segment that is not a sequential range of values.
 func (section WrappedIPAddressSection) ToMaxHost() (ExtendedIPSegmentSeries, addrerr.IncompatibleAddressError) {
 	return wrapIPSectWithErr(section.IPAddressSection.ToMaxHost())
 }
 
+// ToZeroNetwork converts the address section to one in which all individual address sections have a network of zero,
+// the network being the bits within the prefix length.
+// If the section has no prefix length, then it returns an all-zero series.
+//
+// The returned address section will have the same prefix length.
 func (section WrappedIPAddressSection) ToZeroNetwork() ExtendedIPSegmentSeries {
 	return wrapIPSection(section.IPAddressSection.ToZeroNetwork())
 }

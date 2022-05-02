@@ -732,23 +732,44 @@ func (addr *IPv6Address) ToZeroHostLen(prefixLength BitCount) (*IPv6Address, add
 	return res.ToIPv6(), err
 }
 
+// ToZeroNetwork converts the address or subnet to one in which all individual addresses have a network of zero,
+// the network being the bits within the prefix length.
+// If the address or subnet has no prefix length, then it returns an all-zero address.
+//
+// The returned address or subnet will have the same prefix length.
 func (addr *IPv6Address) ToZeroNetwork() *IPv6Address {
 	return addr.init().toZeroNetwork().ToIPv6()
 }
 
-// IsMaxHostLen returns whether the host section is always one-bits, the max value, for all individual addresses in this subnet,
-// for the given prefix length.
+// IsMaxHostLen returns whether the host is all one-bits, the max value, for all individual addresses in this subnet,
+// for the given prefix length, the host being the bits following the prefix.
 //
 // If the host section is zero length (there are zero host bits), IsMaxHostLen returns true.
 func (addr *IPv6Address) IsMaxHostLen(prefLen BitCount) bool {
 	return addr.init().isMaxHostLen(prefLen)
 }
 
+// ToMaxHost converts the address or subnet to one in which all individual addresses have a host of all one-bits, the max value,
+// the host being the bits following the prefix length.
+// If the address or subnet has no prefix length, then it returns an all-ones address, the max address.
+//
+// The returned address or subnet will have the same prefix and prefix length.
+//
+// This returns an error if the subnet is a range of addresses which cannot be converted to a range in which all addresses have max hosts,
+// because the conversion results in a subnet segment that is not a sequential range of values.
 func (addr *IPv6Address) ToMaxHost() (*IPv6Address, addrerr.IncompatibleAddressError) {
 	res, err := addr.init().toMaxHost()
 	return res.ToIPv6(), err
 }
 
+// ToMaxHostLen converts the address or subnet to one in which all individual addresses have a host of all one-bits, the max host,
+// the host being the bits following the given prefix length.
+// If this address or subnet has the same prefix length, then the resulting one will too, otherwise the resulting address or subnet will have no prefix length.
+//
+// For instance, the zero host of 1.2.3.4 for the prefix length 16 is the address 1.2.255.255.
+//
+// This returns an error if the subnet is a range of addresses which cannot be converted to a range in which all addresses have max hosts,
+// because the conversion results in a subnet segment that is not a sequential range of values.
 func (addr *IPv6Address) ToMaxHostLen(prefixLength BitCount) (*IPv6Address, addrerr.IncompatibleAddressError) {
 	res, err := addr.init().toMaxHostLen(prefixLength)
 	return res.ToIPv6(), err

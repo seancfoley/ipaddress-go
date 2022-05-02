@@ -327,15 +327,16 @@ type IPAddressSegmentSeries interface { // IPAddress and above, IPAddressSection
 	IsZeroHostLen(BitCount) bool
 
 	// IsMaxHost returns whether this address or address section has a prefix length and if so,
-	// whether the host section is always all one-bits, the max value, for all individual series in this address or address section.
+	// whether the host section is always all one-bits, the max value, for all individual series in this address or address section,
+	//the host being the bits following the prefix.
 	//
 	// If the host section is zero length (there are zero host bits), IsMaxHost returns true.
 	IsMaxHost() bool
 
-	// IsMaxHostLen returns whether the host section is always one-bits, the max value, for all individual series in this address or address section,
-	// for the given prefix length.
+	// IsMaxHostLen returns whether the host is all one-bits, the max value, for all individual series in this address or address section,
+	// for the given prefix length, the host being the bits following the prefix.
 	//
-	// If the host section is zero length (there are zero host bits), IsMaxHostLen returns true.
+	// If the host is zero length (there are zero host bits), IsMaxHostLen returns true.
 	IsMaxHostLen(BitCount) bool
 
 	// IsSingleNetwork returns whether the network section of the IP address series, the prefix, consists of a single value

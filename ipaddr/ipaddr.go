@@ -308,9 +308,6 @@ func (addr *ipAddressInternal) toZeroHostLen(prefixLength BitCount) (res *IPAddr
 	return
 }
 
-// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
-// toZeroNetwork and toMaxHost and toMaxHostLen is next - looks like I previously started on these ones
-
 func (addr *ipAddressInternal) toZeroNetwork() *IPAddress {
 	return addr.checkIdentity(addr.getSection().toZeroNetwork())
 }
@@ -767,6 +764,9 @@ func (addr *IPAddress) GetSubSection(index, endIndex int) *IPAddressSection {
 	return addr.GetSection().GetSubSection(index, endIndex)
 }
 
+// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
+// toZeroNetwork is next - looks like I previously started on these ones
+
 func (addr *IPAddress) GetNetworkSection() *IPAddressSection {
 	return addr.GetSection().GetNetworkSection()
 }
@@ -921,18 +921,45 @@ func (addr *IPAddress) ToZeroHostLen(prefixLength BitCount) (*IPAddress, addrerr
 	return addr.init().toZeroHostLen(prefixLength)
 }
 
+// ToZeroNetwork converts the address or subnet to one in which all individual addresses have a network of zero,
+// the network being the bits within the prefix length.
+// If the address or subnet has no prefix length, then it returns an all-zero address.
+//
+// The returned address or subnet will have the same prefix length.
 func (addr *IPAddress) ToZeroNetwork() *IPAddress {
 	return addr.init().toZeroNetwork()
 }
 
+// IsMaxHostLen returns whether the host is all one-bits, the max value, for all individual addresses in this subnet,
+// for the given prefix length, the host being the bits following the prefix.
+//
+// If the host section is zero length (there are zero host bits), IsMaxHostLen returns true.
 func (addr *IPAddress) IsMaxHostLen(prefLen BitCount) bool {
 	return addr.init().isMaxHostLen(prefLen)
 }
 
+// ToMaxHost converts the address or subnet to one in which all individual addresses have a host of all one-bits, the max value,
+// the host being the bits following the prefix length.
+// If the address or subnet has no prefix length, then it returns an all-ones address, the max address.
+//
+// The returned address or subnet will have the same prefix and prefix length.
+//
+// For instance, the max host of 1.2.3.4/16 gives the broadcast address 1.2.255.255/16.
+//
+// This returns an error if the subnet is a range of addresses which cannot be converted to a range in which all addresses have max hosts,
+// because the conversion results in a subnet segment that is not a sequential range of values.
 func (addr *IPAddress) ToMaxHost() (*IPAddress, addrerr.IncompatibleAddressError) {
 	return addr.init().toMaxHost()
 }
 
+// ToMaxHostLen converts the address or subnet to one in which all individual addresses have a host of all one-bits, the max host,
+// the host being the bits following the given prefix length.
+// If this address or subnet has the same prefix length, then the resulting one will too, otherwise the resulting address or subnet will have no prefix length.
+//
+// For instance, the zero host of 1.2.3.4 for the prefix length 16 is the address 1.2.255.255.
+//
+// This returns an error if the subnet is a range of addresses which cannot be converted to a range in which all addresses have max hosts,
+// because the conversion results in a subnet segment that is not a sequential range of values.
 func (addr *IPAddress) ToMaxHostLen(prefixLength BitCount) (*IPAddress, addrerr.IncompatibleAddressError) {
 	return addr.init().toMaxHostLen(prefixLength)
 }
@@ -996,7 +1023,6 @@ func (addr *IPAddress) SetPrefixLen(prefixLen BitCount) *IPAddress {
 // In other words, bits that move from one side of the prefix length to the other (ie bits moved into the prefix or outside the prefix) are zeroed.
 //
 // If the result cannot be zeroed because zeroing out bits results in a non-contiguous segment, an error is returned.
-
 func (addr *IPAddress) SetPrefixLenZeroed(prefixLen BitCount) (*IPAddress, addrerr.IncompatibleAddressError) {
 	res, err := addr.init().setPrefixLenZeroed(prefixLen)
 	return res.ToIP(), err

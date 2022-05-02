@@ -473,7 +473,7 @@ func (section *ipAddressSectionInternal) IsSingleNetwork() bool {
 }
 
 // IsMaxHost returns whether this section has a prefix length and if so,
-// whether the host section is always all one-bits, the max value, for all individual sections in this address section.
+// whether the host is all all one-bits, the max value, for all individual sections in this address section.
 //
 // If the host section is zero length (there are zero host bits), IsMaxHost returns true.
 func (section *ipAddressSectionInternal) IsMaxHost() bool {
@@ -483,8 +483,8 @@ func (section *ipAddressSectionInternal) IsMaxHost() bool {
 	return section.IsMaxHostLen(section.getNetworkPrefixLen().bitCount())
 }
 
-// IsMaxHostLen returns whether the host section is always one-bits, the max value, for all individual sections in this address section,
-// for the given prefix length.
+// IsMaxHostLen returns whether the host host is all one-bits, the max value, for all individual sections in this address section,
+// for the given prefix length, the host being the bits following the prefix.
 //
 // If the host section is zero length (there are zero host bits), IsMaxHostLen returns true.
 func (section *ipAddressSectionInternal) IsMaxHostLen(prefLen BitCount) bool {
@@ -1801,14 +1801,33 @@ func (section *IPAddressSection) ToZeroHostLen(prefixLength BitCount) (*IPAddres
 	return section.ToZeroHostLen(prefixLength)
 }
 
+// ToZeroNetwork converts the address section to one in which all individual address sections have a network of zero,
+// the network being the bits within the prefix length.
+// If the address section has no prefix length, then it returns an all-zero address section.
+//
+// The returned address section will have the same prefix length.
 func (section *IPAddressSection) ToZeroNetwork() *IPAddressSection {
 	return section.toZeroNetwork()
 }
 
+// ToMaxHost converts the address section to one in which all individual address sections have a host of all one-bits, the max value,
+// the host being the bits following the prefix length.
+// If the address section has no prefix length, then it returns an all-ones section, the max address section.
+//
+// The returned address section will have the same prefix and prefix length.
+//
+// This returns an error if the address section is a range of address sections which cannot be converted to a range in which all sections have max hosts,
+// because the conversion results in a segment that is not a sequential range of values.
 func (section *IPAddressSection) ToMaxHost() (res *IPAddressSection, err addrerr.IncompatibleAddressError) {
 	return section.toMaxHost()
 }
 
+// ToMaxHostLen converts the address section to one in which all individual address sections have a host of all one-bits, the max host,
+// the host being the bits following the given prefix length.
+// If this section has the same prefix length, then the resulting section will too, otherwise the resulting section will have no prefix length.
+//
+// This returns an error if the section is a range of address sections which cannot be converted to a range in which all address sections have max hosts,
+// because the conversion results in a segment that is not a sequential range of values.
 func (section *IPAddressSection) ToMaxHostLen(prefixLength BitCount) (*IPAddressSection, addrerr.IncompatibleAddressError) {
 	return section.toMaxHostLen(prefixLength)
 }
