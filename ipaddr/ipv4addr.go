@@ -409,15 +409,37 @@ func (addr *IPv4Address) GetUpperIPAddress() *IPAddress {
 	return addr.GetUpper().ToIP()
 }
 
+// IsZeroHostLen returns whether the host section is always zero for all individual addresses in this subnet,
+// for the given prefix length.
+//
+// If the host section is zero length (there are zero host bits), IsZeroHostLen returns true.
 func (addr *IPv4Address) IsZeroHostLen(prefLen BitCount) bool {
 	return addr.init().isZeroHostLen(prefLen)
 }
 
+// ToZeroHost converts the address or subnet to one in which all individual addresses have a host of zero,
+// the host being the bits following the prefix length.
+// If the address or subnet has no prefix length, then it returns an all-zero address.
+//
+// The returned address or subnet will have the same prefix and prefix length.
+//
+// For instance, the zero host of 1.2.3.4/16 is the individual address 1.2.0.0/16.
+//
+// This returns an error if the subnet is a range of addresses which cannot be converted to a range in which all addresses have zero hosts,
+// because the conversion results in a subnet segment that is not a sequential range of values.
 func (addr *IPv4Address) ToZeroHost() (*IPv4Address, addrerr.IncompatibleAddressError) {
 	res, err := addr.init().toZeroHost(false)
 	return res.ToIPv4(), err
 }
 
+// ToZeroHostLen converts the address or subnet to one in which all individual addresses have a host of zero,
+// the host being the bits following the given prefix length.
+// If this address or subnet has the same prefix length, then the returned one will too, otherwise the returned series will have no prefix length.
+//
+// For instance, the zero host of 1.2.3.4 for the prefix length 16 is the address 1.2.0.0.
+//
+// This returns an error if the subnet is a range of addresses which cannot be converted to a range in which all addresses have zero hosts,
+// because the conversion results in a subnet segment that is not a sequential range of values.
 func (addr *IPv4Address) ToZeroHostLen(prefixLength BitCount) (*IPv4Address, addrerr.IncompatibleAddressError) {
 	res, err := addr.init().toZeroHostLen(prefixLength)
 	return res.ToIPv4(), err
@@ -427,6 +449,10 @@ func (addr *IPv4Address) ToZeroNetwork() *IPv4Address {
 	return addr.init().toZeroNetwork().ToIPv4()
 }
 
+// IsMaxHostLen returns whether the host section is always one-bits, the max value, for all individual addresses in this subnet,
+// for the given prefix length.
+//
+// If the host section is zero length (there are zero host bits), IsMaxHostLen returns true.
 func (addr *IPv4Address) IsMaxHostLen(prefLen BitCount) bool {
 	return addr.init().isMaxHostLen(prefLen)
 }
@@ -860,10 +886,12 @@ func (addr *IPv4Address) ToAddressString() *IPAddressString {
 	return addr.init().ToIP().ToAddressString()
 }
 
+// IncludesZeroHostLen returns whether the subnet contains an individual address with a host of zero, an individual address for which all bits past the given prefix length are zero.
 func (addr *IPv4Address) IncludesZeroHostLen(networkPrefixLength BitCount) bool {
 	return addr.init().includesZeroHostLen(networkPrefixLength)
 }
 
+// IncludesMaxHostLen returns whether the subnet contains an individual address with a host of all one-bits, an individual address for which all bits past the given prefix length are all ones.
 func (addr *IPv4Address) IncludesMaxHostLen(networkPrefixLength BitCount) bool {
 	return addr.init().includesMaxHostLen(networkPrefixLength)
 }

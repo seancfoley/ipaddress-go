@@ -2126,10 +2126,13 @@ func (section *addressSectionInternal) GetTrailingBitCount(ones bool) BitCount {
 
 //// end needed for godoc / pkgsite
 
+// An AddressSection is section of an address, containing a certain number of consecutive segments.
 //
+// It is a series of individual address segments.  Each segment has equal bit-length.  Each address is backed by an address section that contains all the segments of the address.
 //
+// AddressSection instances are immutable.  This also makes them concurrency-safe.
 //
-//
+// Most operations that can be performed on Address instances can also be performed on AddressSection instances and vice-versa.
 type AddressSection struct {
 	addressSectionInternal
 }

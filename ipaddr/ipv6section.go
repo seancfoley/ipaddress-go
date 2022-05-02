@@ -561,11 +561,25 @@ func (section *IPv6AddressSection) GetUpper() *IPv6AddressSection {
 	return section.getUpper().ToIPv6()
 }
 
+// ToZeroHost converts the address section to one in which all individual address sections have a host of zero,
+// the host being the bits following the prefix length.
+// If the address section has no prefix length, then it returns an all-zero address section.
+//
+// The returned section will have the same prefix and prefix length.
+//
+// This returns an error if the section is a range of address sections which cannot be converted to a range in which all sections have zero hosts,
+// because the conversion results in a segment that is not a sequential range of values.
 func (section *IPv6AddressSection) ToZeroHost() (*IPv6AddressSection, addrerr.IncompatibleAddressError) {
 	res, err := section.toZeroHost(false)
 	return res.ToIPv6(), err
 }
 
+// ToZeroHostLen converts the address section to one in which all individual sections have a host of zero,
+// the host being the bits following the given prefix length.
+// If this address section has the same prefix length, then the returned one will too, otherwise the returned section will have no prefix length.
+//
+// This returns an error if the section is a range of which cannot be converted to a range in which all sections have zero hosts,
+// because the conversion results in a segment that is not a sequential range of values.
 func (section *IPv6AddressSection) ToZeroHostLen(prefixLength BitCount) (*IPv6AddressSection, addrerr.IncompatibleAddressError) {
 	res, err := section.toZeroHostLen(prefixLength)
 	return res.ToIPv6(), err

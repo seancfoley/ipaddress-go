@@ -118,7 +118,7 @@ func (section *ipAddressSectionInternal) GetSegment(index int) *IPAddressSegment
 	return section.getDivision(index).ToIP()
 }
 
-// GetIPVersion returns the IP version of this address section
+// GetIPVersion returns the IP version of this IP address section
 func (section *ipAddressSectionInternal) GetIPVersion() IPVersion {
 	addrType := section.getAddrType()
 	if addrType.isIPv4() {
@@ -133,7 +133,7 @@ func (section *ipAddressSectionInternal) getNetworkPrefixLen() PrefixLen {
 	return section.prefixLength
 }
 
-// GetNetworkPrefixLen returns the prefix length, or nil if there is no prefix length.
+// GetNetworkPrefixLen returns the prefix length, or nil if there is no prefix length.  It is equivalent to GetPrefixLen.
 //
 // A prefix length indicates the number of bits in the initial part of the address item that comprises the prefix.
 //
@@ -144,12 +144,12 @@ func (section *ipAddressSectionInternal) GetNetworkPrefixLen() PrefixLen {
 
 // GetBlockMaskPrefixLen returns the prefix length if this address section is equivalent to the mask for a CIDR prefix block.
 // Otherwise, it returns nil.
-// A CIDR network mask is an address with all 1s in the network section and then all 0s in the host section.
-// A CIDR host mask is an address with all 0s in the network section and then all 1s in the host section.
-// The prefix length is the length of the network section.
+// A CIDR network mask is an address section with all 1s in the network section and then all 0s in the host section.
+// A CIDR host mask is an address section with all 0s in the network section and then all 1s in the host section.
+// The prefix length is the bit-length of the network section.
 //
-// Also, keep in mind that the prefix length returned by this method is not equivalent to the prefix length of this object,
-// indicating the network and host section of this address.
+// Also, keep in mind that the prefix length returned by this method is not equivalent to the prefix length of this instance,
+// indicating the network and host section of this address section.
 // The prefix length returned here indicates the whether the value of this address can be used as a mask for the network and host
 // section of any other address.  Therefore the two values can be different values, or one can be nil while the other is not.
 //
@@ -246,11 +246,16 @@ func (section *ipAddressSectionInternal) checkForPrefixMask() (networkMaskLen, h
 	return
 }
 
+// IncludesZeroHost returns whether the address section contains an individual address section with a host of zero.  If the address section has no prefix length it returns false.
+// If the prefix length matches the bit count, then it returns true.
+//
+// Otherwise, it checks whether it contains an individual address section for which all bits past the prefix are zero.
 func (section *ipAddressSectionInternal) IncludesZeroHost() bool {
 	networkPrefixLength := section.getPrefixLen()
 	return networkPrefixLength != nil && section.IncludesZeroHostLen(networkPrefixLength.bitCount())
 }
 
+// IncludesZeroHostLen returns whether the address section contains an individual section with a host of zero, a section for which all bits past the given prefix length are zero.
 func (section *ipAddressSectionInternal) IncludesZeroHostLen(networkPrefixLength BitCount) bool {
 	networkPrefixLength = checkSubnet(section.toIPAddressSection(), networkPrefixLength)
 	bitsPerSegment := section.GetBitsPerSegment()
@@ -260,27 +265,30 @@ func (section *ipAddressSectionInternal) IncludesZeroHostLen(networkPrefixLength
 	for i := prefixedSegmentIndex; i < divCount; i++ {
 		div := section.GetSegment(i)
 		segmentPrefixLength := getPrefixedSegmentPrefixLength(bitsPerSegment, networkPrefixLength, i)
-		if segmentPrefixLength != nil {
-			mask := div.GetSegmentHostMask(segmentPrefixLength.bitCount())
-			if (mask & div.GetSegmentValue()) != 0 {
+		mask := div.GetSegmentHostMask(segmentPrefixLength.bitCount())
+		if (mask & div.GetSegmentValue()) != 0 {
+			return false
+		}
+		for i++; i < divCount; i++ {
+			div = section.GetSegment(i)
+			if !div.includesZero() {
 				return false
-			}
-			for i++; i < divCount; i++ {
-				div = section.GetSegment(i)
-				if !div.includesZero() {
-					return false
-				}
 			}
 		}
 	}
 	return true
 }
 
+// IncludesMaxHost returns whether the address section contains an individual address section with a host of all one-bits.  If the address section has no prefix length it returns false.
+// If the prefix length matches the bit count, then it returns true.
+//
+// Otherwise, it checks whether it contains an individual address section for which all bits past the prefix are one.
 func (section *ipAddressSectionInternal) IncludesMaxHost() bool {
 	networkPrefixLength := section.getPrefixLen()
 	return networkPrefixLength != nil && section.IncludesMaxHostLen(networkPrefixLength.bitCount())
 }
 
+// IncludesMaxHostLen returns whether the address section contains an individual address section with a host of all one-bits, an address section for which all bits past the given prefix length are all ones.
 func (section *ipAddressSectionInternal) IncludesMaxHostLen(networkPrefixLength BitCount) bool {
 	networkPrefixLength = checkSubnet(section.toIPAddressSection(), networkPrefixLength)
 	bitsPerSegment := section.GetBitsPerSegment()
@@ -436,7 +444,9 @@ func (section *ipAddressSectionInternal) toMaxHostLen(prefixLength BitCount) (*I
 		func(i int) SegInt { return mask.GetSegment(i).GetSegmentValue() })
 }
 
-// IsSingleNetwork returns whether the network section of the address, the prefix, consists of a single value
+// IsSingleNetwork returns whether the network section of the address, the prefix, consists of a single value.
+//
+// If it has no prefix length, it returns true if not multiple, if it contains only a single individual address section.
 func (section *ipAddressSectionInternal) IsSingleNetwork() bool {
 	networkPrefixLength := section.getNetworkPrefixLen()
 	if networkPrefixLength == nil {
@@ -463,8 +473,9 @@ func (section *ipAddressSectionInternal) IsSingleNetwork() bool {
 }
 
 // IsMaxHost returns whether this section has a prefix length and if so,
-// whether the host section is the maximum value for this section or all sections in this set of address sections.
-// If the host section is zero length (there are no host bits at all), returns false.
+// whether the host section is always all one-bits, the max value, for all individual sections in this address section.
+//
+// If the host section is zero length (there are zero host bits), IsMaxHost returns true.
 func (section *ipAddressSectionInternal) IsMaxHost() bool {
 	if !section.isPrefixed() {
 		return false
@@ -472,9 +483,10 @@ func (section *ipAddressSectionInternal) IsMaxHost() bool {
 	return section.IsMaxHostLen(section.getNetworkPrefixLen().bitCount())
 }
 
-// IsMaxHostLen returns whether the host is the max value for the given prefix length for this section.
-// If this section already has a prefix length, then that prefix length is ignored.
-// If the host section is zero length (there are no host bits at all), returns true.
+// IsMaxHostLen returns whether the host section is always one-bits, the max value, for all individual sections in this address section,
+// for the given prefix length.
+//
+// If the host section is zero length (there are zero host bits), IsMaxHostLen returns true.
 func (section *ipAddressSectionInternal) IsMaxHostLen(prefLen BitCount) bool {
 	divCount := section.GetSegmentCount()
 	if divCount == 0 {
@@ -506,7 +518,9 @@ func (section *ipAddressSectionInternal) IsMaxHostLen(prefLen BitCount) bool {
 }
 
 // IsZeroHost returns whether this section has a prefix length and if so,
-// whether the host section is zero for this section or all sections in this set of address sections.
+// whether the host section is always zero for all individual sections in this address section.
+//
+// If the host section is zero length (there are zero host bits), IsZeroHost returns true.
 func (section *ipAddressSectionInternal) IsZeroHost() bool {
 	if !section.isPrefixed() {
 		return false
@@ -514,9 +528,10 @@ func (section *ipAddressSectionInternal) IsZeroHost() bool {
 	return section.IsZeroHostLen(section.getNetworkPrefixLen().bitCount())
 }
 
-// IsZeroHostLen returns whether the host is zero for the given prefix length for this section or all sections in this set of address sections.
-// If this section already has a prefix length, then that prefix length is ignored.
-// If the host section is zero length (there are no host bits at all), returns true.
+// IsZeroHostLen returns whether the host section is always zero for all individual sections in this address section,
+// for the given prefix length.
+//
+// If the host section is zero length (there are zero host bits), IsZeroHostLen returns true.
 func (section *ipAddressSectionInternal) IsZeroHostLen(prefLen BitCount) bool {
 	segmentCount := section.GetSegmentCount()
 	if segmentCount == 0 {
@@ -529,7 +544,6 @@ func (section *ipAddressSectionInternal) IsZeroHostLen(prefLen BitCount) bool {
 	prefixedSegmentIndex := getHostSegmentIndex(prefLen, section.GetBytesPerSegment(), bitsPerSegment)
 	if prefixedSegmentIndex < segmentCount {
 		segmentPrefixLength := getPrefixedSegmentPrefixLength(bitsPerSegment, prefLen, prefixedSegmentIndex)
-		//if segmentPrefixLength != nil {
 		i := prefixedSegmentIndex
 		div := section.GetSegment(i)
 		if div.isMultiple() || (div.GetSegmentHostMask(segmentPrefixLength.bitCount())&div.getSegmentValue()) != 0 {
@@ -541,7 +555,6 @@ func (section *ipAddressSectionInternal) IsZeroHostLen(prefLen BitCount) bool {
 				return false
 			}
 		}
-		//}
 	}
 	return true
 }
@@ -1374,7 +1387,6 @@ func (section *ipAddressSectionInternal) ContainsPrefixBlock(prefixLen BitCount)
 // This means there is only one prefix of the given length in this item, and this item contains the prefix block for that given prefix.
 //
 // Use GetPrefixLenForSingleBlock to determine whether there is a prefix length for which this method returns true.
-
 func (section *ipAddressSectionInternal) ContainsSinglePrefixBlock(prefixLen BitCount) bool {
 	return section.addressSectionInternal.ContainsSinglePrefixBlock(prefixLen)
 }
@@ -1523,10 +1535,13 @@ func (section *ipAddressSectionInternal) PrefixContains(other AddressSectionType
 
 //// end needed for godoc / pkgsite
 
+// An IPAddressSection is an address section of an IP address, containing a certain number of consecutive segments of an IP address.
 //
+// It is a series of individual address segments.  Each segment has equal bit-length.  Each address is backed by an address section that contains all the segments of the address.
 //
+// IPAddressSection objects are immutable.  This also makes them concurrency-safe.
 //
-// An IPAddress section has segments, which are divisions of equal length and size
+// Most operations that can be performed on IPAddress instances can also be performed on IPAddressSection instances and vice-versa.
 type IPAddressSection struct {
 	ipAddressSectionInternal
 }
@@ -1695,7 +1710,7 @@ func (section *IPAddressSection) IsIPv6() bool {
 	return section != nil && section.matchesIPv6SectionType()
 }
 
-// Gets the subsection from the series starting from the given index
+// GetTrailingSection gets the subsection from the series starting from the given index
 // The first segment is at index 0.
 func (section *IPAddressSection) GetTrailingSection(index int) *IPAddressSection {
 	return section.GetSubSection(index, section.GetSegmentCount())
@@ -1764,10 +1779,24 @@ func (section *IPAddressSection) GetUpper() *IPAddressSection {
 	return section.getUpper().ToIP()
 }
 
+// ToZeroHost converts the address section to one in which all individual address sections have a host of zero,
+// the host being the bits following the prefix length.
+// If the address section has no prefix length, then it returns an all-zero address section.
+//
+// The returned section will have the same prefix and prefix length.
+//
+// This returns an error if the section is a range of address sections which cannot be converted to a range in which all sections have zero hosts,
+// because the conversion results in a segment that is not a sequential range of values.
 func (section *IPAddressSection) ToZeroHost() (res *IPAddressSection, err addrerr.IncompatibleAddressError) {
 	return section.toZeroHost(false)
 }
 
+// ToZeroHostLen converts the address section to one in which all individual sections have a host of zero,
+// the host being the bits following the given prefix length.
+// If this address section has the same prefix length, then the returned one will too, otherwise the returned section will have no prefix length.
+//
+// This returns an error if the section is a range of which cannot be converted to a range in which all sections have zero hosts,
+// because the conversion results in a segment that is not a sequential range of values.
 func (section *IPAddressSection) ToZeroHostLen(prefixLength BitCount) (*IPAddressSection, addrerr.IncompatibleAddressError) {
 	return section.ToZeroHostLen(prefixLength)
 }

@@ -67,7 +67,7 @@ func (version IPVersion) IsIndeterminate() bool {
 	return true
 }
 
-// returns an index starting from 0 with IndeterminateIPVersion being the highest
+// index returns an index starting from 0 with IndeterminateIPVersion being the highest
 func (version IPVersion) index() int {
 	if version.IsIPv4() {
 		return 0
@@ -217,9 +217,10 @@ func (addr *ipAddressInternal) GetNetworkPrefixLen() PrefixLen {
 	return addr.getNetworkPrefixLen().copy()
 }
 
-// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
-// IncludesZeroHost and IncludesMaxHost is next
-
+// IncludesZeroHost returns whether the subnet contains an individual address with a host of zero.  If the subnet has no prefix length it returns false.
+// If the prefix length matches the bit count, then it returns true.
+//
+// Otherwise, it checks whether it contains an individual address for which all bits past the prefix are zero.
 func (addr *ipAddressInternal) IncludesZeroHost() bool {
 	section := addr.section
 	if section == nil {
@@ -232,6 +233,10 @@ func (addr *ipAddressInternal) includesZeroHostLen(networkPrefixLength BitCount)
 	return addr.getSection().IncludesZeroHostLen(networkPrefixLength)
 }
 
+// IncludesMaxHost returns whether the subnet contains an individual address with a host of all one-bits.  If the subnet has no prefix length it returns false.
+// If the prefix length matches the bit count, then it returns true.
+//
+// Otherwise, it checks whether it contains an individual address for which all bits past the prefix are one.
 func (addr *ipAddressInternal) IncludesMaxHost() bool {
 	section := addr.section
 	if section == nil {
@@ -245,35 +250,43 @@ func (addr *ipAddressInternal) includesMaxHostLen(networkPrefixLength BitCount) 
 }
 
 // IsSingleNetwork returns whether the network section of the address, the prefix, consists of a single value
+//
+// If it has no prefix length, it returns true if not multiple, if it contains only a single individual address.
 func (addr *ipAddressInternal) IsSingleNetwork() bool {
 	section := addr.section
 	return section == nil || section.ToIP().IsSingleNetwork()
 }
 
 // IsMaxHost returns whether this section has a prefix length and if so,
-// whether the host section is the max value.
+// whether the host section is always all one-bits, the max value, for all individual addresses in this subnet.
+//
+// If the host section is zero length (there are zero host bits), IsMaxHost returns true.
 func (addr *ipAddressInternal) IsMaxHost() bool {
 	section := addr.section
 	return section != nil && section.ToIP().IsMaxHost()
 }
 
-// IsMaxHostLen returns whether the host is zero for the given prefix length.
-// If this address already has a prefix length, then that prefix length is ignored.
-// If the host section is zero length (there are no host bits at all), returns true.
+// IsMaxHostLen returns whether the host section is always one-bits, the max value, for all individual addresses in this subnet,
+// for the given prefix length.
+//
+// If the host section is zero length (there are zero host bits), IsMaxHostLen returns true.
 func (addr *ipAddressInternal) isMaxHostLen(prefLen BitCount) bool {
 	return addr.getSection().IsMaxHostLen(prefLen)
 }
 
-// IsZeroHost returns whether this section has a prefix length and if so,
-// whether the host section is zero.
+// IsZeroHost returns whether this subnet has a prefix length and if so,
+// whether the host section is always zero for all individual addresses in this subnet.
+//
+// If the host section is zero length (there are zero host bits), IsZeroHost returns true.
 func (addr *ipAddressInternal) IsZeroHost() bool {
 	section := addr.section
 	return section != nil && section.ToIP().IsZeroHost()
 }
 
-// IsZeroHostLen returns whether the host is zero for the given prefix length.
-// If this address already has a prefix length, then that prefix length is ignored.
-// If the host section is zero length (there are no host bits at all), returns true.
+// IsZeroHostLen returns whether the host section is always zero for all individual sections in this address section,
+// for the given prefix length.
+//
+// If the host section is zero length (there are zero host bits), IsZeroHostLen returns true.
 func (addr *ipAddressInternal) isZeroHostLen(prefLen BitCount) bool {
 	return addr.getSection().IsZeroHostLen(prefLen)
 }
@@ -294,6 +307,9 @@ func (addr *ipAddressInternal) toZeroHostLen(prefixLength BitCount) (res *IPAddr
 	}
 	return
 }
+
+// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
+// toZeroNetwork and toMaxHost and toMaxHostLen is next - looks like I previously started on these ones
 
 func (addr *ipAddressInternal) toZeroNetwork() *IPAddress {
 	return addr.checkIdentity(addr.getSection().toZeroNetwork())
@@ -342,6 +358,18 @@ func (addr *ipAddressInternal) adjustPrefixLenZeroed(prefixLen BitCount) (res *I
 	return
 }
 
+// GetBlockMaskPrefixLen returns the prefix length if this address is equivalent to the mask for a CIDR prefix block.
+// Otherwise, it returns nil.
+// A CIDR network mask is an address with all 1s in the network section and then all 0s in the host section.
+// A CIDR host mask is an address with all 0s in the network section and then all 1s in the host section.
+// The prefix length is the bit-length of the network section.
+//
+// Also, keep in mind that the prefix length returned by this method is not equivalent to the prefix length of this instance,
+// indicating the network and host section of this address.
+// The prefix length returned here indicates the whether the value of this address can be used as a mask for the network and host
+// section of any other address.  Therefore, the two values can be different values, or one can be nil while the other is not.
+//
+// This method applies only to the lower value of the range if this address represents multiple values.
 func (addr *ipAddressInternal) GetBlockMaskPrefixLen(network bool) PrefixLen {
 	section := addr.section
 	if section == nil {
@@ -859,14 +887,36 @@ func (addr *IPAddress) GetUpper() *IPAddress {
 	return addr.init().getUpper().ToIP()
 }
 
+// IsZeroHostLen returns whether the host section is always zero for all individual addresses in this subnet,
+// for the given prefix length.
+//
+// If the host section is zero length (there are zero host bits), IsZeroHostLen returns true.
 func (addr *IPAddress) IsZeroHostLen(prefLen BitCount) bool {
 	return addr.init().isZeroHostLen(prefLen)
 }
 
+// ToZeroHost converts the address or subnet to one in which all individual addresses have a host of zero,
+// the host being the bits following the prefix length.
+// If the address or subnet has no prefix length, then it returns an all-zero address.
+//
+// The returned address or subnet will have the same prefix and prefix length.
+//
+// For instance, the zero host of 1.2.3.4/16 is the individual address 1.2.0.0/16.
+//
+// This returns an error if the subnet is a range of addresses which cannot be converted to a range in which all addresses have zero hosts,
+// because the conversion results in a subnet segment that is not a sequential range of values.
 func (addr *IPAddress) ToZeroHost() (*IPAddress, addrerr.IncompatibleAddressError) {
 	return addr.init().toZeroHost(false)
 }
 
+// ToZeroHostLen converts the address or subnet to one in which all individual addresses have a host of zero,
+// the host being the bits following the given prefix length.
+// If this address or subnet has the same prefix length, then the returned one will too, otherwise the returned series will have no prefix length.
+//
+// For instance, the zero host of 1.2.3.4 for the prefix length 16 is the address 1.2.0.0.
+//
+// This returns an error if the subnet is a range of addresses which cannot be converted to a range in which all addresses have zero hosts,
+// because the conversion results in a subnet segment that is not a sequential range of values.
 func (addr *IPAddress) ToZeroHostLen(prefixLength BitCount) (*IPAddress, addrerr.IncompatibleAddressError) {
 	return addr.init().toZeroHostLen(prefixLength)
 }
@@ -1239,7 +1289,7 @@ func (addr *IPAddress) IsIPv6() bool {
 	return addr != nil && addr.isIPv6()
 }
 
-// GetIPVersion returns the IP version of this address
+// GetIPVersion returns the IP version of this IP address
 func (addr *IPAddress) GetIPVersion() IPVersion {
 	return addr.getIPVersion()
 }
@@ -1877,7 +1927,7 @@ func (addr *IPAddress) ToCustomString(stringOptions addrstr.IPStringOptions) str
 // while the reverse direction is generally not common and not useful, except under specific circumstances.
 //
 // However, the reverse direction can be useful under certain circumstances,
-// such as when maintaining a collection of HostIdentifierString instances.
+// such as when maintaining a collection of HostIdentifierString or IPAddressString instances.
 func (addr *IPAddress) ToAddressString() *IPAddressString {
 	addr = addr.init()
 	cache := addr.cache
@@ -1955,10 +2005,12 @@ func (addr *IPAddress) lookupAddr() (*HostName, error) {
 	return NewHostName(names[0]), nil
 }
 
+// IncludesZeroHostLen returns whether the subnet contains an individual address with a host of zero, an individual address for which all bits past the given prefix length are zero.
 func (addr *IPAddress) IncludesZeroHostLen(networkPrefixLength BitCount) bool {
 	return addr.init().includesZeroHostLen(networkPrefixLength)
 }
 
+// IncludesMaxHostLen returns whether the subnet contains an individual address with a host of all one-bits, an individual address for which all bits past the given prefix length are all ones.
 func (addr *IPAddress) IncludesMaxHostLen(networkPrefixLength BitCount) bool {
 	return addr.init().includesMaxHostLen(networkPrefixLength)
 }

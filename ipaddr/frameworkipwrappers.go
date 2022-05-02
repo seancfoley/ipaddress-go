@@ -22,12 +22,12 @@ import (
 )
 
 // ExtendedIPSegmentSeries wraps either an IPAddress or IPAddressSection.
-// ExtendedIPSegmentSeries can be used to write code that works with both IP Addresses and IP Address Sections,
+// ExtendedIPSegmentSeries can be used to write code that works with both IP addresses and IP address sections,
 // going further than IPAddressSegmentSeries to offer additional methods, methods with the series types in their signature.
 type ExtendedIPSegmentSeries interface {
 	IPAddressSegmentSeries
 
-	// Unwrap returns the wrapped *IPAddress or *IPAddressSection as an interface, IPAddressSegmentSeries
+	// Unwrap returns the wrapped IP address or IP address aection as an interface, IPAddressSegmentSeries
 	Unwrap() IPAddressSegmentSeries
 
 	// Equal returns whether the given address series is equal to this address series.
@@ -86,7 +86,16 @@ type ExtendedIPSegmentSeries interface {
 	// IsIPv6 returns true if this series originated as an IPv6 series.  If so, use ToIPv6 to convert back to the IPv6-specific type.
 	IsIPv6() bool
 
+	// ToIPv4 converts to an IPv4AddressSegmentSeries if this series originated as an IPv4 series.
+	// If not, ToIPv4 returns nil.
+	//
+	// ToIPv4 implementations can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 	ToIPv4() IPv4AddressSegmentSeries
+
+	// ToIPv6 converts to an IPv4AddressSegmentSeries if this series originated as an IPv6 series.
+	// If not, ToIPv6 returns nil.
+	//
+	// ToIPv6 implementations can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 	ToIPv6() IPv6AddressSegmentSeries
 
 	// ToBlock creates a new series block by changing the segment at the given index to have the given lower and upper value,
@@ -103,8 +112,26 @@ type ExtendedIPSegmentSeries interface {
 	// The returned series will be the block of all series with the same prefix.
 	ToPrefixBlockLen(BitCount) ExtendedIPSegmentSeries
 
+	// ToZeroHostLen converts the series to one in which all individual series have a host of zero,
+	// the host being the bits following the given prefix length.
+	// If this series has the same prefix length, then the returned one will too, otherwise the returned series will have no prefix length.
+	//
+	// This returns an error if the series is a range which cannot be converted to a range in which all series have zero hosts,
+	// because the conversion results in a segment that is not a sequential range of values.
 	ToZeroHostLen(BitCount) (ExtendedIPSegmentSeries, addrerr.IncompatibleAddressError)
+
+	// ToZeroHost converts the series to one in which all individual series have a host of zero,
+	// the host being the bits following the prefix length.
+	// If the series has no prefix length, then it returns an all-zero series.
+	//
+	// The returned series will have the same prefix length.
+	//
+	// For instance, the zero host of 1.2.3.4/16 is the individual address 1.2.0.0/16.
+	//
+	// This returns an error if the series is a range which cannot be converted to a range in which all individual elements have zero hosts,
+	// because the conversion results in a series segment that is not a sequential range of values.
 	ToZeroHost() (ExtendedIPSegmentSeries, addrerr.IncompatibleAddressError)
+
 	ToMaxHostLen(BitCount) (ExtendedIPSegmentSeries, addrerr.IncompatibleAddressError)
 	ToMaxHost() (ExtendedIPSegmentSeries, addrerr.IncompatibleAddressError)
 	ToZeroNetwork() ExtendedIPSegmentSeries
@@ -269,11 +296,12 @@ type ExtendedIPSegmentSeries interface {
 	ToCustomString(stringOptions addrstr.IPStringOptions) string
 }
 
+// WrappedAddress is the implementation of ExtendedIPSegmentSeries for IP addresses
 type WrappedIPAddress struct {
 	*IPAddress
 }
 
-// Unwrap returns the wrapped *IPAddress as an interface, IPAddressSegmentSeries
+// Unwrap returns the wrapped address as an interface, IPAddressSegmentSeries
 func (addr WrappedIPAddress) Unwrap() IPAddressSegmentSeries {
 	res := addr.IPAddress
 	if res == nil {
@@ -282,10 +310,18 @@ func (addr WrappedIPAddress) Unwrap() IPAddressSegmentSeries {
 	return res
 }
 
+// ToIPv4 converts to an IPv4AddressSegmentSeries if this address originated as an IPv4 section.
+// If not, ToIPv4 returns nil.
+//
+// ToIPv4 can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (addr WrappedIPAddress) ToIPv4() IPv4AddressSegmentSeries {
 	return addr.IPAddress.ToIPv4()
 }
 
+// ToIPv6 converts to an IPv6AddressSegmentSeries if this address originated as an IPv6 section.
+// If not, ToIPv6 returns nil.
+//
+// ToIPv6 can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (addr WrappedIPAddress) ToIPv6() IPv6AddressSegmentSeries {
 	return addr.IPAddress.ToIPv6()
 }
@@ -361,10 +397,26 @@ func (addr WrappedIPAddress) ToPrefixBlock() ExtendedIPSegmentSeries {
 	return wrapIPAddress(addr.IPAddress.ToPrefixBlock())
 }
 
+// ToZeroHostLen converts the subnet to one in which all individual addresses have a host of zero,
+// the host being the bits following the given prefix length.
+// If this address has the same prefix length, then the returned one will too, otherwise the returned series will have no prefix length.
+//
+// This returns an error if the subnet is a range which cannot be converted to a range in which all addresses have zero hosts,
+// because the conversion results in a segment that is not a sequential range of values.
 func (addr WrappedIPAddress) ToZeroHostLen(bitCount BitCount) (ExtendedIPSegmentSeries, addrerr.IncompatibleAddressError) {
 	return wrapIPAddrWithErr(addr.IPAddress.ToZeroHostLen(bitCount)) //in IPAddress/Section
 }
 
+// ToZeroHost converts the subnet to one in which all individual addresses have a host of zero,
+// the host being the bits following the prefix length.
+// If the subnet has no prefix length, then it returns an all-zero series.
+//
+// The returned series will have the same prefix length.
+//
+// For instance, the zero host of 1.2.3.4/16 is the individual address 1.2.0.0/16.
+//
+// This returns an error if the series is a range which cannot be converted to a range in which all individual elements have zero hosts,
+// because the conversion results in a series segment that is not a sequential range of values.
 func (addr WrappedIPAddress) ToZeroHost() (ExtendedIPSegmentSeries, addrerr.IncompatibleAddressError) {
 	return wrapIPAddrWithErr(addr.IPAddress.ToZeroHost()) // in IPAddress/Section/Segment
 }
@@ -572,11 +624,12 @@ func (addr WrappedIPAddress) ReverseSegments() ExtendedIPSegmentSeries {
 	return wrapIPAddress(addr.IPAddress.ReverseSegments())
 }
 
+// WrappedAddress is the implementation of ExtendedIPSegmentSeries for IP address sections
 type WrappedIPAddressSection struct {
 	*IPAddressSection
 }
 
-// Unwrap returns the wrapped *IPAddressSection as an interface, IPAddressSegmentSeries
+// Unwrap returns the wrapped address section as an interface, IPAddressSegmentSeries
 func (section WrappedIPAddressSection) Unwrap() IPAddressSegmentSeries {
 	res := section.IPAddressSection
 	if res == nil {
@@ -585,10 +638,18 @@ func (section WrappedIPAddressSection) Unwrap() IPAddressSegmentSeries {
 	return res
 }
 
+// ToIPv4 converts to an IPv4AddressSegmentSeries if this section originated as an IPv4 section.
+// If not, ToIPv4 returns nil.
+//
+// ToIPv4 can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (section WrappedIPAddressSection) ToIPv4() IPv4AddressSegmentSeries {
 	return section.IPAddressSection.ToIPv4()
 }
 
+// ToIPv6 converts to an IPv6AddressSegmentSeries if this section originated as an IPv6 section.
+// If not, ToIPv6 returns nil.
+//
+// ToIPv6 can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (section WrappedIPAddressSection) ToIPv6() IPv6AddressSegmentSeries {
 	return section.IPAddressSection.ToIPv6()
 }
@@ -664,10 +725,24 @@ func (section WrappedIPAddressSection) ToPrefixBlock() ExtendedIPSegmentSeries {
 	return wrapIPSection(section.IPAddressSection.ToPrefixBlock())
 }
 
+// ToZeroHostLen converts the section to one in which all individual sections have a host of zero,
+// the host being the bits following the given prefix length.
+// If this section has the same prefix length, then the returned one will too, otherwise the returned series will have no prefix length.
+//
+// This returns an error if the section is a range which cannot be converted to a range in which all individual sections have zero hosts,
+// because the conversion results in a segment that is not a sequential range of values.
 func (section WrappedIPAddressSection) ToZeroHostLen(bitCount BitCount) (ExtendedIPSegmentSeries, addrerr.IncompatibleAddressError) {
 	return wrapIPSectWithErr(section.IPAddressSection.ToZeroHostLen(bitCount))
 }
 
+// ToZeroHost converts the section to one in which all individual sections have a host of zero,
+// the host being the bits following the prefix length.
+// If the section has no prefix length, then it returns an all-zero section.
+//
+// The returned series will have the same prefix length.
+//
+// This returns an error if the section is a range which cannot be converted to a range in which all individual elements have zero hosts,
+// because the conversion results in a segment that is not a sequential range of values.
 func (section WrappedIPAddressSection) ToZeroHost() (ExtendedIPSegmentSeries, addrerr.IncompatibleAddressError) {
 	return wrapIPSectWithErr(section.IPAddressSection.ToZeroHost())
 }

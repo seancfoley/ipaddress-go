@@ -296,18 +296,68 @@ var _, _ AddressSegmentSeries = &Address{}, &AddressSection{}
 type IPAddressSegmentSeries interface { // IPAddress and above, IPAddressSection and above, ExtendedIPSegmentSeries
 	AddressSegmentSeries
 
+	// IncludesZeroHost returns whether the series contains an individual series with a host of zero.  If the series has no prefix length it returns false.
+	// If the prefix length matches the bit count, then it returns true.
+	//
+	// Otherwise, it checks whether it contains an individual series for which all bits past the prefix are zero.
 	IncludesZeroHost() bool
+
+	// IncludesZeroHostLen returns whether the series contains an individual series with a host of zero, a series for which all bits past the given prefix length are zero.
 	IncludesZeroHostLen(prefLen BitCount) bool
+
+	// IncludesMaxHost returns whether the series contains an individual series with a host of all one-bits.  If the series has no prefix length it returns false.
+	// If the prefix length matches the bit count, then it returns true.
+	//
+	// Otherwise, it checks whether it contains an individual series for which all bits past the prefix are one.
 	IncludesMaxHost() bool
+
+	// IncludesMaxHostLen returns whether the series contains an individual series with a host of all one-bits, a series for which all bits past the given prefix length are all ones.
 	IncludesMaxHostLen(prefLen BitCount) bool
+
+	// IsZeroHost returns whether this series has a prefix length and if so,
+	// whether the host section is always zero for all individual series in this subnet or address section.
+	//
+	// If the host section is zero length (there are zero host bits), IsZeroHost returns true.
 	IsZeroHost() bool
+
+	// IsZeroHostLen returns whether the host section is always zero for all individual series in this address or address section,
+	// for the given prefix length.
+	//
+	// If the host section is zero length (there are zero host bits), IsZeroHostLen returns true.
 	IsZeroHostLen(BitCount) bool
+
+	// IsMaxHost returns whether this address or address section has a prefix length and if so,
+	// whether the host section is always all one-bits, the max value, for all individual series in this address or address section.
+	//
+	// If the host section is zero length (there are zero host bits), IsMaxHost returns true.
 	IsMaxHost() bool
+
+	// IsMaxHostLen returns whether the host section is always one-bits, the max value, for all individual series in this address or address section,
+	// for the given prefix length.
+	//
+	// If the host section is zero length (there are zero host bits), IsMaxHostLen returns true.
 	IsMaxHostLen(BitCount) bool
+
+	// IsSingleNetwork returns whether the network section of the IP address series, the prefix, consists of a single value
+	//
+	// If it has no prefix length, it returns true if not multiple, if it contains only a single individual series.
 	IsSingleNetwork() bool
 
+	// GetIPVersion returns the IP version of this IP address or IP address section
 	GetIPVersion() IPVersion
 
+	// GetBlockMaskPrefixLen returns the prefix length if this IP address or IP address section is equivalent to the mask for a CIDR prefix block.
+	// Otherwise, it returns nil.
+	// A CIDR network mask is a series with all 1s in the network section and then all 0s in the host section.
+	// A CIDR host mask is a series with all 0s in the network section and then all 1s in the host section.
+	// The prefix length is the bit-length of the network section.
+	//
+	// Also, keep in mind that the prefix length returned by this method is not equivalent to the prefix length of this instance,
+	// indicating the network and host section of this series.
+	// The prefix length returned here indicates the whether the value of this series can be used as a mask for the network and host
+	// section of any other series.  Therefore, the two values can be different values, or one can be nil while the other is not.
+	//
+	// This method applies only to the lower value of the range if this series represents multiple values.
 	GetBlockMaskPrefixLen(network bool) PrefixLen
 
 	// GetLeadingBitCount returns the number of consecutive leading one or zero bits.
@@ -579,6 +629,14 @@ type IPAddressType interface {
 	// ToIP can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 	ToIP() *IPAddress
 
+	// ToAddressString retrieves or generates an IPAddressString instance for this IP address.
+	// This may be the IPAddressString this instance was generated from, if it was generated from an IPAddressString.
+	//
+	// In general, users are intended to create IP address instances from IPAddressString instances,
+	// while the reverse direction is generally not common and not useful, except under specific circumstances.
+	//
+	// However, the reverse direction can be useful under certain circumstances,
+	// such as when maintaining a collection of HostIdentifierString or IPAddressString instances.
 	ToAddressString() *IPAddressString
 }
 

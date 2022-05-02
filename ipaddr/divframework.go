@@ -56,7 +56,14 @@ type AddressSegmentType interface {
 
 	StandardDivisionType
 
+	// Equal returns whether the given segment is equal to this segment.
+	// Two segments are equal if they match:
+	//  - type/version (IPv4, IPv6, MAC)
+	//  - value range
+	// Prefix lengths are ignored.
 	Equal(AddressSegmentType) bool
+
+	// Contains returns whether this segment is same type and version as the given segment and whether it contains all values in the given segment.
 	Contains(AddressSegmentType) bool
 
 	// GetSegmentValue returns the lower segment value as a SegInt, the same value as the DivInt value returned by getDivisionValue()

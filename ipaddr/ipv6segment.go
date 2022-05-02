@@ -296,18 +296,17 @@ func (seg *IPv6AddressSegment) MatchesWithPrefixMask(value IPv6SegInt, networkBi
 	return seg.init().ipAddressSegmentInternal.MatchesWithPrefixMask(SegInt(value), networkBits)
 }
 
-// GetBlockMaskPrefixLen returns the prefix length if this address section is equivalent to the mask for a CIDR prefix block.
+// GetBlockMaskPrefixLen returns the prefix length if this address segment is equivalent to the mask for a CIDR prefix block.
 // Otherwise, it returns nil.
-// A CIDR network mask is an address with all 1s in the network section and then all 0s in the host section.
-// A CIDR host mask is an address with all 0s in the network section and then all 1s in the host section.
-// The prefix length is the length of the network section.
+// A CIDR network mask is a segment with all 1s in the network bits and then all 0s in the host bits.
+// A CIDR host mask is a segment with all 0s in the network bits and then all 1s in the host bits.
+// The prefix length is the bit-length of the network bits.
 //
-// Also, keep in mind that the prefix length returned by this method is not equivalent to the prefix length of this object,
-// indicating the network and host section of this address.
-// The prefix length returned here indicates the whether the value of this address can be used as a mask for the network and host
-// section of any other address.  Therefore the two values can be different values, or one can be nil while the other is not.
+// Also, keep in mind that the prefix length returned by this method is not equivalent to the prefix length of this segment.
+// The prefix length returned here indicates the whether the value of this segment can be used as a mask for the network and host
+// bits of any other segment.  Therefore, the two values can be different values, or one can be nil while the other is not.
 //
-// This method applies only to the lower value of the range if this section represents multiple values.
+// This method applies only to the lower value of the range if this segment represents multiple values.
 func (seg *IPv6AddressSegment) GetBlockMaskPrefixLen(network bool) PrefixLen {
 	return seg.init().ipAddressSegmentInternal.GetBlockMaskPrefixLen(network)
 }
@@ -348,7 +347,7 @@ func (seg *IPv6AddressSegment) ToHostSegment(segmentPrefixLength PrefixLen) *IPv
 
 // Iterator provides an iterator to iterate through the individual address segments of this address segment.
 //
-// When iterating, the prefix length is preserved.  Remove it using WithoutPrefixLen prior to iterating if you wish to drop it from all individual address sesgment.
+// When iterating, the prefix length is preserved.  Remove it using WithoutPrefixLen prior to iterating if you wish to drop it from all individual address segments.
 //
 // Call IsMultiple to determine if this instance represents multiple address segments, or GetValueCount for the count.
 func (seg *IPv6AddressSegment) Iterator() IPv6SegmentIterator {

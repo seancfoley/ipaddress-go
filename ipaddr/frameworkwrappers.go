@@ -27,7 +27,7 @@ import (
 type ExtendedSegmentSeries interface {
 	AddressSegmentSeries
 
-	// Unwrap returns the wrapped *Address or *AddressSection as an interface, AddressSegmentSeries
+	// Unwrap returns the wrapped address or address section as an interface, AddressSegmentSeries
 	Unwrap() AddressSegmentSeries
 
 	// Equal returns whether the given address series is equal to this address series.
@@ -88,8 +88,22 @@ type ExtendedSegmentSeries interface {
 	// If not, ToIP returns nil.
 	ToIP() IPAddressSegmentSeries
 
+	// ToIPv4 converts to an IPv4AddressSegmentSeries if this series originated as an IPv4 series.
+	// If not, ToIPv4 returns nil.
+	//
+	// ToIPv4 implementations can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 	ToIPv4() IPv4AddressSegmentSeries
+
+	// ToIPv6 converts to an IPv4AddressSegmentSeries if this series originated as an IPv6 series.
+	// If not, ToIPv6 returns nil.
+	//
+	// ToIPv6 implementations can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 	ToIPv6() IPv6AddressSegmentSeries
+
+	// ToMAC converts to a MACAddressSegmentSeries if this series originated as a MAC series.
+	// If not, ToMAC returns nil.
+	//
+	// ToMAC implementations can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 	ToMAC() MACAddressSegmentSeries
 
 	// ToBlock creates a new series block by changing the segment at the given index to have the given lower and upper value,
@@ -244,11 +258,12 @@ type ExtendedSegmentSeries interface {
 	ToCustomString(stringOptions addrstr.StringOptions) string
 }
 
-// WrappedAddress is the implementation of ExtendedSegmentSeries for Address
+// WrappedAddress is the implementation of ExtendedSegmentSeries for addresses
 type WrappedAddress struct {
 	*Address
 }
 
+// Unwrap returns the wrapped address as an interface, AddressSegmentSeries
 func (addr WrappedAddress) Unwrap() AddressSegmentSeries {
 	res := addr.Address
 	if res == nil {
@@ -257,10 +272,18 @@ func (addr WrappedAddress) Unwrap() AddressSegmentSeries {
 	return res
 }
 
+// ToIPv4 converts to an IPv4AddressSegmentSeries if this series originated as an IPv4 series.
+// If not, ToIPv4 returns nil.
+//
+// ToIPv4 implementations can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (addr WrappedAddress) ToIPv4() IPv4AddressSegmentSeries {
 	return addr.Address.ToIPv4()
 }
 
+// ToIPv6 converts to an IPv4AddressSegmentSeries if this series originated as an IPv6 series.
+// If not, ToIPv6 returns nil.
+//
+// ToIPv6 implementations can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (addr WrappedAddress) ToIPv6() IPv6AddressSegmentSeries {
 	return addr.Address.ToIPv6()
 }
@@ -271,6 +294,10 @@ func (addr WrappedAddress) ToIP() IPAddressSegmentSeries {
 	return addr.Address.ToIP()
 }
 
+// ToMAC converts to a MACAddressSegmentSeries if this series originated as a MAC series.
+// If not, ToMAC returns nil.
+//
+// ToMAC implementations can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (addr WrappedAddress) ToMAC() MACAddressSegmentSeries {
 	return addr.Address.ToMAC()
 }
@@ -502,10 +529,12 @@ func (addr WrappedAddress) ReverseSegments() ExtendedSegmentSeries {
 	return wrapAddress(addr.Address.ReverseSegments())
 }
 
+// WrappedAddress is the implementation of ExtendedSegmentSeries for address sections
 type WrappedAddressSection struct {
 	*AddressSection
 }
 
+// Unwrap returns the wrapped address section as an interface, AddressSegmentSeries
 func (section WrappedAddressSection) Unwrap() AddressSegmentSeries {
 	res := section.AddressSection
 	if res == nil {
@@ -514,10 +543,18 @@ func (section WrappedAddressSection) Unwrap() AddressSegmentSeries {
 	return res
 }
 
+// ToIPv4 converts to an IPv4AddressSegmentSeries if this series originated as an IPv4 series.
+// If not, ToIPv4 returns nil.
+//
+// ToIPv4 implementations can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (section WrappedAddressSection) ToIPv4() IPv4AddressSegmentSeries {
 	return section.AddressSection.ToIPv4()
 }
 
+// ToIPv6 converts to an IPv4AddressSegmentSeries if this series originated as an IPv6 series.
+// If not, ToIPv6 returns nil.
+//
+// ToIPv6 implementations can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (section WrappedAddressSection) ToIPv6() IPv6AddressSegmentSeries {
 	return section.AddressSection.ToIPv6()
 }
@@ -528,6 +565,10 @@ func (section WrappedAddressSection) ToIP() IPAddressSegmentSeries {
 	return section.AddressSection.ToIP()
 }
 
+// ToMAC converts to a MACAddressSegmentSeries if this series originated as a MAC series.
+// If not, ToMAC returns nil.
+//
+// ToMAC implementations can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (section WrappedAddressSection) ToMAC() MACAddressSegmentSeries {
 	return section.AddressSection.ToMAC()
 }
