@@ -237,26 +237,46 @@ func (addr *IPv4Address) GetSubSection(index, endIndex int) *IPv4AddressSection 
 	return addr.GetSection().GetSubSection(index, endIndex)
 }
 
+// GetNetworkSection returns an address section containing the segments with the network of the address or subnet, the prefix bits.
+// The returned section will have only as many segments as needed as determined by the existing CIDR network prefix length.
+//
+// If this series has no CIDR prefix length, the returned network section will
+// be the entire series as a prefixed section with prefix length matching the address bit length.
 func (addr *IPv4Address) GetNetworkSection() *IPv4AddressSection {
 	return addr.GetSection().GetNetworkSection()
 }
 
+// GetNetworkSectionLen returns a section containing the segments with the network of the address or subnet, the prefix bits according to the given prefix length.
+// The returned section will have only as many segments as needed to contain the network.
+//
+// The new section will be assigned the given prefix length,
+// unless the existing prefix length is smaller, in which case the existing prefix length will be retained.
 func (addr *IPv4Address) GetNetworkSectionLen(prefLen BitCount) *IPv4AddressSection {
 	return addr.GetSection().GetNetworkSectionLen(prefLen)
 }
 
+// GetHostSection returns a section containing the segments with the host of the address or subnet, the bits beyond the CIDR network prefix length.
+// The returned section will have only as many segments as needed to contain the host.
+//
+// If this series has no prefix length, the returned host section will be the full section.
 func (addr *IPv4Address) GetHostSection() *IPv4AddressSection {
 	return addr.GetSection().GetHostSection()
 }
 
+// GetHostSectionLen returns a section containing the segments with the host of the address or subnet, the bits beyond the given CIDR network prefix length.
+// The returned section will have only as many segments as needed to contain the host.
 func (addr *IPv4Address) GetHostSectionLen(prefLen BitCount) *IPv4AddressSection {
 	return addr.GetSection().GetHostSectionLen(prefLen)
 }
 
+// GetNetworkMask returns the network mask associated with the CIDR network prefix length of this address or subnet.
+// If this address or subnet has no prefix length, then the all-ones mask is returned.
 func (addr *IPv4Address) GetNetworkMask() *IPv4Address {
 	return addr.getNetworkMask(ipv4Network).ToIPv4()
 }
 
+// GetHostMask returns the host mask associated with the CIDR network prefix length of this address or subnet.
+// If this address or subnet has no prefix length, then the all-ones mask is returned.
 func (addr *IPv4Address) GetHostMask() *IPv4Address {
 	return addr.getHostMask(ipv4Network).ToIPv4()
 }
@@ -695,10 +715,29 @@ func (addr *IPv4Address) GetUpperValue() *big.Int {
 	return addr.init().section.GetUpperValue()
 }
 
+// GetNetIPAddr returns the lowest address in this subnet or address as a net.IPAddr
+func (addr *IPv4Address) GetNetIPAddr() *net.IPAddr {
+	return &net.IPAddr{
+		IP: addr.GetNetIP(),
+	}
+}
+
+// GetUpperNetIPAddr returns the highest address in this subnet or address as a net.IPAddr
+func (addr *IPv4Address) GetUpperNetIPAddr() *net.IPAddr {
+	return &net.IPAddr{
+		IP: addr.GetUpperNetIP(),
+	}
+}
+
+// GetNetIP returns the lowest address in this subnet or address as a net.IP
 func (addr *IPv4Address) GetNetIP() net.IP {
 	return addr.Bytes()
 }
 
+// CopyNetIP copies the value of the lowest individual address in the subnet into a net.IP.
+//
+// If the value can fit in the given net.IP slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// Otherwise, a new slice is created and returned with the value.
 func (addr *IPv4Address) CopyNetIP(ip net.IP) net.IP {
 	if ipv4 := ip.To4(); ipv4 != nil { // this shrinks the arg to 4 bytes if it was 16
 		ip = ipv4
@@ -706,10 +745,15 @@ func (addr *IPv4Address) CopyNetIP(ip net.IP) net.IP {
 	return addr.CopyBytes(ip)
 }
 
+// GetUpperNetIP returns the highest address in this subnet or address as a net.IP
 func (addr *IPv4Address) GetUpperNetIP() net.IP {
 	return addr.UpperBytes()
 }
 
+// CopyUpperNetIP copies the value of the highest individual address in the subnet into a net.IP.
+//
+// If the value can fit in the given net.IP slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// Otherwise, a new slice is created and returned with the value.
 func (addr *IPv4Address) CopyUpperNetIP(ip net.IP) net.IP {
 	if ipv4 := ip.To4(); ipv4 != nil { // this shrinks the arg to 4 bytes if it was 16
 		ip = ipv4
@@ -729,7 +773,7 @@ func (addr *IPv4Address) UpperBytes() []byte {
 
 // CopyBytes copies the value of the lowest individual address in the subnet into a byte slice
 //
-// if the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// If the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
 // Otherwise, a new slice is created and returned with the value.
 func (addr *IPv4Address) CopyBytes(bytes []byte) []byte {
 	return addr.init().section.CopyBytes(bytes)
@@ -737,7 +781,7 @@ func (addr *IPv4Address) CopyBytes(bytes []byte) []byte {
 
 // CopyUpperBytes copies the value of the highest individual address in the subnet into a byte slice.
 //
-// if the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// If the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
 // Otherwise, a new slice is created and returned with the value.
 func (addr *IPv4Address) CopyUpperBytes(bytes []byte) []byte {
 	return addr.init().section.CopyUpperBytes(bytes)
@@ -1144,8 +1188,7 @@ func (addr *IPv4Address) MergeToSequentialBlocks(addrs ...*IPv4Address) []*IPv4A
 	return cloneToIPv4Addrs(blocks)
 }
 
-//
-// MergeToPrefixBlocks merges this with the list of sections to produce the smallest array of CIDR prefix blocks.
+// MergeToPrefixBlocks merges this subnet with the list of subnets to produce the smallest array of CIDR prefix blocks.
 //
 // The resulting array is sorted from lowest address value to highest, regardless of the size of each prefix block.
 func (addr *IPv4Address) MergeToPrefixBlocks(addrs ...*IPv4Address) []*IPv4Address {

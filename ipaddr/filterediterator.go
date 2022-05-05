@@ -38,6 +38,8 @@ func (it *filteredAddrIterator) HasNext() bool {
 	return it.next != nil
 }
 
+// NewFilteredAddrIterator modifies an address iterator to skip certain addresses,
+// skipping those elements for which the "skip" function returns true
 func NewFilteredAddrIterator(iter AddressIterator, skip func(*Address) bool) AddressIterator {
 	res := &filteredAddrIterator{skip: skip, iter: iter}
 	res.Next()

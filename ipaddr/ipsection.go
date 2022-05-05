@@ -1722,26 +1722,46 @@ func (section *IPAddressSection) GetSubSection(index, endIndex int) *IPAddressSe
 	return section.getSubSection(index, endIndex).ToIP()
 }
 
+// GetNetworkSection returns a subsection containing the segments with the network bits of the address section.
+// The returned section will have only as many segments as needed as determined by the existing CIDR network prefix length.
+//
+// If this series has no CIDR prefix length, the returned network section will
+// be the entire series as a prefixed section with prefix length matching the address bit length.
 func (section *IPAddressSection) GetNetworkSection() *IPAddressSection {
 	return section.getNetworkSection()
 }
 
+// GetNetworkSectionLen returns a subsection containing the segments with the network of the address section, the prefix bits according to the given prefix length.
+// The returned section will have only as many segments as needed to contain the network.
+//
+// The new section will be assigned the given prefix length,
+// unless the existing prefix length is smaller, in which case the existing prefix length will be retained.
 func (section *IPAddressSection) GetNetworkSectionLen(prefLen BitCount) *IPAddressSection {
 	return section.getNetworkSectionLen(prefLen)
 }
 
+// GetHostSection returns a subsection containing the segments with the host of the address section, the bits beyond the CIDR network prefix length.
+// The returned section will have only as many segments as needed to contain the host.
+//
+// If this series has no prefix length, the returned host section will be the full section.
 func (section *IPAddressSection) GetHostSection() *IPAddressSection {
 	return section.getHostSection()
 }
 
+// GetHostSectionLen returns a subsection containing the segments with the host of the address section, the bits beyond the given CIDR network prefix length.
+// The returned section will have only as many segments as needed to contain the host.
 func (section *IPAddressSection) GetHostSectionLen(prefLen BitCount) *IPAddressSection {
 	return section.getHostSectionLen(prefLen)
 }
 
+// GetNetworkMask returns the network mask associated with the CIDR network prefix length of this address section.
+// If this section has no prefix length, then the all-ones mask is returned.
 func (section *IPAddressSection) GetNetworkMask() *IPAddressSection {
 	return section.getNetworkMask(section.getNetwork())
 }
 
+// GetHostMask returns the host mask associated with the CIDR network prefix length of this address section.
+// If this section has no prefix length, then the all-ones mask is returned.
 func (section *IPAddressSection) GetHostMask() *IPAddressSection {
 	return section.getHostMask(section.getNetwork())
 }

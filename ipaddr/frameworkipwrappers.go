@@ -56,12 +56,36 @@ type ExtendedIPSegmentSeries interface {
 	// GetSubSection returns a subsection of the full address section
 	GetSubSection(index, endIndex int) *IPAddressSection
 
+	// GetNetworkSection returns an address section containing the segments with the network of the series, the prefix bits.
+	// The returned section will have only as many segments as needed as determined by the existing CIDR network prefix length.
+	//
+	// If this series has no CIDR prefix length, the returned network section will
+	// be the entire series as a prefixed section with prefix length matching the address bit length.
 	GetNetworkSection() *IPAddressSection
+
+	// GetHostSection returns a section containing the segments with the host of the series, the bits beyond the CIDR network prefix length.
+	// The returned section will have only as many segments as needed to contain the host.
+	//
+	// If this series has no prefix length, the returned host section will be the full section.
 	GetHostSection() *IPAddressSection
+
+	// GetNetworkSectionLen returns a section containing the segments with the network of the series, the prefix bits according to the given prefix length.
+	// The returned section will have only as many segments as needed to contain the network.
+	//
+	// The new section will be assigned the given prefix length,
+	// unless the existing prefix length is smaller, in which case the existing prefix length will be retained.
 	GetNetworkSectionLen(BitCount) *IPAddressSection
+
+	// GetHostSectionLen returns a section containing the segments with the host of the series, the bits beyond the given CIDR network prefix length.
+	// The returned section will have only as many segments as needed to contain the host.
 	GetHostSectionLen(BitCount) *IPAddressSection
 
+	// GetNetworkMask returns the network mask associated with the CIDR network prefix length of this series.
+	// If this series has no prefix length, then the all-ones mask is returned.
 	GetNetworkMask() ExtendedIPSegmentSeries
+
+	// GetHostMask returns the host mask associated with the CIDR network prefix length of this series.
+	// If this series has no prefix length, then the all-ones mask is returned.
 	GetHostMask() ExtendedIPSegmentSeries
 
 	// GetSegment returns the segment at the given index.
@@ -351,10 +375,14 @@ func (addr WrappedIPAddress) ToIPv6() IPv6AddressSegmentSeries {
 	return addr.IPAddress.ToIPv6()
 }
 
+// GetNetworkMask returns the network mask associated with the CIDR network prefix length of this address or subnet.
+// If this series has no prefix length, then the all-ones mask is returned.
 func (addr WrappedIPAddress) GetNetworkMask() ExtendedIPSegmentSeries {
 	return wrapIPAddress(addr.IPAddress.GetNetworkMask())
 }
 
+// GetHostMask returns the host mask associated with the CIDR network prefix length of this address or subnet.
+// If this series has no prefix length, then the all-ones mask is returned.
 func (addr WrappedIPAddress) GetHostMask() ExtendedIPSegmentSeries {
 	return wrapIPAddress(addr.IPAddress.GetHostMask())
 }
@@ -702,10 +730,14 @@ func (section WrappedIPAddressSection) ToIPv6() IPv6AddressSegmentSeries {
 	return section.IPAddressSection.ToIPv6()
 }
 
+// GetNetworkMask returns the network mask associated with the CIDR network prefix length of this address section.
+// If this series has no prefix length, then the all-ones mask is returned.
 func (section WrappedIPAddressSection) GetNetworkMask() ExtendedIPSegmentSeries {
 	return wrapIPSection(section.IPAddressSection.GetNetworkMask())
 }
 
+// GetHostMask returns the host mask associated with the CIDR network prefix length of this address section.
+// If this series has no prefix length, then the all-ones mask is returned.
 func (section WrappedIPAddressSection) GetHostMask() ExtendedIPSegmentSeries {
 	return wrapIPSection(section.IPAddressSection.GetHostMask())
 }

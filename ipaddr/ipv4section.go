@@ -366,26 +366,46 @@ func (section *IPv4AddressSection) GetSubSection(index, endIndex int) *IPv4Addre
 	return section.getSubSection(index, endIndex).ToIPv4()
 }
 
+// GetNetworkSection returns a subsection containing the segments with the network bits of the section.
+// The returned section will have only as many segments as needed as determined by the existing CIDR network prefix length.
+//
+// If this series has no CIDR prefix length, the returned network section will
+// be the entire series as a prefixed section with prefix length matching the address bit length.
 func (section *IPv4AddressSection) GetNetworkSection() *IPv4AddressSection {
 	return section.getNetworkSection().ToIPv4()
 }
 
+// GetNetworkSectionLen returns a subsection containing the segments with the network of the section, the prefix bits according to the given prefix length.
+// The returned section will have only as many segments as needed to contain the network.
+//
+// The new section will be assigned the given prefix length,
+// unless the existing prefix length is smaller, in which case the existing prefix length will be retained.
 func (section *IPv4AddressSection) GetNetworkSectionLen(prefLen BitCount) *IPv4AddressSection {
 	return section.getNetworkSectionLen(prefLen).ToIPv4()
 }
 
+// GetHostSection returns a subsection containing the segments with the host of the address section, the bits beyond the CIDR network prefix length.
+// The returned section will have only as many segments as needed to contain the host.
+//
+// If this series has no prefix length, the returned host section will be the full section.
 func (section *IPv4AddressSection) GetHostSection() *IPv4AddressSection {
 	return section.getHostSection().ToIPv4()
 }
 
+// GetHostSectionLen returns a subsection containing the segments with the host of the address section, the bits beyond the given CIDR network prefix length.
+// The returned section will have only as many segments as needed to contain the host.
 func (section *IPv4AddressSection) GetHostSectionLen(prefLen BitCount) *IPv4AddressSection {
 	return section.getHostSectionLen(prefLen).ToIPv4()
 }
 
+// GetNetworkMask returns the network mask associated with the CIDR network prefix length of this address section.
+// If this section has no prefix length, then the all-ones mask is returned.
 func (section *IPv4AddressSection) GetNetworkMask() *IPv4AddressSection {
 	return section.getNetworkMask(ipv4Network).ToIPv4()
 }
 
+// GetHostMask returns the host mask associated with the CIDR network prefix length of this address section.
+// If this section has no prefix length, then the all-ones mask is returned.
 func (section *IPv4AddressSection) GetHostMask() *IPv4AddressSection {
 	return section.getHostMask(ipv4Network).ToIPv4()
 }
@@ -897,9 +917,9 @@ func (section *IPv4AddressSection) MergeToSequentialBlocks(sections ...*IPv4Addr
 }
 
 //
-// MergeToPrefixBlocks merges this with the list of sections to produce the smallest array of prefix blocks.
+// MergeToPrefixBlocks merges this section with the list of sections to produce the smallest array of prefix blocks.
 //
-// The resulting array is sorted from lowest address value to highest, regardless of the size of each prefix block.
+// The resulting array is sorted from lowest value to highest, regardless of the size of each prefix block.
 func (section *IPv4AddressSection) MergeToPrefixBlocks(sections ...*IPv4AddressSection) ([]*IPv4AddressSection, addrerr.SizeMismatchError) {
 	if err := section.checkSectionCounts(sections); err != nil {
 		return nil, err

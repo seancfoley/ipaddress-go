@@ -133,18 +133,28 @@ func (rng *IPv4AddressSeqRange) GetUpper() *IPv4Address {
 	return rng.init().upper.ToIPv4()
 }
 
+// GetNetIP returns the lower IP address in the range as a net.IP
 func (rng *IPv4AddressSeqRange) GetNetIP() net.IP {
 	return rng.GetLower().GetNetIP()
 }
 
+// CopyNetIP copies the value of the lower IP address in the range into a net.IP.
+//
+// If the value can fit in the given net.IP slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// Otherwise, a new slice is created and returned with the value.
 func (rng *IPv4AddressSeqRange) CopyNetIP(bytes net.IP) net.IP {
 	return rng.GetLower().CopyNetIP(bytes) // this changes the arg to 4 bytes if 16 bytes and ipv4
 }
 
+// GetUpperNetIP returns the upper IP address in the range as a net.IP
 func (rng *IPv4AddressSeqRange) GetUpperNetIP() net.IP {
 	return rng.GetUpper().GetUpperNetIP()
 }
 
+// CopyUpperNetIP copies the upper IP address in the range into a net.IP.
+//
+// If the value can fit in the given net.IP slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// Otherwise, a new slice is created and returned with the value.
 func (rng *IPv4AddressSeqRange) CopyUpperNetIP(bytes net.IP) net.IP {
 	return rng.GetUpper().CopyUpperNetIP(bytes) // this changes the arg to 4 bytes if 16 bytes and ipv4
 }

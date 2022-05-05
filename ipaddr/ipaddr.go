@@ -764,29 +764,46 @@ func (addr *IPAddress) GetSubSection(index, endIndex int) *IPAddressSection {
 	return addr.GetSection().GetSubSection(index, endIndex)
 }
 
-// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
-// toZeroNetwork is next - looks like I previously started on these ones
-
+// GetNetworkSection returns an address section containing the segments with the network of the address or subnet, the prefix bits.
+// The returned section will have only as many segments as needed as determined by the existing CIDR network prefix length.
+//
+// If this series has no CIDR prefix length, the returned network section will
+// be the entire series as a prefixed section with prefix length matching the address bit length.
 func (addr *IPAddress) GetNetworkSection() *IPAddressSection {
 	return addr.GetSection().GetNetworkSection()
 }
 
+// GetNetworkSectionLen returns a section containing the segments with the network of the address or subnet, the prefix bits according to the given prefix length.
+// The returned section will have only as many segments as needed to contain the network.
+//
+// The new section will be assigned the given prefix length,
+// unless the existing prefix length is smaller, in which case the existing prefix length will be retained.
 func (addr *IPAddress) GetNetworkSectionLen(prefLen BitCount) *IPAddressSection {
 	return addr.GetSection().GetNetworkSectionLen(prefLen)
 }
 
+// GetHostSection returns a section containing the segments with the host of the address or subnet, the bits beyond the CIDR network prefix length.
+// The returned section will have only as many segments as needed to contain the host.
+//
+// If this series has no prefix length, the returned host section will be the full section.
 func (addr *IPAddress) GetHostSection() *IPAddressSection {
 	return addr.GetSection().GetHostSection()
 }
 
+// GetHostSectionLen returns a section containing the segments with the host of the address or subnet, the bits beyond the given CIDR network prefix length.
+// The returned section will have only as many segments as needed to contain the host.
 func (addr *IPAddress) GetHostSectionLen(prefLen BitCount) *IPAddressSection {
 	return addr.GetSection().GetHostSectionLen(prefLen)
 }
 
+// GetNetworkMask returns the network mask associated with the CIDR network prefix length of this address or subnet.
+// If this address or subnet has no prefix length, then the all-ones mask is returned.
 func (addr *IPAddress) GetNetworkMask() *IPAddress {
 	return addr.getNetworkMask(addr.getNetwork())
 }
 
+// GetHostMask returns the host mask associated with the CIDR network prefix length of this address or subnet.
+// If this address or subnet has no prefix length, then the all-ones mask is returned.
 func (addr *IPAddress) GetHostMask() *IPAddress {
 	return addr.getHostMask(addr.getNetwork())
 }
@@ -1115,6 +1132,7 @@ func (addr *IPAddress) GetUpperValue() *big.Int {
 	return addr.init().section.GetUpperValue()
 }
 
+// GetNetIPAddr returns the lowest address in this subnet or address as a net.IPAddr
 func (addr *IPAddress) GetNetIPAddr() *net.IPAddr {
 	return &net.IPAddr{
 		IP:   addr.GetNetIP(),
@@ -1122,10 +1140,23 @@ func (addr *IPAddress) GetNetIPAddr() *net.IPAddr {
 	}
 }
 
+// GetUpperNetIPAddr returns the highest address in this subnet or address as a net.IPAddr
+func (addr *IPAddress) GetUpperNetIPAddr() *net.IPAddr {
+	return &net.IPAddr{
+		IP:   addr.GetUpperNetIP(),
+		Zone: string(addr.zone),
+	}
+}
+
+// GetNetIP returns the lowest address in this subnet or address as a net.IP
 func (addr *IPAddress) GetNetIP() net.IP {
 	return addr.Bytes()
 }
 
+// CopyNetIP copies the value of the lowest individual address in the subnet into a net.IP.
+//
+// If the value can fit in the given net.IP slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// Otherwise, a new slice is created and returned with the value.
 func (addr *IPAddress) CopyNetIP(ip net.IP) net.IP {
 	if ipv4Addr := addr.ToIPv4(); ipv4Addr != nil {
 		return ipv4Addr.CopyNetIP(ip) // this shrinks the arg to 4 bytes if it was 16, we need only 4
@@ -1133,10 +1164,15 @@ func (addr *IPAddress) CopyNetIP(ip net.IP) net.IP {
 	return addr.CopyBytes(ip)
 }
 
+// GetUpperNetIP returns the highest address in this subnet or address as a net.IP
 func (addr *IPAddress) GetUpperNetIP() net.IP {
 	return addr.UpperBytes()
 }
 
+// CopyUpperNetIP copies the value of the highest individual address in the subnet into a net.IP.
+//
+// If the value can fit in the given net.IP slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// Otherwise, a new slice is created and returned with the value.
 func (addr *IPAddress) CopyUpperNetIP(ip net.IP) net.IP {
 	if ipv4Addr := addr.ToIPv4(); ipv4Addr != nil {
 		return ipv4Addr.CopyUpperNetIP(ip) // this shrinks the arg to 4 bytes if it was 16, we need only 4
@@ -1287,6 +1323,9 @@ func (addr *IPAddress) TrieIncrement() *IPAddress {
 func (addr *IPAddress) TrieDecrement() *IPAddress {
 	return addr.trieDecrement().ToIP()
 }
+
+// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
+// MatchesWithMask, ToSequentialRange, BitwiseOr, CoverWithPrefixBlock, SpanWithPrefixBlocks/To, SpanWithSequentialBlocks/To, a bunch of string methods, ToHostName, ToCanonicalHostName, some constructors is next
 
 func (addr *IPAddress) MatchesWithMask(other *IPAddress, mask *IPAddress) bool {
 	if thisAddr := addr.ToIPv4(); thisAddr != nil {
@@ -1571,7 +1610,7 @@ func (addr *IPAddress) Intersect(other *IPAddress) *IPAddress {
 	return nil
 }
 
-// Subtract substracts the given subnet from this subnet, returning an array of subnets for the result (the subnets will not be contiguous so an array is required).
+// Subtract subtracts the given subnet from this subnet, returning an array of subnets for the result (the subnets will not be contiguous so an array is required).
 // Computes the subnet difference, the set of addresses in this address subnet but not in the provided subnet.  This is also known as the relative complement of the given argument in this subnet.
 // This is set subtraction, not subtraction of segment values.  We have a subnet of addresses and we are removing those addresses found in the argument subnet.
 // If there are no remaining addresses, nil is returned.
@@ -1666,7 +1705,6 @@ func versionsMatch(one, two *IPAddress) bool {
 //	return true
 //}
 
-//
 // MergeToSequentialBlocks merges this with the list of addresses to produce the smallest array of blocks that are sequential
 //
 // The resulting array is sorted from lowest address value to highest, regardless of the size of each prefix block.
@@ -1677,8 +1715,7 @@ func (addr *IPAddress) MergeToSequentialBlocks(addrs ...*IPAddress) []*IPAddress
 	return cloneToIPAddrs(blocks)
 }
 
-//
-// MergeToPrefixBlocks merges this with the list of sections to produce the smallest array of prefix blocks.
+// MergeToPrefixBlocks merges this subnet with the list of subnets to produce the smallest array of prefix blocks.
 //
 // The resulting array is sorted from lowest address value to highest, regardless of the size of each prefix block.
 // Arguments that are not the same IP version are ignored.
@@ -2138,7 +2175,7 @@ func isAllZeros(byts []byte) bool {
 	return true
 }
 
-// IPAddressCreator is a polymporphic type that provides constructor methods that construct IP addresses for its contained IP version
+// IPAddressCreator is a polymporphic type providing constructor methods to construct IP addresses corresponding to its contained IP version
 type IPAddressCreator struct {
 	IPVersion
 }

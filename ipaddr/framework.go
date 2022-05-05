@@ -397,9 +397,28 @@ type IPv6AddressSegmentSeries interface {
 	// GetSubSection returns a subsection of the full address or address section
 	GetSubSection(index, endIndex int) *IPv6AddressSection
 
+	// GetNetworkSection returns an address section containing the segments with the network of the series, the prefix bits.
+	// The returned section will have only as many segments as needed as determined by the existing CIDR network prefix length.
+	//
+	// If this series has no CIDR prefix length, the returned network section will
+	// be the entire series as a prefixed section with prefix length matching the address bit length.
 	GetNetworkSection() *IPv6AddressSection
+
+	// GetHostSection returns a section containing the segments with the host of the series, the bits beyond the CIDR network prefix length.
+	// The returned section will have only as many segments as needed to contain the host.
+	//
+	// If this series has no prefix length, the returned host section will be the full section.
 	GetHostSection() *IPv6AddressSection
+
+	// GetNetworkSectionLen returns a section containing the segments with the network of the series, the prefix bits according to the given prefix length.
+	// The returned section will have only as many segments as needed to contain the network.
+	//
+	// The new section will be assigned the given prefix length,
+	// unless the existing prefix length is smaller, in which case the existing prefix length will be retained.
 	GetNetworkSectionLen(BitCount) *IPv6AddressSection
+
+	// GetHostSectionLen returns a section containing the segments with the host of the series, the bits beyond the given CIDR network prefix length.
+	// The returned section will have only as many segments as needed to contain the host.
 	GetHostSectionLen(BitCount) *IPv6AddressSection
 
 	// GetSegments returns a slice with the address segments.  The returned slice is not backed by the same array as the receiver.
@@ -432,9 +451,28 @@ type IPv4AddressSegmentSeries interface {
 	// GetSubSection returns a subsection of the full address section
 	GetSubSection(index, endIndex int) *IPv4AddressSection
 
+	// GetNetworkSection returns an address section containing the segments with the network of the series, the prefix bits.
+	// The returned section will have only as many segments as needed as determined by the existing CIDR network prefix length.
+	//
+	// If this series has no CIDR prefix length, the returned network section will
+	// be the entire series as a prefixed section with prefix length matching the address bit length.
 	GetNetworkSection() *IPv4AddressSection
+
+	// GetHostSection returns a section containing the segments with the host of the series, the bits beyond the CIDR network prefix length.
+	// The returned section will have only as many segments as needed to contain the host.
+	//
+	// If this series has no prefix length, the returned host section will be the full section.
 	GetHostSection() *IPv4AddressSection
+
+	// GetNetworkSectionLen returns a section containing the segments with the network of the series, the prefix bits according to the given prefix length.
+	// The returned section will have only as many segments as needed to contain the network.
+	//
+	// The new section will be assigned the given prefix length,
+	// unless the existing prefix length is smaller, in which case the existing prefix length will be retained.
 	GetNetworkSectionLen(BitCount) *IPv4AddressSection
+
+	// GetHostSectionLen returns a section containing the segments with the host of the series, the bits beyond the given CIDR network prefix length.
+	// The returned section will have only as many segments as needed to contain the host.
 	GetHostSectionLen(BitCount) *IPv4AddressSection
 
 	// GetSegments returns a slice with the address segments.  The returned slice is not backed by the same array as the receiver.
@@ -576,20 +614,32 @@ type AddressType interface {
 var _, _ AddressType = &Address{}, &MACAddress{}
 
 type ipAddressRange interface {
-	// GetLowerIPAddress returns the address in the subnet or address collection with the lowest numeric value,
+	// GetLowerIPAddress returns the address in the subnet or address range with the lowest numeric value,
 	// which will be the same address if it represents a single value.
 	// For example, for "1.2-3.4.5-6", the series "1.2.4.5" is returned.
 	GetLowerIPAddress() *IPAddress
 
-	// GetUpperIPAddress returns the address in the subnet or address collection with the highest numeric value,
+	// GetUpperIPAddress returns the address in the subnet or address range with the highest numeric value,
 	// which will be the same address if it represents a single value.
 	// For example, for "1.2-3.4.5-6", the series "1.3.4.6" is returned.
 	GetUpperIPAddress() *IPAddress
 
+	// CopyNetIP copies the value of the lowest individual address in the subnet or address range into a net.IP.
+	//
+	// If the value can fit in the given net.IP slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+	// Otherwise, a new slice is created and returned with the value.
 	CopyNetIP(bytes net.IP) net.IP
+
+	// CopyUpperNetIP copies the value of the highest individual address in the subnet or address range into a net.IP.
+	//
+	// If the value can fit in the given net.IP slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+	// Otherwise, a new slice is created and returned with the value.
 	CopyUpperNetIP(bytes net.IP) net.IP
 
+	// GetNetIP returns the lowest address in this subnet or address range as a net.IP
 	GetNetIP() net.IP
+
+	// GetUpperNetIP returns the highest address in this subnet or address range as a net.IP
 	GetUpperNetIP() net.IP
 }
 
@@ -610,7 +660,10 @@ type IPAddressRange interface { //IPAddress and above, IPAddressSeqRange and abo
 	IsSequential() bool
 }
 
-var _, _, _, _, _, _ IPAddressRange = &IPAddress{}, &IPv4Address{}, &IPv6Address{}, &IPAddressSeqRange{},
+var _, _, _, _, _, _ IPAddressRange = &IPAddress{},
+	&IPv4Address{},
+	&IPv6Address{},
+	&IPAddressSeqRange{},
 	&IPv4AddressSeqRange{},
 	&IPv6AddressSeqRange{}
 
