@@ -341,6 +341,7 @@ func (rng *IPv4AddressSeqRange) Overlaps(other *IPv4AddressSeqRange) bool {
 	return rng.init().overlaps(other.ToIP())
 }
 
+// Intersect returns the intersection of this range with the given range, a range which includes those addresses found in both.
 func (rng *IPv4AddressSeqRange) Intersect(other *IPv4AddressSeqRange) *IPAddressSeqRange {
 	return rng.init().intersect(other.toIPSequentialRange())
 }
@@ -369,7 +370,7 @@ func (rng *IPv4AddressSeqRange) Join(ranges ...*IPv4AddressSeqRange) []*IPv4Addr
 	return cloneToIPv4SeqRange(join(ranges2))
 }
 
-// JoinTo joins this range to the other.  If this range overlaps with the given range,
+// JoinTo joins this range to the other if they are contiguous.  If this range overlaps with the given range,
 // or if the highest value of the lower range is one below the lowest value of the higher range,
 // then the two are joined into a new larger range that is returned.
 // Otherwise nil is returned.
@@ -408,6 +409,10 @@ func (rng *IPv4AddressSeqRange) GetIPv4PrefixCount(prefixLength BitCount) uint64
 	return uint64(upperAdjusted-lowerAdjusted) + 1
 }
 
+// ToKey creates the associated address range key.
+// While address ranges can be compared with the Compare or Equal methods as well as various provided instances of AddressComparator,
+// they are not comparable with go operators.
+// However, IPv4AddressSeqRangeKey instances are comparable with go operators, and thus can be used as map keys.
 func (rng *IPv4AddressSeqRange) ToKey() *IPv4AddressSeqRangeKey {
 	return &IPv4AddressSeqRangeKey{
 		lower: *rng.GetLower().ToKey(),

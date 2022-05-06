@@ -424,13 +424,13 @@ func (div *addressDivisionInternal) matchesWithMask(value, mask DivInt) bool {
 }
 
 // matchesWithMask returns whether masking with the given mask results in a valid contiguous range for this segment,
-// and if it does, if it matches the range obtained when masking the given values with the same mask.
+// and if it does, if the result matches the range of lowerValue to upperValue.
 func (div *addressDivisionInternal) matchesValsWithMask(lowerValue, upperValue, mask DivInt) bool {
 	if lowerValue == upperValue {
 		return div.matchesWithMask(lowerValue, mask)
 	}
 	if !div.isMultiple() {
-		// lowerValue and upperValue are not the same, so impossible to match those two values with a single value
+		// the values to match, lowerValue and upperValue, are not the same, so impossible to match those two values with a single value from this segment
 		return false
 	}
 	thisValue := div.getDivisionValue()
@@ -977,14 +977,19 @@ func (div *AddressDivision) Compare(item AddressItem) int {
 	return CountComparator.Compare(div, item)
 }
 
+// Matches returns true if the division range matches the given single value.
 func (div *AddressDivision) Matches(value DivInt) bool {
 	return div.matches(value)
 }
 
+// MatchesWithMask applies the mask to this division and then compares the result with the given value,
+// returning true if the range of the resulting division matches that single value.
 func (div *AddressDivision) MatchesWithMask(value, mask DivInt) bool {
 	return div.matchesWithMask(value, mask)
 }
 
+// MatchesValsWithMask applies the mask to this division and then compares the result with the given values,
+// returning true if the range of the resulting division matches the given range.
 func (div *AddressDivision) MatchesValsWithMask(lowerValue, upperValue, mask DivInt) bool {
 	return div.matchesValsWithMask(lowerValue, upperValue, mask)
 }

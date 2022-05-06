@@ -470,12 +470,15 @@ func (addrStr *IPAddressString) ToHostAddress() (*IPAddress, addrerr.AddressErro
 // those cases where IsValid returns true but ToAddress returns addrerr.IncompatibleAddressError and GetAddress returns nil.
 // The range cannot be produced for the other cases where GetAddress returns nil
 //
-// This is similar to ToSequentialRange except that nil is returned when there is an error.
+// This is similar to ToSequentialRange except that ToSequentialRange provides a descriptive error when nil is returned.
 func (addrStr *IPAddressString) GetSequentialRange() (res *IPAddressSeqRange) {
 	res, _ = addrStr.ToSequentialRange()
 	return
 }
 
+// ToSequentialRange returns the range of sequential addresses from the lowest address specified in this address string to the highest.
+//
+// This is similar to GetSequentialRange except that this method provides a descriptive error when nil is returned. See GetSequentialRange for more details.
 func (addrStr *IPAddressString) ToSequentialRange() (res *IPAddressSeqRange, err addrerr.AddressStringError) {
 	addrStr = addrStr.init()
 	if err = addrStr.Validate(); err == nil {
@@ -484,12 +487,12 @@ func (addrStr *IPAddressString) ToSequentialRange() (res *IPAddressSeqRange, err
 	return
 }
 
-// ValidateIPv4 validates that this string is a valid IPv4 address, and if not, returns an error with a descriptive message indicating why it is not.
+// ValidateIPv4 validates that this string is a valid IPv4 address, returning nil, and if not, returns an error with a descriptive message indicating why it is not.
 func (addrStr *IPAddressString) ValidateIPv4() addrerr.AddressStringError {
 	return addrStr.ValidateVersion(IPv4)
 }
 
-// ValidateIPv6 validates that this string is a valid IPv6 address, and if not, returns an error with a descriptive message indicating why it is not.
+// ValidateIPv6 validates that this string is a valid IPv6 address, returning nil, and if not, returns an error with a descriptive message indicating why it is not.
 func (addrStr *IPAddressString) ValidateIPv6() addrerr.AddressStringError {
 	return addrStr.ValidateVersion(IPv6)
 }
@@ -500,7 +503,7 @@ func (addrStr *IPAddressString) getAddressProvider() (ipAddressProvider, addrerr
 	return addrStr.addressProvider, err
 }
 
-// Validate validates that this string is a valid IP address, and if not, returns an error with a descriptive message indicating why it is not.
+// Validate validates that this string is a valid IP address, returning nil, and if not, returns an error with a descriptive message indicating why it is not.
 func (addrStr *IPAddressString) Validate() addrerr.AddressStringError {
 	addrStr = addrStr.init()
 	data := addrStr.addrData

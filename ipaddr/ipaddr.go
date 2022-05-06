@@ -1192,7 +1192,7 @@ func (addr *IPAddress) UpperBytes() []byte {
 
 // CopyBytes copies the value of the lowest individual address in the subnet into a byte slice
 //
-// if the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// If the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
 // Otherwise, a new slice is created and returned with the value.
 func (addr *IPAddress) CopyBytes(bytes []byte) []byte {
 	return addr.init().section.CopyBytes(bytes)
@@ -1200,7 +1200,7 @@ func (addr *IPAddress) CopyBytes(bytes []byte) []byte {
 
 // CopyUpperBytes copies the value of the highest individual address in the subnet into a byte slice.
 //
-// if the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// If the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
 // Otherwise, a new slice is created and returned with the value.
 func (addr *IPAddress) CopyUpperBytes(bytes []byte) []byte {
 	return addr.init().section.CopyUpperBytes(bytes)
@@ -1324,9 +1324,8 @@ func (addr *IPAddress) TrieDecrement() *IPAddress {
 	return addr.trieDecrement().ToIP()
 }
 
-// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
-// MatchesWithMask, ToSequentialRange, BitwiseOr, CoverWithPrefixBlock, SpanWithPrefixBlocks/To, SpanWithSequentialBlocks/To, a bunch of string methods, ToHostName, ToCanonicalHostName, some constructors is next
-
+// MatchesWithMask applies the mask to this address and then compares the result with the given address,
+// returning true if they match, false otherwise.
 func (addr *IPAddress) MatchesWithMask(other *IPAddress, mask *IPAddress) bool {
 	if thisAddr := addr.ToIPv4(); thisAddr != nil {
 		if oth := other.ToIPv4(); oth != nil {
@@ -1486,6 +1485,13 @@ func (addr *IPAddress) GetSequentialBlockCount() *big.Int {
 	return addr.getSequentialBlockCount()
 }
 
+// ToSequentialRange creates a sequential range instance from the lowest and highest addresses in this subnet
+//
+// The two will represent the same set of individual addresses if and only if IsSequential is true.
+// To get a series of ranges that represent the same set of individual addresses use the SequentialBlockIterator (or PrefixIterator),
+// and apply this method to each iterated subnet.
+//
+// If this represents just a single address then the returned instance covers just that single address as well.
 func (addr *IPAddress) ToSequentialRange() *IPAddressSeqRange {
 	if addr != nil {
 		if addr.IsIPv4() {
@@ -1537,8 +1543,8 @@ func (addr *IPAddress) Increment(increment int64) *IPAddress {
 	return addr.init().increment(increment).ToIP()
 }
 
-// SpanWithRange produces an IPAddressRange instance that spans this subnet to the given subnet.
-// If the other address is a different version than this, then the other is ignored, and the result is equivalent to calling ToSequentialRange()
+// SpanWithRange produces an IPAddressSeqRange instance that spans this subnet to the given subnet.
+// If the other address is a different version than this, then the other is ignored, and the result is equivalent to calling ToSequentialRange
 func (addr *IPAddress) SpanWithRange(other *IPAddress) *IPAddressSeqRange {
 	if thisAddr := addr.ToIPv4(); thisAddr != nil {
 		if oth := other.ToIPv4(); oth != nil {
@@ -1555,10 +1561,10 @@ func (addr *IPAddress) SpanWithRange(other *IPAddress) *IPAddressSeqRange {
 // Mask applies the given mask to all addresses represented by this IPAddress.
 // The mask is applied to all individual addresses.
 //
-// If the mask is a different version than this, then an error is returned
+// If the mask is a different version than this, then an error is returned.
 //
 // If this represents multiple addresses, and applying the mask to all addresses creates a set of addresses
-// that cannot be represented as a contiguous range within each segment, then an error is returned
+// that cannot be represented as a sequential range within each segment, then an error is returned
 func (addr *IPAddress) Mask(other *IPAddress) (masked *IPAddress, err addrerr.IncompatibleAddressError) {
 	return addr.maskPrefixed(other, true)
 }
@@ -1578,6 +1584,15 @@ func (addr *IPAddress) maskPrefixed(other *IPAddress, retainPrefix bool) (*IPAdd
 	return nil, &incompatibleAddressError{addressError{key: "ipaddress.error.ipMismatch"}}
 }
 
+// BitwiseOr does the bitwise disjunction with this address or subnet, useful when subnetting.
+// It is similar to Mask which does the bitwise conjunction.
+//
+// The operation is applied to all individual addresses and the result is returned.
+//
+// If the given address is a different version than this, then an error is returned.
+//
+// If this is a subnet representing multiple addresses, and applying the operations to all addresses creates a set of addresses
+// that cannot be represented as a sequential range within each segment, then an error is returned
 func (addr *IPAddress) BitwiseOr(other *IPAddress) (masked *IPAddress, err addrerr.IncompatibleAddressError) {
 	return addr.bitwiseOrPrefixed(other, true)
 }
@@ -1597,6 +1612,9 @@ func (addr *IPAddress) bitwiseOrPrefixed(other *IPAddress, retainPrefix bool) (*
 	return nil, &incompatibleAddressError{addressError{key: "ipaddress.error.ipMismatch"}}
 }
 
+// Intersect produces the subnet whose addresses are found in both this and the given subnet argument, or nil if no such addresses exist.
+//
+// This is also known as the conjunction of the two sets of addresses.
 func (addr *IPAddress) Intersect(other *IPAddress) *IPAddress {
 	if thisAddr := addr.ToIPv4(); thisAddr != nil {
 		if oth := other.ToIPv4(); oth != nil {
@@ -1611,8 +1629,9 @@ func (addr *IPAddress) Intersect(other *IPAddress) *IPAddress {
 }
 
 // Subtract subtracts the given subnet from this subnet, returning an array of subnets for the result (the subnets will not be contiguous so an array is required).
-// Computes the subnet difference, the set of addresses in this address subnet but not in the provided subnet.  This is also known as the relative complement of the given argument in this subnet.
-// This is set subtraction, not subtraction of segment values.  We have a subnet of addresses and we are removing those addresses found in the argument subnet.
+// Subtract computes the subnet difference, the set of addresses in this address subnet but not in the provided subnet.
+// This is also known as the relative complement of the given argument in this subnet.
+// This is set subtraction, not subtraction of address values (use Increment for the latter).  We have a subnet of addresses and we are removing those addresses found in the argument subnet.
 // If there are no remaining addresses, nil is returned.
 func (addr *IPAddress) Subtract(other *IPAddress) []*IPAddress {
 	if !versionsMatch(addr, other) {
@@ -1636,7 +1655,7 @@ func (addr *IPAddress) Subtract(other *IPAddress) []*IPAddress {
 	return res
 }
 
-// IsLinkLocal returns whether the address is link local, whether unicast or multicast.
+// IsLinkLocal returns whether the address or subnet is entirely link local, whether unicast or multicast.
 func (addr *IPAddress) IsLinkLocal() bool {
 	if thisAddr := addr.ToIPv4(); thisAddr != nil {
 		return thisAddr.IsLinkLocal()
@@ -1657,7 +1676,7 @@ func (addr *IPAddress) IsLocal() bool {
 	return false
 }
 
-// IsUnspecified returns true if zero.  The unspecified address is the address that is all zeros.
+// IsUnspecified returns true if exactly zero.  The unspecified address is the address that is all zeros.
 func (addr *IPAddress) IsUnspecified() bool {
 	return addr.section != nil && addr.IsZero()
 }
@@ -1679,7 +1698,7 @@ func (addr *IPAddress) IsLoopback() bool {
 	return false
 }
 
-// IsMulticast returns whether this address is multicast
+// IsMulticast returns whether this address or subnet is entirely multicast
 func (addr *IPAddress) IsMulticast() bool {
 	if thisAddr := addr.ToIPv4(); thisAddr != nil {
 		return thisAddr.IsMulticast()
@@ -1724,6 +1743,9 @@ func (addr *IPAddress) MergeToPrefixBlocks(addrs ...*IPAddress) []*IPAddress {
 	blocks := getMergedPrefixBlocks(series)
 	return cloneToIPAddrs(blocks)
 }
+
+// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
+// CoverWithPrefixBlock, CoverWithPrefixBlockTo, SpanWithPrefixBlocks/To, SpanWithSequentialBlocks/To, a bunch of string methods, ToHostName, ToCanonicalHostName, some constructors are next
 
 func (addr *IPAddress) SpanWithPrefixBlocks() []*IPAddress {
 	addr = addr.init()
@@ -2454,7 +2476,7 @@ func asMap(addrs []*IPAddress) (result map[string]struct{}) {
 }
 
 // ToKey creates the associated address key.
-// While addresses can be compare with the Compare, TrieCompare or Equal methods as well as various provided instances of AddressComparator,
+// While addresses can be compared with the Compare, TrieCompare or Equal methods as well as various provided instances of AddressComparator,
 // they are not comparable with go operators.
 // However, AddressKey instances are comparable with go operators, and thus can be used as map keys.
 func (addr *IPAddress) ToKey() *IPAddressKey {

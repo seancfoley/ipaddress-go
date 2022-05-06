@@ -388,6 +388,7 @@ type IPAddressSegmentSeries interface { // IPAddress and above, IPAddressSection
 
 var _, _ IPAddressSegmentSeries = &IPAddress{}, &IPAddressSection{}
 
+// IPv6AddressSegmentSeries serves as a common interface to all IPv6 address sections and IPv6 addresses
 type IPv6AddressSegmentSeries interface {
 	IPAddressSegmentSeries
 
@@ -442,6 +443,7 @@ var _, _, _ IPv6AddressSegmentSeries = &IPv6Address{},
 	&IPv6AddressSection{},
 	&EmbeddedIPv6AddressSection{}
 
+// IPv4AddressSegmentSeries serves as a common interface to all IPv4 address sections and IPv4 addresses
 type IPv4AddressSegmentSeries interface {
 	IPAddressSegmentSeries
 
@@ -494,6 +496,7 @@ type IPv4AddressSegmentSeries interface {
 
 var _, _ IPv4AddressSegmentSeries = &IPv4Address{}, &IPv4AddressSection{}
 
+// MACAddressSegmentSeries serves as a common interface to all MAC address sections and MAC addresses
 type MACAddressSegmentSeries interface {
 	AddressSegmentSeries
 

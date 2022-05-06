@@ -429,6 +429,12 @@ func (section *IPv4AddressSection) GetSegments() (res []*IPv4AddressSegment) {
 	return
 }
 
+// Mask applies the given mask to all address sections represented by this secction, returning the result.
+//
+// If the sections do not have a comparable number of segments, an error is returned.
+//
+// If this represents multiple addresses, and applying the mask to all addresses creates a set of addresses
+// that cannot be represented as a sequential range within each segment, then an error is returned
 func (section *IPv4AddressSection) Mask(other *IPv4AddressSection) (res *IPv4AddressSection, err addrerr.IncompatibleAddressError) {
 	return section.maskPrefixed(other, true)
 }
@@ -441,6 +447,13 @@ func (section *IPv4AddressSection) maskPrefixed(other *IPv4AddressSection, retai
 	return
 }
 
+// BitwiseOr does the bitwise disjunction with this address section, useful when subnetting.
+// It is similar to Mask which does the bitwise conjunction.
+//
+// The operation is applied to all individual addresses and the result is returned.
+//
+// If this represents multiple address sections, and applying the operation to all sections creates a set of sections
+// that cannot be represented as a sequential range within each segment, then an error is returned
 func (section *IPv4AddressSection) BitwiseOr(other *IPv4AddressSection) (res *IPv4AddressSection, err addrerr.IncompatibleAddressError) {
 	return section.bitwiseOrPrefixed(other, true)
 }
@@ -453,10 +466,18 @@ func (section *IPv4AddressSection) bitwiseOrPrefixed(other *IPv4AddressSection, 
 	return
 }
 
+// MatchesWithMask applies the mask to this address section and then compares the result with the given address section,
+// returning true if they match, false otherwise.  To match, both the given section and mask must have the same number of segments as this section.
 func (section *IPv4AddressSection) MatchesWithMask(other *IPv4AddressSection, mask *IPv4AddressSection) bool {
 	return section.matchesWithMask(other.ToIP(), mask.ToIP())
 }
 
+// Subtract subtracts the given subnet sections from this subnet section, returning an array of sections for the result (the subnet sections will not be contiguous so an array is required).
+//
+// Subtract  computes the subnet difference, the set of address sections in this address section but not in the provided section.
+// This is also known as the relative complement of the given argument in this subnet section.
+//
+// This is set subtraction, not subtraction of values.
 func (section *IPv4AddressSection) Subtract(other *IPv4AddressSection) (res []*IPv4AddressSection, err addrerr.SizeMismatchError) {
 	sections, err := section.subtract(other.ToIP())
 	if err == nil {
@@ -465,6 +486,11 @@ func (section *IPv4AddressSection) Subtract(other *IPv4AddressSection) (res []*I
 	return
 }
 
+// Intersect produces the subnet sections whose individual sections are found in both this and the given subnet section argument, or nil if no such sections exist.
+//
+// This is also known as the conjunction of the two sets of address sections.
+//
+// If the two sections have different segment counts, an error is returned.
 func (section *IPv4AddressSection) Intersect(other *IPv4AddressSection) (res *IPv4AddressSection, err addrerr.SizeMismatchError) {
 	sec, err := section.intersect(other.ToIP())
 	if err == nil {

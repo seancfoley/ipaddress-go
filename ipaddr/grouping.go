@@ -681,7 +681,7 @@ func (grouping *addressDivisionGroupingInternal) UpperBytes() []byte {
 
 // CopyBytes copies the value of the lowest division grouping in the range into a byte slice
 //
-// if the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// If the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
 // Otherwise, a new slice is created and returned with the value.
 //
 // You can use GetByteCount to determine the required array length for the bytes.
@@ -697,7 +697,7 @@ func (grouping *addressDivisionGroupingInternal) CopyBytes(bytes []byte) []byte 
 
 // CopyUpperBytes copies the value of the highest division grouping in the range into a byte slice
 //
-// if the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// If the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
 // Otherwise, a new slice is created and returned with the value.
 //
 // You can use GetByteCount to determine the required array length for the bytes.

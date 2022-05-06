@@ -1345,7 +1345,7 @@ func (addr *Address) CopyBytes(bytes []byte) []byte {
 
 // CopyUpperBytes copies the value of the highest individual address in the subnet into a byte slice.
 //
-// if the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// If the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
 // Otherwise, a new slice is created and returned with the value.
 func (addr *Address) CopyUpperBytes(bytes []byte) []byte {
 	return addr.init().section.CopyUpperBytes(bytes)
@@ -1894,7 +1894,7 @@ func (addr *Address) Wrap() WrappedAddress {
 }
 
 // ToKey creates the associated address key.
-// While addresses can be compare with the Compare, TrieCompare or Equal methods as well as various provided instances of AddressComparator,
+// While addresses can be compared with the Compare, TrieCompare or Equal methods as well as various provided instances of AddressComparator,
 // they are not comparable with go operators.
 // However, AddressKey instances are comparable with go operators, and thus can be used as map keys.
 func (addr *Address) ToKey() *AddressKey {

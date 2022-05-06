@@ -630,6 +630,11 @@ func (addr *IPv6Address) checkIdentity(section *IPv6AddressSection) *IPv6Address
 	return newIPv6AddressZoned(section, string(addr.zone))
 }
 
+// Mask applies the given mask to all addresses represented by this IPv6Address.
+// The mask is applied to all individual addresses.
+//
+// If this represents multiple addresses, and applying the mask to all addresses creates a set of addresses
+// that cannot be represented as a sequential range within each segment, then an error is returned
 func (addr *IPv6Address) Mask(other *IPv6Address) (masked *IPv6Address, err addrerr.IncompatibleAddressError) {
 	return addr.maskPrefixed(other, true)
 }
@@ -643,6 +648,13 @@ func (addr *IPv6Address) maskPrefixed(other *IPv6Address, retainPrefix bool) (ma
 	return
 }
 
+// BitwiseOr does the bitwise disjunction with this address or subnet, useful when subnetting.
+// It is similar to Mask which does the bitwise conjunction.
+//
+// The operation is applied to all individual addresses and the result is returned.
+//
+// If this is a subnet representing multiple addresses, and applying the operation to all addresses creates a set of addresses
+// that cannot be represented as a sequential range within each segment, then an error is returned
 func (addr *IPv6Address) BitwiseOr(other *IPv6Address) (masked *IPv6Address, err addrerr.IncompatibleAddressError) {
 	return addr.bitwiseOrPrefixed(other, true)
 }
@@ -656,6 +668,11 @@ func (addr *IPv6Address) bitwiseOrPrefixed(other *IPv6Address, retainPrefix bool
 	return
 }
 
+// Subtract subtracts the given subnet from this subnet, returning an array of subnets for the result (the subnets will not be contiguous so an array is required).
+// Subtract computes the subnet difference, the set of addresses in this address subnet but not in the provided subnet.
+// This is also known as the relative complement of the given argument in this subnet.
+// This is set subtraction, not subtraction of address values (use Increment for the latter).  We have a subnet of addresses and we are removing those addresses found in the argument subnet.
+// If there are no remaining addresses, nil is returned.
 func (addr *IPv6Address) Subtract(other *IPv6Address) []*IPv6Address {
 	addr = addr.init()
 	sects, _ := addr.GetSection().Subtract(other.GetSection())
@@ -675,6 +692,9 @@ func (addr *IPv6Address) Subtract(other *IPv6Address) []*IPv6Address {
 	return res
 }
 
+// Intersect produces the subnet whose addresses are found in both this and the given subnet argument, or nil if no such addresses exist.
+//
+// This is also known as the conjunction of the two sets of addresses.
 func (addr *IPv6Address) Intersect(other *IPv6Address) *IPv6Address {
 	addr = addr.init()
 	section, _ := addr.GetSection().Intersect(other.GetSection())
@@ -684,6 +704,8 @@ func (addr *IPv6Address) Intersect(other *IPv6Address) *IPv6Address {
 	return addr.checkIdentity(section)
 }
 
+// SpanWithRange produces an IPv6AddressSeqRange instance that spans this subnet to the given subnet.
+// If the other address is a different version than this, then the other is ignored, and the result is equivalent to calling ToSequentialRange.
 func (addr *IPv6Address) SpanWithRange(other *IPv6Address) *IPv6AddressSeqRange {
 	return NewIPv6SeqRange(addr.init(), other.init())
 }
@@ -1008,7 +1030,7 @@ func (addr *IPv6Address) UpperBytes() []byte {
 
 // CopyBytes copies the value of the lowest individual address in the subnet into a byte slice
 //
-// if the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// If the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
 // Otherwise, a new slice is created and returned with the value.
 func (addr *IPv6Address) CopyBytes(bytes []byte) []byte {
 	return addr.init().section.CopyBytes(bytes)
@@ -1016,7 +1038,7 @@ func (addr *IPv6Address) CopyBytes(bytes []byte) []byte {
 
 // CopyUpperBytes copies the value of the highest individual address in the subnet into a byte slice.
 //
-// if the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// If the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
 // Otherwise, a new slice is created and returned with the value.
 func (addr *IPv6Address) CopyUpperBytes(bytes []byte) []byte {
 	return addr.init().section.CopyUpperBytes(bytes)
@@ -1142,6 +1164,8 @@ func (addr *IPv6Address) TrieDecrement() *IPv6Address {
 	return addr.trieDecrement().ToIPv6()
 }
 
+// MatchesWithMask applies the mask to this address and then compares the result with the given address,
+// returning true if they match, false otherwise.
 func (addr *IPv6Address) MatchesWithMask(other *IPv6Address, mask *IPv6Address) bool {
 	return addr.init().GetSection().MatchesWithMask(other.GetSection(), mask.GetSection())
 }
@@ -1168,6 +1192,13 @@ func (addr *IPv6Address) SetZone(zone string) *IPv6Address {
 	return newIPv6AddressZoned(addr.GetSection(), zone)
 }
 
+// ToSequentialRange creates a sequential range instance from the lowest and highest addresses in this subnet
+//
+// The two will represent the same set of individual addresses if and only if IsSequential is true.
+// To get a series of ranges that represent the same set of individual addresses use the SequentialBlockIterator (or PrefixIterator),
+// and apply this method to each iterated subnet.
+//
+// If this represents just a single address then the returned instance covers just that single address as well.
 func (addr *IPv6Address) ToSequentialRange() *IPv6AddressSeqRange {
 	if addr == nil {
 		return nil
@@ -1346,6 +1377,7 @@ func (addr *IPv6Address) IsWellKnownIPv4Translatable() bool { //rfc 6052 rfc 614
 	return false
 }
 
+// IsMulticast returns whether this address or subnet is entirely multicast
 func (addr *IPv6Address) IsMulticast() bool {
 	// 11111111...
 	return addr.GetSegment(0).MatchesWithPrefixMask(0xff00, 8)
@@ -1914,7 +1946,7 @@ func (addr *IPv6Address) WrapAddress() WrappedAddress {
 }
 
 // ToKey creates the associated address key.
-// While addresses can be compare with the Compare, TrieCompare or Equal methods as well as various provided instances of AddressComparator,
+// While addresses can be compared with the Compare, TrieCompare or Equal methods as well as various provided instances of AddressComparator,
 // they are not comparable with go operators.
 // However, IPv6AddressKey instances are comparable with go operators, and thus can be used as map keys.
 func (addr *IPv6Address) ToKey() *IPv6AddressKey {
