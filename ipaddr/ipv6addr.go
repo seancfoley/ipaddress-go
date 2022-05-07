@@ -377,6 +377,10 @@ func initZeroIPv6() *IPv6Address {
 // An IPv6 address is composed of 8 2-byte segments and can optionally have an associated prefix length.
 // Each segment can represent a single value or a range of values.
 // The zero value is ::
+//
+// To construct one from a string, use IPAddressString.
+// For other inputs, use one of multiple constructor functions like NewIPv6Address.
+// You can also use one of multiple constructors for IPAddress like NewIPAddress and then convert using ToIPv6.
 type IPv6Address struct {
 	ipAddressInternal
 }
@@ -537,7 +541,7 @@ func (addr *IPv6Address) GetEmbeddedIPv4Address() (*IPv4Address, addrerr.Incompa
 	return newIPv4Address(section), nil
 }
 
-// GetIPv4AddressSection produces an IPv4 address section from any sequence of bytes in this IPv6 address section
+// GetIPv4AddressSection produces an IPv4 address section corresponding to any sequence of bytes in this IPv6 address section
 func (addr *IPv6Address) GetIPv4AddressSection(startIndex, endIndex int) (*IPv4AddressSection, addrerr.IncompatibleAddressError) {
 	return addr.init().GetSection().GetIPv4AddressSection(startIndex, endIndex)
 }
@@ -547,7 +551,7 @@ func (addr *IPv6Address) Get6To4IPv4Address() (*IPv4Address, addrerr.Incompatibl
 	return addr.GetEmbeddedIPv4AddressAt(2)
 }
 
-// GetEmbeddedIPv4AddressAt produces an IPv4 address from any sequence of 4 bytes in this IPv6 address, starting at the given index.
+// GetEmbeddedIPv4AddressAt produces an IPv4 address corresponding to any sequence of 4 bytes in this IPv6 address, starting at the given index.
 func (addr *IPv6Address) GetEmbeddedIPv4AddressAt(byteIndex int) (*IPv4Address, addrerr.IncompatibleAddressError) {
 	if byteIndex == IPv6MixedOriginalSegmentCount*IPv6BytesPerSegment {
 		return addr.GetEmbeddedIPv4Address()
@@ -692,7 +696,7 @@ func (addr *IPv6Address) Subtract(other *IPv6Address) []*IPv6Address {
 	return res
 }
 
-// Intersect produces the subnet whose addresses are found in both this and the given subnet argument, or nil if no such addresses exist.
+// Intersect returns the subnet whose addresses are found in both this and the given subnet argument, or nil if no such addresses exist.
 //
 // This is also known as the conjunction of the two sets of addresses.
 func (addr *IPv6Address) Intersect(other *IPv6Address) *IPv6Address {
@@ -704,7 +708,7 @@ func (addr *IPv6Address) Intersect(other *IPv6Address) *IPv6Address {
 	return addr.checkIdentity(section)
 }
 
-// SpanWithRange produces an IPv6AddressSeqRange instance that spans this subnet to the given subnet.
+// SpanWithRange returns an IPv6AddressSeqRange instance that spans this subnet to the given subnet.
 // If the other address is a different version than this, then the other is ignored, and the result is equivalent to calling ToSequentialRange.
 func (addr *IPv6Address) SpanWithRange(other *IPv6Address) *IPv6AddressSeqRange {
 	return NewIPv6SeqRange(addr.init(), other.init())
@@ -1383,8 +1387,7 @@ func (addr *IPv6Address) IsMulticast() bool {
 	return addr.GetSegment(0).MatchesWithPrefixMask(0xff00, 8)
 }
 
-// IsLoopback returns whether this address is a loopback address, such as
-// [::1] (aka [0:0:0:0:0:0:0:1]) or 127.0.0.1
+// IsLoopback returns whether this address is a loopback address, namely [::1] (aka [0:0:0:0:0:0:0:1])
 func (addr *IPv6Address) IsLoopback() bool {
 	if addr.section == nil {
 		return false
@@ -1497,6 +1500,9 @@ func (addr *IPv6Address) Increment(increment int64) *IPv6Address {
 	return addr.init().increment(increment).ToIPv6()
 }
 
+// SpanWithPrefixBlocks returns an array of prefix blocks that cover the same set of addresses as this subnet.
+//
+// Unlike SpanWithPrefixBlocksTo, the result only includes addresses that are a part of this subnet.
 func (addr *IPv6Address) SpanWithPrefixBlocks() []*IPv6Address {
 	if addr.IsSequential() {
 		if addr.IsSinglePrefixBlock() {
@@ -1510,6 +1516,12 @@ func (addr *IPv6Address) SpanWithPrefixBlocks() []*IPv6Address {
 	return cloneToIPv6Addrs(spanWithPrefixBlocks(wrapped))
 }
 
+// SpanWithPrefixBlocksTo returns the smallest slice of prefix block subnets that span from this subnet to the given subnet.
+//
+// The resulting slice is sorted from lowest address value to highest, regardless of the size of each prefix block.
+//
+// From the list of returned subnets you can recover the original range (this to other) by converting each to IPAddressRange with ToSequentialRange
+// and them joining them into a single range with the Join method of IPAddressSeqRange.
 func (addr *IPv6Address) SpanWithPrefixBlocksTo(other *IPv6Address) []*IPv6Address {
 	return cloneToIPv6Addrs(
 		getSpanningPrefixBlocks(
@@ -1519,6 +1531,11 @@ func (addr *IPv6Address) SpanWithPrefixBlocksTo(other *IPv6Address) []*IPv6Addre
 	)
 }
 
+// SpanWithSequentialBlocks produces the smallest slice of sequential blocks that cover the same set of addresses as this subnet.
+//
+// This slice can be shorter than that produced by SpanWithPrefixBlocks and is never longer.
+//
+// Unlike SpanWithSequentialBlocksTo, this method only includes addresses that are a part of this subnet.
 func (addr *IPv6Address) SpanWithSequentialBlocks() []*IPv6Address {
 	if addr.IsSequential() {
 		return []*IPv6Address{addr}
@@ -1527,6 +1544,10 @@ func (addr *IPv6Address) SpanWithSequentialBlocks() []*IPv6Address {
 	return cloneToIPv6Addrs(spanWithSequentialBlocks(wrapped))
 }
 
+// SpanWithSequentialBlocksTo produces the smallest slice of sequential block subnets that span all values from this subnet to the given subnet.
+// The span will cover all addresses in both subnets and everything in between.
+//
+// The resulting slice is sorted from lowest address value to highest, regardless of the size of each prefix block.
 func (addr *IPv6Address) SpanWithSequentialBlocksTo(other *IPv6Address) []*IPv6Address {
 	return cloneToIPv6Addrs(
 		getSpanningSequentialBlocks(
@@ -1536,17 +1557,20 @@ func (addr *IPv6Address) SpanWithSequentialBlocksTo(other *IPv6Address) []*IPv6A
 	)
 }
 
+// CoverWithPrefixBlockTo returns the minimal-size prefix block that covers all the addresses spanning from this subnet to the given subnet.
 func (addr *IPv6Address) CoverWithPrefixBlockTo(other *IPv6Address) *IPv6Address {
 	return addr.init().coverWithPrefixBlockTo(other.ToIP()).ToIPv6()
 }
 
+// CoverWithPrefixBlock returns the minimal-size prefix block that covers all the addresses in this subnet.
+// The resulting block will have a larger subnet size than this, unless this subnet is already a prefix block.
 func (addr *IPv6Address) CoverWithPrefixBlock() *IPv6Address {
 	return addr.init().coverWithPrefixBlock().ToIPv6()
 }
 
-// MergeToSequentialBlocks merges this with the list of addresses to produce the smallest array of blocks that are sequential
+// MergeToSequentialBlocks merges this with the list of addresses to produce the smallest array of sequential blocks
 //
-// The resulting array is sorted from lowest address value to highest, regardless of the size of each prefix block.
+// The resulting slice is sorted from lowest address value to highest, regardless of the size of each prefix block.
 func (addr *IPv6Address) MergeToSequentialBlocks(addrs ...*IPv6Address) []*IPv6Address {
 	series := cloneIPv6Addrs(addr, addrs)
 	blocks := getMergedSequentialBlocks(series)
@@ -1555,7 +1579,7 @@ func (addr *IPv6Address) MergeToSequentialBlocks(addrs ...*IPv6Address) []*IPv6A
 
 // MergeToPrefixBlocks merges this subnet with the list of subnets to produce the smallest array of prefix blocks.
 //
-// The resulting array is sorted from lowest address value to highest, regardless of the size of each prefix block.
+// The resulting slice is sorted from lowest address value to highest, regardless of the size of each prefix block.
 func (addr *IPv6Address) MergeToPrefixBlocks(addrs ...*IPv6Address) []*IPv6Address {
 	series := cloneIPv6Addrs(addr, addrs)
 	blocks := getMergedPrefixBlocks(series)

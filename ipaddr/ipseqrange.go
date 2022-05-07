@@ -1002,14 +1002,19 @@ func (rng *IPAddressSeqRange) Intersect(other *IPAddressSeqRange) *IPAddressSeqR
 	return rng.init().intersect(other)
 }
 
+// CoverWithPrefixBlock returns the minimal-size prefix block that covers all the addresses in this range.
+// The resulting block will have a larger count than this, unless this range already directly corresponds to a prefix block.
 func (rng *IPAddressSeqRange) CoverWithPrefixBlock() *IPAddress {
 	return rng.GetLower().CoverWithPrefixBlockTo(rng.GetUpper())
 }
 
+// SpanWithPrefixBlocks returns an array of prefix blocks that spans the same set of addresses as this range.
 func (rng *IPAddressSeqRange) SpanWithPrefixBlocks() []*IPAddress {
 	return rng.GetLower().SpanWithPrefixBlocksTo(rng.GetUpper())
 }
 
+// SpanWithSequentialBlocks produces the smallest slice of sequential blocks that cover the same set of addresses as this range.
+// This slice can be shorter than that produced by SpanWithPrefixBlocks and is never longer.
 func (rng *IPAddressSeqRange) SpanWithSequentialBlocks() []*IPAddress {
 	res := rng.GetLower().SpanWithSequentialBlocksTo(rng.GetUpper())
 	return res

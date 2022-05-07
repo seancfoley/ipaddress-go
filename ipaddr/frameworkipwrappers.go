@@ -272,9 +272,16 @@ type ExtendedIPSegmentSeries interface {
 	// The segments following remain the same in all iterated series.
 	BlockIterator(segmentCount int) ExtendedIPSegmentSeriesIterator
 
+	// SpanWithPrefixBlocks returns an array of prefix blocks that spans the same set of individual series as this address series.
 	SpanWithPrefixBlocks() []ExtendedIPSegmentSeries
+
+	// SpanWithSequentialBlocks produces the smallest slice of sequential blocks that cover the same set of individual series as this series.
+	//
+	// This slice can be shorter than that produced by SpanWithPrefixBlocks and is never longer.
 	SpanWithSequentialBlocks() []ExtendedIPSegmentSeries
 
+	// CoverWithPrefixBlock returns the minimal-size prefix block that covers all the values in this series.
+	// The resulting block will have a larger series count than this, unless this series is already a prefix block.
 	CoverWithPrefixBlock() ExtendedIPSegmentSeries
 
 	// AdjustPrefixLen increases or decreases the prefix length by the given increment.
@@ -585,14 +592,20 @@ func (addr WrappedIPAddress) WithoutPrefixLen() ExtendedIPSegmentSeries {
 	return wrapIPAddress(addr.IPAddress.WithoutPrefixLen())
 }
 
+// SpanWithPrefixBlocks returns an array of prefix blocks that spans the same set of individual series as this subnet.
 func (addr WrappedIPAddress) SpanWithPrefixBlocks() []ExtendedIPSegmentSeries {
 	return addr.IPAddress.spanWithPrefixBlocks()
 }
 
+// SpanWithSequentialBlocks produces the smallest slice of sequential blocks that cover the same set of individual addresses as this subnet.
+//
+// This slice can be shorter than that produced by SpanWithPrefixBlocks and is never longer.
 func (addr WrappedIPAddress) SpanWithSequentialBlocks() []ExtendedIPSegmentSeries {
 	return addr.IPAddress.spanWithSequentialBlocks()
 }
 
+// CoverWithPrefixBlock returns the minimal-size prefix block that covers all the addresses in this subnet.
+// The resulting block will have a larger subnet size than this, unless this series is already a prefix block.
 func (addr WrappedIPAddress) CoverWithPrefixBlock() ExtendedIPSegmentSeries {
 	return addr.IPAddress.coverSeriesWithPrefixBlock()
 }
@@ -934,14 +947,20 @@ func (section WrappedIPAddressSection) WithoutPrefixLen() ExtendedIPSegmentSerie
 	return wrapIPSection(section.IPAddressSection.WithoutPrefixLen())
 }
 
+// SpanWithPrefixBlocks returns an array of prefix blocks that spans the same set of individual series as this subnet section.
 func (section WrappedIPAddressSection) SpanWithPrefixBlocks() []ExtendedIPSegmentSeries {
 	return section.IPAddressSection.spanWithPrefixBlocks()
 }
 
+// SpanWithSequentialBlocks produces the smallest slice of sequential blocks that cover the same set of individual address sections as this series.
+//
+// This slice can be shorter than that produced by SpanWithPrefixBlocks and is never longer.
 func (section WrappedIPAddressSection) SpanWithSequentialBlocks() []ExtendedIPSegmentSeries {
 	return section.IPAddressSection.spanWithSequentialBlocks()
 }
 
+// CoverWithPrefixBlock returns the minimal-size prefix block that covers all the individual address sections in this section.
+// The resulting block will have a larger count than this, unless this section is already a prefix block.
 func (section WrappedIPAddressSection) CoverWithPrefixBlock() ExtendedIPSegmentSeries {
 	return section.IPAddressSection.coverSeriesWithPrefixBlock()
 }

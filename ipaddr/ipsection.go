@@ -2027,6 +2027,9 @@ func (section *IPAddressSection) Increment(increment int64) *IPAddressSection {
 	return section.increment(increment).ToIP()
 }
 
+// SpanWithPrefixBlocks returns an array of prefix blocks that spans the same set of individual address sections as this section.
+//
+// Unlike SpanWithPrefixBlocksTo, the result only includes blocks that are a part of this section.
 func (section *IPAddressSection) SpanWithPrefixBlocks() []*IPAddressSection {
 	if section.IsSequential() {
 		if section.IsSinglePrefixBlock() {
@@ -2040,6 +2043,9 @@ func (section *IPAddressSection) SpanWithPrefixBlocks() []*IPAddressSection {
 	return cloneToIPSections(spanWithPrefixBlocks(wrapped))
 }
 
+// SpanWithSequentialBlocks produces the smallest slice of sequential blocks that cover the same set of sections as this.
+//
+// This slice can be shorter than that produced by SpanWithPrefixBlocks and is never longer.
 func (section *IPAddressSection) SpanWithSequentialBlocks() []*IPAddressSection {
 	if section.IsSequential() {
 		return []*IPAddressSection{section}
@@ -2048,6 +2054,8 @@ func (section *IPAddressSection) SpanWithSequentialBlocks() []*IPAddressSection 
 	return cloneToIPSections(spanWithSequentialBlocks(wrapped))
 }
 
+// CoverWithPrefixBlock returns the minimal-size prefix block that covers all the individual address sections in this section.
+// The resulting block will have a larger count than this, unless this section is already a prefix block.
 func (section *IPAddressSection) CoverWithPrefixBlock() *IPAddressSection {
 	return section.coverWithPrefixBlock()
 }

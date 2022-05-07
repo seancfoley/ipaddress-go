@@ -486,7 +486,7 @@ func (section *IPv4AddressSection) Subtract(other *IPv4AddressSection) (res []*I
 	return
 }
 
-// Intersect produces the subnet sections whose individual sections are found in both this and the given subnet section argument, or nil if no such sections exist.
+// Intersect returns the subnet sections whose individual sections are found in both this and the given subnet section argument, or nil if no such sections exist.
 //
 // This is also known as the conjunction of the two sets of address sections.
 //
@@ -860,6 +860,9 @@ func (section *IPv4AddressSection) Increment(inc int64) *IPv4AddressSection {
 		section.getPrefixLen()).ToIPv4()
 }
 
+// SpanWithPrefixBlocks returns an array of prefix blocks that spans the same set of individual address sections as this section.
+//
+// Unlike SpanWithPrefixBlocksTo, the result only includes blocks that are a part of this section.
 func (section *IPv4AddressSection) SpanWithPrefixBlocks() []*IPv4AddressSection {
 	if section.IsSequential() {
 		if section.IsSinglePrefixBlock() {
@@ -873,6 +876,11 @@ func (section *IPv4AddressSection) SpanWithPrefixBlocks() []*IPv4AddressSection 
 	return cloneToIPv4Sections(spanWithPrefixBlocks(wrapped))
 }
 
+// SpanWithPrefixBlocksTo returns the smallest slice of prefix block subnet sections that span from this section to the given section.
+//
+// If the given section has a different segment count, an error is returned.
+//
+// The resulting slice is sorted from lowest address value to highest, regardless of the size of each prefix block.
 func (section *IPv4AddressSection) SpanWithPrefixBlocksTo(other *IPv4AddressSection) ([]*IPv4AddressSection, addrerr.SizeMismatchError) {
 	if err := section.checkSectionCount(other.ToIP()); err != nil {
 		return nil, err
@@ -885,6 +893,11 @@ func (section *IPv4AddressSection) SpanWithPrefixBlocksTo(other *IPv4AddressSect
 	), nil
 }
 
+// SpanWithSequentialBlocks produces the smallest slice of sequential blocks that cover the same set of sections as this.
+//
+// This slice can be shorter than that produced by SpanWithPrefixBlocks and is never longer.
+//
+// Unlike SpanWithSequentialBlocksTo, this method only includes values that are a part of this section.
 func (section *IPv4AddressSection) SpanWithSequentialBlocks() []*IPv4AddressSection {
 	if section.IsSequential() {
 		return []*IPv4AddressSection{section}
@@ -893,6 +906,7 @@ func (section *IPv4AddressSection) SpanWithSequentialBlocks() []*IPv4AddressSect
 	return cloneToIPv4Sections(spanWithSequentialBlocks(wrapped))
 }
 
+// SpanWithSequentialBlocksTo produces the smallest slice of sequential block address sections that span from this section to the given section.
 func (section *IPv4AddressSection) SpanWithSequentialBlocksTo(other *IPv4AddressSection) ([]*IPv4AddressSection, addrerr.SizeMismatchError) {
 	if err := section.checkSectionCount(other.ToIP()); err != nil {
 		return nil, err
@@ -905,11 +919,16 @@ func (section *IPv4AddressSection) SpanWithSequentialBlocksTo(other *IPv4Address
 	), nil
 }
 
+// CoverWithPrefixBlockTo returns the minimal-size prefix block section that covers all the address sections spanning from this to the given section.
+//
+// If the other section has a different segment count, an error is returned.
 func (section *IPv4AddressSection) CoverWithPrefixBlockTo(other *IPv4AddressSection) (*IPv4AddressSection, addrerr.SizeMismatchError) {
 	res, err := section.coverWithPrefixBlockTo(other.ToIP())
 	return res.ToIPv4(), err
 }
 
+// CoverWithPrefixBlock returns the minimal-size prefix block that covers all the individual address sections in this section.
+// The resulting block will have a larger count than this, unless this section is already a prefix block.
 func (section *IPv4AddressSection) CoverWithPrefixBlock() *IPv4AddressSection {
 	return section.coverWithPrefixBlock().ToIPv4()
 }
@@ -930,9 +949,9 @@ func (section *IPv4AddressSection) checkSectionCounts(sections []*IPv4AddressSec
 }
 
 //
-// MergeToSequentialBlocks merges this with the list of sections to produce the smallest array of blocks that are sequential
+// MergeToSequentialBlocks merges this with the list of sections to produce the smallest array of sequential blocks
 //
-// The resulting array is sorted from lowest address value to highest, regardless of the size of each prefix block.
+// The resulting slice is sorted from lowest address value to highest, regardless of the size of each prefix block.
 func (section *IPv4AddressSection) MergeToSequentialBlocks(sections ...*IPv4AddressSection) ([]*IPv4AddressSection, addrerr.SizeMismatchError) {
 	if err := section.checkSectionCounts(sections); err != nil {
 		return nil, err
@@ -945,7 +964,7 @@ func (section *IPv4AddressSection) MergeToSequentialBlocks(sections ...*IPv4Addr
 //
 // MergeToPrefixBlocks merges this section with the list of sections to produce the smallest array of prefix blocks.
 //
-// The resulting array is sorted from lowest value to highest, regardless of the size of each prefix block.
+// The resulting slice is sorted from lowest value to highest, regardless of the size of each prefix block.
 func (section *IPv4AddressSection) MergeToPrefixBlocks(sections ...*IPv4AddressSection) ([]*IPv4AddressSection, addrerr.SizeMismatchError) {
 	if err := section.checkSectionCounts(sections); err != nil {
 		return nil, err

@@ -1543,7 +1543,7 @@ func (addr *IPAddress) Increment(increment int64) *IPAddress {
 	return addr.init().increment(increment).ToIP()
 }
 
-// SpanWithRange produces an IPAddressSeqRange instance that spans this subnet to the given subnet.
+// SpanWithRange returns an IPAddressSeqRange instance that spans this subnet to the given subnet.
 // If the other address is a different version than this, then the other is ignored, and the result is equivalent to calling ToSequentialRange
 func (addr *IPAddress) SpanWithRange(other *IPAddress) *IPAddressSeqRange {
 	if thisAddr := addr.ToIPv4(); thisAddr != nil {
@@ -1612,7 +1612,7 @@ func (addr *IPAddress) bitwiseOrPrefixed(other *IPAddress, retainPrefix bool) (*
 	return nil, &incompatibleAddressError{addressError{key: "ipaddress.error.ipMismatch"}}
 }
 
-// Intersect produces the subnet whose addresses are found in both this and the given subnet argument, or nil if no such addresses exist.
+// Intersect returns the subnet whose addresses are found in both this and the given subnet argument, or nil if no such addresses exist.
 //
 // This is also known as the conjunction of the two sets of addresses.
 func (addr *IPAddress) Intersect(other *IPAddress) *IPAddress {
@@ -1724,9 +1724,9 @@ func versionsMatch(one, two *IPAddress) bool {
 //	return true
 //}
 
-// MergeToSequentialBlocks merges this with the list of addresses to produce the smallest array of blocks that are sequential
+// MergeToSequentialBlocks merges this with the list of addresses to produce the smallest array of sequential blocks
 //
-// The resulting array is sorted from lowest address value to highest, regardless of the size of each prefix block.
+// The resulting slice is sorted from lowest address value to highest, regardless of the size of each prefix block.
 // Arguments that are not the same IP version are ignored.
 func (addr *IPAddress) MergeToSequentialBlocks(addrs ...*IPAddress) []*IPAddress {
 	series := filterCloneIPAddrs(addr, addrs)
@@ -1736,7 +1736,7 @@ func (addr *IPAddress) MergeToSequentialBlocks(addrs ...*IPAddress) []*IPAddress
 
 // MergeToPrefixBlocks merges this subnet with the list of subnets to produce the smallest array of prefix blocks.
 //
-// The resulting array is sorted from lowest address value to highest, regardless of the size of each prefix block.
+// The resulting slice is sorted from lowest address value to highest, regardless of the size of each prefix block.
 // Arguments that are not the same IP version are ignored.
 func (addr *IPAddress) MergeToPrefixBlocks(addrs ...*IPAddress) []*IPAddress {
 	series := filterCloneIPAddrs(addr, addrs)
@@ -1744,9 +1744,9 @@ func (addr *IPAddress) MergeToPrefixBlocks(addrs ...*IPAddress) []*IPAddress {
 	return cloneToIPAddrs(blocks)
 }
 
-// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
-// CoverWithPrefixBlock, CoverWithPrefixBlockTo, SpanWithPrefixBlocks/To, SpanWithSequentialBlocks/To, a bunch of string methods, ToHostName, ToCanonicalHostName, some constructors are next
-
+// SpanWithPrefixBlocks returns an array of prefix blocks that cover the same set of addresses as this subnet.
+//
+// Unlike SpanWithPrefixBlocksTo, the result only includes addresses that are a part of this subnet.
 func (addr *IPAddress) SpanWithPrefixBlocks() []*IPAddress {
 	addr = addr.init()
 	if addr.IsSequential() {
@@ -1761,6 +1761,14 @@ func (addr *IPAddress) SpanWithPrefixBlocks() []*IPAddress {
 	return cloneToIPAddrs(spanWithPrefixBlocks(wrapped))
 }
 
+// SpanWithPrefixBlocksTo returns the smallest slice of prefix block subnets that span from this subnet to the given subnet.
+//
+// If the given address is a different version than this, then the given address is ignored, and the result is equivalent to calling SpanWithPrefixBlocks.
+//
+// The resulting slice is sorted from lowest address value to highest, regardless of the size of each prefix block.
+//
+// From the list of returned subnets you can recover the original range (this to other) by converting each to IPAddressRange with ToSequentialRange
+// and them joining them into a single range with the Join method of IPAddressSeqRange.
 func (addr *IPAddress) SpanWithPrefixBlocksTo(other *IPAddress) []*IPAddress {
 	if !versionsMatch(addr, other) {
 		return addr.SpanWithPrefixBlocks()
@@ -1773,8 +1781,9 @@ func (addr *IPAddress) SpanWithPrefixBlocksTo(other *IPAddress) []*IPAddress {
 	)
 }
 
-// CoverWithPrefixBlockTo provides a single prefix block that covers both the receiver and the argument.
-// If the argument is not the same IP version as the receiver, the argument is ignored, and the result covers just the receiver.
+// CoverWithPrefixBlockTo returns the minimal-size prefix block that covers all the addresses spanning from this subnet to the given subnet.
+//
+// If the argument is not the same IP version as the receiver, the argument is ignored, and the result is the same as CoverWithPrefixBlock.
 func (addr *IPAddress) CoverWithPrefixBlockTo(other *IPAddress) *IPAddress {
 	if !versionsMatch(addr, other) {
 		return addr.CoverWithPrefixBlock()
@@ -1782,10 +1791,17 @@ func (addr *IPAddress) CoverWithPrefixBlockTo(other *IPAddress) *IPAddress {
 	return addr.init().coverWithPrefixBlockTo(other)
 }
 
+// CoverWithPrefixBlock returns the minimal-size prefix block that covers all the addresses in this subnet.
+// The resulting block will have a larger subnet size than this, unless this subnet is already a prefix block.
 func (addr *IPAddress) CoverWithPrefixBlock() *IPAddress {
 	return addr.init().coverWithPrefixBlock()
 }
 
+// SpanWithSequentialBlocks produces the smallest slice of sequential blocks that cover the same set of addresses as this subnet.
+//
+// This slice can be shorter than that produced by SpanWithPrefixBlocks and is never longer.
+//
+// Unlike SpanWithSequentialBlocksTo, this method only includes addresses that are a part of this subnet.
 func (addr *IPAddress) SpanWithSequentialBlocks() []*IPAddress {
 	addr = addr.init()
 	if addr.IsSequential() {
@@ -1794,6 +1810,16 @@ func (addr *IPAddress) SpanWithSequentialBlocks() []*IPAddress {
 	return cloneToIPAddrs(spanWithSequentialBlocks(addr.Wrap()))
 }
 
+// SpanWithSequentialBlocksTo produces the smallest slice of sequential block subnets that span all values from this subnet to the given subnet.
+// The span will cover all addresses in both subnets and everything in between.
+//
+// Individual block subnets come in the form 1-3.1-4.5.6-8, however that particular subnet is not sequential since address 1.1.5.8 is in the subnet,
+// the next sequential address 1.1.5.9 is not in the subnet, and a higher address 1.2.5.6 is in the subnet.
+// Blocks are sequential when the first segment with a range of values is followed by segments that span all values.
+//
+// If the other address is a different version than this, then this is equivalent to calling SpanWithSequentialBlocks on this subnet.
+//
+// The resulting slice is sorted from lowest address value to highest, regardless of the size of each prefix block.
 func (addr *IPAddress) SpanWithSequentialBlocksTo(other *IPAddress) []*IPAddress {
 	if !versionsMatch(addr, other) {
 		return addr.SpanWithSequentialBlocks()
@@ -1871,6 +1897,9 @@ func (addr *IPAddress) ToCanonicalString() string {
 	}
 	return addr.init().toCanonicalString()
 }
+
+// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
+// a bunch of string methods, ToHostName, ToCanonicalHostName, some constructors are next
 
 func (addr *IPAddress) ToCanonicalWildcardString() string {
 	if addr == nil {
