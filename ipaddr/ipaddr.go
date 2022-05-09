@@ -1898,9 +1898,10 @@ func (addr *IPAddress) ToCanonicalString() string {
 	return addr.init().toCanonicalString()
 }
 
-// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
-// a bunch of string methods, ToHostName, ToCanonicalHostName, some constructors are next
-
+// ToCanonicalWildcardString produces a string similar to the canonical string and avoids the CIDR prefix length.
+// Addresses and subnets with a network prefix length will be shown with wildcards and ranges (denoted by '*' and '-') instead of using the CIDR prefix length notation.
+// IPv6 addresses will be compressed according to the canonical representation.
+// For IPv4 it is the same as ToNormalizedWildcardString.
 func (addr *IPAddress) ToCanonicalWildcardString() string {
 	if addr == nil {
 		return nilString()
@@ -1937,6 +1938,8 @@ func (addr *IPAddress) ToCompressedString() string {
 	return addr.init().toCompressedString()
 }
 
+// ToNormalizedWildcardString produces a string similar to the normalized string but avoids the CIDR prefix length.
+// CIDR addresses will be shown with wildcards and ranges (denoted by '*' and '-') instead of using the CIDR prefix notation.
 func (addr *IPAddress) ToNormalizedWildcardString() string {
 	if addr == nil {
 		return nilString()
@@ -1944,6 +1947,7 @@ func (addr *IPAddress) ToNormalizedWildcardString() string {
 	return addr.init().toNormalizedWildcardString()
 }
 
+// ToSegmentedBinaryString writes this IP address segment series as segments of binary values preceded by the "0b" prefix.
 func (addr *IPAddress) ToSegmentedBinaryString() string {
 	if addr == nil {
 		return nilString()
@@ -1951,6 +1955,8 @@ func (addr *IPAddress) ToSegmentedBinaryString() string {
 	return addr.init().toSegmentedBinaryString()
 }
 
+// ToSQLWildcardString create a string similar to that from toNormalizedWildcardString except that
+// it uses SQL wildcards.  It uses '%' instead of '*' and also uses the wildcard '_'..
 func (addr *IPAddress) ToSQLWildcardString() string {
 	if addr == nil {
 		return nilString()
@@ -1958,6 +1964,8 @@ func (addr *IPAddress) ToSQLWildcardString() string {
 	return addr.init().toSQLWildcardString()
 }
 
+// ToFullString produces a string with no compressed segments and all segments of full length with leading zeros,
+// which is 4 characters for IPv6 segments and 3 characters for IPv4 segments.
 func (addr *IPAddress) ToFullString() string {
 	if addr == nil {
 		return nilString()
@@ -1965,6 +1973,10 @@ func (addr *IPAddress) ToFullString() string {
 	return addr.init().toFullString()
 }
 
+// ToReverseDNSString generates the reverse DNS lookup string,
+// returning an error if this address is an IPv6 multiple-valued subnet for which the range cannot be represented.
+// For 8.255.4.4 it is 4.4.255.8.in-addr.arpa
+// For 2001:db8::567:89ab it is b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa
 func (addr *IPAddress) ToReverseDNSString() (string, addrerr.IncompatibleAddressError) {
 	if addr == nil {
 		return nilString(), nil
@@ -1972,6 +1984,8 @@ func (addr *IPAddress) ToReverseDNSString() (string, addrerr.IncompatibleAddress
 	return addr.init().toReverseDNSString()
 }
 
+// ToPrefixLenString returns a string with a CIDR network prefix length if this address has a network prefix length.
+// For IPv6, a zero host section will be compressed with ::. For IPv4 the string is equivalent to the canonical string.
 func (addr *IPAddress) ToPrefixLenString() string {
 	if addr == nil {
 		return nilString()
@@ -1979,6 +1993,11 @@ func (addr *IPAddress) ToPrefixLenString() string {
 	return addr.init().toPrefixLenString()
 }
 
+// ToSubnetString produces a string with specific formats for subnets.
+// The subnet string looks like 1.2.*.* or 1:2::/16
+//
+// In the case of IPv4, this means that wildcards are used instead of a network prefix when a network prefix has been supplied.
+// In the case of IPv6, when a network prefix has been supplied, the prefix will be shown and the host section will be compressed with ::.
 func (addr *IPAddress) ToSubnetString() string {
 	if addr == nil {
 		return nilString()
@@ -1986,6 +2005,8 @@ func (addr *IPAddress) ToSubnetString() string {
 	return addr.init().toSubnetString()
 }
 
+// ToCompressedWildcardString produces a string similar to ToNormalizedWildcardString, avoiding the CIDR prefix, but with full IPv6 segment compression as well, including single zero-segments.
+// For IPv4 it is the same as ToNormalizedWildcardString.
 func (addr *IPAddress) ToCompressedWildcardString() string {
 	if addr == nil {
 		return nilString()
@@ -2063,6 +2084,9 @@ func (addr *IPAddress) ToAddressString() *IPAddressString {
 	return newIPAddressStringFromAddr(addr.toCanonicalString(), addr)
 }
 
+// ToHostName returns the HostName used to resolve, if this address was resolved from a host.
+// Otherwise, if this address represents a subnet of multiple addresses, returns a HostName for that subnet.
+// Otherwise, it does a reverse name lookup to obtain the proper HostName.
 func (addr *IPAddress) ToHostName() *HostName {
 	addr = addr.init()
 	cache := addr.cache
@@ -2085,6 +2109,10 @@ func (addr *IPAddress) ToHostName() *HostName {
 	return h
 }
 
+// ToCanonicalHostName does a reverse name lookup to get the canonical host name.
+// Note that the canonical host name may differ on different systems.
+//
+// This returns an error if this address is a subnet multiple values.
 func (addr *IPAddress) ToCanonicalHostName() (*HostName, error) {
 	addr = addr.init()
 	cache := addr.cache
@@ -2147,10 +2175,12 @@ func (addr *IPAddress) GetTrailingBitCount(ones bool) BitCount {
 	return addr.GetSection().GetTrailingBitCount(ones)
 }
 
+// GetNetwork returns the singleton network instance for the IP version of this address or subnet.
 func (addr *IPAddress) GetNetwork() IPAddressNetwork {
 	return addr.getNetwork()
 }
 
+// IPAddressValueProvider supplies all the values that incorporate an IPAddress instance.
 type IPAddressValueProvider interface {
 	AddressValueProvider
 
@@ -2231,6 +2261,7 @@ type IPAddressCreator struct {
 	IPVersion
 }
 
+// CreateSegment creates an IPv4 or IPv6 segment depending on the IP version assigned to this IPAddressCreator instance.
 func (creator IPAddressCreator) CreateSegment(lower, upper SegInt, segmentPrefixLength PrefixLen) *IPAddressSegment {
 	if creator.IsIPv4() {
 		return NewIPv4RangePrefixedSegment(IPv4SegInt(lower), IPv4SegInt(upper), segmentPrefixLength).ToIP()
@@ -2240,6 +2271,7 @@ func (creator IPAddressCreator) CreateSegment(lower, upper SegInt, segmentPrefix
 	return nil
 }
 
+// CreateRangeSegment creates an IPv4 or IPv6 range-valued segment depending on the IP version assigned to this IPAddressCreator instance.
 func (creator IPAddressCreator) CreateRangeSegment(lower, upper SegInt) *IPAddressSegment {
 	if creator.IsIPv4() {
 		return NewIPv4RangeSegment(IPv4SegInt(lower), IPv4SegInt(upper)).ToIP()
@@ -2249,6 +2281,7 @@ func (creator IPAddressCreator) CreateRangeSegment(lower, upper SegInt) *IPAddre
 	return nil
 }
 
+// CreatePrefixSegment creates an IPv4 or IPv6 segment with a prefix length depending on the IP version assigned to this IPAddressCreator instance.
 func (creator IPAddressCreator) CreatePrefixSegment(value SegInt, segmentPrefixLength PrefixLen) *IPAddressSegment {
 	if creator.IsIPv4() {
 		return NewIPv4PrefixedSegment(IPv4SegInt(value), segmentPrefixLength).ToIP()
@@ -2257,6 +2290,9 @@ func (creator IPAddressCreator) CreatePrefixSegment(value SegInt, segmentPrefixL
 	}
 	return nil
 }
+
+// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
+// some constructors are next
 
 func (creator IPAddressCreator) NewIPSectionFromBytes(bytes []byte) (*IPAddressSection, addrerr.AddressValueError) {
 	if creator.IsIPv4() {
@@ -2269,7 +2305,7 @@ func (creator IPAddressCreator) NewIPSectionFromBytes(bytes []byte) (*IPAddressS
 	return nil, &addressValueError{addressError: addressError{key: "ipaddress.error.ipVersionIndeterminate"}}
 }
 
-func (creator IPAddressCreator) NewIPSectionFromSegmentBytes(bytes []byte, segmentCount int) (*IPAddressSection, addrerr.AddressValueError) {
+func (creator IPAddressCreator) NewIPSectionFromSegmentedBytes(bytes []byte, segmentCount int) (*IPAddressSection, addrerr.AddressValueError) {
 	if creator.IsIPv4() {
 		addr, err := NewIPv4SectionFromSegmentedBytes(bytes, segmentCount)
 		return addr.ToIP(), err
@@ -2291,14 +2327,23 @@ func (creator IPAddressCreator) NewIPSectionFromPrefixedBytes(bytes []byte, segm
 	return nil, &addressValueError{addressError: addressError{key: "ipaddress.error.ipVersionIndeterminate"}}
 }
 
+// NewIPAddressFromVals constructs an IPAddress from the provided segment values.
+// If the IP version of this IPAddressCreator is indeterminate, then nil is returned.
 func (creator IPAddressCreator) NewIPAddressFromVals(lowerValueProvider SegmentValueProvider) *IPAddress {
 	return NewIPAddressFromVals(creator.IPVersion, lowerValueProvider)
 }
 
+// NewIPAddressFromPrefixedVals constructs an IPAddress from the provided segment values and prefix length.
+// If the IP version of this IPAddressCreator is indeterminate, then nil is returned.
+// The prefix length is adjusted to 0 if negative or to the bit count if larger.
 func (creator IPAddressCreator) NewIPAddressFromPrefixedVals(lowerValueProvider, upperValueProvider SegmentValueProvider, prefixLength PrefixLen) *IPAddress {
 	return NewIPAddressFromPrefixedVals(creator.IPVersion, lowerValueProvider, upperValueProvider, prefixLength)
 }
 
+// NewIPAddressFromPrefixedZonedVals constructs an IPAddress from the provided segment values, prefix length, and zone.
+// If the IP version of this IPAddressCreator is indeterminate, then nil is returned.
+// If the version is IPv4, then the zone is ignored.
+// The prefix length is adjusted to 0 if negative or to the bit count if larger.
 func (creator IPAddressCreator) NewIPAddressFromPrefixedZonedVals(lowerValueProvider, upperValueProvider SegmentValueProvider, prefixLength PrefixLen, zone string) *IPAddress {
 	return NewIPAddressFromPrefixedZonedVals(creator.IPVersion, lowerValueProvider, upperValueProvider, prefixLength, zone)
 }
@@ -2345,8 +2390,9 @@ func NewIPAddressFromPrefixedNetIPAddr(addr *net.IPAddr, prefixLength PrefixLen)
 	return nil, &addressValueError{addressError: addressError{key: "ipaddress.error.exceeds.size"}}
 }
 
-// NewIPAddressFromNetIPNet constructs a subnet from a net.IPNet
-// The error can be either addrerr.AddressValueError or addrerr.IncompatibleAddressError
+// NewIPAddressFromNetIPNet constructs a subnet from a net.IPNet.
+// The error can be either addrerr.AddressValueError, when the net.IPNet IP or mask has an invalid number of bytes,
+// or addrerr.IncompatibleAddressError when the mask and the IP from net.IPNet are different IP versions.
 func NewIPAddressFromNetIPNet(ipnet *net.IPNet) (*IPAddress, addrerr.AddressError) {
 	ip := ipnet.IP
 	maskIp := ipnet.Mask
@@ -2377,6 +2423,8 @@ func NewIPAddressFromNetIPNet(ipnet *net.IPNet) (*IPAddress, addrerr.AddressErro
 	return addr.ToPrefixBlockLen(prefLen.bitCount()), nil
 }
 
+// NewIPAddressFromVals constructs an IPAddress from the provided segment values.
+// If the given version is indeterminate, then nil is returned.
 func NewIPAddressFromVals(version IPVersion, lowerValueProvider SegmentValueProvider) *IPAddress {
 	if version.IsIPv4() {
 		return NewIPv4AddressFromVals(WrappedSegmentValueProviderForIPv4(lowerValueProvider)).ToIP()
@@ -2386,10 +2434,17 @@ func NewIPAddressFromVals(version IPVersion, lowerValueProvider SegmentValueProv
 	return nil
 }
 
+// NewIPAddressFromPrefixedVals constructs an IPAddress from the provided segment values and prefix length.
+// If the given version is indeterminate, then nil is returned.
+// The prefix length is adjusted to 0 if negative or to the bit count if larger.
 func NewIPAddressFromPrefixedVals(version IPVersion, lowerValueProvider, upperValueProvider SegmentValueProvider, prefixLength PrefixLen) *IPAddress {
 	return NewIPAddressFromPrefixedZonedVals(version, lowerValueProvider, upperValueProvider, prefixLength, "")
 }
 
+// NewIPAddressFromPrefixedZonedVals constructs an IPAddress from the provided segment values, prefix length, and zone.
+// If the given version is indeterminate, then nil is returned.
+// If the version is IPv4, then the zone is ignored.
+// The prefix length is adjusted to 0 if negative or to the bit count if larger.
 func NewIPAddressFromPrefixedZonedVals(version IPVersion, lowerValueProvider, upperValueProvider SegmentValueProvider, prefixLength PrefixLen, zone string) *IPAddress {
 	if version.IsIPv4() {
 		return NewIPv4AddressFromPrefixedRange(
@@ -2407,20 +2462,21 @@ func NewIPAddressFromPrefixedZonedVals(version IPVersion, lowerValueProvider, up
 }
 
 // NewIPAddressFromSegments creates an address from the given segments.
-// If the segments are not consistently IPv4 or IPv6, or if there is not the correct number for the version,
-// then nil is returned.  An error is not returned because it is not clear with version was intended and so any error may be misleading as to what was incorrect.
+// If the segments are not consistently IPv4 or IPv6, or if there is not the correct number of segments for the IP version (4 for IPv4, 8 for IPv6),
+// then an error is returned.
 func NewIPAddressFromSegments(segments []*IPAddressSegment) (res *IPAddress, err addrerr.AddressValueError) {
 	return NewIPAddressFromPrefixedSegments(segments, nil)
 }
 
 // NewIPAddressFromPrefixedSegments creates an address from the given segments and prefix length.
-// If the segments are not consistently IPv4 or IPv6, or if there is not the correct number for the version,
-// then nil is returned.  An error is not returned because it is not clear with version was intended and so any error may be misleading as to what was incorrect.
+// If the segments are not consistently IPv4 or IPv6, or if there is not the correct number of segments for the IP version (4 for IPv4, 8 for IPv6),
+// then an error is returned.
 func NewIPAddressFromPrefixedSegments(segs []*IPAddressSegment, prefixLength PrefixLen) (res *IPAddress, err addrerr.AddressValueError) {
 	if len(segs) > 0 {
 		if segs[0].IsIPv4() {
 			for _, seg := range segs[1:] {
 				if !seg.IsIPv4() {
+					err = &addressValueError{addressError: addressError{key: "ipaddress.error.ipVersionMismatch"}}
 					return
 				}
 			}
@@ -2430,17 +2486,27 @@ func NewIPAddressFromPrefixedSegments(segs []*IPAddressSegment, prefixLength Pre
 		} else if segs[0].IsIPv6() {
 			for _, seg := range segs[1:] {
 				if !seg.IsIPv6() {
+					err = &addressValueError{addressError: addressError{key: "ipaddress.error.ipVersionMismatch"}}
 					return
 				}
 			}
 			sect := createIPSectionFromSegs(false, segs, prefixLength)
 			addr, addrErr := NewIPv6Address(sect.ToIPv6())
 			res, err = addr.ToIP(), addrErr
+		} else {
+			err = &addressValueError{addressError: addressError{key: "ipaddress.error.invalid.size"}}
 		}
+	} else {
+		err = &addressValueError{addressError: addressError{key: "ipaddress.error.invalid.size"}}
 	}
 	return
 }
 
+// NewIPAddressFromValueProvider constructs an IPAddress from the provided segment values, prefix length, and zone,
+// all of which are supplied by the implementation of IPAddressValueProvider.
+// If the given version is indeterminate, then nil is returned.
+// If the version is IPv4, then the zone is ignored.
+// The prefix length is adjusted to 0 if negative or to the bit count if larger.
 func NewIPAddressFromValueProvider(valueProvider IPAddressValueProvider) *IPAddress {
 	if valueProvider.GetIPVersion().IsIPv4() {
 		return NewIPv4AddressFromPrefixedRange(

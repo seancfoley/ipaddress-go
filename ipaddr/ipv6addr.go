@@ -1658,6 +1658,7 @@ func (addr *IPv6Address) GetTrailingBitCount(ones bool) BitCount {
 	return addr.GetSection().GetTrailingBitCount(ones)
 }
 
+// GetNetwork returns the singleton IPv6 network instance.
 func (addr *IPv6Address) GetNetwork() IPAddressNetwork {
 	return ipv6Network
 }
@@ -1807,6 +1808,9 @@ func (addr *IPv6Address) ToCompressedString() string {
 	return addr.init().toCompressedString()
 }
 
+// ToCanonicalWildcardString produces a string similar to the canonical string and avoids the CIDR prefix length.
+// Addresses and subnets with a network prefix length will be shown with wildcards and ranges (denoted by '*' and '-') instead of using the CIDR prefix length notation.
+// IPv6 addresses will be compressed according to the canonical representation.
 func (addr *IPv6Address) ToCanonicalWildcardString() string {
 	if addr == nil {
 		return nilString()
@@ -1814,6 +1818,8 @@ func (addr *IPv6Address) ToCanonicalWildcardString() string {
 	return addr.init().toCanonicalWildcardString()
 }
 
+// ToNormalizedWildcardString produces a string similar to the normalized string but avoids the CIDR prefix length.
+// CIDR addresses will be shown with wildcards and ranges (denoted by '*' and '-') instead of using the CIDR prefix notation.
 func (addr *IPv6Address) ToNormalizedWildcardString() string {
 	if addr == nil {
 		return nilString()
@@ -1821,6 +1827,7 @@ func (addr *IPv6Address) ToNormalizedWildcardString() string {
 	return addr.init().toNormalizedWildcardString()
 }
 
+// ToSegmentedBinaryString writes this address as segments of binary values preceded by the "0b" prefix.
 func (addr *IPv6Address) ToSegmentedBinaryString() string {
 	if addr == nil {
 		return nilString()
@@ -1828,6 +1835,8 @@ func (addr *IPv6Address) ToSegmentedBinaryString() string {
 	return addr.init().toSegmentedBinaryString()
 }
 
+// ToSQLWildcardString create a string similar to that from toNormalizedWildcardString except that
+// it uses SQL wildcards.  It uses '%' instead of '*' and also uses the wildcard '_'..
 func (addr *IPv6Address) ToSQLWildcardString() string {
 	if addr == nil {
 		return nilString()
@@ -1835,6 +1844,8 @@ func (addr *IPv6Address) ToSQLWildcardString() string {
 	return addr.init().toSQLWildcardString()
 }
 
+// ToFullString produces a string with no compressed segments and all segments of full length with leading zeros,
+// which is 4 characters for IPv6 segments.
 func (addr *IPv6Address) ToFullString() string {
 	if addr == nil {
 		return nilString()
@@ -1842,6 +1853,8 @@ func (addr *IPv6Address) ToFullString() string {
 	return addr.init().toFullString()
 }
 
+// ToPrefixLenString returns a string with a CIDR network prefix length if this address has a network prefix length.
+// For IPv6, a zero host section will be compressed with ::. For IPv4 the string is equivalent to the canonical string.
 func (addr *IPv6Address) ToPrefixLenString() string {
 	if addr == nil {
 		return nilString()
@@ -1849,6 +1862,10 @@ func (addr *IPv6Address) ToPrefixLenString() string {
 	return addr.init().toPrefixLenString()
 }
 
+// ToSubnetString produces a string with specific formats for subnets.
+// The subnet string looks like 1.2.*.* or 1:2::/16
+//
+// In the case of IPv6, when a network prefix has been supplied, the prefix will be shown and the host section will be compressed with ::.
 func (addr *IPv6Address) ToSubnetString() string {
 	if addr == nil {
 		return nilString()
@@ -1856,6 +1873,7 @@ func (addr *IPv6Address) ToSubnetString() string {
 	return addr.init().toSubnetString()
 }
 
+// ToCompressedWildcardString produces a string similar to ToNormalizedWildcardString, avoiding the CIDR prefix, but with full IPv6 segment compression as well, including single zero-segments.
 func (addr *IPv6Address) ToCompressedWildcardString() string {
 	if addr == nil {
 		return nilString()
@@ -1863,6 +1881,9 @@ func (addr *IPv6Address) ToCompressedWildcardString() string {
 	return addr.init().toCompressedWildcardString()
 }
 
+// ToReverseDNSString generates the reverse DNS lookup string,
+// returning an error if this address is a multiple-valued subnet for which the range cannot be represented.
+// For 2001:db8::567:89ab it is b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa
 func (addr *IPv6Address) ToReverseDNSString() (string, addrerr.IncompatibleAddressError) {
 	if addr == nil {
 		return nilString(), nil

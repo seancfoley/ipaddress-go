@@ -439,6 +439,7 @@ func (host *HostName) AsAddressString() *IPAddressString {
 	return nil
 }
 
+// GetPort returns the port if a port was supplied, otherwise it returns nil
 func (host *HostName) GetPort() Port {
 	host = host.init()
 	if host.IsValid() {
@@ -447,6 +448,7 @@ func (host *HostName) GetPort() Port {
 	return nil
 }
 
+// GetService returns the service name if a service name was supplied (which is typically mapped to a port), otherwise it returns an empty string
 func (host *HostName) GetService() string {
 	host = host.init()
 	if host.IsValid() {

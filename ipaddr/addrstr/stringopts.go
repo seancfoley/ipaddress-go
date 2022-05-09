@@ -33,6 +33,7 @@ var (
 )
 
 // Wildcards specifies the wildcards to use when constructing a address string
+// You can use WildcardsBuilder to build an instance of Wildcards.
 type Wildcards interface {
 	// GetRangeSeparator returns the wildcard used to separate the lower and upper boundary (inclusive) of a range of values.
 	// if this returns an empty string, then the default separator RangeSeparatorStr is used, which is the hyphen '-'
@@ -63,6 +64,7 @@ func (wildcards *wildcards) GetSingleWildcard() string {
 
 var DefaultWildcards Wildcards = &wildcards{rangeSeparator: rangeSeparatorStr, wildcard: segmentWildcardStr}
 
+// WildcardsBuilder builds an instance of Wildcards
 type WildcardsBuilder struct {
 	wildcards
 }

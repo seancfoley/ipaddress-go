@@ -375,14 +375,44 @@ type IPAddressSegmentSeries interface { // IPAddress and above, IPAddressSection
 	// This method applies to the lower value of the range if this series represents multiple values.
 	GetTrailingBitCount(ones bool) BitCount
 
+	// ToFullString produces a string with no compressed segments and all segments of full length with leading zeros.
 	ToFullString() string
+
+	// ToPrefixLenString returns a string with a CIDR network prefix length if this address has a network prefix length.
+	// For IPv6, a zero host section will be compressed with ::. For IPv4 the string is equivalent to the canonical string.
 	ToPrefixLenString() string
+
+	// ToSubnetString produces a string with specific formats for subnets.
+	// The subnet string looks like 1.2.*.* or 1:2::/16
+	//
+	// In the case of IPv4, this means that wildcards are used instead of a network prefix when a network prefix has been supplied.
+	// In the case of IPv6, when a network prefix has been supplied, the prefix will be shown and the host section will be compressed with ::.
 	ToSubnetString() string
+
+	// ToNormalizedWildcardString produces a string similar to the normalized string but avoids the CIDR prefix length.
+	// CIDR addresses will be shown with wildcards and ranges (denoted by '*' and '-') instead of using the CIDR prefix notation.
 	ToNormalizedWildcardString() string
+
+	// ToCanonicalWildcardString produces a string similar to the canonical string but avoids the CIDR prefix length.
+	// Series with a network prefix length will be shown with wildcards and ranges (denoted by '*' and '-') instead of using the CIDR prefix length notation.
+	// IPv6 series will be compressed according to the canonical representation.
 	ToCanonicalWildcardString() string
+
+	// ToCompressedWildcardString produces a string similar to ToNormalizedWildcardString, avoiding the CIDR prefix, but with full IPv6 segment compression as well, including single zero-segments.
+	// For IPv4 it is the same as ToNormalizedWildcardString.
 	ToCompressedWildcardString() string
+
+	// ToSegmentedBinaryString writes this IP address segment series as segments of binary values preceded by the "0b" prefix.
 	ToSegmentedBinaryString() string
+
+	// ToSQLWildcardString create a string similar to that from toNormalizedWildcardString except that
+	// it uses SQL wildcards.  It uses '%' instead of '*' and also uses the wildcard '_'..
 	ToSQLWildcardString() string
+
+	// ToReverseDNSString generates the reverse DNS lookup string,
+	// returning an error if this address series is an IPv6 multiple-valued section for which the range cannot be represented.
+	// For 8.255.4.4 it is 4.4.255.8.in-addr.arpa
+	// For 2001:db8::567:89ab it is b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa
 	ToReverseDNSString() (string, addrerr.IncompatibleAddressError)
 }
 

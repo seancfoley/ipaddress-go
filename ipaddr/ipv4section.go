@@ -1127,6 +1127,8 @@ func (section *IPv4AddressSection) ToCompressedString() string {
 	return section.ToCanonicalString()
 }
 
+// ToNormalizedWildcardString produces a string similar to the normalized string but avoids the CIDR prefix length.
+// CIDR addresses will be shown with wildcards and ranges (denoted by '*' and '-') instead of using the CIDR prefix notation.
 func (section *IPv4AddressSection) ToNormalizedWildcardString() string {
 	if section == nil {
 		return nilString()
@@ -1141,6 +1143,9 @@ func (section *IPv4AddressSection) ToNormalizedWildcardString() string {
 		})
 }
 
+// ToCanonicalWildcardString produces a string similar to the canonical string but avoids the CIDR prefix length.
+// Address sections with a network prefix length will be shown with wildcards and ranges (denoted by '*' and '-') instead of using the CIDR prefix length notation.
+// For IPv4 it is the same as ToNormalizedWildcardString.
 func (section *IPv4AddressSection) ToCanonicalWildcardString() string {
 	if section == nil {
 		return nilString()
@@ -1148,6 +1153,7 @@ func (section *IPv4AddressSection) ToCanonicalWildcardString() string {
 	return section.ToNormalizedWildcardString()
 }
 
+// ToSegmentedBinaryString writes this address section as segments of binary values preceded by the "0b" prefix.
 func (section *IPv4AddressSection) ToSegmentedBinaryString() string {
 	if section == nil {
 		return nilString()
@@ -1162,6 +1168,8 @@ func (section *IPv4AddressSection) ToSegmentedBinaryString() string {
 		})
 }
 
+// ToSQLWildcardString create a string similar to that from toNormalizedWildcardString except that
+// it uses SQL wildcards.  It uses '%' instead of '*' and also uses the wildcard '_'..
 func (section *IPv4AddressSection) ToSQLWildcardString() string {
 	if section == nil {
 		return nilString()
@@ -1176,6 +1184,8 @@ func (section *IPv4AddressSection) ToSQLWildcardString() string {
 		})
 }
 
+// ToFullString produces a string with no compressed segments and all segments of full length with leading zeros,
+// which is 3 characters for IPv4 segments.
 func (section *IPv4AddressSection) ToFullString() string {
 	if section == nil {
 		return nilString()
@@ -1190,8 +1200,9 @@ func (section *IPv4AddressSection) ToFullString() string {
 		})
 }
 
-// ToReverseDNSString returns the reverse DNS string.
-// The method helps implement the IPAddressSegmentSeries interface.  For IPV4, the error is always nil.
+// ToReverseDNSString generates the reverse DNS lookup string.
+// For IPV4, the error is always nil.
+// For 8.255.4.4 it is 4.4.255.8.in-addr.arpa
 func (section *IPv4AddressSection) ToReverseDNSString() (string, addrerr.IncompatibleAddressError) {
 	if section == nil {
 		return nilString(), nil
@@ -1206,6 +1217,8 @@ func (section *IPv4AddressSection) ToReverseDNSString() (string, addrerr.Incompa
 		}), nil
 }
 
+// ToPrefixLenString returns a string with a CIDR network prefix length if this address has a network prefix length.
+// For IPv4 the string is equivalent to the canonical string.
 func (section *IPv4AddressSection) ToPrefixLenString() string {
 	if section == nil {
 		return nilString()
@@ -1213,6 +1226,10 @@ func (section *IPv4AddressSection) ToPrefixLenString() string {
 	return section.ToCanonicalString()
 }
 
+// ToSubnetString produces a string with specific formats for subnets.
+// The subnet string looks like 1.2.*.* or 1:2::/16
+//
+// In the case of IPv4, this means that wildcards are used instead of a network prefix when a network prefix has been supplied.
 func (section *IPv4AddressSection) ToSubnetString() string {
 	if section == nil {
 		return nilString()
@@ -1220,6 +1237,8 @@ func (section *IPv4AddressSection) ToSubnetString() string {
 	return section.ToNormalizedWildcardString()
 }
 
+// ToCompressedWildcardString produces a string similar to ToNormalizedWildcardString, and in fact
+// for IPv4 it is the same as ToNormalizedWildcardString.
 func (section *IPv4AddressSection) ToCompressedWildcardString() string {
 	if section == nil {
 		return nilString()

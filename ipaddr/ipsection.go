@@ -66,9 +66,7 @@ func createIPSectionFromSegs(isIPv4 bool, orig []*IPAddressSegment, prefLen Pref
 		result = createIPv4Section(divs).ToIP()
 	} else {
 		divs, newPref, isMultiple = createDivisionsFromSegs(
-			func(index int) *IPAddressSegment {
-				return orig[index]
-			},
+			segProvider,
 			len(orig),
 			ipv6BitsToSegmentBitshift,
 			IPv6BitsPerSegment,
@@ -2184,6 +2182,8 @@ func (section *IPAddressSection) ToBinaryString(with0bPrefix bool) (string, addr
 	return section.toBinaryString(with0bPrefix)
 }
 
+// ToNormalizedWildcardString produces a string similar to the normalized string but avoids the CIDR prefix length.
+// CIDR addresses will be shown with wildcards and ranges (denoted by '*' and '-') instead of using the CIDR prefix notation.
 func (section *IPAddressSection) ToNormalizedWildcardString() string {
 	if section == nil {
 		return nilString()
@@ -2191,6 +2191,10 @@ func (section *IPAddressSection) ToNormalizedWildcardString() string {
 	return section.toNormalizedWildcardString()
 }
 
+// ToCanonicalWildcardString produces a string similar to the canonical string but avoids the CIDR prefix length.
+// Address sections with a network prefix length will be shown with wildcards and ranges (denoted by '*' and '-') instead of using the CIDR prefix length notation.
+// IPv6 sections will be compressed according to the canonical representation.
+// For IPv4 it is the same as ToNormalizedWildcardString.
 func (section *IPAddressSection) ToCanonicalWildcardString() string {
 	if section == nil {
 		return nilString()
@@ -2198,6 +2202,7 @@ func (section *IPAddressSection) ToCanonicalWildcardString() string {
 	return section.toCanonicalWildcardString()
 }
 
+// ToSegmentedBinaryString writes this IP address section as segments of binary values preceded by the "0b" prefix.
 func (section *IPAddressSection) ToSegmentedBinaryString() string {
 	if section == nil {
 		return nilString()
@@ -2205,6 +2210,8 @@ func (section *IPAddressSection) ToSegmentedBinaryString() string {
 	return section.toSegmentedBinaryString()
 }
 
+// ToSQLWildcardString create a string similar to that from toNormalizedWildcardString except that
+// it uses SQL wildcards.  It uses '%' instead of '*' and also uses the wildcard '_'..
 func (section *IPAddressSection) ToSQLWildcardString() string {
 	if section == nil {
 		return nilString()
@@ -2212,6 +2219,8 @@ func (section *IPAddressSection) ToSQLWildcardString() string {
 	return section.toSQLWildcardString()
 }
 
+// ToFullString produces a string with no compressed segments and all segments of full length with leading zeros,
+// which is 4 characters for IPv6 segments and 3 characters for IPv4 segments.
 func (section *IPAddressSection) ToFullString() string {
 	if section == nil {
 		return nilString()
@@ -2219,6 +2228,10 @@ func (section *IPAddressSection) ToFullString() string {
 	return section.toFullString()
 }
 
+// ToReverseDNSString generates the reverse DNS lookup string,
+// returning an error if this address section is an IPv6 multiple-valued section for which the range cannot be represented.
+// For 8.255.4.4 it is 4.4.255.8.in-addr.arpa
+// For 2001:db8::567:89ab it is b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa
 func (section *IPAddressSection) ToReverseDNSString() (string, addrerr.IncompatibleAddressError) {
 	if section == nil {
 		return nilString(), nil
@@ -2226,6 +2239,8 @@ func (section *IPAddressSection) ToReverseDNSString() (string, addrerr.Incompati
 	return section.toReverseDNSString()
 }
 
+// ToPrefixLenString returns a string with a CIDR network prefix length if this address has a network prefix length.
+// For IPv6, a zero host section will be compressed with ::. For IPv4 the string is equivalent to the canonical string.
 func (section *IPAddressSection) ToPrefixLenString() string {
 	if section == nil {
 		return nilString()
@@ -2233,6 +2248,11 @@ func (section *IPAddressSection) ToPrefixLenString() string {
 	return section.toPrefixLenString()
 }
 
+// ToSubnetString produces a string with specific formats for subnets.
+// The subnet string looks like 1.2.*.* or 1:2::/16
+//
+// In the case of IPv4, this means that wildcards are used instead of a network prefix when a network prefix has been supplied.
+// In the case of IPv6, when a network prefix has been supplied, the prefix will be shown and the host section will be compressed with ::.
 func (section *IPAddressSection) ToSubnetString() string {
 	if section == nil {
 		return nilString()
@@ -2240,6 +2260,8 @@ func (section *IPAddressSection) ToSubnetString() string {
 	return section.toSubnetString()
 }
 
+// ToCompressedWildcardString produces a string similar to ToNormalizedWildcardString, avoiding the CIDR prefix, but with full IPv6 segment compression as well, including single zero-segments.
+// For IPv4 it is the same as ToNormalizedWildcardString.
 func (section *IPAddressSection) ToCompressedWildcardString() string {
 	if section == nil {
 		return nilString()
