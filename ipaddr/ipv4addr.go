@@ -45,6 +45,9 @@ func newIPv4Address(section *IPv4AddressSection) *IPv4Address {
 	return createAddress(section.ToSectionBase(), NoZone).ToIPv4()
 }
 
+// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
+//  constructors are next, then Uint32Value and UpperUint32Value, then IsPrivate, GetIPv4MappedAddress, ToInetAtonString and ToInetAtonJoinedString, and that's it
+
 func NewIPv4Address(section *IPv4AddressSection) (*IPv4Address, addrerr.AddressValueError) {
 	if section == nil {
 		return zeroIPv4, nil
@@ -175,7 +178,7 @@ func (addr *IPv4Address) init() *IPv4Address {
 //
 // If just a single address, not a subnet of multiple addresses, returns 1.
 //
-// For instance, the IP address subnet 1.2.0.0/16 has the count of 2 to the power of 16.
+// For instance, the IP address subnet 1.2.0.0/15 has the count of 2 to the power of 17.
 //
 // Use IsMultiple if you simply want to know if the count is greater than 1.
 func (addr *IPv4Address) GetCount() *big.Int {

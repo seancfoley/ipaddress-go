@@ -122,7 +122,7 @@ func NewIPv6SectionFromPrefixedBigInt(val *big.Int, segmentCount int, prefixLen 
 }
 
 func NewIPv6SectionFromBytes(bytes []byte) (res *IPv6AddressSection, err addrerr.AddressValueError) {
-	return newIPv6SectionFromBytes(bytes, len(bytes)>>1, nil, false)
+	return newIPv6SectionFromBytes(bytes, (len(bytes)+1)>>1, nil, false)
 }
 
 // NewIPv6SectionFromSegmentedBytes allows you to specify the segment count from the supplied bytes.
@@ -137,7 +137,7 @@ func NewIPv6SectionFromPrefixedBytes(bytes []byte, segmentCount int, prefixLengt
 
 func newIPv6SectionFromBytes(bytes []byte, segmentCount int, prefixLength PrefixLen, singleOnly bool) (res *IPv6AddressSection, err addrerr.AddressValueError) {
 	if segmentCount < 0 {
-		segmentCount = len(bytes) >> 1
+		segmentCount = (len(bytes) + 1) >> 1
 	}
 	expectedByteCount := segmentCount << 1
 	segments, err := toSegments(
