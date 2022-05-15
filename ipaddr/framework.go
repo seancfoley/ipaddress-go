@@ -648,12 +648,12 @@ var _, _ AddressType = &Address{}, &MACAddress{}
 
 type ipAddressRange interface {
 	// GetLowerIPAddress returns the address in the subnet or address range with the lowest numeric value,
-	// which will be the same address if it represents a single value.
+	// which will be the receiver if it represents a single address.
 	// For example, for "1.2-3.4.5-6", the series "1.2.4.5" is returned.
 	GetLowerIPAddress() *IPAddress
 
 	// GetUpperIPAddress returns the address in the subnet or address range with the highest numeric value,
-	// which will be the same address if it represents a single value.
+	// which will be the receiver if it represents a single address.
 	// For example, for "1.2-3.4.5-6", the series "1.3.4.6" is returned.
 	GetUpperIPAddress() *IPAddress
 

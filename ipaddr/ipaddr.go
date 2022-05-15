@@ -875,7 +875,7 @@ func (addr *IPAddress) GetByteCount() int {
 }
 
 // GetLowerIPAddress returns the address in the subnet or address collection with the lowest numeric value,
-// which will be the same address if it represents a single value.
+// which will be the receiver if it represents a single address.
 // For example, for "1.2-3.4.5-6", the series "1.2.4.5" is returned.
 // GetLowerIPAddress implements the IPAddressRange interface, and is equivalent to GetLower()
 func (addr *IPAddress) GetLowerIPAddress() *IPAddress {
@@ -883,22 +883,22 @@ func (addr *IPAddress) GetLowerIPAddress() *IPAddress {
 }
 
 // GetUpperIPAddress returns the address in the subnet or address collection with the highest numeric value,
-// which will be the same address if it represents a single value.
+// which will be the receiver if it represents a single address.
 // For example, for "1.2-3.4.5-6", the series "1.3.4.6" is returned.
 // GetUpperIPAddress implements the IPAddressRange interface, and is equivalent to GetUpper()
 func (addr *IPAddress) GetUpperIPAddress() *IPAddress {
 	return addr.GetUpper()
 }
 
-// GetLower returns the address in the subnet with the lowest numeric value,
-// which will be the same address if it represents a single value.
+// GetLower returns the lowest address in the subnet range,
+// which will be the receiver if it represents a single address.
 // For example, for "1.2-3.4.5-6", the series "1.2.4.5" is returned.
 func (addr *IPAddress) GetLower() *IPAddress {
 	return addr.init().getLower().ToIP()
 }
 
-// GetUpper returns the address in the subnet with the highest numeric value,
-// which will be the same address if it represents a single value.
+// GetUpper returns the highest address in the subnet range,
+// which will be the receiver if it represents a single address.
 // For example, for "1.2-3.4.5-6", the series "1.3.4.6" is returned.
 func (addr *IPAddress) GetUpper() *IPAddress {
 	return addr.init().getUpper().ToIP()
@@ -2347,18 +2347,16 @@ func (creator IPAddressCreator) CreatePrefixSegment(value SegInt, segmentPrefixL
 // If the IP version is indeterminate, then nil is returned.
 func (creator IPAddressCreator) NewIPSectionFromBytes(bytes []byte) *IPAddressSection {
 	if creator.IsIPv4() {
-		addr, _ := NewIPv4SectionFromBytes(bytes)
-		return addr.ToIP()
+		return NewIPv4SectionFromBytes(bytes).ToIP()
 	} else if creator.IsIPv6() {
-		addr, _ := NewIPv6SectionFromBytes(bytes)
-		return addr.ToIP()
+		return NewIPv6SectionFromBytes(bytes).ToIP()
 	}
 	return nil
 }
 
 // NewIPSectionFromSegmentedBytes creates an address section from the given bytes.  It is IPv4 or IPv6 depending on the IP version assigned to this IPAddressCreator instance.
 // The number of segments is given.  An error is returned when the byte slice has too many bytes to match the segment count.
-// IPv4 should have 4 bytes or less, IPv6 16 bytes or less, and extra leading zeros are tolerated.
+// IPv4 should have 4 bytes or less, IPv6 16 bytes or less, although extra leading zeros are tolerated.
 // If the IP version is indeterminate, then nil is returned.
 func (creator IPAddressCreator) NewIPSectionFromSegmentedBytes(bytes []byte, segmentCount int) (*IPAddressSection, addrerr.AddressValueError) {
 	if creator.IsIPv4() {
@@ -2373,7 +2371,7 @@ func (creator IPAddressCreator) NewIPSectionFromSegmentedBytes(bytes []byte, seg
 
 // NewIPSectionFromPrefixedBytes creates an address section from the given bytes and prefix length.  It is IPv4 or IPv6 depending on the IP version assigned to this IPAddressCreator instance.
 // The number of segments is given.  An error is returned when the byte slice has too many bytes to match the segment count.
-// IPv4 should have 4 bytes or less, IPv6 16 bytes or less, and extra leading zeros are tolerated.
+// IPv4 should have 4 bytes or less, IPv6 16 bytes or less, although extra leading zeros are tolerated.
 // If the IP version is indeterminate, then nil is returned.
 func (creator IPAddressCreator) NewIPSectionFromPrefixedBytes(bytes []byte, segmentCount int, prefLen PrefixLen) (*IPAddressSection, addrerr.AddressValueError) {
 	if creator.IsIPv4() {
@@ -2408,31 +2406,31 @@ func (creator IPAddressCreator) NewIPAddressFromPrefixedZonedVals(lowerValueProv
 }
 
 // NewIPAddressFromNetIPMask constructs an address from a net.IPMask.
-// An error is returned when the mask has an invalid number of bytes.  IPv4 should have 4 bytes or less, IPv6 16 bytes or less, and extra leading zeros are tolerated.
+// An error is returned when the mask has an invalid number of bytes.  IPv4 should have 4 bytes or less, IPv6 16 bytes or less, although extra leading zeros are tolerated.
 func NewIPAddressFromNetIPMask(ip net.IPMask) (*IPAddress, addrerr.AddressValueError) {
 	return addrFromBytes(ip)
 }
 
 // NewIPAddressFromNetIP constructs an address from a net.IP.
-// An error is returned when the IP has an invalid number of bytes.  IPv4 should have 4 bytes or less, IPv6 16 bytes or less, and extra leading zeros are tolerated.
+// An error is returned when the IP has an invalid number of bytes.  IPv4 should have 4 bytes or less, IPv6 16 bytes or less, although extra leading zeros are tolerated.
 func NewIPAddressFromNetIP(ip net.IP) (*IPAddress, addrerr.AddressValueError) {
 	return addrFromIP(ip)
 }
 
 // NewIPAddressFromPrefixedNetIP constructs an address or subnet from a net.IP with a prefix length.
-// An error is returned when the IP has an invalid number of bytes.  IPv4 should have 4 bytes or less, IPv6 16 bytes or less, and extra leading zeros are tolerated.
+// An error is returned when the IP has an invalid number of bytes.  IPv4 should have 4 bytes or less, IPv6 16 bytes or less, although extra leading zeros are tolerated.
 func NewIPAddressFromPrefixedNetIP(ip net.IP, prefixLength PrefixLen) (*IPAddress, addrerr.AddressValueError) {
 	return addrFromPrefixedIP(ip, prefixLength)
 }
 
 // NewIPAddressFromNetIPAddr constructs an address or subnet from a net.IPAddr.
-// An error is returned when the IP has an invalid number of bytes.  IPv4 should have 4 bytes or less, IPv6 16 bytes or less, and extra leading zeros are tolerated.
+// An error is returned when the IP has an invalid number of bytes.  IPv4 should have 4 bytes or less, IPv6 16 bytes or less, although extra leading zeros are tolerated.
 func NewIPAddressFromNetIPAddr(addr *net.IPAddr) (*IPAddress, addrerr.AddressValueError) {
 	return addrFromZonedIP(addr)
 }
 
 // NewIPAddressFromPrefixedNetIPAddr constructs an address or subnet from a net.IPAddr with a prefix length.
-// An error is returned when the IP has an invalid number of bytes.  IPv4 should have 4 bytes or less, IPv6 16 bytes or less, and extra leading zeros are tolerated.
+// An error is returned when the IP has an invalid number of bytes.  IPv4 should have 4 bytes or less, IPv6 16 bytes or less, although extra leading zeros are tolerated.
 func NewIPAddressFromPrefixedNetIPAddr(addr *net.IPAddr, prefixLength PrefixLen) (*IPAddress, addrerr.AddressValueError) {
 	return addrFromPrefixedZonedIP(addr, prefixLength)
 }
@@ -2508,14 +2506,14 @@ func NewIPAddressFromPrefixedZonedVals(version IPVersion, lowerValueProvider, up
 	return nil
 }
 
-// NewIPAddressFromSegments creates an address from the given segments.
+// NewIPAddressFromSegs constructs an address from the given segments.
 // If the segments are not consistently IPv4 or IPv6, or if there is not the correct number of segments for the IP version (4 for IPv4, 8 for IPv6),
 // then an error is returned.
-func NewIPAddressFromSegments(segments []*IPAddressSegment) (res *IPAddress, err addrerr.AddressValueError) {
+func NewIPAddressFromSegs(segments []*IPAddressSegment) (res *IPAddress, err addrerr.AddressValueError) {
 	return NewIPAddressFromPrefixedSegments(segments, nil)
 }
 
-// NewIPAddressFromPrefixedSegments creates an address from the given segments and prefix length.
+// NewIPAddressFromPrefixedSegments constructs an address from the given segments and prefix length.
 // If the segments are not consistently IPv4 or IPv6, or if there is not the correct number of segments for the IP version (4 for IPv4, 8 for IPv6),
 // then an error is returned.
 func NewIPAddressFromPrefixedSegments(segs []*IPAddressSegment, prefixLength PrefixLen) (res *IPAddress, err addrerr.AddressValueError) {

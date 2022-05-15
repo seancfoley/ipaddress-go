@@ -62,10 +62,12 @@ func newPrefixedIPv4SectionParsed(segments []*AddressDivision, isMultiple bool, 
 	return
 }
 
+// NewIPv4Section constructs an IPv4 address or subnet section from the given segments.
 func NewIPv4Section(segments []*IPv4AddressSegment) *IPv4AddressSection {
 	return createIPv4SectionFromSegs(segments, nil)
 }
 
+// NewIPv4PrefixedSection constructs an IPv4 address or subnet section from the given segments and prefix length.
 func NewIPv4PrefixedSection(segments []*IPv4AddressSegment, prefixLen PrefixLen) *IPv4AddressSection {
 	return createIPv4SectionFromSegs(segments, prefixLen)
 }
@@ -90,18 +92,20 @@ func createIPv4SectionFromSegs(orig []*IPv4AddressSegment, prefLen PrefixLen) (r
 	return result
 }
 
-func NewIPv4SectionFromUint32(bytes uint32, segmentCount int) (res *IPv4AddressSection) {
-	return NewIPv4SectionFromPrefixedUint32(bytes, segmentCount, nil)
+// NewIPv4SectionFromUint32 constructs an IPv4 address section from the given value and prefix length.
+func NewIPv4SectionFromUint32(value uint32, segmentCount int) (res *IPv4AddressSection) {
+	return NewIPv4SectionFromPrefixedUint32(value, segmentCount, nil)
 }
 
-func NewIPv4SectionFromPrefixedUint32(bytes uint32, segmentCount int, prefixLength PrefixLen) (res *IPv4AddressSection) {
+// NewIPv4SectionFromPrefixedUint32 constructs an IPv4 address or prefix block section from the given value and prefix length.
+func NewIPv4SectionFromPrefixedUint32(value uint32, segmentCount int, prefixLength PrefixLen) (res *IPv4AddressSection) {
 	if segmentCount < 0 {
 		segmentCount = IPv4SegmentCount
 	}
 	segments := createSegmentsUint64(
 		segmentCount,
 		0,
-		uint64(bytes),
+		uint64(value),
 		IPv4BytesPerSegment,
 		IPv4BitsPerSegment,
 		ipv4Network.getIPAddressCreator(),
@@ -113,15 +117,25 @@ func NewIPv4SectionFromPrefixedUint32(bytes uint32, segmentCount int, prefixLeng
 	return
 }
 
-func NewIPv4SectionFromBytes(bytes []byte) (res *IPv4AddressSection, err addrerr.AddressValueError) {
-	return newIPv4SectionFromBytes(bytes, len(bytes), nil, false)
+// NewIPv4SectionFromBytes constructs an IPv4 address section from the given byte slice.
+// The segment count is determined by the slice length, even if the segment count exceeds 4 segments.
+func NewIPv4SectionFromBytes(bytes []byte) *IPv4AddressSection {
+	res, _ := newIPv4SectionFromBytes(bytes, len(bytes), nil, false)
+	return res
 }
 
 // Useful if the byte array has leading zeros
+
+// NewIPv4SectionFromSegmentedBytes constructs an IPv4 address section from the given byte slice.
+// It allows you to specify the segment count for the supplied bytes.
+// If the slice is too large for the given number of segments, an error is returned, although leading zeros are tolerated.
 func NewIPv4SectionFromSegmentedBytes(bytes []byte, segmentCount int) (res *IPv4AddressSection, err addrerr.AddressValueError) {
 	return newIPv4SectionFromBytes(bytes, segmentCount, nil, false)
 }
 
+// NewIPv4SectionFromPrefixedBytes constructs an IPv4 address or prefix block section from the given byte slice and prefix length.
+// It allows you to specify the segment count for the supplied bytes.
+// If the slice is too large for the given number of segments, an error is returned, although leading zeros are tolerated.
 func NewIPv4SectionFromPrefixedBytes(bytes []byte, segmentCount int, prefixLength PrefixLen) (res *IPv4AddressSection, err addrerr.AddressValueError) {
 	return newIPv4SectionFromBytes(bytes, segmentCount, prefixLength, false)
 }
@@ -154,20 +168,24 @@ func newIPv4SectionFromBytes(bytes []byte, segmentCount int, prefixLength Prefix
 	return
 }
 
+// NewIPv4SectionFromVals constructs an IPv4 address section of the given segment count from the given values.
 func NewIPv4SectionFromVals(vals IPv4SegmentValueProvider, segmentCount int) (res *IPv4AddressSection) {
 	res = NewIPv4SectionFromPrefixedRange(vals, nil, segmentCount, nil)
 	return
 }
 
+// NewIPv4SectionFromPrefixedVals constructs an IPv4 address or prefix block section of the given segment count from the given values and prefix length.
 func NewIPv4SectionFromPrefixedVals(vals IPv4SegmentValueProvider, segmentCount int, prefixLength PrefixLen) (res *IPv4AddressSection) {
 	return NewIPv4SectionFromPrefixedRange(vals, nil, segmentCount, prefixLength)
 }
 
+// NewIPv4SectionFromRange constructs an IPv4 subnet section of the given segment count from the given values.
 func NewIPv4SectionFromRange(vals, upperVals IPv4SegmentValueProvider, segmentCount int) (res *IPv4AddressSection) {
 	res = NewIPv4SectionFromPrefixedRange(vals, upperVals, segmentCount, nil)
 	return
 }
 
+// NewIPv4SectionFromPrefixedRange constructs an IPv4 subnet section of the given segment count from the given values and prefix length.
 func NewIPv4SectionFromPrefixedRange(vals, upperVals IPv4SegmentValueProvider, segmentCount int, prefixLength PrefixLen) (res *IPv4AddressSection) {
 	return newIPv4SectionFromPrefixedSingle(vals, upperVals, segmentCount, prefixLength, false)
 }
@@ -258,7 +276,18 @@ func (section *IPv4AddressSection) GetIPVersion() IPVersion {
 	return IPv4
 }
 
-// GetCount returns the count of possible distinct values for this item.
+// IsMultiple returns  whether this section represents multiple values
+func (section *IPv4AddressSection) IsMultiple() bool {
+	return section != nil && section.isMultiple()
+}
+
+// IsPrefixed returns whether this section has an associated prefix length
+func (section *IPv4AddressSection) IsPrefixed() bool {
+	return section != nil && section.isPrefixed()
+}
+
+// GetCount returns the count of possible distinct values for this section.
+// It is the same as GetIPv4Count but returns the value as a big integer instead of a uint64.
 // If not representing multiple values, the count is 1,
 // unless this is a division grouping with no divisions, or an address section with no segments, in which case it is 0.
 //
@@ -268,18 +297,33 @@ func (section *IPv4AddressSection) GetCount() *big.Int {
 		return bigZero()
 	}
 	return section.cacheCount(func() *big.Int {
-		return bigZero().SetUint64(section.GetIPv4Count())
+		return bigZero().SetUint64(section.getIPv4Count())
 	})
 }
 
-// IsMultiple returns  whether this section represents multiple values
-func (section *IPv4AddressSection) IsMultiple() bool {
-	return section != nil && section.isMultiple()
+//TODO consider adding GetIPv4Count GetIPv4PrefixCount GetIPv4BlockCount to IPv4Address too, not just IPv4AddressSection
+// maybe I wanted to reduce clutter?  not sure
+
+// GetIPv4Count returns the count of possible distinct values for this section.
+// It is the same as GetCount but returns the value as a uint64 instead of a big integer.
+// If not representing multiple values, the count is 1,
+// unless this is a division grouping with no divisions, or an address section with no segments, in which case it is 0.
+//
+// Use IsMultiple if you simply want to know if the count is greater than 1.
+func (section *IPv4AddressSection) GetIPv4Count() uint64 {
+	if section == nil {
+		return 0
+	}
+	return section.cacheUint64Count(func() uint64 {
+		return section.getIPv4Count()
+	})
 }
 
-// IsPrefixed returns whether this section has an associated prefix length
-func (section *IPv4AddressSection) IsPrefixed() bool {
-	return section != nil && section.isPrefixed()
+func (section *IPv4AddressSection) getIPv4Count() uint64 {
+	if !section.isMultiple() {
+		return 1
+	}
+	return longCount(section.ToSectionBase(), section.GetSegmentCount())
 }
 
 // GetPrefixCount returns the number of distinct prefix values in this item.
@@ -291,8 +335,30 @@ func (section *IPv4AddressSection) IsPrefixed() bool {
 // If this has a nil prefix length, returns the same value as GetCount
 func (section *IPv4AddressSection) GetPrefixCount() *big.Int {
 	return section.cachePrefixCount(func() *big.Int {
-		return bigZero().SetUint64(section.GetIPv4PrefixCount())
+		return bigZero().SetUint64(section.getIPv4PrefixCount())
 	})
+}
+
+// GetIPv4PrefixCount returns the number of distinct prefix values in this section.
+// It is similar to GetPrefixCount but returns a uint64.
+//
+// The prefix length is given by GetPrefixLen.
+//
+// If this has a non-nil prefix length, returns the number of distinct prefix values.
+//
+// If this has a nil prefix length, returns the same value as GetCount
+func (section *IPv4AddressSection) GetIPv4PrefixCount() uint64 {
+	return section.cacheUint64PrefixCount(func() uint64 {
+		return section.getIPv4PrefixCount()
+	})
+}
+
+func (section *IPv4AddressSection) getIPv4PrefixCount() uint64 {
+	prefixLength := section.getPrefixLen()
+	if prefixLength == nil {
+		return section.GetIPv4Count()
+	}
+	return section.GetIPv4PrefixCountLen(prefixLength.bitCount())
 }
 
 // GetPrefixCountLen returns the number of distinct prefix values in this item for the given prefix length
@@ -305,7 +371,17 @@ func (section *IPv4AddressSection) GetPrefixCountLen(prefixLen BitCount) *big.In
 	return section.calcCount(func() *big.Int { return new(big.Int).SetUint64(section.GetIPv4PrefixCountLen(prefixLen)) })
 }
 
+// GetIPv4BlockCount returns the count of distinct values in the given number of initial (more significant) segments.
+// It is similar to GetBlockCount but returns a uint64 instead of a big integer.
+func (section *IPv4AddressSection) GetIPv4BlockCount(segmentCount int) uint64 {
+	if !section.isMultiple() {
+		return 1
+	}
+	return longCount(section.ToSectionBase(), segmentCount)
+}
+
 // GetBlockCount returns the count of distinct values in the given number of initial (more significant) segments.
+// It is similar to GetIPv4BlockCount but returns a big integer instead of a uint64.
 func (section *IPv4AddressSection) GetBlockCount(segmentCount int) *big.Int {
 	if segmentCount <= 0 {
 		return bigOne()
@@ -323,28 +399,6 @@ func (section *IPv4AddressSection) GetIPv4PrefixCountLen(prefixLength BitCount) 
 		prefixLength = 0
 	}
 	return longPrefixCount(section.ToSectionBase(), prefixLength)
-}
-
-func (section *IPv4AddressSection) GetIPv4PrefixCount() uint64 {
-	prefixLength := section.getPrefixLen()
-	if prefixLength == nil {
-		return section.GetIPv4Count()
-	}
-	return section.GetIPv4PrefixCountLen(prefixLength.bitCount())
-}
-
-func (section *IPv4AddressSection) GetIPv4Count() uint64 {
-	if !section.isMultiple() {
-		return 1
-	}
-	return longCount(section.ToSectionBase(), section.GetSegmentCount())
-}
-
-func (section *IPv4AddressSection) GetIPv4BlockCount(segmentCount int) uint64 {
-	if !section.isMultiple() {
-		return 1
-	}
-	return longCount(section.ToSectionBase(), segmentCount)
 }
 
 // GetSegment returns the segment at the given index.
@@ -570,11 +624,13 @@ func (section *IPv4AddressSection) ToMaxHostLen(prefixLength BitCount) (*IPv4Add
 	return res.ToIPv4(), err
 }
 
+// Uint32Value returns the lowest address in the address section range as a uint32
 func (section *IPv4AddressSection) Uint32Value() uint32 {
 	lower, _ := section.getIntValues()
 	return lower
 }
 
+// UpperUint32Value returns the highest address in the address section range as a uint32
 func (section *IPv4AddressSection) UpperUint32Value() uint32 {
 	_, upper := section.getIntValues()
 	return upper
@@ -1008,11 +1064,13 @@ func (section *IPv4AddressSection) ReverseSegments() *IPv4AddressSection {
 	return res.ToIPv4()
 }
 
+// Append creates a new section by appending the given section to this section.
 func (section *IPv4AddressSection) Append(other *IPv4AddressSection) *IPv4AddressSection {
 	count := section.GetSegmentCount()
 	return section.ReplaceLen(count, count, other, 0, other.GetSegmentCount())
 }
 
+// Insert creates a new section by inserting the given section into this section at the given index.
 func (section *IPv4AddressSection) Insert(index int, other *IPv4AddressSection) *IPv4AddressSection {
 	return section.insert(index, other.ToIP(), ipv4BitsToSegmentBitshift).ToIPv4()
 }
@@ -1246,6 +1304,8 @@ func (section *IPv4AddressSection) ToCompressedWildcardString() string {
 	return section.ToNormalizedWildcardString()
 }
 
+// ToInetAtonString returns a string with a format that is styled from the inet_aton routine.
+// The string can have an octal or hexadecimal radix rather than decimal.
 func (section *IPv4AddressSection) ToInetAtonString(radix Inet_aton_radix) string {
 	if section == nil {
 		return nilString()
@@ -1272,6 +1332,9 @@ func (section *IPv4AddressSection) ToInetAtonString(radix Inet_aton_radix) strin
 	}
 }
 
+// ToInetAtonJoinedString returns a string with a format that is styled from the inet_aton routine.
+// The string can have an octal or hexadecimal radix rather than decimal,
+// and can have less than the typical four IPv4 segments.
 func (section *IPv4AddressSection) ToInetAtonJoinedString(radix Inet_aton_radix, joinedCount int) (string, addrerr.IncompatibleAddressError) {
 	if section == nil {
 		return nilString(), nil
@@ -1379,12 +1442,15 @@ func (section *IPv4AddressSection) GetSegmentStrings() []string {
 	return section.getSegmentStrings()
 }
 
+// Inet_aton_radix represents a radix for printing an address string
 type Inet_aton_radix int
 
+// GetRadix converts the radix to an int
 func (rad Inet_aton_radix) GetRadix() int {
 	return int(rad)
 }
 
+// GetSegmentStrPrefix returns the string prefix used to identify the radix
 func (rad Inet_aton_radix) GetSegmentStrPrefix() string {
 	if rad == Inet_aton_radix_octal {
 		return OctalPrefix
@@ -1394,6 +1460,7 @@ func (rad Inet_aton_radix) GetSegmentStrPrefix() string {
 	return ""
 }
 
+// String returns the name of the radix
 func (rad Inet_aton_radix) String() string {
 	if rad == Inet_aton_radix_octal {
 		return "octal"

@@ -4129,8 +4129,8 @@ func reconstitute(version ipaddr.IPVersion, bytes []byte, segmentByteSize int) [
 
 		for i, ind := 0, 0; i < len(set); i++ {
 			setBytes := set[i]
-			sec1, _ := creator.NewIPSectionFromBytes(setBytes)
-			sec2, _ := creator.NewIPSectionFromBytes(bytes[ind : ind+len(setBytes)])
+			sec1 := creator.NewIPSectionFromBytes(setBytes)
+			sec2 := creator.NewIPSectionFromBytes(bytes[ind : ind+len(setBytes)])
 			segs := sec1.GetSegments()
 			segs2 := sec2.GetSegments()
 
@@ -4141,8 +4141,8 @@ func reconstitute(version ipaddr.IPVersion, bytes []byte, segmentByteSize int) [
 			segments = append(segments, segs...)
 			segments2 = append(segments2, segs2...)
 		}
-		addr1, _ := ipaddr.NewIPAddressFromSegments(segments)
-		addr2, _ := ipaddr.NewIPAddressFromSegments(segments2)
+		addr1, _ := ipaddr.NewIPAddressFromSegs(segments)
+		addr2, _ := ipaddr.NewIPAddressFromSegs(segments2)
 		addresses = append(addresses, addr1)
 		addresses = append(addresses, addr2)
 	}

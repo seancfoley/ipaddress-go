@@ -90,7 +90,7 @@ func NewMACAddressFromUint64Ext(val uint64, isExtended bool) *MACAddress {
 	return createAddress(section.ToSectionBase(), NoZone).ToMAC()
 }
 
-func NewMACAddressFromSegments(segments []*MACAddressSegment) (*MACAddress, addrerr.AddressValueError) {
+func NewMACAddressFromSegs(segments []*MACAddressSegment) (*MACAddress, addrerr.AddressValueError) {
 	segsLen := len(segments)
 	if segsLen != MediaAccessControlSegmentCount && segsLen != ExtendedUniqueIdentifier64SegmentCount {
 		return nil, &addressValueError{val: segsLen, addressError: addressError{key: "ipaddress.error.mac.invalid.segment.count"}}
@@ -252,14 +252,14 @@ func (addr *MACAddress) GetUpperValue() *big.Int {
 }
 
 // GetLower returns the address in the collection with the lowest numeric value,
-// which will be the same address if it represents a single value.
+// which will be the receiver if it represents a single address.
 // For example, for "1:1:1:2-3:4:5-6", the series "1:1:1:2:4:5" is returned.
 func (addr *MACAddress) GetLower() *Address {
 	return addr.init().getLower()
 }
 
 // GetUpper returns the address in the collection with the highest numeric value,
-// which will be the same address if it represents a single value.
+// which will be the receiver if it represents a single address.
 // For example, for "1:1:1:2-3:4:5-6", the series "1:1:1:3:4:6" is returned.
 func (addr *MACAddress) GetUpper() *Address {
 	return addr.init().getUpper()
@@ -394,7 +394,7 @@ func (addr *MACAddress) IncludesMax() bool {
 	return addr.init().section.IncludesMax()
 }
 
-// GetDivision returns the segment count, implementing the interface AddressDivisionSeries
+// GetDivisionCount returns the segment count, implementing the interface AddressDivisionSeries
 func (addr *MACAddress) GetDivisionCount() int {
 	return addr.init().getDivisionCount()
 }
@@ -649,11 +649,14 @@ func (addr *MACAddress) GetMaxSegmentValue() SegInt {
 	return addr.init().getMaxSegmentValue()
 }
 
+// IsMulticast returns whether this address or collection of addresses is entirely multicast.
 // Multicast MAC addresses have the least significant bit of the first octet set to 1.
 func (addr *MACAddress) IsMulticast() bool {
 	return addr.GetSegment(0).MatchesWithMask(1, 0x1)
 }
 
+// IsUnicast returns whether this address or collection of addresses is entirely unicast.
+// Unicast MAC addresses have the least significant bit of the first octet set to 0.
 func (addr *MACAddress) IsUnicast() bool {
 	return !addr.IsMulticast()
 }

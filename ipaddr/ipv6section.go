@@ -72,6 +72,9 @@ func newPrefixedIPv6SectionParsed(segments []*AddressDivision, isMultiple bool, 
 	return
 }
 
+// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
+//   constructors, GetZeroSegments, GetZeroRangeSegments, SegmentSequence, SegmentSequenceList and that's it
+
 func NewIPv6Section(segments []*IPv6AddressSegment) *IPv6AddressSection {
 	return createIPv6SectionFromSegs(segments, nil)
 }
@@ -121,16 +124,23 @@ func NewIPv6SectionFromPrefixedBigInt(val *big.Int, segmentCount int, prefixLen 
 	return newIPv6SectionFromWords(val.Bits(), segmentCount, prefixLen, false)
 }
 
-func NewIPv6SectionFromBytes(bytes []byte) (res *IPv6AddressSection, err addrerr.AddressValueError) {
-	return newIPv6SectionFromBytes(bytes, (len(bytes)+1)>>1, nil, false)
+// NewIPv6SectionFromBytes constructs an IPv6 address from the given byte slice.
+// The segment count is determined by the slice length, even if the segment count exceeds 8 segments.
+func NewIPv6SectionFromBytes(bytes []byte) *IPv6AddressSection {
+	res, _ := newIPv6SectionFromBytes(bytes, (len(bytes)+1)>>1, nil, false)
+	return res
 }
 
-// NewIPv6SectionFromSegmentedBytes allows you to specify the segment count from the supplied bytes.
-// It is useful if the byte array has leading zeros.
+// NewIPv6SectionFromSegmentedBytes constructs an IPv6 address from the given byte slice.
+// It allows you to specify the segment count for the supplied bytes.
+// If the slice is too large for the given number of segments, an error is returned, although leading zeros are tolerated.
 func NewIPv6SectionFromSegmentedBytes(bytes []byte, segmentCount int) (res *IPv6AddressSection, err addrerr.AddressValueError) {
 	return newIPv6SectionFromBytes(bytes, segmentCount, nil, false)
 }
 
+// NewIPv6SectionFromPrefixedBytes constructs an IPv6 address or prefix block from the given byte slice and prefix length.
+// It allows you to specify the segment count for the supplied bytes.
+// If the slice is too large for the given number of segments, an error is returned, although leading zeros are tolerated.
 func NewIPv6SectionFromPrefixedBytes(bytes []byte, segmentCount int, prefixLength PrefixLen) (res *IPv6AddressSection, err addrerr.AddressValueError) {
 	return newIPv6SectionFromBytes(bytes, segmentCount, prefixLength, false)
 }
@@ -257,21 +267,25 @@ func NewIPv6SectionFromPrefixedUint64(highBytes, lowBytes uint64, segmentCount i
 	return
 }
 
+// NewIPv6SectionFromVals constructs an IPv6 address section of the given segment count from the given values.
 func NewIPv6SectionFromVals(vals IPv6SegmentValueProvider, segmentCount int) (res *IPv6AddressSection) {
-	res = NewIPv6SectionFromPrefixedRangeVals(vals, nil, segmentCount, nil)
+	res = NewIPv6SectionFromPrefixedRange(vals, nil, segmentCount, nil)
 	return
 }
 
+// NewIPv6SectionFromPrefixedVals constructs an IPv6 address or prefix block section of the given segment count from the given values and prefix length.
 func NewIPv6SectionFromPrefixedVals(vals IPv6SegmentValueProvider, segmentCount int, prefixLength PrefixLen) (res *IPv6AddressSection) {
-	return NewIPv6SectionFromPrefixedRangeVals(vals, nil, segmentCount, prefixLength)
+	return NewIPv6SectionFromPrefixedRange(vals, nil, segmentCount, prefixLength)
 }
 
-func NewIPv6SectionFromRangeVals(vals, upperVals IPv6SegmentValueProvider, segmentCount int) (res *IPv6AddressSection) {
-	res = NewIPv6SectionFromPrefixedRangeVals(vals, upperVals, segmentCount, nil)
+// NewIPv6SectionFromRange constructs an IPv6 subnet section of the given segment count from the given values.
+func NewIPv6SectionFromRange(vals, upperVals IPv6SegmentValueProvider, segmentCount int) (res *IPv6AddressSection) {
+	res = NewIPv6SectionFromPrefixedRange(vals, upperVals, segmentCount, nil)
 	return
 }
 
-func NewIPv6SectionFromPrefixedRangeVals(vals, upperVals IPv6SegmentValueProvider, segmentCount int, prefixLength PrefixLen) (res *IPv6AddressSection) {
+// NewIPv6SectionFromPrefixedRange constructs an IPv6 subnet section of the given segment count from the given values and prefix length.
+func NewIPv6SectionFromPrefixedRange(vals, upperVals IPv6SegmentValueProvider, segmentCount int, prefixLength PrefixLen) (res *IPv6AddressSection) {
 	return newIPv6SectionFromPrefixedSingle(vals, upperVals, segmentCount, prefixLength, false)
 }
 
@@ -807,18 +821,18 @@ func (section *IPv6AddressSection) SequentialBlockIterator() IPv6SectionIterator
 	return ipv6SectionIterator{section.sequentialBlockIterator()}
 }
 
-func (section *IPv6AddressSection) GetZeroSegments() RangeList {
+func (section *IPv6AddressSection) GetZeroSegments() SegmentSequenceList {
 	vals := section.getZeroVals()
 	if vals == nil {
-		return RangeList{}
+		return SegmentSequenceList{}
 	}
 	return vals.zeroSegments
 }
 
-func (section *IPv6AddressSection) GetZeroRangeSegments() RangeList {
+func (section *IPv6AddressSection) GetZeroRangeSegments() SegmentSequenceList {
 	vals := section.getZeroVals()
 	if vals == nil {
-		return RangeList{}
+		return SegmentSequenceList{}
 	}
 	return vals.zeroRangeSegments
 }
@@ -839,7 +853,7 @@ func (section *IPv6AddressSection) getZeroVals() *zeroRangeCache {
 
 func (section *IPv6AddressSection) calcZeroVals() *zeroRangeCache {
 	zeroSegs := section.getZeroSegments(false)
-	var zeroRangeSegs RangeList
+	var zeroRangeSegs SegmentSequenceList
 	if section.IsPrefixed() {
 		zeroRangeSegs = section.getZeroSegments(true)
 	} else {
@@ -853,7 +867,7 @@ func (section *IPv6AddressSection) calcZeroVals() *zeroRangeCache {
 func (section *IPv6AddressSection) getCompressIndexAndCount(options addrstr.CompressOptions, createMixed bool) (maxIndex, maxCount int) {
 	if options != nil {
 		rangeSelection := options.GetCompressionChoiceOptions()
-		var compressibleSegs RangeList
+		var compressibleSegs SegmentSequenceList
 		if rangeSelection.CompressHost() {
 			compressibleSegs = section.GetZeroRangeSegments()
 		} else {
@@ -921,12 +935,12 @@ func compressMixedSect(m addrstr.MixedCompressionOptions, addressSection *IPv6Ad
 	}
 }
 
-func (section *IPv6AddressSection) getZeroSegments(includeRanges bool) RangeList {
+func (section *IPv6AddressSection) getZeroSegments(includeRanges bool) SegmentSequenceList {
 	divisionCount := section.GetSegmentCount()
 	isFullRangeHost := section.IsPrefixBlock()
 	includeRanges = includeRanges && isFullRangeHost
 	var currentIndex, currentCount, rangeCount int
-	var ranges [IPv6SegmentCount >> 1]Range
+	var ranges [IPv6SegmentCount >> 1]SegmentSequence
 	for i := 0; i < divisionCount; i++ {
 		division := section.GetSegment(i)
 		isCompressible := division.IsZero() ||
@@ -937,19 +951,19 @@ func (section *IPv6AddressSection) getZeroSegments(includeRanges bool) RangeList
 				currentIndex = i
 			}
 			if i == divisionCount-1 {
-				ranges[rangeCount] = Range{index: currentIndex, length: currentCount}
+				ranges[rangeCount] = SegmentSequence{index: currentIndex, length: currentCount}
 				rangeCount++
 			}
 		} else if currentCount > 0 {
-			ranges[rangeCount] = Range{index: currentIndex, length: currentCount}
+			ranges[rangeCount] = SegmentSequence{index: currentIndex, length: currentCount}
 			rangeCount++
 			currentCount = 0
 		}
 	}
 	if rangeCount == 0 {
-		return RangeList{}
+		return SegmentSequenceList{}
 	}
-	return RangeList{ranges[:rangeCount]}
+	return SegmentSequenceList{ranges[:rangeCount]}
 }
 
 // IncrementBoundary returns the item that is the given increment from the range boundaries of this item.
@@ -1193,11 +1207,13 @@ func (section *IPv6AddressSection) ReverseSegments() *IPv6AddressSection {
 	return res.ToIPv6()
 }
 
+// Append creates a new section by appending the given section to this section.
 func (section *IPv6AddressSection) Append(other *IPv6AddressSection) *IPv6AddressSection {
 	count := section.GetSegmentCount()
 	return section.ReplaceLen(count, count, other, 0, other.GetSegmentCount())
 }
 
+// Insert creates a new section by inserting the given section into this section at the given index.
 func (section *IPv6AddressSection) Insert(index int, other *IPv6AddressSection) *IPv6AddressSection {
 	return section.insert(index, other.ToIP(), ipv6BitsToSegmentBitshift).ToIPv6()
 }
@@ -1788,6 +1804,7 @@ type embeddedIPv6AddressSection struct {
 	*IPv6AddressSection
 }
 
+// EmbeddedIPv6AddressSection represents the initial IPv6 section of an IPv6v4MixedAddressGrouping
 type EmbeddedIPv6AddressSection struct {
 	embeddedIPv6AddressSection
 	encompassingSection *IPv6AddressSection
@@ -1866,7 +1883,8 @@ func newIPv6v4MixedGrouping(ipv6Section *EmbeddedIPv6AddressSection, ipv4Section
 	return grouping
 }
 
-// IPv6v4MixedAddressGrouping has divisions which are a mix of IPv6 and IPv4 divisions
+// IPv6v4MixedAddressGrouping has divisions which are a mix of IPv6 and IPv4 divisions.
+// It has an initial IPv6 section followed by an IPv4 section.
 type IPv6v4MixedAddressGrouping struct {
 	addressDivisionGroupingInternal
 }
@@ -1931,10 +1949,12 @@ func (grouping *IPv6v4MixedAddressGrouping) ToDivGrouping() *AddressDivisionGrou
 	return (*AddressDivisionGrouping)(grouping)
 }
 
+// GetIPv6AddressSection returns the initial IPv6 section of the grouping.
 func (grouping *IPv6v4MixedAddressGrouping) GetIPv6AddressSection() *EmbeddedIPv6AddressSection {
 	return grouping.cache.mixed.embeddedIPv6Section
 }
 
+// GetIPv4AddressSection returns the ending IPv4 section of the grouping.
 func (grouping *IPv6v4MixedAddressGrouping) GetIPv4AddressSection() *IPv4AddressSection {
 	return grouping.cache.mixed.embeddedIPv4Section
 }
@@ -2013,18 +2033,18 @@ func toIPv6SegmentsFromEUI(
 	return err
 }
 
-type Range struct {
+type SegmentSequence struct {
 	index, length int
 }
 
-type RangeList struct {
-	ranges []Range
+type SegmentSequenceList struct {
+	ranges []SegmentSequence
 }
 
-func (list RangeList) size() int {
+func (list SegmentSequenceList) size() int {
 	return len(list.ranges)
 }
 
-func (list RangeList) getRange(index int) Range {
+func (list SegmentSequenceList) getRange(index int) SegmentSequence {
 	return list.ranges[index]
 }

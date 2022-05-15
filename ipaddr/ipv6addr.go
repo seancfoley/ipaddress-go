@@ -59,6 +59,7 @@ const (
 
 type Zone string
 
+// IsEmpty returns whether the zone is the zero-zone, which is the lack of a zone, or the empty string zone.
 func (zone Zone) IsEmpty() bool {
 	return zone == ""
 }
@@ -74,6 +75,8 @@ func newIPv6Address(section *IPv6AddressSection) *IPv6Address {
 	return createAddress(section.ToSectionBase(), NoZone).ToIPv6()
 }
 
+// NewIPv6Address constructs an IPv6 address or subnet from the given address section.
+// If the section does not have 8 segments, an error is returned.
 func NewIPv6Address(section *IPv6AddressSection) (*IPv6Address, addrerr.AddressValueError) {
 	if section == nil {
 		return zeroIPv6, nil
@@ -101,6 +104,8 @@ func assignIPv6Cache(zoneVal Zone, cache *addressCache) {
 	}
 }
 
+// NewIPv6AddressZoned constructs an IPv6 address or subnet from the given address section and zone.
+// If the section does not have 8 segments, an error is returned.
 func NewIPv6AddressZoned(section *IPv6AddressSection, zone string) (*IPv6Address, addrerr.AddressValueError) {
 	if section == nil {
 		return zeroIPv6.SetZone(zone), nil
@@ -115,76 +120,8 @@ func NewIPv6AddressZoned(section *IPv6AddressSection, zone string) (*IPv6Address
 	return newIPv6AddressZoned(section, zone), nil
 }
 
-func NewIPv6AddressFromBytes(bytes []byte) (addr *IPv6Address, err addrerr.AddressValueError) {
-	section, err := NewIPv6SectionFromSegmentedBytes(bytes, IPv6SegmentCount)
-	if err == nil {
-		addr = newIPv6Address(section)
-	}
-	return
-}
-
-func NewIPv6AddressFromPrefixedBytes(bytes []byte, prefixLength PrefixLen) (addr *IPv6Address, err addrerr.AddressValueError) {
-	section, err := NewIPv6SectionFromPrefixedBytes(bytes, IPv6SegmentCount, prefixLength)
-	if err == nil {
-		addr = newIPv6Address(section)
-	}
-	return
-}
-
-func NewIPv6AddressFromZonedBytes(bytes []byte, zone string) (addr *IPv6Address, err addrerr.AddressValueError) {
-	addr, err = NewIPv6AddressFromBytes(bytes)
-	if err == nil {
-		addr.zone = Zone(zone)
-		assignIPv6Cache(addr.zone, addr.cache)
-	}
-	return
-}
-
-func NewIPv6AddressFromPrefixedZonedBytes(bytes []byte, prefixLength PrefixLen, zone string) (addr *IPv6Address, err addrerr.AddressValueError) {
-	addr, err = NewIPv6AddressFromPrefixedBytes(bytes, prefixLength)
-	if err == nil {
-		addr.zone = Zone(zone)
-		assignIPv6Cache(addr.zone, addr.cache)
-	}
-	return
-}
-
-//TODO LATER maybe integrate with net.Interface "Name"
-
-func NewIPv6AddressFromInt(val *big.Int) (addr *IPv6Address, err addrerr.AddressValueError) {
-	section, err := NewIPv6SectionFromBigInt(val, IPv6SegmentCount)
-	if err == nil {
-		addr = newIPv6Address(section)
-	}
-	return
-}
-
-func NewIPv6AddressFromPrefixedInt(val *big.Int, prefixLength PrefixLen) (addr *IPv6Address, err addrerr.AddressValueError) {
-	section, err := NewIPv6SectionFromPrefixedBigInt(val, IPv6SegmentCount, prefixLength)
-	if err == nil {
-		addr = newIPv6Address(section)
-	}
-	return
-}
-
-func NewIPv6AddressFromZonedInt(val *big.Int, zone string) (addr *IPv6Address, err addrerr.AddressValueError) {
-	addr, err = NewIPv6AddressFromInt(val)
-	if err == nil {
-		addr.zone = Zone(zone)
-		assignIPv6Cache(addr.zone, addr.cache)
-	}
-	return
-}
-
-func NewIPv6AddressFromPrefixedZonedInt(val *big.Int, prefixLength PrefixLen, zone string) (addr *IPv6Address, err addrerr.AddressValueError) {
-	addr, err = NewIPv6AddressFromPrefixedInt(val, prefixLength)
-	if err == nil {
-		addr.zone = Zone(zone)
-		assignIPv6Cache(addr.zone, addr.cache)
-	}
-	return
-}
-
+// NewIPv6AddressFromSegs constructs an IPv6 address or subnet from the given segments.
+// If the given slice does not have 8 segments, an error is returned.
 func NewIPv6AddressFromSegs(segments []*IPv6AddressSegment) (addr *IPv6Address, err addrerr.AddressValueError) {
 	segCount := len(segments)
 	if segCount != IPv6SegmentCount {
@@ -197,6 +134,8 @@ func NewIPv6AddressFromSegs(segments []*IPv6AddressSegment) (addr *IPv6Address, 
 	return NewIPv6Address(section)
 }
 
+// NewIPv6AddressFromPrefixedSegs constructs an IPv6 address or subnet from the given segments and prefix length.
+// If the given slice does not have 8 segments, an error is returned.
 func NewIPv6AddressFromPrefixedSegs(segments []*IPv6AddressSegment, prefixLength PrefixLen) (addr *IPv6Address, err addrerr.AddressValueError) {
 	segCount := len(segments)
 	if segCount != IPv6SegmentCount {
@@ -209,6 +148,8 @@ func NewIPv6AddressFromPrefixedSegs(segments []*IPv6AddressSegment, prefixLength
 	return NewIPv6Address(section)
 }
 
+// NewIPv6AddressFromZonedSegs constructs an IPv6 address or subnet from the given segments and zone.
+// If the given slice does not have 8 segments, an error is returned.
 func NewIPv6AddressFromZonedSegs(segments []*IPv6AddressSegment, zone string) (addr *IPv6Address, err addrerr.AddressValueError) {
 	segCount := len(segments)
 	if segCount != IPv6SegmentCount {
@@ -221,6 +162,8 @@ func NewIPv6AddressFromZonedSegs(segments []*IPv6AddressSegment, zone string) (a
 	return NewIPv6AddressZoned(section, zone)
 }
 
+// NewIPv6AddressFromPrefixedZonedSegs constructs an IPv6 address or subnet from the given segments, prefix length, and zone.
+// If the given slice does not have 8 segments, an error is returned.
 func NewIPv6AddressFromPrefixedZonedSegs(segments []*IPv6AddressSegment, prefixLength PrefixLen, zone string) (addr *IPv6Address, err addrerr.AddressValueError) {
 	segCount := len(segments)
 	if segCount != IPv6SegmentCount {
@@ -233,53 +176,153 @@ func NewIPv6AddressFromPrefixedZonedSegs(segments []*IPv6AddressSegment, prefixL
 	return NewIPv6AddressZoned(section, zone)
 }
 
+// NewIPv6AddressFromBytes constructs an IPv6 address from the given byte slice.
+// An error is returned when the byte slice has too many bytes to match the IPv6 segment count of 8.
+// There should be 16 bytes or less, although extra leading zeros are tolerated.
+func NewIPv6AddressFromBytes(bytes []byte) (addr *IPv6Address, err addrerr.AddressValueError) {
+	section, err := NewIPv6SectionFromSegmentedBytes(bytes, IPv6SegmentCount)
+	if err == nil {
+		addr = newIPv6Address(section)
+	}
+	return
+}
+
+// NewIPv6AddressFromPrefixedBytes constructs an IPv6 address from the given byte slice and prefix length.
+// An error is returned when the byte slice has too many bytes to match the IPv6 segment count of 8.
+// There should be 16 bytes or less, although extra leading zeros are tolerated.
+func NewIPv6AddressFromPrefixedBytes(bytes []byte, prefixLength PrefixLen) (addr *IPv6Address, err addrerr.AddressValueError) {
+	section, err := NewIPv6SectionFromPrefixedBytes(bytes, IPv6SegmentCount, prefixLength)
+	if err == nil {
+		addr = newIPv6Address(section)
+	}
+	return
+}
+
+// NewIPv6AddressFromZonedBytes constructs an IPv6 address from the given byte slice and zone.
+// An error is returned when the byte slice has too many bytes to match the IPv6 segment count of 8.
+// There should be 16 bytes or less, although extra leading zeros are tolerated.
+func NewIPv6AddressFromZonedBytes(bytes []byte, zone string) (addr *IPv6Address, err addrerr.AddressValueError) {
+	addr, err = NewIPv6AddressFromBytes(bytes)
+	if err == nil {
+		addr.zone = Zone(zone)
+		assignIPv6Cache(addr.zone, addr.cache)
+	}
+	return
+}
+
+// NewIPv6AddressFromPrefixedZonedBytes constructs an IPv6 address from the given byte slice, prefix length, and zone.
+// An error is returned when the byte slice has too many bytes to match the IPv6 segment count of 8.
+// There should be 16 bytes or less, although extra leading zeros are tolerated.
+func NewIPv6AddressFromPrefixedZonedBytes(bytes []byte, prefixLength PrefixLen, zone string) (addr *IPv6Address, err addrerr.AddressValueError) {
+	addr, err = NewIPv6AddressFromPrefixedBytes(bytes, prefixLength)
+	if err == nil {
+		addr.zone = Zone(zone)
+		assignIPv6Cache(addr.zone, addr.cache)
+	}
+	return
+}
+
+//TODO LATER maybe integrate with net.Interface "Name"
+
+// NewIPv6AddressFromInt constructs an IPv6 address from the given value.
+// An error is returned when the values is negative or too large.
+func NewIPv6AddressFromInt(val *big.Int) (addr *IPv6Address, err addrerr.AddressValueError) {
+	section, err := NewIPv6SectionFromBigInt(val, IPv6SegmentCount)
+	if err == nil {
+		addr = newIPv6Address(section)
+	}
+	return
+}
+
+// NewIPv6AddressFromPrefixedInt constructs an IPv6 address from the given value and prefix length.
+// An error is returned when the values is negative or too large.
+func NewIPv6AddressFromPrefixedInt(val *big.Int, prefixLength PrefixLen) (addr *IPv6Address, err addrerr.AddressValueError) {
+	section, err := NewIPv6SectionFromPrefixedBigInt(val, IPv6SegmentCount, prefixLength)
+	if err == nil {
+		addr = newIPv6Address(section)
+	}
+	return
+}
+
+// NewIPv6AddressFromZonedInt constructs an IPv6 address from the given value and zone.
+// An error is returned when the values is negative or too large.
+func NewIPv6AddressFromZonedInt(val *big.Int, zone string) (addr *IPv6Address, err addrerr.AddressValueError) {
+	addr, err = NewIPv6AddressFromInt(val)
+	if err == nil {
+		addr.zone = Zone(zone)
+		assignIPv6Cache(addr.zone, addr.cache)
+	}
+	return
+}
+
+// NewIPv6AddressFromPrefixedZonedInt constructs an IPv6 address from the given value, prefix length, and zone.
+// An error is returned when the values is negative or too large.
+func NewIPv6AddressFromPrefixedZonedInt(val *big.Int, prefixLength PrefixLen, zone string) (addr *IPv6Address, err addrerr.AddressValueError) {
+	addr, err = NewIPv6AddressFromPrefixedInt(val, prefixLength)
+	if err == nil {
+		addr.zone = Zone(zone)
+		assignIPv6Cache(addr.zone, addr.cache)
+	}
+	return
+}
+
+// NewIPv6AddressFromUint64 constructs an IPv6 address from the given values.
 func NewIPv6AddressFromUint64(highBytes, lowBytes uint64) *IPv6Address {
 	section := NewIPv6SectionFromUint64(highBytes, lowBytes, IPv6SegmentCount)
 	return newIPv6Address(section)
 }
 
+// NewIPv6AddressFromPrefixedUint64 constructs an IPv6 address or prefix block from the given values and prefix length.
 func NewIPv6AddressFromPrefixedUint64(highBytes, lowBytes uint64, prefixLength PrefixLen) *IPv6Address {
 	section := NewIPv6SectionFromPrefixedUint64(highBytes, lowBytes, IPv6SegmentCount, prefixLength)
 	return newIPv6Address(section)
 }
 
+// NewIPv6AddressFromZonedUint64 constructs an IPv6 address from the given values and zone.
 func NewIPv6AddressFromZonedUint64(highBytes, lowBytes uint64, zone string) *IPv6Address {
 	section := NewIPv6SectionFromUint64(highBytes, lowBytes, IPv6SegmentCount)
 	return newIPv6AddressZoned(section, zone)
 }
 
+// NewIPv6AddressFromPrefixedZonedUint64 constructs an IPv6 address or prefix block from the given values, prefix length, and zone
 func NewIPv6AddressFromPrefixedZonedUint64(highBytes, lowBytes uint64, prefixLength PrefixLen, zone string) *IPv6Address {
 	section := NewIPv6SectionFromPrefixedUint64(highBytes, lowBytes, IPv6SegmentCount, prefixLength)
 	return newIPv6AddressZoned(section, zone)
 }
 
+// NewIPv6AddressFromVals constructs an IPv6 address from the given values.
 func NewIPv6AddressFromVals(vals IPv6SegmentValueProvider) *IPv6Address {
 	section := NewIPv6SectionFromVals(vals, IPv6SegmentCount)
 	return newIPv6Address(section)
 }
 
+// NewIPv6AddressFromPrefixedVals constructs an IPv6 address or prefix block from the given values and prefix length.
 func NewIPv6AddressFromPrefixedVals(vals IPv6SegmentValueProvider, prefixLength PrefixLen) *IPv6Address {
 	section := NewIPv6SectionFromPrefixedVals(vals, IPv6SegmentCount, prefixLength)
 	return newIPv6Address(section)
 }
 
+// NewIPv6AddressFromRange constructs an IPv6 subnet from the given values.
 func NewIPv6AddressFromRange(vals, upperVals IPv6SegmentValueProvider) *IPv6Address {
-	section := NewIPv6SectionFromRangeVals(vals, upperVals, IPv6SegmentCount)
+	section := NewIPv6SectionFromRange(vals, upperVals, IPv6SegmentCount)
 	return newIPv6Address(section)
 }
 
+// NewIPv6AddressFromPrefixedRange constructs an IPv6 subnet from the given values and prefix length.
 func NewIPv6AddressFromPrefixedRange(vals, upperVals IPv6SegmentValueProvider, prefixLength PrefixLen) *IPv6Address {
-	section := NewIPv6SectionFromPrefixedRangeVals(vals, upperVals, IPv6SegmentCount, prefixLength)
+	section := NewIPv6SectionFromPrefixedRange(vals, upperVals, IPv6SegmentCount, prefixLength)
 	return newIPv6Address(section)
 }
 
+// NewIPv6AddressFromZonedRange constructs an IPv6 subnet from the given values and zone.
 func NewIPv6AddressFromZonedRange(vals, upperVals IPv6SegmentValueProvider, zone string) *IPv6Address {
-	section := NewIPv6SectionFromRangeVals(vals, upperVals, IPv6SegmentCount)
+	section := NewIPv6SectionFromRange(vals, upperVals, IPv6SegmentCount)
 	return newIPv6AddressZoned(section, zone)
 }
 
+// NewIPv6AddressFromPrefixedZonedRange constructs an IPv6 subnet from the given values, prefix length, and zone.
 func NewIPv6AddressFromPrefixedZonedRange(vals, upperVals IPv6SegmentValueProvider, prefixLength PrefixLen, zone string) *IPv6Address {
-	section := NewIPv6SectionFromPrefixedRangeVals(vals, upperVals, IPv6SegmentCount, prefixLength)
+	section := NewIPv6SectionFromPrefixedRange(vals, upperVals, IPv6SegmentCount, prefixLength)
 	return newIPv6AddressZoned(section, zone)
 }
 
@@ -288,7 +331,7 @@ func newIPv6AddressFromPrefixedSingle(vals, upperVals IPv6SegmentValueProvider, 
 	return newIPv6AddressZoned(section, zone)
 }
 
-// NewIPv6AddressFromMACSection constructs an IPv6 address from a modified EUI-64 (Extended Unique Identifier) address and an IPv6 address 64-bit prefix.
+// NewIPv6AddressFromMAC constructs an IPv6 address from a modified EUI-64 (Extended Unique Identifier) address and an IPv6 address 64-bit prefix.
 //
 // If the supplied MAC address section is an 8 byte EUI-64, then it must match the required EUI-64 format of xx-xx-ff-fe-xx-xx
 // with the ff-fe section in the middle.
@@ -297,7 +340,7 @@ func newIPv6AddressFromPrefixedSingle(vals, upperVals IPv6SegmentValueProvider, 
 //
 // The constructor will toggle the MAC U/L (universal/local) bit as required with EUI-64.
 //
-// The IPv6 address section must be at least 8 bytes.
+// The IPv6 address section must be at least 8 bytes.  If it has a zone, then the resulting address will have the same zone.
 //
 // Any prefix length in the MAC address is ignored, while a prefix length in the IPv6 address is preserved but only up to the first 4 segments.
 //
@@ -339,17 +382,22 @@ func newIPv6AddressFromMAC(prefixSection *IPv6AddressSection, suffix *MACAddress
 //
 // The constructor will toggle the MAC U/L (universal/local) bit as required with EUI-64.
 //
-// The IPv6 address section must be at least 8 bytes.
+// The IPv6 address section must be at least 8 bytes (4 segments) in length.
 //
 // Any prefix length in the MAC address is ignored, while a prefix length in the IPv6 address is preserved but only up to the first 4 segments.
 //
 // The error is either an AddressValueError for sections that are of insufficient segment count,
-// or IncompatibleAddressError when attempting to Join two MAC segments, at least one with ranged values, into an equivalent IPV6 segment range.
+// or IncompatibleAddressError when unable to join two MAC segments, at least one with ranged values, into an equivalent IPV6 segment range.
 func NewIPv6AddressFromMACSection(prefix *IPv6AddressSection, suffix *MACAddressSection) (*IPv6Address, addrerr.AddressError) {
 	return newIPv6AddressFromZonedMAC(prefix, suffix, NoZone)
 }
 
-func NewIPv6AddressFromZonedMAC(prefix *IPv6AddressSection, suffix *MACAddressSection, zone string) (*IPv6Address, addrerr.AddressError) {
+// NewIPv6AddressFromZonedMACSection constructs an IPv6 address from a modified EUI-64 (Extended Unique Identifier) address section, an IPv6 address section network prefix, and a zone.
+//
+// It is similar to NewIPv6AddressFromMACSection but also allows you to specify a zone.
+//
+// It is similar to NewIPv6AddressFromMAC, which can supply a zone with the IPv6Address argument.
+func NewIPv6AddressFromZonedMACSection(prefix *IPv6AddressSection, suffix *MACAddressSection, zone string) (*IPv6Address, addrerr.AddressError) {
 	return newIPv6AddressFromZonedMAC(prefix, suffix, zone)
 }
 
@@ -445,10 +493,12 @@ func (addr *IPv6Address) GetBytesPerSegment() int {
 	return IPv6BytesPerSegment
 }
 
+// HasZone returns whether this IPv6 address includes a zone or scope
 func (addr *IPv6Address) HasZone() bool {
 	return addr != nil && addr.zone != NoZone
 }
 
+// GetZone returns the zone it it has one, otherwise it returns NoZone, which is an empty string
 func (addr *IPv6Address) GetZone() Zone {
 	if addr == nil {
 		return NoZone
@@ -517,20 +567,20 @@ func (addr *IPv6Address) GetHostMask() *IPv6Address {
 	return addr.getHostMask(ipv6Network).ToIPv6()
 }
 
+// GetMixedAddressGrouping creates a grouping by combining an IPv6 address section comprising the first six segments (most significant) in this address
+// with the IPv4 section corresponding to the lowest (least-significant) two segments in this address, as produced by GetEmbeddedIPv4Address.
 func (addr *IPv6Address) GetMixedAddressGrouping() (*IPv6v4MixedAddressGrouping, addrerr.IncompatibleAddressError) {
 	return addr.init().GetSection().getMixedAddressGrouping()
 }
 
-// GetEmbeddedIPv4AddressSection gets the IPv4 section corresponding to the lowest (least-significant) 4 bytes in the original address,
-// which will correspond to between 0 and 4 bytes in this address.
+// GetEmbeddedIPv4AddressSection gets the IPv4 section corresponding to the lowest (least-significant) 2 segments (4 bytes) in this address.
 // Many IPv4 to IPv6 mapping schemes (but not all) use these 4 bytes for a mapped IPv4 address.
 // An error can result when one of the associated IPv6 segments has a range of values that cannot be split into two ranges.
 func (addr *IPv6Address) GetEmbeddedIPv4AddressSection() (*IPv4AddressSection, addrerr.IncompatibleAddressError) {
 	return addr.init().GetSection().getEmbeddedIPv4AddressSection()
 }
 
-// GetEmbeddedIPv4Address gets the IPv4 address corresponding to the lowest (least-significant) 4 bytes in the original address,
-// which will correspond to between 0 and 4 bytes in this address.
+// GetEmbeddedIPv4Address gets the IPv4 address corresponding to the lowest (least-significant) 2 segments (4 bytes) in this address.
 // Many IPv4 to IPv6 mapping schemes (but not all) use these 4 bytes for a mapped IPv4 address.
 // An error can result when one of the associated IPv6 segments has a range of values that cannot be split into two ranges.
 func (addr *IPv6Address) GetEmbeddedIPv4Address() (*IPv4Address, addrerr.IncompatibleAddressError) {
@@ -714,29 +764,29 @@ func (addr *IPv6Address) SpanWithRange(other *IPv6Address) *IPv6AddressSeqRange 
 	return NewIPv6SeqRange(addr.init(), other.init())
 }
 
-// GetLower returns the address in the subnet with the lowest numeric value,
-// which will be the same address if it represents a single value.
+// GetLower returns the lowest address in the subnet range,
+// which will be the receiver if it represents a single address.
 // For example, for "1::1:2-3:4:5-6", the series "1::1:2:4:5" is returned.
 func (addr *IPv6Address) GetLower() *IPv6Address {
 	return addr.init().getLower().ToIPv6()
 }
 
-// GetUpper returns the address in the subnet with the highest numeric value,
-// which will be the same address if it represents a single value.
+// GetUpper returns the highest address in the subnet range,
+// which will be the receiver if it represents a single address.
 // For example, for "1::1:2-3:4:5-6", the series "1::1:3:4:6" is returned.
 func (addr *IPv6Address) GetUpper() *IPv6Address {
 	return addr.init().getUpper().ToIPv6()
 }
 
 // GetLowerIPAddress returns the address in the subnet or address collection with the lowest numeric value,
-// which will be the same address if it represents a single value.
+// which will be the receiver if it represents a single address.
 // GetLowerIPAddress implements the IPAddressRange interface
 func (addr *IPv6Address) GetLowerIPAddress() *IPAddress {
 	return addr.GetLower().ToIP()
 }
 
 // GetUpperIPAddress returns the address in the subnet or address collection with the highest numeric value,
-// which will be the same address if it represents a single value.
+// which will be the receiver if it represents a single address.
 // GetUpperIPAddress implements the IPAddressRange interface
 func (addr *IPv6Address) GetUpperIPAddress() *IPAddress {
 	return addr.GetUpper().ToIP()
@@ -1182,6 +1232,7 @@ func (addr *IPv6Address) GetMaxSegmentValue() SegInt {
 	return addr.init().getMaxSegmentValue()
 }
 
+// WithoutZone returns the same address but with no zone.
 func (addr *IPv6Address) WithoutZone() *IPv6Address {
 	if addr.HasZone() {
 		return newIPv6Address(addr.GetSection())
@@ -1189,6 +1240,7 @@ func (addr *IPv6Address) WithoutZone() *IPv6Address {
 	return addr
 }
 
+// SetZone returns the same address associated with the given zone,  The existing zone, if any, is replaced.
 func (addr *IPv6Address) SetZone(zone string) *IPv6Address {
 	if Zone(zone) == addr.GetZone() {
 		return addr
@@ -1279,17 +1331,18 @@ func (addr *IPv6Address) IsLocal() bool {
 	return addr.IsLinkLocal() || addr.IsSiteLocal() || addr.IsUniqueLocal() || addr.IsAnyLocal()
 }
 
-// The unspecified address is the address that is all zeros.
+// IsUnspecified returns whether this is the unspecified address.  The unspecified address is the address that is all zeros.
 func (addr *IPv6Address) IsUnspecified() bool {
 	return addr.section == nil || addr.IsZero()
 }
 
-// Returns whether this address is the address which binds to any address on the local host.
+// IsAnyLocal returns whether this address is the address which binds to any address on the local host.
 // This is the address that has the value of 0, aka the unspecified address.
 func (addr *IPv6Address) IsAnyLocal() bool {
 	return addr.section == nil || addr.IsZero()
 }
 
+// IsSiteLocal returns true if the address is site-local, or all addresses in the subnet are site-local, see rfc 3513, 3879, and 4291.
 func (addr *IPv6Address) IsSiteLocal() bool {
 	firstSeg := addr.GetSegment(0)
 	return (addr.IsMulticast() && firstSeg.matchesWithMask(5, 0xf)) || // ffx5::/16
@@ -1297,12 +1350,13 @@ func (addr *IPv6Address) IsSiteLocal() bool {
 		firstSeg.MatchesWithPrefixMask(0xfec0, 10) // deprecated RFC 3879
 }
 
+// IsUniqueLocal returns true if the address is unique-local, or all addresses in the subnet are unique-local, see rfc 4193.
 func (addr *IPv6Address) IsUniqueLocal() bool {
 	//RFC 4193
 	return addr.GetSegment(0).MatchesWithPrefixMask(0xfc00, 7)
 }
 
-// IsIPv4Mapped returns whether the address is IPv4-mapped
+// IsIPv4Mapped returns whether the address or all addresses in the subnet are IPv4-mapped
 //
 // ::ffff:x:x/96 indicates IPv6 address mapped to IPv4
 func (addr *IPv6Address) IsIPv4Mapped() bool {
@@ -1318,19 +1372,19 @@ func (addr *IPv6Address) IsIPv4Mapped() bool {
 	return false
 }
 
-// IsIPv4Compatible returns whether the address is IPv4-compatible
+// IsIPv4Compatible returns whether the address or all addresses in the subnet are IPv4-compatible
 func (addr *IPv6Address) IsIPv4Compatible() bool {
 	return addr.GetSegment(0).IsZero() && addr.GetSegment(1).IsZero() && addr.GetSegment(2).IsZero() &&
 		addr.GetSegment(3).IsZero() && addr.GetSegment(4).IsZero() && addr.GetSegment(5).IsZero()
 }
 
-// Is6To4 returns whether the address is IPv6 to IPv4 relay
+// Is6To4 returns whether the address or subnet is IPv6 to IPv4 relay
 func (addr *IPv6Address) Is6To4() bool {
 	//2002::/16
 	return addr.GetSegment(0).Matches(0x2002)
 }
 
-// Is6Over4 returns whether the address is 6over4
+// Is6Over4 returns whether the address or all addresses in the subnet are 6over4
 func (addr *IPv6Address) Is6Over4() bool {
 	return addr.GetSegment(0).Matches(0xfe80) &&
 		addr.GetSegment(1).IsZero() && addr.GetSegment(2).IsZero() &&
@@ -1338,13 +1392,13 @@ func (addr *IPv6Address) Is6Over4() bool {
 		addr.GetSegment(5).IsZero()
 }
 
-// IsTeredo returns whether the address is Teredo
+// IsTeredo returns whether the address or all addresses in the subnet are Teredo
 func (addr *IPv6Address) IsTeredo() bool {
 	//2001::/32
 	return addr.GetSegment(0).Matches(0x2001) && addr.GetSegment(1).IsZero()
 }
 
-// IsIsatap returns whether the address is ISATAP
+// IsIsatap returns whether the address or all addresses in the subnet are ISATAP
 func (addr *IPv6Address) IsIsatap() bool {
 	// 0,1,2,3 is fe80::
 	// 4 can be 0200
@@ -1356,7 +1410,7 @@ func (addr *IPv6Address) IsIsatap() bool {
 		addr.GetSegment(5).Matches(0x5efe)
 }
 
-// IsIPv4Translatable returns whether the address is IPv4 translatable as in rfc 2765
+// IsIPv4Translatable returns whether the address or subnet is IPv4 translatable as in rfc 2765
 func (addr *IPv6Address) IsIPv4Translatable() bool { //rfc 2765
 	//::ffff:0:x:x/96 indicates IPv6 addresses translated from IPv4
 	return addr.GetSegment(4).Matches(0xffff) &&
@@ -1663,6 +1717,8 @@ func (addr *IPv6Address) GetNetwork() IPAddressNetwork {
 	return ipv6Network
 }
 
+// IsEUI64 returns whether this address is consistent with EUI64,
+// which means the 12th and 13th bytes of the address match 0xff and 0xfe.
 func (addr *IPv6Address) IsEUI64() bool {
 	return addr.GetSegment(6).MatchesWithPrefixMask(0xfe00, 8) &&
 		addr.GetSegment(5).MatchesWithMask(0xff, 0xff)

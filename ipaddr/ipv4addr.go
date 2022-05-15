@@ -45,9 +45,8 @@ func newIPv4Address(section *IPv4AddressSection) *IPv4Address {
 	return createAddress(section.ToSectionBase(), NoZone).ToIPv4()
 }
 
-// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
-//  constructors are next, then Uint32Value and UpperUint32Value, then IsPrivate, GetIPv4MappedAddress, ToInetAtonString and ToInetAtonJoinedString, and that's it
-
+// NewIPv4Address constructs an IPv4 address or subnet from the given address section.
+// If the section does not have 4 segments, an error is returned.
 func NewIPv4Address(section *IPv4AddressSection) (*IPv4Address, addrerr.AddressValueError) {
 	if section == nil {
 		return zeroIPv4, nil
@@ -62,6 +61,8 @@ func NewIPv4Address(section *IPv4AddressSection) (*IPv4Address, addrerr.AddressV
 	return createAddress(section.ToSectionBase(), NoZone).ToIPv4(), nil
 }
 
+// NewIPv4AddressFromSegs constructs an IPv4 address or subnet from the given segments.
+// If the given slice does not have 4 segments, an error is returned.
 func NewIPv4AddressFromSegs(segments []*IPv4AddressSegment) (*IPv4Address, addrerr.AddressValueError) {
 	segCount := len(segments)
 	if segCount != IPv4SegmentCount {
@@ -74,6 +75,8 @@ func NewIPv4AddressFromSegs(segments []*IPv4AddressSegment) (*IPv4Address, addre
 	return createAddress(section.ToSectionBase(), NoZone).ToIPv4(), nil
 }
 
+// NewIPv4AddressFromPrefixedSegs constructs an IPv4 address or subnet from the given segments and prefix length.
+// If the given slice does not have 4 segments, an error is returned.
 func NewIPv4AddressFromPrefixedSegs(segments []*IPv4AddressSegment, prefixLength PrefixLen) (*IPv4Address, addrerr.AddressValueError) {
 	segCount := len(segments)
 	if segCount != IPv4SegmentCount {
@@ -86,16 +89,9 @@ func NewIPv4AddressFromPrefixedSegs(segments []*IPv4AddressSegment, prefixLength
 	return createAddress(section.ToSectionBase(), NoZone).ToIPv4(), nil
 }
 
-func NewIPv4AddressFromUint32(val uint32) *IPv4Address {
-	section := NewIPv4SectionFromUint32(val, IPv4SegmentCount)
-	return createAddress(section.ToSectionBase(), NoZone).ToIPv4()
-}
-
-func NewIPv4AddressFromPrefixedUint32(val uint32, prefixLength PrefixLen) *IPv4Address {
-	section := NewIPv4SectionFromPrefixedUint32(val, IPv4SegmentCount, prefixLength)
-	return createAddress(section.ToSectionBase(), NoZone).ToIPv4()
-}
-
+// NewIPv4AddressFromBytes constructs an IPv4 address from the given byte slice.
+// An error is returned when the byte slice has too many bytes to match the IPv4 segment count of 4.
+// There should be 4 bytes or less, although extra leading zeros are tolerated.
 func NewIPv4AddressFromBytes(bytes []byte) (addr *IPv4Address, err addrerr.AddressValueError) {
 	if ipv4 := net.IP(bytes).To4(); ipv4 != nil {
 		bytes = ipv4
@@ -107,6 +103,9 @@ func NewIPv4AddressFromBytes(bytes []byte) (addr *IPv4Address, err addrerr.Addre
 	return
 }
 
+// NewIPv4AddressFromPrefixedBytes constructs an IPv4 address or prefix block from the given byte slice and prefix length.
+// An error is returned when the byte slice has too many bytes to match the IPv4 segment count of 4.
+// There should be 4 bytes or less, although extra leading zeros are tolerated.
 func NewIPv4AddressFromPrefixedBytes(bytes []byte, prefixLength PrefixLen) (addr *IPv4Address, err addrerr.AddressValueError) {
 	if ipv4 := net.IP(bytes).To4(); ipv4 != nil {
 		bytes = ipv4
@@ -118,21 +117,37 @@ func NewIPv4AddressFromPrefixedBytes(bytes []byte, prefixLength PrefixLen) (addr
 	return
 }
 
+// NewIPv4AddressFromUint32 constructs an IPv4 address from the given value and prefix length.
+func NewIPv4AddressFromUint32(val uint32) *IPv4Address {
+	section := NewIPv4SectionFromUint32(val, IPv4SegmentCount)
+	return createAddress(section.ToSectionBase(), NoZone).ToIPv4()
+}
+
+// NewIPv4AddressFromPrefixedUint32 constructs an IPv4 address or prefix block from the given value and prefix length.
+func NewIPv4AddressFromPrefixedUint32(val uint32, prefixLength PrefixLen) *IPv4Address {
+	section := NewIPv4SectionFromPrefixedUint32(val, IPv4SegmentCount, prefixLength)
+	return createAddress(section.ToSectionBase(), NoZone).ToIPv4()
+}
+
+// NewIPv4AddressFromVals constructs an IPv4 address from the given values.
 func NewIPv4AddressFromVals(vals IPv4SegmentValueProvider) *IPv4Address {
 	section := NewIPv4SectionFromVals(vals, IPv4SegmentCount)
 	return newIPv4Address(section)
 }
 
+// NewIPv4AddressFromPrefixedVals constructs an IPv4 address or prefix block from the given values and prefix length.
 func NewIPv4AddressFromPrefixedVals(vals IPv4SegmentValueProvider, prefixLength PrefixLen) *IPv4Address {
 	section := NewIPv4SectionFromPrefixedVals(vals, IPv4SegmentCount, prefixLength)
 	return newIPv4Address(section)
 }
 
+// NewIPv4AddressFromRange constructs an IPv4 subnet from the given values.
 func NewIPv4AddressFromRange(vals, upperVals IPv4SegmentValueProvider) *IPv4Address {
 	section := NewIPv4SectionFromRange(vals, upperVals, IPv4SegmentCount)
 	return newIPv4Address(section)
 }
 
+// NewIPv4AddressFromPrefixedRange constructs an IPv4 subnet from the given values and prefix length.
 func NewIPv4AddressFromPrefixedRange(vals, upperVals IPv4SegmentValueProvider, prefixLength PrefixLen) *IPv4Address {
 	section := NewIPv4SectionFromPrefixedRange(vals, upperVals, IPv4SegmentCount, prefixLength)
 	return newIPv4Address(section)
@@ -428,22 +443,22 @@ func (addr *IPv4Address) SpanWithRange(other *IPv4Address) *IPv4AddressSeqRange 
 	return NewIPv4SeqRange(addr.init(), other.init())
 }
 
-// GetLower returns the address in the subnet with the lowest numeric value,
-// which will be the same address if it represents a single value.
+// GetLower returns the lowest address in the subnet range,
+// which will be the receiver if it represents a single address.
 // For example, for "1.2-3.4.5-6", the series "1.2.4.5" is returned.
 func (addr *IPv4Address) GetLower() *IPv4Address {
 	return addr.init().getLower().ToIPv4()
 }
 
-// GetUpper returns the address in the subnet with the highest numeric value,
-// which will be the same address if it represents a single value.
+// GetUpper returns the highest address in the subnet range,
+// which will be the receiver if it represents a single address.
 // For example, for "1.2-3.4.5-6", the series "1.3.4.6" is returned.
 func (addr *IPv4Address) GetUpper() *IPv4Address {
 	return addr.init().getUpper().ToIPv4()
 }
 
 // GetLowerIPAddress returns the address in the subnet or address collection with the lowest numeric value,
-// which will be the same address if it represents a single value.
+// which will be the receiver if it represents a single address.
 // For example, for "1.2-3.4.5-6", the series "1.2.4.5" is returned.
 // GetLowerIPAddress implements the IPAddressRange interface
 func (addr *IPv4Address) GetLowerIPAddress() *IPAddress {
@@ -451,7 +466,7 @@ func (addr *IPv4Address) GetLowerIPAddress() *IPAddress {
 }
 
 // GetUpperIPAddress returns the address in the subnet or address collection with the highest numeric value,
-// which will be the same address if it represents a single value.
+// which will be the receiver if it represents a single address.
 // For example, for "1.2-3.4.5-6", the series "1.3.4.6" is returned.
 // GetUpperIPAddress implements the IPAddressRange interface
 func (addr *IPv4Address) GetUpperIPAddress() *IPAddress {
@@ -539,10 +554,12 @@ func (addr *IPv4Address) ToMaxHostLen(prefixLength BitCount) (*IPv4Address, addr
 	return res.ToIPv4(), err
 }
 
+// Uint32Value returns the lowest address in the subnet range as a uint32
 func (addr *IPv4Address) Uint32Value() uint32 {
 	return addr.GetSection().Uint32Value()
 }
 
+// UpperUint32Value returns the highest address in the subnet range as a uint32
 func (addr *IPv4Address) UpperUint32Value() uint32 {
 	return addr.GetSection().UpperUint32Value()
 }
@@ -1010,6 +1027,8 @@ func (addr *IPv4Address) IsLinkLocal() bool {
 	return addr.GetSegment(0).Matches(169) && addr.GetSegment(1).Matches(254)
 }
 
+// IsPrivate returns whether this is a unicast addresses allocated for private use,
+// as defined by RFC 1918.
 func (addr *IPv4Address) IsPrivate() bool {
 	// refer to RFC 1918
 	// 10/8 prefix
@@ -1350,6 +1369,10 @@ func (addr *IPv4Address) GetIPv6Address(section *IPv6AddressSection) (*IPv6Addre
 	return newIPv6Address(sect), nil
 }
 
+// GetIPv4MappedAddress returns the IPv4-mapped IPv6 address corresponding to this IPv4 address.
+// The IPv4-mapped IPv6 address is all zeros in the first 12 bytes, with the last 4 bytes matching the bytes of this IPv4 address.
+// See rfc 5156 for details.
+// If this is a subnet with segment ranges which cannot be converted to two IPv6 segment ranges, than an error is returned.
 func (addr *IPv4Address) GetIPv4MappedAddress() (*IPv6Address, addrerr.IncompatibleAddressError) {
 	zero := zeroIPv6Seg.ToDiv()
 	segs := createSegmentArray(IPv6SegmentCount)
@@ -1591,6 +1614,8 @@ func (addr *IPv4Address) ToBinaryString(with0bPrefix bool) (string, addrerr.Inco
 	return addr.init().toBinaryString(with0bPrefix)
 }
 
+// ToInetAtonString returns a string with a format that is styled from the inet_aton routine.
+// The string can have an octal or hexadecimal radix rather than decimal.
 func (addr *IPv4Address) ToInetAtonString(radix Inet_aton_radix) string {
 	if addr == nil {
 		return nilString()
@@ -1598,6 +1623,9 @@ func (addr *IPv4Address) ToInetAtonString(radix Inet_aton_radix) string {
 	return addr.GetSection().ToInetAtonString(radix)
 }
 
+// ToInetAtonJoinedString returns a string with a format that is styled from the inet_aton routine.
+// The string can have an octal or hexadecimal radix rather than decimal,
+// and can have less than the typical four IPv4 segments.
 func (addr *IPv4Address) ToInetAtonJoinedString(radix Inet_aton_radix, joinedCount int) (string, addrerr.IncompatibleAddressError) {
 	if addr == nil {
 		return nilString(), nil

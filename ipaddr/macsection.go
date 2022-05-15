@@ -638,11 +638,13 @@ func (section *MACAddressSection) ReverseSegments() *MACAddressSection {
 	return res.ToMAC()
 }
 
+// Append creates a new section by appending the given section to this section.
 func (section *MACAddressSection) Append(other *MACAddressSection) *MACAddressSection {
 	count := section.GetSegmentCount()
 	return section.ReplaceLen(count, count, other, 0, other.GetSegmentCount())
 }
 
+// Insert creates a new section by inserting the given section into this section at the given index.
 func (section *MACAddressSection) Insert(index int, other *MACAddressSection) *MACAddressSection {
 	return section.ReplaceLen(index, index, other, 0, other.GetSegmentCount())
 }

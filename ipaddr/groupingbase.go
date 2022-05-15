@@ -268,7 +268,7 @@ func (grouping *addressDivisionGroupingBase) GetBlockCount(divisionCount int) *b
 }
 
 func (grouping *addressDivisionGroupingBase) cacheCount(counter func() *big.Int) *big.Int {
-	cache := grouping.cache // isMult checks prior to this ensures cacheBitCountx no nil here
+	cache := grouping.cache
 	if cache == nil {
 		return grouping.calcCount(counter)
 	}
@@ -281,11 +281,50 @@ func (grouping *addressDivisionGroupingBase) cacheCount(counter func() *big.Int)
 	return new(big.Int).Set(count)
 }
 
+func (grouping *addressDivisionGroupingBase) cacheUint64Count(counter func() uint64) uint64 {
+	cache := grouping.cache
+	if cache == nil {
+		return grouping.calcUint64Count(counter)
+	}
+	count := cache.cachedCount
+	if count == nil {
+		count64 := grouping.calcUint64Count(counter)
+		count = new(big.Int).SetUint64(count64)
+		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache.cachedCount))
+		atomic.StorePointer(dataLoc, unsafe.Pointer(count))
+		return count64
+	}
+	return count.Uint64()
+}
+
 func (grouping *addressDivisionGroupingBase) calcCount(counter func() *big.Int) *big.Int {
 	if grouping != nil && !grouping.isMultiple() {
 		return bigOne()
 	}
 	return counter()
+}
+
+func (grouping *addressDivisionGroupingBase) calcUint64Count(counter func() uint64) uint64 {
+	if grouping != nil && !grouping.isMultiple() {
+		return 1
+	}
+	return counter()
+}
+
+func (grouping *addressDivisionGroupingBase) cacheUint64PrefixCount(counter func() uint64) uint64 {
+	cache := grouping.cache // isMult checks prior to this ensures cache not nil here
+	if cache == nil {
+		return grouping.calcUint64PrefixCount(counter)
+	}
+	count := cache.cachedPrefixCount
+	if count == nil {
+		count64 := grouping.calcUint64PrefixCount(counter)
+		count = new(big.Int).SetUint64(count64)
+		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache.cachedPrefixCount))
+		atomic.StorePointer(dataLoc, unsafe.Pointer(count))
+		return count64
+	}
+	return count.Uint64()
 }
 
 func (grouping *addressDivisionGroupingBase) cachePrefixCount(counter func() *big.Int) *big.Int {
@@ -310,6 +349,17 @@ func (grouping *addressDivisionGroupingBase) calcPrefixCount(counter func() *big
 	if prefixLen == nil || prefixLen.bitCount() >= grouping.GetBitCount() {
 		return grouping.getCount()
 	}
+	return counter()
+}
+
+func (grouping *addressDivisionGroupingBase) calcUint64PrefixCount(counter func() uint64) uint64 {
+	if !grouping.isMultiple() {
+		return 1
+	}
+	//prefixLen := grouping.prefixLength
+	//if prefixLen == nil || prefixLen.bitCount() >= grouping.GetBitCount() {
+	//	return grouping.getCount()
+	//}
 	return counter()
 }
 
@@ -429,7 +479,7 @@ type groupingCache struct {
 }
 
 type zeroRangeCache struct {
-	zeroSegments, zeroRangeSegments RangeList
+	zeroSegments, zeroRangeSegments SegmentSequenceList
 }
 
 type intsCache struct {
