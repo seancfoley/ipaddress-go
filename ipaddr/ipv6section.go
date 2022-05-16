@@ -72,13 +72,12 @@ func newPrefixedIPv6SectionParsed(segments []*AddressDivision, isMultiple bool, 
 	return
 }
 
-// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
-//   constructors, GetZeroSegments, GetZeroRangeSegments, SegmentSequence, SegmentSequenceList and that's it
-
+// NewIPv6Section constructs an IPv6 address or subnet section from the given segments.
 func NewIPv6Section(segments []*IPv6AddressSegment) *IPv6AddressSection {
 	return createIPv6SectionFromSegs(segments, nil)
 }
 
+// NewIPv6PrefixedSection constructs an IPv6 address or subnet section from the given segments and prefix length.
 func NewIPv6PrefixedSection(segments []*IPv6AddressSegment, prefixLen PrefixLen) *IPv6AddressSection {
 	return createIPv6SectionFromSegs(segments, prefixLen)
 }
@@ -103,7 +102,8 @@ func createIPv6SectionFromSegs(orig []*IPv6AddressSegment, prefLen PrefixLen) (r
 	return result
 }
 
-// NewIPv6SectionFromBigInt creates an IPv6 section from the given big integer, returning an error if the value is too large for the given number of segments.
+// NewIPv6SectionFromBigInt creates an IPv6 address section from the given big integer,
+// returning an error if the value is too large for the given number of segments.
 func NewIPv6SectionFromBigInt(val *big.Int, segmentCount int) (res *IPv6AddressSection, err addrerr.AddressValueError) {
 	if val.Sign() < 0 {
 		err = &addressValueError{
@@ -114,6 +114,8 @@ func NewIPv6SectionFromBigInt(val *big.Int, segmentCount int) (res *IPv6AddressS
 	return newIPv6SectionFromWords(val.Bits(), segmentCount, nil, false)
 }
 
+// NewIPv6SectionFromPrefixedBigInt creates an IPv6 address or prefix block section from the given big integer,
+// returning an error if the value is too large for the given number of segments.
 func NewIPv6SectionFromPrefixedBigInt(val *big.Int, segmentCount int, prefixLen PrefixLen) (res *IPv6AddressSection, err addrerr.AddressValueError) {
 	if val.Sign() < 0 {
 		err = &addressValueError{
@@ -244,10 +246,12 @@ func toSegmentsFromWords(
 	return
 }
 
+// NewIPv6SectionFromUint64 constructs an IPv6 address section of the given segment count from the given values.
 func NewIPv6SectionFromUint64(highBytes, lowBytes uint64, segmentCount int) (res *IPv6AddressSection) {
 	return NewIPv6SectionFromPrefixedUint64(highBytes, lowBytes, segmentCount, nil)
 }
 
+// NewIPv6SectionFromPrefixedUint64 constructs an IPv6 address or prefix block section of the given segment count from the given values and prefix length.
 func NewIPv6SectionFromPrefixedUint64(highBytes, lowBytes uint64, segmentCount int, prefixLength PrefixLen) (res *IPv6AddressSection) {
 	if segmentCount < 0 {
 		segmentCount = IPv6SegmentCount
@@ -308,6 +312,16 @@ func newIPv6SectionFromPrefixedSingle(vals, upperVals IPv6SegmentValueProvider, 
 	return
 }
 
+// NewIPv6SectionFromMAC constructs an IPv6 address section from a modified EUI-64 (Extended Unique Identifier) MAC address.
+//
+// If the supplied MAC address section is an 8 byte EUI-64, then it must match the required EUI-64 format of xx-xx-ff-fe-xx-xx
+// with the ff-fe section in the middle.
+//
+// If the supplied MAC address section is a 6 byte MAC-48 or EUI-48, then the ff-fe pattern will be inserted when converting to IPv6.
+//
+// The constructor will toggle the MAC U/L (universal/local) bit as required with EUI-64.
+//
+// The error is IncompatibleAddressError when unable to join two MAC segments, at least one with ranged values, into an equivalent IPV6 segment range.
 func NewIPv6SectionFromMAC(eui *MACAddress) (res *IPv6AddressSection, err addrerr.IncompatibleAddressError) {
 	segments := createSegmentArray(4)
 	if err = toIPv6SegmentsFromEUI(segments, 0, eui.GetSection(), nil); err != nil {
@@ -821,6 +835,9 @@ func (section *IPv6AddressSection) SequentialBlockIterator() IPv6SectionIterator
 	return ipv6SectionIterator{section.sequentialBlockIterator()}
 }
 
+// GetZeroSegments returns the list of consecutive zero segments.
+// Each element in the list will be an segment index and a total segment count for which
+// that count of consecutive segments starting from that index are all zero.
 func (section *IPv6AddressSection) GetZeroSegments() SegmentSequenceList {
 	vals := section.getZeroVals()
 	if vals == nil {
@@ -829,6 +846,9 @@ func (section *IPv6AddressSection) GetZeroSegments() SegmentSequenceList {
 	return vals.zeroSegments
 }
 
+// GetZeroRangeSegments returns the list of consecutive zero and zero prefix block segments.
+// Each element in the list will be an segment index and a total segment count for which
+// that count of consecutive segments starting from that index are all zero or a prefix block segment with lowest segment value zero.
 func (section *IPv6AddressSection) GetZeroRangeSegments() SegmentSequenceList {
 	vals := section.getZeroVals()
 	if vals == nil {
@@ -935,33 +955,89 @@ func compressMixedSect(m addrstr.MixedCompressionOptions, addressSection *IPv6Ad
 	}
 }
 
+//func (section *IPv6AddressSection) getZeroSegments(includeRanges bool) SegmentSequenceList {
+//	divisionCount := section.GetSegmentCount()
+//	includeRanges = includeRanges && section.IsPrefixBlock() && section.GetPrefixLen().bitCount() < section.GetBitCount()
+//	var currentIndex, currentCount, rangeCount int
+//	var ranges [IPv6SegmentCount >> 1]SegmentSequence
+//	for i := 0; i < divisionCount; i++ {
+//		division := section.GetSegment(i)
+//		isCompressible := division.IsZero() ||
+//			(includeRanges && division.IsPrefixed() && division.isSinglePrefixBlock(0, division.getUpperDivisionValue(), division.getDivisionPrefixLength().bitCount()))
+//		if isCompressible {
+//			currentCount++
+//			if currentCount == 1 {
+//				currentIndex = i
+//			}
+//
+//		} else if currentCount > 0 {
+//			ranges[rangeCount] = SegmentSequence{index: currentIndex, length: currentCount}
+//			rangeCount++
+//			currentCount = 0
+//		}
+//	}
+//	if currentCount > 0 {
+//		ranges[rangeCount] = SegmentSequence{index: currentIndex, length: currentCount}
+//		rangeCount++
+//	} else if rangeCount == 0 {
+//		return SegmentSequenceList{}
+//	}
+//	return SegmentSequenceList{ranges[:rangeCount]}
+//}
+
 func (section *IPv6AddressSection) getZeroSegments(includeRanges bool) SegmentSequenceList {
 	divisionCount := section.GetSegmentCount()
-	isFullRangeHost := section.IsPrefixBlock()
-	includeRanges = includeRanges && isFullRangeHost
+	includeRanges = includeRanges && section.IsPrefixBlock() && section.GetPrefixLen().bitCount() < section.GetBitCount()
 	var currentIndex, currentCount, rangeCount int
 	var ranges [IPv6SegmentCount >> 1]SegmentSequence
-	for i := 0; i < divisionCount; i++ {
-		division := section.GetSegment(i)
-		isCompressible := division.IsZero() ||
-			(includeRanges && division.IsPrefixed() && division.isSinglePrefixBlock(0, division.getUpperDivisionValue(), division.getDivisionPrefixLength().bitCount()))
-		if isCompressible {
-			currentCount++
-			if currentCount == 1 {
-				currentIndex = i
-			}
-			if i == divisionCount-1 {
+	if includeRanges {
+		bitsPerSegment := section.GetBitsPerSegment()
+		networkIndex := getNetworkSegmentIndex(section.getPrefixLen().bitCount(), section.GetBytesPerSegment(), bitsPerSegment)
+		i := 0
+		for ; i <= networkIndex; i++ {
+			division := section.GetSegment(i)
+			isCompressible := division.IsZero() ||
+				(includeRanges && division.IsPrefixed() && division.isSinglePrefixBlock(0, division.getUpperDivisionValue(), division.getDivisionPrefixLength().bitCount()))
+			if isCompressible {
+				currentCount++
+				if currentCount == 1 {
+					currentIndex = i
+				}
+			} else if currentCount > 0 {
 				ranges[rangeCount] = SegmentSequence{index: currentIndex, length: currentCount}
 				rangeCount++
+				currentCount = 0
 			}
-		} else if currentCount > 0 {
+		}
+		if currentCount > 0 {
+			// add all segments past the network segment index to the current sequence
+			ranges[rangeCount] = SegmentSequence{index: currentIndex, length: currentCount + divisionCount - i}
+			rangeCount++
+		} else if i < divisionCount {
+			// all segments past the network segment index are a new sequence
+			ranges[rangeCount] = SegmentSequence{index: i, length: divisionCount - i}
+			rangeCount++
+		} // else the very last segment was a network segment, and a prefix block segment, but the lowest segment value is not zero, eg ::100/120
+	} else {
+		for i := 0; i < divisionCount; i++ {
+			division := section.GetSegment(i)
+			if division.IsZero() {
+				currentCount++
+				if currentCount == 1 {
+					currentIndex = i
+				}
+			} else if currentCount > 0 {
+				ranges[rangeCount] = SegmentSequence{index: currentIndex, length: currentCount}
+				rangeCount++
+				currentCount = 0
+			}
+		}
+		if currentCount > 0 {
 			ranges[rangeCount] = SegmentSequence{index: currentIndex, length: currentCount}
 			rangeCount++
-			currentCount = 0
+		} else if rangeCount == 0 {
+			return SegmentSequenceList{}
 		}
-	}
-	if rangeCount == 0 {
-		return SegmentSequenceList{}
 	}
 	return SegmentSequenceList{ranges[:rangeCount]}
 }
@@ -1811,6 +1887,7 @@ type EmbeddedIPv6AddressSection struct {
 }
 
 // IsPrefixBlock returns whether this address segment series has a prefix length and includes the block associated with its prefix length.
+// If the prefix length matches the bit count, this returns true.
 //
 // This is different from ContainsPrefixBlock in that this method returns
 // false if the series has no prefix length or a prefix length that differs from prefix lengths for which ContainsPrefixBlock returns true.
@@ -2033,10 +2110,12 @@ func toIPv6SegmentsFromEUI(
 	return err
 }
 
+// SegmentSequence represents a sequence of consecutive segments with the given length starting from the given segment index.
 type SegmentSequence struct {
 	index, length int
 }
 
+// SegmentSequenceList represents a list of SegmentSequence instances.
 type SegmentSequenceList struct {
 	ranges []SegmentSequence
 }

@@ -472,12 +472,17 @@ func main() {
 	bn := ipaddr.AddressTrieNode{}
 	_ = bn
 
+	addrStr = ipaddr.NewIPAddressString("1.2.0.0/32")
+	pAddr = addrStr.GetAddress()
+	fmt.Printf("bit count pref len is pref block: %t\n", pAddr.IsPrefixBlock())
+
 	trie := ipaddr.IPv4AddressTrie{}
 	addrStr = ipaddr.NewIPAddressString("1.2.0.0/16")
-	pAddr = addrStr.GetAddress()
 	trie.Add(pAddr.ToIPv4())
 	addrStr = ipaddr.NewIPAddressString("1.2.3.4")
 	pAddr = addrStr.GetAddress()
+	pAddr = addrStr.GetAddress()
+	fmt.Printf("no pref len is pref block: %t\n", pAddr.IsPrefixBlock())
 	trie.Add(pAddr.ToIPv4())
 	str = trie.String()
 	fmt.Printf("%s", str)

@@ -1989,11 +1989,13 @@ func (section *addressSectionInternal) ContainsSinglePrefixBlock(prefixLen BitCo
 }
 
 // IsPrefixBlock returns whether this address segment series has a prefix length and includes the block associated with its prefix length.
+// If the prefix length matches the bit count, this returns true.
 //
 // This is different from ContainsPrefixBlock in that this method returns
 // false if the series has no prefix length or a prefix length that differs from a prefix length for which ContainsPrefixBlock returns true.
 func (section *addressSectionInternal) IsPrefixBlock() bool {
-	return section.addressDivisionGroupingInternal.IsPrefixBlock()
+	prefLen := section.getPrefixLen()
+	return prefLen != nil && section.ContainsPrefixBlock(prefLen.bitCount())
 }
 
 // IsSinglePrefixBlock returns whether the range matches the block of values for a single prefix identified by the prefix length of this address.

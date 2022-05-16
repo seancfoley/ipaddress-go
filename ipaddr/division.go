@@ -306,14 +306,14 @@ func (div *addressDivisionInternal) isPrefixBlockVals(divisionValue, upperValue 
 		divisionNonPrefixMask)
 }
 
-// Returns whether the given range of segmentValue to upperValue is equivalent to the range of segmentValue with the prefix of divisionPrefixLen
+// Returns whether the given range of divisionValue to upperValue is equivalent to the range of segmentValue with the prefix of divisionPrefixLen
 func (div *addressDivisionInternal) isSinglePrefix(divisionValue, upperValue DivInt, divisionPrefixLen BitCount) bool {
 	bitCount := div.GetBitCount()
 	shift := uint(bitCount - divisionPrefixLen)
 	return (divisionValue >> shift) == (upperValue >> shift)
 }
 
-// Returns whether the given range of segmentValue to upperValue is equivalent to the range of segmentValue with the prefix of divisionPrefixLen
+// Returns whether the given range of divisionValue to upperValue is equivalent to the range of segmentValue with the prefix of divisionPrefixLen
 func (div *addressDivisionInternal) isSinglePrefixBlock(divisionValue, upperValue DivInt, divisionPrefixLen BitCount) bool {
 	if divisionPrefixLen == 0 {
 		return divisionValue == 0 && upperValue == div.getMaxValue()

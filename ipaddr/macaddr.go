@@ -59,6 +59,10 @@ func newMACAddress(section *MACAddressSection) *MACAddress {
 	return createAddress(section.ToSectionBase(), NoZone).ToMAC()
 }
 
+// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
+//   constructors GetDottedAddress ToDashedString ToColonDelimitedString and that's it for this file
+
+// NewMACAddress constructs a MAC address or address collection from the given segments.
 func NewMACAddress(section *MACAddressSection) (*MACAddress, addrerr.AddressValueError) {
 	segCount := section.GetSegmentCount()
 	if segCount != MediaAccessControlSegmentCount && segCount != ExtendedUniqueIdentifier64SegmentCount {
@@ -165,6 +169,13 @@ func createMACZero(extended bool) *MACAddress {
 	return newMACAddress(section)
 }
 
+// MACAddress represents a MAC address, or a collection of multiple individual MAC addresses.
+// Each segment can represent a single byte value or a range of byte values.
+//
+// You can construct a MAC address from a byte slice, from a uint64, from a SegmentValueProvider,
+// from a MACAddressSection of 6 or 8 segments, or from an array of 6 or 8 MACAddressSegment instances.
+//
+// To construct one from a string use ToAddress or GetAddress of MACAddressString.
 type MACAddress struct {
 	addressInternal
 }
@@ -265,26 +276,38 @@ func (addr *MACAddress) GetUpper() *Address {
 	return addr.init().getUpper()
 }
 
+// Uint64Value returns the lowest address in the address collection as a uint64
 func (addr *MACAddress) Uint64Value() uint64 {
 	return addr.GetSection().Uint64Value()
 }
 
+// UpperUint64Value returns the highest address in the address collection as a uint64
 func (addr *MACAddress) UpperUint64Value() uint64 {
 	return addr.GetSection().UpperUint64Value()
 }
 
+// GetHardwareAddr returns the lowest address in this address or address collection as a net.HardwareAddr
 func (addr *MACAddress) GetHardwareAddr() net.HardwareAddr {
 	return addr.Bytes()
 }
 
+// CopyHardwareAddr copies the value of the lowest individual address in the address collection into a net.HardwareAddr
+//
+// If the value can fit in the given net.HardwareAddr, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// Otherwise, a new net.HardwareAddr is created and returned with the value.
 func (addr *MACAddress) CopyHardwareAddr(bytes net.HardwareAddr) net.HardwareAddr {
 	return addr.CopyBytes(bytes)
 }
 
+// GetUpperHardwareAddr returns the highest address in this address or address collection as a net.HardwareAddr
 func (addr *MACAddress) GetUpperHardwareAddr() net.HardwareAddr {
 	return addr.UpperBytes()
 }
 
+// CopyUpperHardwareAddr copies the value of the highest individual address in the address collection into a net.HardwareAddr
+//
+// If the value can fit in the given net.HardwareAddr, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// Otherwise, a new net.HardwareAddr is created and returned with the value.
 func (addr *MACAddress) CopyUpperHardwareAddr(bytes net.HardwareAddr) net.HardwareAddr {
 	return addr.CopyUpperBytes(bytes)
 }
@@ -815,10 +838,12 @@ func (addr *MACAddress) Replace(startIndex int, replacement *MACAddressSection) 
 	return addr.checkIdentity(addr.GetSection().ReplaceLen(startIndex, endIndex, replacement, replacementIndex, replacementIndex+count))
 }
 
+// GetOUISection returns a section with the first 3 segments, the organizational unique identifier
 func (addr *MACAddress) GetOUISection() *MACAddressSection {
 	return addr.GetSubSection(0, MACOrganizationalUniqueIdentifierSegmentCount)
 }
 
+// GetODISection returns a section with the segments following the first 3 segments, the organizational distinct identifier
 func (addr *MACAddress) GetODISection() *MACAddressSection {
 	return addr.GetTrailingSection(MACOrganizationalUniqueIdentifierSegmentCount)
 }

@@ -92,12 +92,12 @@ func createIPv4SectionFromSegs(orig []*IPv4AddressSegment, prefLen PrefixLen) (r
 	return result
 }
 
-// NewIPv4SectionFromUint32 constructs an IPv4 address section from the given value and prefix length.
+// NewIPv4SectionFromUint32 constructs an IPv4 address section of the given segment count from the given value.
 func NewIPv4SectionFromUint32(value uint32, segmentCount int) (res *IPv4AddressSection) {
 	return NewIPv4SectionFromPrefixedUint32(value, segmentCount, nil)
 }
 
-// NewIPv4SectionFromPrefixedUint32 constructs an IPv4 address or prefix block section from the given value and prefix length.
+// NewIPv4SectionFromPrefixedUint32 constructs an IPv4 address or prefix block section of the given segment count from the given value and prefix length.
 func NewIPv4SectionFromPrefixedUint32(value uint32, segmentCount int, prefixLength PrefixLen) (res *IPv4AddressSection) {
 	if segmentCount < 0 {
 		segmentCount = IPv4SegmentCount

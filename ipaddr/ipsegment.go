@@ -34,6 +34,7 @@ func (seg *ipAddressSegmentInternal) isPrefixed() bool {
 }
 
 // IsPrefixBlock returns whether the division has a prefix length and the division range includes the block of values for that prefix length.
+// If the prefix length matches the bit count, this returns true.
 func (seg *ipAddressSegmentInternal) IsPrefixBlock() bool {
 	return seg.isPrefixBlock()
 }

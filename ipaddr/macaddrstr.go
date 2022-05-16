@@ -66,6 +66,46 @@ type macAddrStringCache struct {
 	*macAddrData
 }
 
+// MACAddressString parses the string representation of a MAC address.  Such a string can represent just a single address or a collection of addresses like 1:*:1-3:1-4:5:6
+//
+// This supports a wide range of address formats and provides specific error messages, and allows specific configuration.
+//
+// You can control all of the supported formats using MACAddressStringParametersBuilder to build a parameters instance of  MACAddressStringParameters.
+// When not using the constructor that takes a MACAddressStringParameters, a default instance of MACAddressStringParameters is used that is generally permissive.
+//
+// Supported Formats
+//
+// Ranges are supported:
+//
+//  • wildcards '*' and ranges '-' (for example 1:*:1-3:1-4:5:6), useful for working with subnets
+//  • SQL wildcards '%" and "_", although '%' is considered an SQL wildcard only when it is not considered an IPv6 zone indicator
+//
+//
+// The different methods of representing MAC addresses are supported:
+//
+//  • 6 or 8 bytes in hex representation like aa:bb:cc:dd:ee:ff
+//  • The same but with a hyphen separator like aa-bb-cc-dd-ee-ff (the range separator in this case becomes '/')
+//  • The same but with space separator like aa bb cc dd ee ff
+//  • The dotted representation, 4 sets of 12 bits in hex representation like aaa.bbb.ccc.ddd
+//  • The 12 or 16 hex representation with no separators like aabbccddeeff
+//
+//
+// All of the above range variations also work for each of these ways of representing MAC addresses.
+//
+// Some additional formats:
+//
+//  • null or empty strings representing an unspecified address
+//  • the single wildcard address "*" which represents all MAC addresses
+//
+//
+// Usage
+// Once you have constructed a MACAddressString object, you can convert it to an MACAddress object with GetAddress or ToAddress.
+//
+// For empty addresses, both ToAddress and GetAddress return nil.  For invalid addresses, GetAddress and ToAddress return nil, with ToAddress also returning an error.
+//
+// This type is concurrency-safe.  In fact, MACAddressString objects are immutable.
+// A MACAddressString object represents a single MAC address representation that cannot be changed after construction.
+// Some of the derived state is created upon demand and cached, such as the derived MACAddress instances.
 type MACAddressString struct {
 	str    string
 	params addrstrparam.MACAddressStringParams // when nil, defaultParameters is used
@@ -79,6 +119,8 @@ func (addrStr *MACAddressString) init() *MACAddressString {
 	return addrStr
 }
 
+// GetValidationOptions returns the validation options supplied when constructing this address string,
+// or the default options if no options were supplied.
 func (addrStr *MACAddressString) GetValidationOptions() addrstrparam.MACAddressStringParams {
 	return addrStr.init().params
 }
@@ -187,6 +229,11 @@ func (addrStr *MACAddressString) Validate() addrerr.AddressStringError {
 	return data.validateException
 }
 
+// Compare compares this address string with another,
+// returning a negative number, zero, or a positive number if this address string is less than, equal to, or greater than the other.
+//
+// All address strings are comparable.  If two address strings are invalid, their strings are compared.
+// Two valid address trings are compared using the comparison rules for their respective addresses.
 func (addrStr *MACAddressString) Compare(other *MACAddressString) int {
 	if addrStr == other {
 		return 0

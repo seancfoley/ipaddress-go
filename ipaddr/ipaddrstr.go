@@ -155,9 +155,9 @@ type ipAddrStringCache struct {
 //
 // Once you have constructed an IPAddressString object, you can convert it to an IPAddress object with various methods.
 //
-// Most address strings can be converted to an IPAddress object using GetAddress() or ToAddress().  In most cases the IP version is determined by the string itself.
+// Most address strings can be converted to an IPAddress object using GetAddress or ToAddress.  In most cases the IP version is determined by the string itself.
 //
-// There are a few exceptions, cases in which the version is unknown or ambiguous, for which GetAddress() returns nil:
+// There are a few exceptions, cases in which the version is unknown or ambiguous, for which GetAddress returns nil:
 //
 //  • strings which do not represent valid addresses (eg "bla")
 //
@@ -424,6 +424,8 @@ func (addrStr *IPAddressString) ToVersionedAddress(version IPVersion) (*IPAddres
 	return provider.getVersionedAddress(version)
 }
 
+// GetHostAddress parses the address while ignoring the prefix length or mask.
+// GetHostAddress returns nil for an invalid string.  If you wish to receive an error instead, use ToHostAddress
 func (addrStr *IPAddressString) GetHostAddress() *IPAddress {
 	provider, err := addrStr.getAddressProvider()
 	if err != nil {
@@ -433,7 +435,9 @@ func (addrStr *IPAddressString) GetHostAddress() *IPAddress {
 	return addr
 }
 
-// ToHostAddress parses the address will ignoring the prefix length or mask.  The error can be addrerr.AddressStringError oraddrerr.IncompatibleAddressError
+// ToHostAddress parses the address while ignoring the prefix length or mask.
+// The error can be addrerr.AddressStringError oraddrerr.IncompatibleAddressError.
+// GetHostAddress is similar but does not return errors.
 func (addrStr *IPAddressString) ToHostAddress() (*IPAddress, addrerr.AddressError) {
 	provider, err := addrStr.getAddressProvider()
 	if err != nil {

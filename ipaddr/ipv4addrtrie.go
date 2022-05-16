@@ -30,6 +30,10 @@ type IPv4AddressTrie struct {
 	addressTrie
 }
 
+func (trie *IPv4AddressTrie) toTrie() *tree.BinTrie {
+	return (*tree.BinTrie)(unsafe.Pointer(trie))
+}
+
 // toBase converts to addressTrie by pointer conversion, avoiding dereferencing, which works with nil pointers
 func (trie *IPv4AddressTrie) toBase() *addressTrie {
 	return (*addressTrie)(unsafe.Pointer(trie))
@@ -409,6 +413,10 @@ func NewIPv4AddressTrie() *IPv4AddressTrie {
 // The zero value for IPv4AddressAssociativeTrie is a binary trie ready for use.
 type IPv4AddressAssociativeTrie struct {
 	associativeAddressTrie
+}
+
+func (trie *IPv4AddressAssociativeTrie) toTrie() *tree.BinTrie {
+	return (*tree.BinTrie)(unsafe.Pointer(trie))
 }
 
 // toBase is used to convert the pointer rather than doing a field dereference, so that nil pointer handling can be done in *addressTrieNode

@@ -322,6 +322,10 @@ type AddressTrie struct {
 	addressTrie
 }
 
+func (trie *AddressTrie) toTrie() *tree.BinTrie {
+	return (*tree.BinTrie)(unsafe.Pointer(trie))
+}
+
 func (trie *AddressTrie) tobase() *addressTrie {
 	return (*addressTrie)(unsafe.Pointer(trie))
 }
@@ -806,6 +810,10 @@ type AssociativeAddressTrie struct {
 	associativeAddressTrie
 }
 
+func (trie *AssociativeAddressTrie) toTrie() *tree.BinTrie {
+	return (*tree.BinTrie)(unsafe.Pointer(trie))
+}
+
 func (trie *AssociativeAddressTrie) tobase() *addressTrie {
 	return (*addressTrie)(unsafe.Pointer(trie))
 }
@@ -1143,20 +1151,17 @@ func (trie *AssociativeAddressTrie) CeilingAddedNode(addr *Address) *Associative
 // Clone clones this trie
 func (trie *AssociativeAddressTrie) Clone() *AssociativeAddressTrie {
 	return trie.tobase().clone().ToAssociative()
-	//return &AssociativeAddressTrie{associativeAddressTrie{trie.clone()}}
 }
 
 // Equal returns whether the given argument is a trie with a set of nodes with the same keys as in this trie
 func (trie *AssociativeAddressTrie) Equal(other *AssociativeAddressTrie) bool {
 	return trie.toTrie().Equal(other.toTrie())
-	//return trie.equal(other.addressTrie)
 }
 
 // DeepEqual returns whether the given argument is a trie with a set of nodes with the same keys and values as in this trie,
 // the values being compared with reflect.DeepEqual
 func (trie *AssociativeAddressTrie) DeepEqual(other *AssociativeAddressTrie) bool {
 	return trie.toTrie().DeepEqual(other.toTrie())
-	//return trie.deepEqual(other.associativeAddressTrie)
 }
 
 // Put associates the specified value with the specified key in this map.

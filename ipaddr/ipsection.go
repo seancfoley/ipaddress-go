@@ -1390,6 +1390,7 @@ func (section *ipAddressSectionInternal) ContainsSinglePrefixBlock(prefixLen Bit
 }
 
 // IsPrefixBlock returns whether this address segment series has a prefix length and includes the block associated with its prefix length.
+// If the prefix length matches the bit count, this returns true.
 //
 // This is different from ContainsPrefixBlock in that this method returns
 // false if the series has no prefix length or a prefix length that differs from prefix lengths for which ContainsPrefixBlock returns true.

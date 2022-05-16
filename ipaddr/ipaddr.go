@@ -611,6 +611,7 @@ func (addr *ipAddressInternal) IsSinglePrefixBlock() bool {
 }
 
 // IsPrefixBlock returns whether the address has a prefix length and the address range includes the block of values for that prefix length.
+// If the prefix length matches the bit count, this returns true.
 //
 // To create a prefix block from any address, use ToPrefixBlock.
 //

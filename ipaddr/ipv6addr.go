@@ -331,7 +331,7 @@ func newIPv6AddressFromPrefixedSingle(vals, upperVals IPv6SegmentValueProvider, 
 	return newIPv6AddressZoned(section, zone)
 }
 
-// NewIPv6AddressFromMAC constructs an IPv6 address from a modified EUI-64 (Extended Unique Identifier) address and an IPv6 address 64-bit prefix.
+// NewIPv6AddressFromMAC constructs an IPv6 address from a modified EUI-64 (Extended Unique Identifier) MAC address and an IPv6 address 64-bit prefix.
 //
 // If the supplied MAC address section is an 8 byte EUI-64, then it must match the required EUI-64 format of xx-xx-ff-fe-xx-xx
 // with the ff-fe section in the middle.
@@ -373,7 +373,7 @@ func newIPv6AddressFromMAC(prefixSection *IPv6AddressSection, suffix *MACAddress
 	return newIPv6AddressZoned(res, zone), nil
 }
 
-// NewIPv6AddressFromMACSection constructs an IPv6 address from a modified EUI-64 (Extended Unique Identifier) address section and an IPv6 address section network prefix.
+// NewIPv6AddressFromMACSection constructs an IPv6 address from a modified EUI-64 (Extended Unique Identifier) MAC address section and an IPv6 address section network prefix.
 //
 // If the supplied MAC address section is an 8 byte EUI-64, then it must match the required EUI-64 format of xx-xx-ff-fe-xx-xx
 // with the ff-fe section in the middle.
@@ -392,7 +392,7 @@ func NewIPv6AddressFromMACSection(prefix *IPv6AddressSection, suffix *MACAddress
 	return newIPv6AddressFromZonedMAC(prefix, suffix, NoZone)
 }
 
-// NewIPv6AddressFromZonedMACSection constructs an IPv6 address from a modified EUI-64 (Extended Unique Identifier) address section, an IPv6 address section network prefix, and a zone.
+// NewIPv6AddressFromZonedMACSection constructs an IPv6 address from a modified EUI-64 (Extended Unique Identifier) MAC address section, an IPv6 address section network prefix, and a zone.
 //
 // It is similar to NewIPv6AddressFromMACSection but also allows you to specify a zone.
 //

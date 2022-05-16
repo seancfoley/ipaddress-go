@@ -30,6 +30,10 @@ type MACAddressTrie struct {
 	addressTrie
 }
 
+func (trie *MACAddressTrie) toTrie() *tree.BinTrie {
+	return (*tree.BinTrie)(unsafe.Pointer(trie))
+}
+
 // toBase converts to addressTrie by pointer conversion, avoiding dereferencing, which works with nil pointers
 func (trie *MACAddressTrie) toBase() *addressTrie {
 	return (*addressTrie)(unsafe.Pointer(trie))
@@ -418,6 +422,10 @@ func NewMACAddressTrie(extended bool) *MACAddressTrie {
 // The zero value for MACAddressAssociativeTrie is a binary trie ready for use.
 type MACAddressAssociativeTrie struct {
 	associativeAddressTrie
+}
+
+func (trie *MACAddressAssociativeTrie) toTrie() *tree.BinTrie {
+	return (*tree.BinTrie)(unsafe.Pointer(trie))
 }
 
 // toBase is used to convert the pointer rather than doing a field dereference, so that nil pointer handling can be done in *addressTrieNode
