@@ -282,7 +282,7 @@ type AddressSegmentSeries interface { // Address and above, AddressSection and a
 	// If a multiple-valued series cannot be written as a single prefix block or a range of two values, an error is returned.
 	ToOctalString(withPrefix bool) (string, addrerr.IncompatibleAddressError)
 
-	// GetSegmentStrings returns an array with the strings of each segment being the string that is normalized with wildcards.
+	// GetSegmentStrings returns a slice with the string for each segment being the string that is normalized with wildcards.
 	GetSegmentStrings() []string
 
 	// GetGenericSegment returns the segment at the given index as an AddressSegmentType.
@@ -782,6 +782,8 @@ type HostIdentifierString interface {
 
 	// IsValid returns whether the wrapped string is a valid identifier for a host
 	IsValid() bool
+
+	Wrap() ExtendedIdentifierString
 
 	fmt.Stringer
 }

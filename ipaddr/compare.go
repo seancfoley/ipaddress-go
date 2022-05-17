@@ -19,16 +19,22 @@ package ipaddr
 import "math/big"
 
 var (
-	// Compares by count first, then by value
+	// CountComparator compares by count first, then by value
 	CountComparator = AddressComparator{countComparator{}}
 
-	// Compare by value first, whether low or high or both
+	// HighValueComparator compares by high value first, then low, then count
 	HighValueComparator = AddressComparator{valueComparator{compareHighValue: true}}
-	LowValueComparator  = AddressComparator{valueComparator{}}
+
+	// LowValueComparator compares by low value first, then high, then count
+	LowValueComparator = AddressComparator{valueComparator{}}
 
 	// With the reverse comparators, ordering with the secondary values (higher or lower) follow a reverse ordering than the primary values (lower or higher)
+
+	// ReverseHighValueComparator is like HighValueComparator but when comparing the low value, reverses the comparison
 	ReverseHighValueComparator = AddressComparator{valueComparator{compareHighValue: true, flipSecond: true}}
-	ReverseLowValueComparator  = AddressComparator{valueComparator{flipSecond: true}}
+
+	// ReverseLowValueComparator is like LowValueComparator but when comparing the high value, reverses the comparison
+	ReverseLowValueComparator = AddressComparator{valueComparator{flipSecond: true}}
 )
 
 type componentComparator interface {
@@ -132,10 +138,15 @@ func mapRange(rng *IPAddressSeqRange) int {
 	return iprangetype
 }
 
+// AddressComparator has methods to compare addresses, or sections, or division series, or segments, or divisions, or sequential ranges.
+// AddressComparator also allows you to compare any two instances of any such address items, using the Compare method.
+// The zero value acts like CountComparator, the default comparator.
 type AddressComparator struct {
 	componentComparator
 }
 
+// CompareAddresses compares any two addresses (including different versions or address types)
+// It returns a negative integer, zero, or a positive integer if address item one is less than, equal, or greater than address item two.
 func (comp AddressComparator) CompareAddresses(one, two AddressType) int {
 	var oneAddr, twoAddr *Address
 	if one != nil {
@@ -169,6 +180,8 @@ func (comp AddressComparator) CompareAddresses(one, two AddressType) int {
 	return result
 }
 
+// CompareAddressSections compares any two address sections (including from different versions or address types)
+// It returns a negative integer, zero, or a positive integer if address item one is less than, equal, or greater than address item two.
 func (comp AddressComparator) CompareAddressSections(one, two AddressSectionType) int {
 	var oneSec, twoSec *AddressSection
 	if one != nil {
@@ -189,6 +202,9 @@ func (comp AddressComparator) CompareAddressSections(one, two AddressSectionType
 	if result != 0 {
 		return result
 	}
+	if comp.componentComparator == nil {
+		comp.componentComparator = countComparator{}
+	}
 	return comp.compareSectionParts(oneSec, twoSec)
 }
 
@@ -199,6 +215,8 @@ func unwrapWrapper(item AddressDivisionSeries) AddressDivisionSeries {
 	return item
 }
 
+// CompareSeries compares any two address division series (including from different versions or address types)
+// It returns a negative integer, zero, or a positive integer if address item one is less than, equal, or greater than address item two.
 func (comp AddressComparator) CompareSeries(one, two AddressDivisionSeries) int {
 	one = unwrapWrapper(one)
 	two = unwrapWrapper(two)
@@ -240,9 +258,14 @@ func (comp AddressComparator) CompareSeries(one, two AddressDivisionSeries) int 
 	if result != 0 {
 		return result
 	}
+	if comp.componentComparator == nil {
+		comp.componentComparator = countComparator{}
+	}
 	return comp.compareParts(oneGrouping, twoGrouping)
 }
 
+// CompareSegments compares any two address segments (including from different versions or address types)
+// It returns a negative integer, zero, or a positive integer if address item one is less than, equal, or greater than address item two.
 func (comp AddressComparator) CompareSegments(one, two AddressSegmentType) int {
 	var oneSeg, twoSeg *AddressSegment
 	if one != nil {
@@ -263,9 +286,14 @@ func (comp AddressComparator) CompareSegments(one, two AddressSegmentType) int {
 	if result != 0 {
 		return result
 	}
+	if comp.componentComparator == nil {
+		comp.componentComparator = countComparator{}
+	}
 	return comp.compareSegValues(oneSeg.GetUpperSegmentValue(), oneSeg.GetSegmentValue(), twoSeg.GetUpperSegmentValue(), twoSeg.GetSegmentValue())
 }
 
+// CompareDivisions compares any two address divisions (including from different versions or address types)
+// It returns a negative integer, zero, or a positive integer if address item one is less than, equal, or greater than address item two.
 func (comp AddressComparator) CompareDivisions(one, two DivisionType) int {
 	if addrSeg1, ok := one.(AddressSegmentType); ok {
 		if addrSeg2, ok := two.(AddressSegmentType); ok {
@@ -312,9 +340,14 @@ func (comp AddressComparator) CompareDivisions(one, two DivisionType) int {
 	if result != 0 {
 		return result
 	}
+	if comp.componentComparator == nil {
+		comp.componentComparator = countComparator{}
+	}
 	return comp.compareValues(div1.GetUpperDivisionValue(), div1.GetDivisionValue(), div2.GetUpperDivisionValue(), div2.GetDivisionValue())
 }
 
+// CompareRanges compares any two IP address sequential ranges (including from different IP versions).
+// It returns a negative integer, zero, or a positive integer if address item one is less than, equal, or greater than address item two.
 func (comp AddressComparator) CompareRanges(one, two IPAddressSeqRangeType) int {
 	var r1, r2 *IPAddressSeqRange
 	if one != nil {
@@ -335,6 +368,9 @@ func (comp AddressComparator) CompareRanges(one, two IPAddressSeqRangeType) int 
 	result := r1Type - mapRange(r2)
 	if result != 0 {
 		return result
+	}
+	if comp.componentComparator == nil {
+		comp.componentComparator = countComparator{}
 	}
 	if r1Type == ipv4rangetype { // avoid using the large values
 		r1ipv4 := r1.ToIPv4()

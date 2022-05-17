@@ -59,9 +59,6 @@ func newMACAddress(section *MACAddressSection) *MACAddress {
 	return createAddress(section.ToSectionBase(), NoZone).ToMAC()
 }
 
-// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
-//   constructors GetDottedAddress ToDashedString ToColonDelimitedString and that's it for this file
-
 // NewMACAddress constructs a MAC address or address collection from the given segments.
 func NewMACAddress(section *MACAddressSection) (*MACAddress, addrerr.AddressValueError) {
 	segCount := section.GetSegmentCount()
@@ -74,6 +71,9 @@ func NewMACAddress(section *MACAddressSection) (*MACAddress, addrerr.AddressValu
 	return createAddress(section.ToSectionBase(), NoZone).ToMAC(), nil
 }
 
+// NewMACAddressFromBytes constructs a MAC address from the given byte slice.
+// An error is returned when the byte slice has too many bytes to match the maximum MAC segment count of 8.
+// There should be 8 bytes or less, although extra leading zeros are tolerated.
 func NewMACAddressFromBytes(bytes net.HardwareAddr) (*MACAddress, addrerr.AddressValueError) {
 	section, err := createMACSectionFromBytes(bytes)
 	if err != nil {
@@ -89,11 +89,16 @@ func NewMACAddressFromBytes(bytes net.HardwareAddr) (*MACAddress, addrerr.Addres
 	return createAddress(section.ToSectionBase(), NoZone).ToMAC(), nil
 }
 
+// NewMACAddressFromUint64Ext constructs a 6 or 8-byte MAC address from the given value.
+// If isExtended is true, it is an 8-byte address, 6 otherwise.
+// If 6 bytes, then the bytes are taken from the lower 48 bits of the uint64.
 func NewMACAddressFromUint64Ext(val uint64, isExtended bool) *MACAddress {
 	section := NewMACSectionFromUint64(val, getMacSegCount(isExtended))
 	return createAddress(section.ToSectionBase(), NoZone).ToMAC()
 }
 
+// NewMACAddressFromSegs constructs a MAC address or address collection from the given segments.
+// If the given slice does not have either 6 or 8 segments, an error is returned.
 func NewMACAddressFromSegs(segments []*MACAddressSegment) (*MACAddress, addrerr.AddressValueError) {
 	segsLen := len(segments)
 	if segsLen != MediaAccessControlSegmentCount && segsLen != ExtendedUniqueIdentifier64SegmentCount {
@@ -103,20 +108,26 @@ func NewMACAddressFromSegs(segments []*MACAddressSegment) (*MACAddress, addrerr.
 	return createAddress(section.ToSectionBase(), NoZone).ToMAC(), nil
 }
 
+// NewMACAddressFromVals constructs a 6-byte MAC address from the given values.
 func NewMACAddressFromVals(vals MACSegmentValueProvider) (addr *MACAddress) {
 	return NewMACAddressFromValsExt(vals, false)
 }
 
+// NewMACAddressFromValsExt constructs a 6 or 8-byte MAC address from the given values.
+// If isExtended is true, it will be 8 bytes.
 func NewMACAddressFromValsExt(vals MACSegmentValueProvider, isExtended bool) (addr *MACAddress) {
 	section := NewMACSectionFromVals(vals, getMacSegCount(isExtended))
 	addr = newMACAddress(section)
 	return
 }
 
+// NewMACAddressFromRange constructs a 6-byte MAC address collection from the given values.
 func NewMACAddressFromRange(vals, upperVals MACSegmentValueProvider) (addr *MACAddress) {
 	return NewMACAddressFromRangeExt(vals, upperVals, false)
 }
 
+// NewMACAddressFromRangeExt constructs a 6 or 8-byte MAC address collection from the given values.
+// If isExtended is true, it will be 8 bytes.
 func NewMACAddressFromRangeExt(vals, upperVals MACSegmentValueProvider, isExtended bool) (addr *MACAddress) {
 	section := NewMACSectionFromRange(vals, upperVals, getMacSegCount(isExtended))
 	addr = newMACAddress(section)
@@ -992,7 +1003,7 @@ func (addr MACAddress) Format(state fmt.State, verb rune) {
 	addr.init().format(state, verb)
 }
 
-// GetSegmentStrings returns an array with the strings of each segment being the string that is normalized with wildcards.
+// GetSegmentStrings returns a slice with the string for each segment being the string that is normalized with wildcards.
 func (addr *MACAddress) GetSegmentStrings() []string {
 	if addr == nil {
 		return nil
@@ -1069,6 +1080,10 @@ func (addr *MACAddress) ToBinaryString(with0bPrefix bool) (string, addrerr.Incom
 	return addr.init().toBinaryString(with0bPrefix)
 }
 
+// GetDottedAddress returns an AddressDivisionGrouping which organizes the address into segments of bit-length 16, rather than the more typical 8 bits per segment.
+//
+// If this represents a collection of MAC addresses, this returns an error when unable to join two address segments,
+// the first with a range of values, into a division of the larger bit-length that represents the same set of values.
 func (addr *MACAddress) GetDottedAddress() (*AddressDivisionGrouping, addrerr.IncompatibleAddressError) {
 	return addr.init().GetSection().GetDottedGrouping()
 }
@@ -1089,6 +1104,9 @@ func (addr *MACAddress) ToSpaceDelimitedString() string {
 	return addr.init().GetSection().ToSpaceDelimitedString()
 }
 
+// ToDashedString produces a string delimited by dashes: aa-bb-cc-dd-ee-ff
+// For range segments, '|' is used: 11-22-33|44-55-66
+// It returns the same string as ToCanonicalString.
 func (addr *MACAddress) ToDashedString() string {
 	if addr == nil {
 		return nilString()
@@ -1096,6 +1114,9 @@ func (addr *MACAddress) ToDashedString() string {
 	return addr.init().GetSection().ToDashedString()
 }
 
+// ToColonDelimitedString produces a string delimited by colons: aa:bb:cc:dd:ee:ff
+// For range segments, '-' is used: 11:22:33-44:55:66
+// It returns the same string as ToNormalizedString.
 func (addr *MACAddress) ToColonDelimitedString() string {
 	if addr == nil {
 		return nilString()

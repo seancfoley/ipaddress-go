@@ -72,9 +72,17 @@ type divisionValues interface {
 }
 
 func newDivValues(value, upperValue DivInt, prefLen PrefixLen, bitCount BitCount) *divValues {
+	// TODO does it makes any sense to avoid these checks?  Could have an internal newRangePrefixDivision that avoids them
+	// But we rarely create divisions and division groupings (actually, not as rare as you think, we often create them and covnert them to segments after)
 	if value > upperValue {
 		value, upperValue = upperValue, value
 	}
+	if (1 << uint(bitCount)) <= upperValue {
+		max := ^(^DivInt(0) << uint(bitCount))
+		value &= max
+		upperValue &= max
+	}
+	prefLen = checkPrefLen(prefLen, bitCount)
 	return &divValues{
 		value:      value,
 		upperValue: upperValue,
@@ -353,11 +361,11 @@ func (div *addressDivisionInternal) ContainsSinglePrefixBlock(prefixLen BitCount
 func (div *addressDivisionInternal) GetMinPrefixLenForBlock() BitCount {
 	cache := div.getCache()
 	if cache == nil {
-		return GetMinPrefixLenForBlock(div.getDivisionValue(), div.getUpperDivisionValue(), div.GetBitCount())
+		return getMinPrefixLenForBlock(div.getDivisionValue(), div.getUpperDivisionValue(), div.GetBitCount())
 	}
 	res := cache.minPrefLenForBlock
 	if res == nil {
-		res = cacheBitCount(GetMinPrefixLenForBlock(div.getDivisionValue(), div.getUpperDivisionValue(), div.GetBitCount()))
+		res = cacheBitCount(getMinPrefixLenForBlock(div.getDivisionValue(), div.getUpperDivisionValue(), div.GetBitCount()))
 		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache.minPrefLenForBlock))
 		atomic.StorePointer(dataLoc, unsafe.Pointer(res))
 	}
@@ -541,6 +549,10 @@ func (div *addressDivisionInternal) getCount() *big.Int {
 	}
 	return bigZero().SetUint64((div.getUpperDivisionValue() - div.getDivisionValue()) + 1)
 }
+
+// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
+//     the 5 segment files are next (segment, ipsegment, ipv4/6segment, macsegment), then I don't know what is left, if anything
+//   in here we have IsSinglePrefix, GetPrefixCountLen, GetString, GetWildcardString
 
 func (div *addressDivisionInternal) IsSinglePrefix(divisionPrefixLength BitCount) bool {
 	bitCount := div.GetBitCount()
@@ -914,18 +926,28 @@ func (div *addressDivisionInternal) IsFullRange() bool {
 
 //// end needed for godoc / pkgsite
 
+// NewDivision creates a division of the given bit length, assigning it the given value.
+// If the value's bit length exceeds the given bit length, it is truncated.
 func NewDivision(val DivInt, bitCount BitCount) *AddressDivision {
 	return NewRangePrefixDivision(val, val, nil, bitCount)
 }
 
+// NewRangeDivision creates a division of the given bit length, assigning it the given value range.
+// If a value's bit length exceeds the given bit length, it is truncated.
 func NewRangeDivision(val, upperVal DivInt, bitCount BitCount) *AddressDivision {
 	return NewRangePrefixDivision(val, upperVal, nil, bitCount)
 }
 
+// NewPrefixDivision creates a division of the given bit length, assigning it the given value and prefix length.
+// If the value's bit length exceeds the given bit length, it is truncated.
+// If the prefix length exceeds the bit length, it is adjusted to the bit length.  If the prefix length is negative, it is adjusted to zero.
 func NewPrefixDivision(val DivInt, prefixLen PrefixLen, bitCount BitCount) *AddressDivision {
 	return NewRangePrefixDivision(val, val, prefixLen, bitCount)
 }
 
+// NewRangePrefixDivision creates a division of the given bit length, assigning it the given value range and prefix length.
+// If a value's bit length exceeds the given bit length, it is truncated.
+// If the prefix length exceeds the bit length, it is adjusted to the bit length.  If the prefix length is negative, it is adjusted to zero.
 func NewRangePrefixDivision(val, upperVal DivInt, prefixLen PrefixLen, bitCount BitCount) *AddressDivision {
 	return &AddressDivision{
 		addressDivisionInternal{
@@ -935,6 +957,8 @@ func NewRangePrefixDivision(val, upperVal DivInt, prefixLen PrefixLen, bitCount 
 }
 
 // AddressDivision represents an arbitrary division in an address or address division grouping.
+// It can contain a range of values and it has an assigned bit length.
+// Like all address components, it is immutable.
 // Divisions that were converted from IPv4, IPv6 or MAC segments can be converted back to the same segment type and version.
 // Divisions that were not converted from IPv4, IPv6 or MAC cannot be converted to segments.
 type AddressDivision struct {

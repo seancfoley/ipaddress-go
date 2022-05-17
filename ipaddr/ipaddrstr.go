@@ -25,7 +25,7 @@ import (
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrstrparam"
 )
 
-// NewIPAddressStringParams constructs an IPAddressString that will parse the given string according to the given parameters
+// NewIPAddressStringParams constructs an IPAddressString that will parse the given string according to the given parameters.
 func NewIPAddressStringParams(str string, params addrstrparam.IPAddressStringParams) *IPAddressString {
 	var p addrstrparam.IPAddressStringParams
 	if params == nil {
@@ -36,7 +36,7 @@ func NewIPAddressStringParams(str string, params addrstrparam.IPAddressStringPar
 	return &IPAddressString{str: strings.TrimSpace(str), params: p, ipAddrStringCache: new(ipAddrStringCache)}
 }
 
-// NewIPAddressString constructs an IPAddressString
+// NewIPAddressString constructs an IPAddressString.
 func NewIPAddressString(str string) *IPAddressString {
 	return &IPAddressString{str: strings.TrimSpace(str), params: defaultIPAddrParameters, ipAddrStringCache: new(ipAddrStringCache)}
 }
@@ -341,10 +341,10 @@ func (addrStr *IPAddressString) toNormalizedString(addressProvider ipAddressProv
 	return
 }
 
-// IsValid returns whether this is a valid address string format.
+// IsValid returns whether this is a valid IP address string format.
 // The accepted IP address formats are:
-// an IPv4 address, an IPv6 address, the address representing all addresses of all types, or an empty string.
-// If this method returns false, and you want more details, call Validate() and examine the thrown exception.
+// an IPv4 address or subnet, an IPv6 address or subnet, the address representing all addresses of both versions, or an empty string.
+// If this method returns false, and you want more details, call Validate and examine the error.
 func (addrStr *IPAddressString) IsValid() bool {
 	if addrStr.ipAddrStringCache == nil /* zero address is valid */ {
 		return true
@@ -356,11 +356,11 @@ func (addrStr *IPAddressString) IsValid() bool {
 	return !provider.isInvalid()
 }
 
-// GetAddress returns the IP address if this IPAddressString represents an ip address.  Otherwise, it returns nil.
+// GetAddress returns the IP address if this IPAddressString is a valid string representing an IP address or subnet.  Otherwise, it returns nil.
 //
 // Use ToAddress for an equivalent method that returns an error when the format is invalid.
 //
-// If you have a prefixed address and you wish to get only the host without the prefix, use GetHostAddress
+// If you have a prefixed address and you wish to get only the host without the prefix, use GetHostAddress.
 func (addrStr *IPAddressString) GetAddress() *IPAddress {
 	provider, err := addrStr.getAddressProvider()
 	if err != nil {
@@ -372,7 +372,7 @@ func (addrStr *IPAddressString) GetAddress() *IPAddress {
 
 // ToAddress produces the IPAddress corresponding to this IPAddressString.
 //
-// If this object does not represent a specific IPAddress or a ranged IPAddress, nil is returned
+// If this object does not represent a specific IPAddress or a subnet, nil is returned
 //
 // If the string used to construct this object is not a known format (empty string, address, or range of addresses) then this method returns an error.
 //
@@ -380,7 +380,7 @@ func (addrStr *IPAddressString) GetAddress() *IPAddress {
 //
 // If you have a prefixed address and you wish to get only the host rather than the address with the prefix, use ToHostAddress.
 //
-// The error can be addrerr.AddressStringError oraddrerr.IncompatibleAddressError
+// The error can be addrerr.AddressStringError or addrerr.IncompatibleAddressError
 func (addrStr *IPAddressString) ToAddress() (*IPAddress, addrerr.AddressError) {
 	provider, err := addrStr.getAddressProvider()
 	if err != nil {
@@ -425,7 +425,7 @@ func (addrStr *IPAddressString) ToVersionedAddress(version IPVersion) (*IPAddres
 }
 
 // GetHostAddress parses the address while ignoring the prefix length or mask.
-// GetHostAddress returns nil for an invalid string.  If you wish to receive an error instead, use ToHostAddress
+// GetHostAddress returns nil for an invalid string.  If you wish to receive an error instead, use ToHostAddress.
 func (addrStr *IPAddressString) GetHostAddress() *IPAddress {
 	provider, err := addrStr.getAddressProvider()
 	if err != nil {
@@ -436,8 +436,9 @@ func (addrStr *IPAddressString) GetHostAddress() *IPAddress {
 }
 
 // ToHostAddress parses the address while ignoring the prefix length or mask.
-// The error can be addrerr.AddressStringError oraddrerr.IncompatibleAddressError.
+// The error can be addrerr.AddressStringError for invalid strings or addrerr.IncompatibleAddressError.
 // GetHostAddress is similar but does not return errors.
+// Standard address formats do not result in errors.
 func (addrStr *IPAddressString) ToHostAddress() (*IPAddress, addrerr.AddressError) {
 	provider, err := addrStr.getAddressProvider()
 	if err != nil {
@@ -523,6 +524,8 @@ func (addrStr *IPAddressString) Validate() addrerr.AddressStringError {
 	return data.validateException
 }
 
+// ValidateVersion validates that this string is a valid IP address of the given version.
+// If it is, it returns nil, otherwise it returns an error with a descriptive message indicating why it is not.
 func (addrStr *IPAddressString) ValidateVersion(version IPVersion) addrerr.AddressStringError {
 	addrStr = addrStr.init()
 	err := addrStr.Validate()
@@ -795,10 +798,17 @@ func (addrStr *IPAddressString) AdjustPrefixLen(adjustment BitCount) (*IPAddress
 	return addr.ToAddressString(), nil
 }
 
+// Wrap wraps this address string, returning a WrappedIPAddressString as an implementation of ExtendedIdentifierString,
+// which can be used to write code that works with different host identifier types polymorphically.
 func (addrStr *IPAddressString) Wrap() ExtendedIdentifierString {
 	return WrappedIPAddressString{addrStr}
 }
 
+// ValidatePrefixLenStr validates that the string represents a valid prefix length, such as "24".
+// The string should not include a beginning '/' character.
+// If invalid, it returns an error with an appropriate message.
+// You can specify the IP version or IndeterminateIPVersion if unknown.
+// An error is returned if the format is invalid.
 func ValidatePrefixLenStr(str string, version IPVersion) (prefixLen PrefixLen, err addrerr.AddressStringError) {
 	return validator.validatePrefixLenStr(str, version)
 }

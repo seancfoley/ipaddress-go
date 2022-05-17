@@ -92,10 +92,12 @@ func (key *IPv4AddressKey) ToAddress() *IPv4Address {
 	return newIPv4AddressFromPrefixedSingle(key.Val, key.UpperVal, key.Prefix.ToPrefixLen())
 }
 
+// ToIPKey converts to key that can be used for both IPv4 and IPv6
 func (key *IPv4AddressKey) ToIPKey() *IPAddressKey {
 	return (*IPAddressKey)(unsafe.Pointer(key.ToBaseKey()))
 }
 
+// ToBaseKey converts to key that can be used for any address type or version
 func (key *IPv4AddressKey) ToBaseKey() *AddressKey {
 	baseKey := &AddressKey{Prefix: key.Prefix, SegmentCount: IPv4SegmentCount, Scheme: IPv4Scheme}
 	for i, val := range key.Values {
@@ -106,6 +108,7 @@ func (key *IPv4AddressKey) ToBaseKey() *AddressKey {
 
 }
 
+// String calls the String method in the corresponding address
 func (key *IPv4AddressKey) String() string {
 	return key.ToAddress().String()
 }
@@ -152,10 +155,12 @@ func (key *IPv6AddressKey) ToAddress() *IPv6Address {
 	return newIPv6AddressFromPrefixedSingle(key.Val, key.UpperVal, key.Prefix.ToPrefixLen(), key.Zone.String())
 }
 
+// ToIPKey converts to key that can be used for both IPv4 and IPv6
 func (key *IPv6AddressKey) ToIPKey() *IPAddressKey {
 	return (*IPAddressKey)(unsafe.Pointer(key.ToBaseKey()))
 }
 
+// ToBaseKey converts to key that can be used for any address type or version
 func (key *IPv6AddressKey) ToBaseKey() *AddressKey {
 	baseKey := &AddressKey{Prefix: key.Prefix, SegmentCount: IPv6SegmentCount, Zone: key.Zone, Scheme: IPv6Scheme}
 	for i, val := range key.Values {
@@ -165,6 +170,7 @@ func (key *IPv6AddressKey) ToBaseKey() *AddressKey {
 	return baseKey
 }
 
+// String calls the String method in the corresponding address
 func (key *IPv6AddressKey) String() string {
 	return key.ToAddress().String()
 }
@@ -203,6 +209,7 @@ func (key *MACAddressKey) ToAddress() *MACAddress {
 	return res
 }
 
+// ToBaseKey converts to key that can be used for any address type or version
 func (key *MACAddressKey) ToBaseKey() *AddressKey {
 	baseKey := &AddressKey{Prefix: key.Prefix, SegmentCount: key.SegmentCount, Scheme: EUIScheme}
 	for i, val := range key.Values {
@@ -212,6 +219,7 @@ func (key *MACAddressKey) ToBaseKey() *AddressKey {
 	return baseKey
 }
 
+// String calls the String method in the corresponding MAC address
 func (key *MACAddressKey) String() string {
 	return key.ToAddress().String()
 }
@@ -273,6 +281,7 @@ func (key *AddressKey) ToAddress() *Address {
 	return nil
 }
 
+// String calls the String method in the corresponding address
 func (key *AddressKey) String() string {
 	return key.ToAddress().String()
 }
@@ -303,6 +312,7 @@ func (key *IPv4AddressSeqRangeKey) ToSeqRange() *IPv4AddressSeqRange {
 	return NewIPv4SeqRange(key.lower.ToAddress(), key.upper.ToAddress())
 }
 
+// String calls the String method in the corresponding sequential range
 func (key *IPv4AddressSeqRangeKey) String() string {
 	return key.ToSeqRange().String()
 }
@@ -320,6 +330,7 @@ func (key *IPv6AddressSeqRangeKey) ToSeqRange() *IPv6AddressSeqRange {
 	return NewIPv6SeqRange(key.lower.ToAddress(), key.upper.ToAddress())
 }
 
+// String calls the String method in the corresponding sequential range
 func (key *IPv6AddressSeqRangeKey) String() string {
 	return key.ToSeqRange().String()
 }
@@ -332,6 +343,7 @@ type IPAddressSeqRangeKey struct {
 	lower, upper IPAddressKey
 }
 
+// String calls the String method in the corresponding sequential range
 func (key *IPAddressSeqRangeKey) String() string {
 	return key.ToSeqRange().String()
 }

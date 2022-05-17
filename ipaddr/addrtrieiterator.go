@@ -95,7 +95,7 @@ func (iter cachingAddressTrieNodeIterator) Remove() *AddressTrieNode {
 //////////////////////////////////////////////////////////////////
 //////
 
-// AssociativeAddressTrieNodeIteratorRem iterates through an associative address trie, until both Next() returns nil and HasNext() returns false.
+// AssociativeAddressTrieNodeIteratorRem iterates through an associative address trie, until both Next returns nil and HasNext returns false.
 // It also allows you to remove the last visited node.
 type AssociativeAddressTrieNodeIteratorRem interface {
 	AssociativeAddressTrieNodeIterator
@@ -105,7 +105,7 @@ type AssociativeAddressTrieNodeIteratorRem interface {
 	Remove() *AssociativeAddressTrieNode
 }
 
-// AssociativeAddressTrieNodeIterator iterates through an associative address trie, until both Next() returns nil and HasNext() returns false
+// AssociativeAddressTrieNodeIterator iterates through an associative address trie, until both Next returns nil and HasNext returns false
 type AssociativeAddressTrieNodeIterator interface {
 	HasNext
 

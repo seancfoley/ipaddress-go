@@ -17,7 +17,7 @@ package ipaddr
 
 import "github.com/seancfoley/bintree/tree"
 
-// MACTrieNodeIteratorRem iterates through an MAC address trie, until both Next() returns nil and HasNext() returns false.
+// MACTrieNodeIteratorRem iterates through a MAC address trie, until both Next returns nil and HasNext returns false.
 // The iterator also allows you to remove the last visited node.
 type MACTrieNodeIteratorRem interface {
 	MACTrieNodeIterator
@@ -27,7 +27,7 @@ type MACTrieNodeIteratorRem interface {
 	Remove() *MACAddressTrieNode
 }
 
-// MACTrieNodeIteratorRem iterates through an MAC address trie, until both Next() returns nil and HasNext() returns false
+// MACTrieNodeIterator iterates through a MAC address trie, until both Next returns nil and HasNext returns false
 type MACTrieNodeIterator interface {
 	HasNext
 
@@ -74,7 +74,7 @@ func (iter cachingMACTrieNodeIterator) Remove() *MACAddressTrieNode {
 //////////////////////////////////////////////////////////////////
 //////
 
-// MACAssociativeTrieNodeIteratorRem iterates through an MAC associative address trie, until both Next() returns nil and HasNext() returns false
+// MACAssociativeTrieNodeIteratorRem iterates through an MAC associative address trie, until both Next returns nil and HasNext returns false
 type MACAssociativeTrieNodeIteratorRem interface {
 	MACAssociativeTrieNodeIterator
 
@@ -83,7 +83,7 @@ type MACAssociativeTrieNodeIteratorRem interface {
 	Remove() *MACAddressAssociativeTrieNode
 }
 
-// MACAssociativeTrieNodeIterator iterates through an MAC associative address trie, until both Next() returns nil and HasNext() returns false
+// MACAssociativeTrieNodeIterator iterates through an MAC associative address trie, until both Next returns nil and HasNext returns false
 type MACAssociativeTrieNodeIterator interface {
 	HasNext
 

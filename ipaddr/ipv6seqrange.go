@@ -33,6 +33,11 @@ func NewIPv6SeqRange(one, two *IPv6Address) *IPv6AddressSeqRange {
 
 var zeroIPv6Range = NewIPv6SeqRange(zeroIPv6, zeroIPv6)
 
+// IPv6AddressSeqRange represents an arbitrary range of consecutive IPv6 addresses.
+//
+// The zero value is a range from :: to ::.
+//
+// See IPAddressSeqRange for more details.
 type IPv6AddressSeqRange struct {
 	ipAddressSeqRangeInternal
 }
@@ -339,6 +344,7 @@ func (rng *IPv6AddressSeqRange) ToIP() *IPAddressSeqRange {
 	return (*IPAddressSeqRange)(rng)
 }
 
+// Overlaps returns true if this sequential range overlaps with the given sequential range.
 func (rng *IPv6AddressSeqRange) Overlaps(other *IPv6AddressSeqRange) bool {
 	return rng.init().overlaps(other.ToIP())
 }

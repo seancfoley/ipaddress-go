@@ -77,7 +77,7 @@ type macAddrStringCache struct {
 //
 // Ranges are supported:
 //
-//  • wildcards '*' and ranges '-' (for example 1:*:1-3:1-4:5:6), useful for working with subnets
+//  • wildcards '*' and ranges '-' (for example 1:*:1-3:1-4:5:6), useful for working with MAC address collections
 //  • SQL wildcards '%" and "_", although '%' is considered an SQL wildcard only when it is not considered an IPv6 zone indicator
 //
 //
@@ -149,6 +149,9 @@ func (addrStr *MACAddressString) ToNormalizedString() string {
 	return addrStr.String()
 }
 
+// GetAddress returns the MAC address if this MACAddressString is a valid string representing a MAC address or address collection.  Otherwise, it returns nil.
+//
+// Use ToAddress for an equivalent method that returns an error when the format is invalid.
 func (addrStr *MACAddressString) GetAddress() *MACAddress {
 	provider, err := addrStr.getAddressProvider()
 	if err != nil {
@@ -158,6 +161,15 @@ func (addrStr *MACAddressString) GetAddress() *MACAddress {
 	return addr
 }
 
+// ToAddress produces the MACAddress corresponding to this MACAddressString.
+//
+// If this object does not represent a specific MACAddress or address collection, nil is returned.
+//
+// If the string used to construct this object is not a known format (empty string, address, or range of addresses) then this method returns an error.
+//
+// An equivalent method that does not return the error is GetAddress.
+//
+// The error can be addrerr.AddressStringError for an invalid string, or addrerr.IncompatibleAddressError for non-standard strings that cannot be converted to MACAddress.
 func (addrStr *MACAddressString) ToAddress() (*MACAddress, addrerr.AddressError) {
 	provider, err := addrStr.getAddressProvider()
 	if err != nil {
@@ -206,6 +218,10 @@ func (addrStr *MACAddressString) IsZero() bool {
 	return addr != nil && addr.IsZero()
 }
 
+// IsValid returns whether this is a valid MAC address string format.
+// The accepted MAC address formats are:
+// a MAC address or address collection, the address representing all MAC addresses, or an empty string.
+// If this method returns false, and you want more details, call Validate and examine the error.
 func (addrStr *MACAddressString) IsValid() bool {
 	return addrStr.Validate() == nil
 }
@@ -266,6 +282,7 @@ func (addrStr *MACAddressString) Compare(other *MACAddressString) int {
 	return strings.Compare(addrStr.String(), other.String())
 }
 
+// Equal returns whether this MACAddressString is equal to the given one.
 // Two MACAddressString objects are equal if they represent the same set of addresses.
 //
 // If a MACAddressString is invalid, it is equal to another address only if the other address was constructed from the same string.
@@ -312,6 +329,8 @@ func (addrStr *MACAddressString) Equal(other *MACAddressString) bool {
 	return false
 }
 
+// Wrap wraps this address string, returning a WrappedMACAddressString as an implementation of ExtendedIdentifierString,
+// which can be used to write code that works with different host identifier types polymorphically.
 func (addrStr *MACAddressString) Wrap() ExtendedIdentifierString {
 	return WrappedMACAddressString{addrStr}
 }

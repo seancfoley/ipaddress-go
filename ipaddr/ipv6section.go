@@ -1757,7 +1757,7 @@ func (section *IPv6AddressSection) toNormalizedMixedString(mixedParams *ipv6v4Mi
 	return result, nil
 }
 
-// GetSegmentStrings returns an array with the strings of each segment being the string that is normalized with wildcards.
+// GetSegmentStrings returns a slice with the string for each segment being the string that is normalized with wildcards.
 func (section *IPv6AddressSection) GetSegmentStrings() []string {
 	if section == nil {
 		return nil

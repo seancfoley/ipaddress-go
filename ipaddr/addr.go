@@ -1694,7 +1694,7 @@ func (addr *Address) String() string {
 	return addr.init().toString()
 }
 
-// GetSegmentStrings returns an array with the strings of each segment being the string that is normalized with wildcards.
+// GetSegmentStrings returns a slice with the string for each segment being the string that is normalized with wildcards.
 func (addr *Address) GetSegmentStrings() []string {
 	if addr == nil {
 		return nil

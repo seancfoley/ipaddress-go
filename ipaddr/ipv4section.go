@@ -1306,6 +1306,7 @@ func (section *IPv4AddressSection) ToCompressedWildcardString() string {
 
 // ToInetAtonString returns a string with a format that is styled from the inet_aton routine.
 // The string can have an octal or hexadecimal radix rather than decimal.
+// When using octal, the octal segments each have a leading zero prefix of "0", and when using hex, a prefix of "0x".
 func (section *IPv4AddressSection) ToInetAtonString(radix Inet_aton_radix) string {
 	if section == nil {
 		return nilString()
@@ -1334,7 +1335,13 @@ func (section *IPv4AddressSection) ToInetAtonString(radix Inet_aton_radix) strin
 
 // ToInetAtonJoinedString returns a string with a format that is styled from the inet_aton routine.
 // The string can have an octal or hexadecimal radix rather than decimal,
-// and can have less than the typical four IPv4 segments.
+// and can have less than the typical four IPv4 segments by joining the least significant segments together,
+// resulting in a string which just 1, 2 or 3 divisions.
+//
+// When using octal, the octal segments each have a leading zero prefix of "0", and when using hex, a prefix of "0x".
+//
+// If this represents a subnet section, this returns an error when unable to join two or more segments
+// into a division of a larger bit-length that represents the same set of values.
 func (section *IPv4AddressSection) ToInetAtonJoinedString(radix Inet_aton_radix, joinedCount int) (string, addrerr.IncompatibleAddressError) {
 	if section == nil {
 		return nilString(), nil
@@ -1353,6 +1360,14 @@ func (section *IPv4AddressSection) ToInetAtonJoinedString(radix Inet_aton_radix,
 	return section.ToNormalizedJoinedString(stringParams, joinedCount)
 }
 
+// ToNormalizedJoinedString returns a string with a format that is styled from the inet_aton routine.
+// The string can have less than the typical four IPv4 segments by joining the least significant segments together,
+// resulting in a string which just 1, 2 or 3 divisions.
+//
+// The method accepts an argument of string options as well, allowing callers to customize the string in other ways as well.
+//
+// If this represents a subnet section, this returns an error when unable to join two or more segments
+// into a division of a larger bit-length that represents the same set of values.
 func (section *IPv4AddressSection) ToNormalizedJoinedString(stringParams addrstr.IPStringOptions, joinedCount int) (string, addrerr.IncompatibleAddressError) {
 	if section == nil {
 		return nilString(), nil
@@ -1367,6 +1382,12 @@ func (section *IPv4AddressSection) ToNormalizedJoinedString(stringParams addrstr
 	return toNormalizedIPString(stringParams, equivalentPart), nil
 }
 
+// ToJoinedSegments returns an AddressDivisionSeries which organizes the address section by joining the least significant segments together.
+// If joined count is not a positive number, or this section has less than 2 segments, then this returns the original receiver section.
+// Otherwise this returns an AddressDivisionGrouping in which the last division is the division created by joining two or more segments.
+//
+// If this represents a subnet section, this returns an error when unable to join address segments,
+// one of the first with a range of values, into a division of the larger bit-length that represents the same set of values.
 func (section *IPv4AddressSection) ToJoinedSegments(joinCount int) (AddressDivisionSeries, addrerr.IncompatibleAddressError) {
 	thisCount := section.GetSegmentCount()
 	if joinCount <= 0 || thisCount <= 1 {
@@ -1434,7 +1455,7 @@ func (section *IPv4AddressSection) String() string {
 	return section.toString()
 }
 
-// GetSegmentStrings returns an array with the strings of each segment being the string that is normalized with wildcards.
+// GetSegmentStrings returns a slice with the string for each segment being the string that is normalized with wildcards.
 func (section *IPv4AddressSection) GetSegmentStrings() []string {
 	if section == nil {
 		return nil

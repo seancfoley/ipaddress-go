@@ -181,6 +181,7 @@ func (it *delimitedStringsIterator) increment() {
 	it.done = true
 }
 
+// StringIterator iterates through strings
 type StringIterator interface {
 	HasNext
 	Next() string

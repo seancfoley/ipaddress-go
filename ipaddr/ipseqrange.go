@@ -435,7 +435,7 @@ func (rng *ipAddressSeqRangeInternal) GetMinPrefixLenForBlock() BitCount {
 	for i := count - 1; i >= 0; i-- {
 		lowerSeg := lower.GetSegment(i)
 		upperSeg := upper.GetSegment(i)
-		segPrefix := GetMinPrefixLenForBlock(lowerSeg.getDivisionValue(), upperSeg.getDivisionValue(), segBitCount)
+		segPrefix := getMinPrefixLenForBlock(lowerSeg.getDivisionValue(), upperSeg.getDivisionValue(), segBitCount)
 		if segPrefix == segBitCount {
 			break
 		} else {
@@ -723,6 +723,19 @@ func (rng *ipAddressSeqRangeInternal) rangeIterator(
 
 var zeroRange = newSeqRange(zeroIPAddr, zeroIPAddr)
 
+// IPAddressSeqRange represents an arbitrary range of consecutive IP addresses.
+//
+// Note that IPAddress and IPAddressString allow you to specify a range of values for each segment.
+// That allows you to represent single addresses, any address CIDR prefix subnet (eg 1.2.0.0/16 or 1:2:3:4::/64) or any subnet that can be represented with segment ranges (1.2.0-255.* or 1:2:3:4:*), see
+// IPAddressString for details.
+//
+// IPAddressString and IPAddress cover all potential subnets and addresses that can be represented by a single address string of 4 or less segments for IPv4, and 8 or less segments for IPv6.
+//
+// This class allows the representation of any sequential address range, including those that cannot be represented by IPAddress.
+//
+// String representations include the full address for both the lower and upper bounds of the range.
+//
+// The zero value is a range from the zero IPAddress to itself.
 type IPAddressSeqRange struct {
 	ipAddressSeqRangeInternal
 }
@@ -993,6 +1006,7 @@ func (rng *IPAddressSeqRange) ToIPv6() *IPv6AddressSeqRange {
 	return nil
 }
 
+// Overlaps returns true if this sequential range overlaps with the given sequential range.
 func (rng *IPAddressSeqRange) Overlaps(other *IPAddressSeqRange) bool {
 	return rng.init().overlaps(other)
 }
@@ -1205,7 +1219,14 @@ func compareLowIPAddressValues(one, two *IPAddress) int {
 	return LowValueComparator.CompareAddresses(one, two)
 }
 
-func GetMinPrefixLenForBlock(lower, upper DivInt, bitCount BitCount) BitCount {
+// getMinPrefixLenForBlock returns the smallest prefix length such that the upper and lower values span the block of values for that prefix length.
+// The given bit count indicates the bits that matter in the two values, the remaining bits are ignored.
+//
+// If the entire range can be described this way, then this method returns the same value as GetPrefixLenForSingleBlock.
+//
+// There may be a single prefix, or multiple possible prefix values in this item for the returned prefix length.
+// Use getPrefixLenForSingleBlock to avoid the case of multiple prefix values.
+func getMinPrefixLenForBlock(lower, upper DivInt, bitCount BitCount) BitCount {
 	if lower == upper {
 		return bitCount
 	} else if lower == 0 {
@@ -1231,8 +1252,17 @@ func GetMinPrefixLenForBlock(lower, upper DivInt, bitCount BitCount) BitCount {
 	return result
 }
 
+// getPrefixLenForSingleBlock returns a prefix length for which the given lower and upper values share the same prefix,
+// and the range spanned by those values matches exactly the block of all values for that prefix.
+// The given bit count indicates the bits that matter in the two values, the remaining bits are ignored.
+//
+// If the range can be described this way, then this method returns the same value as GetMinPrefixLenForBlock.
+//
+// If no such prefix length exists, returns nil.
+//
+// If lower and upper values are the same, this returns the bit count.
 func GetPrefixLenForSingleBlock(lower, upper DivInt, bitCount BitCount) PrefixLen {
-	prefixLen := GetMinPrefixLenForBlock(lower, upper, bitCount)
+	prefixLen := getMinPrefixLenForBlock(lower, upper, bitCount)
 	if prefixLen == bitCount {
 		if lower == upper {
 			return cacheBitCount(prefixLen)

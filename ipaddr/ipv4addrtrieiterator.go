@@ -17,7 +17,7 @@ package ipaddr
 
 import "github.com/seancfoley/bintree/tree"
 
-// IPv4TrieNodeIteratorRem iterates through an IPv4 address trie, until both Next() returns nil and HasNext() returns false
+// IPv4TrieNodeIteratorRem iterates through an IPv4 address trie, until both Next returns nil and HasNext returns false
 // The iterator also allows you to remove the last visited node.
 type IPv4TrieNodeIteratorRem interface {
 	IPv4TrieNodeIterator
@@ -27,7 +27,7 @@ type IPv4TrieNodeIteratorRem interface {
 	Remove() *IPv4AddressTrieNode
 }
 
-// IPv4TrieNodeIteratorRem iterates through an IPv4 address trie, until both Next() returns nil and HasNext() returns false
+// IPv4TrieNodeIteratorRem iterates through an IPv4 address trie, until both Next returns nil and HasNext returns false
 type IPv4TrieNodeIterator interface {
 	HasNext
 
@@ -74,7 +74,7 @@ func (iter cachingIPv4TrieNodeIterator) Remove() *IPv4AddressTrieNode {
 //////////////////////////////////////////////////////////////////
 //////
 
-// IPv4AssociativeTrieNodeIteratorRem iterates through an IPv4 associative address trie, until both Next() returns nil and HasNext() returns false.
+// IPv4AssociativeTrieNodeIteratorRem iterates through an IPv4 associative address trie, until both Next returns nil and HasNext returns false.
 // The iterator also allows you to remove the last added node.
 type IPv4AssociativeTrieNodeIteratorRem interface {
 	IPv4AssociativeTrieNodeIterator
@@ -84,7 +84,7 @@ type IPv4AssociativeTrieNodeIteratorRem interface {
 	Remove() *IPv4AddressAssociativeTrieNode
 }
 
-// IPv4AssociativeTrieNodeIteratorRem iterates through an IPv4 associative address trie, until both Next() returns nil and HasNext() returns false
+// IPv4AssociativeTrieNodeIteratorRem iterates through an IPv4 associative address trie, until both Next returns nil and HasNext returns false
 type IPv4AssociativeTrieNodeIterator interface {
 	HasNext
 

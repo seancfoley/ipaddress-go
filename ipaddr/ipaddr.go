@@ -1862,7 +1862,7 @@ func (addr *IPAddress) ReverseSegments() *IPAddress {
 	return addr.init().reverseSegments().ToIP()
 }
 
-// GetSegmentStrings returns an array with the strings of each segment being the string that is normalized with wildcards.
+// GetSegmentStrings returns a slice with the string for each segment being the string that is normalized with wildcards.
 func (addr *IPAddress) GetSegmentStrings() []string {
 	if addr == nil {
 		return nil

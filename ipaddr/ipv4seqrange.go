@@ -31,6 +31,11 @@ func NewIPv4SeqRange(one, two *IPv4Address) *IPv4AddressSeqRange {
 
 var zeroIPv4Range = NewIPv4SeqRange(zeroIPv4, zeroIPv4)
 
+// IPv4AddressSeqRange represents an arbitrary range of consecutive IPv4 addresses.
+//
+// The zero value is a range from 0.0.0.0 to 0.0.0.0.
+//
+// See IPAddressSeqRange for more details.
 type IPv4AddressSeqRange struct {
 	ipAddressSeqRangeInternal
 }
@@ -337,6 +342,7 @@ func (rng *IPv4AddressSeqRange) ToIP() *IPAddressSeqRange {
 	return (*IPAddressSeqRange)(rng)
 }
 
+// Overlaps returns true if this sequential range overlaps with the given sequential range.
 func (rng *IPv4AddressSeqRange) Overlaps(other *IPv4AddressSeqRange) bool {
 	return rng.init().overlaps(other.ToIP())
 }

@@ -41,9 +41,6 @@ func createMACSection(segments []*AddressDivision) *MACAddressSection {
 	}
 }
 
-// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
-//   constructors GetDottedGrouping ToDashedString ToColonDelimitedString
-
 // NewMACSection constructs a MAC address or address collection section from the given segments.
 func NewMACSection(segments []*MACAddressSegment) *MACAddressSection {
 	return createMACSectionFromSegs(segments)
@@ -101,6 +98,8 @@ func newMACSectionEUI(segments []*AddressDivision) (res *MACAddressSection) {
 	return
 }
 
+// NewMACSectionFromBytes constructs a MAC address section from the given byte slice.
+// The segment count is determined by the slice length, even if the segment count exceeds 8 segments.
 func NewMACSectionFromBytes(bytes []byte, segmentCount int) (res *MACAddressSection, err addrerr.AddressValueError) {
 	if segmentCount < 0 {
 		segmentCount = len(bytes)
@@ -127,14 +126,16 @@ func NewMACSectionFromBytes(bytes []byte, segmentCount int) (res *MACAddressSect
 	return
 }
 
-func NewMACSectionFromUint64(bytes uint64, segmentCount int) (res *MACAddressSection) {
+// NewMACSectionFromUint64 constructs a MAC address section of the given segment count from the given value.
+// The least significant bits of the given value will be used.
+func NewMACSectionFromUint64(val uint64, segmentCount int) (res *MACAddressSection) {
 	if segmentCount < 0 {
 		segmentCount = MediaAccessControlSegmentCount
 	}
 	segments := createSegmentsUint64(
 		segmentCount,
 		0,
-		uint64(bytes),
+		val,
 		MACBytesPerSegment,
 		MACBitsPerSegment,
 		macNetwork.getAddressCreator(),
@@ -144,11 +145,13 @@ func NewMACSectionFromUint64(bytes uint64, segmentCount int) (res *MACAddressSec
 	return
 }
 
+// NewMACSectionFromVals constructs a MAC address section of the given segment count from the given values.
 func NewMACSectionFromVals(vals MACSegmentValueProvider, segmentCount int) (res *MACAddressSection) {
 	res = NewMACSectionFromRange(vals, nil, segmentCount)
 	return
 }
 
+// NewMACSectionFromRange constructs a MAC address collection section of the given segment count from the given values.
 func NewMACSectionFromRange(vals, upperVals MACSegmentValueProvider, segmentCount int) (res *MACAddressSection) {
 	if segmentCount < 0 {
 		segmentCount = 0
@@ -168,6 +171,9 @@ func NewMACSectionFromRange(vals, upperVals MACSegmentValueProvider, segmentCoun
 	return
 }
 
+// MACAddressSection is a section of a MACAddress.
+//
+// It is a series of 0 to 8 individual MAC address segments.
 type MACAddressSection struct {
 	addressSectionInternal
 }
@@ -782,6 +788,10 @@ func (section *MACAddressSection) ToDottedString() (string, addrerr.Incompatible
 		})
 }
 
+// GetDottedGrouping returns an AddressDivisionGrouping which organizes the address section into segments of bit-length 16, rather than the more typical 8 bits per segment.
+//
+// If this represents a collection of MAC addresses, this returns an error when unable to join two address segments,
+// the first with a range of values, into a division of the larger bit-length that represents the same set of values.
 func (section *MACAddressSection) GetDottedGrouping() (*AddressDivisionGrouping, addrerr.IncompatibleAddressError) {
 	segmentCount := section.GetSegmentCount()
 	var newSegs []*AddressDivision
@@ -830,6 +840,9 @@ func (section *MACAddressSection) ToSpaceDelimitedString() string {
 		})
 }
 
+// ToDashedString produces a string delimited by dashes: aa-bb-cc-dd-ee-ff.
+// For range segments, '|' is used: 11-22-33|44-55-66
+// It returns the same string as ToCanonicalString.
 func (section *MACAddressSection) ToDashedString() string {
 	if section == nil {
 		return nilString()
@@ -837,6 +850,9 @@ func (section *MACAddressSection) ToDashedString() string {
 	return section.ToCanonicalString()
 }
 
+// ToColonDelimitedString produces a string delimited by colons: aa:bb:cc:dd:ee:ff
+// For range segments, '-' is used: 11:22:33-44:55:66
+// It returns the same string as ToNormalizedString.
 func (section *MACAddressSection) ToColonDelimitedString() string {
 	if section == nil {
 		return nilString()
@@ -852,7 +868,7 @@ func (section *MACAddressSection) String() string {
 	return section.toString()
 }
 
-// GetSegmentStrings returns an array with the strings of each segment being the string that is normalized with wildcards.
+// GetSegmentStrings returns a slice with the string for each segment being the string that is normalized with wildcards.
 func (section *MACAddressSection) GetSegmentStrings() []string {
 	if section == nil {
 		return nil

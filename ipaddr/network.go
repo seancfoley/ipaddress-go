@@ -27,6 +27,7 @@ type addressNetwork interface {
 	getAddressCreator() parsedAddressCreator
 }
 
+// IPAddressNetwork represents a network of addresses of a single IP version providing a collection of standard address components for that version, such as masks and loopbacks.
 type IPAddressNetwork interface {
 	GetLoopback() *IPAddress
 

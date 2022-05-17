@@ -51,7 +51,7 @@ func createInitializedGrouping(divs []*AddressDivision, prefixLength PrefixLen) 
 	return result
 }
 
-// Creates an arbitrary grouping of divisions.
+// NewDivisionGrouping creates an arbitrary grouping of divisions.
 // To create address sections or addresses, use the constructors that are specific to the address version or type.
 // The AddressDivision instances can be created with the NewDivision, NewRangeDivision, NewPrefixDivision or NewRangePrefixDivision functions.
 func NewDivisionGrouping(divs []*AddressDivision, prefixLength PrefixLen) *AddressDivisionGrouping {
@@ -964,10 +964,12 @@ func (grouping addressDivisionGroupingInternal) GetByteCount() int {
 	return grouping.addressDivisionGroupingBase.GetByteCount()
 }
 
+// GetGenericDivision returns the division at the given index as a DivisionType implementation
 func (grouping *addressDivisionGroupingInternal) GetGenericDivision(index int) DivisionType {
 	return grouping.addressDivisionGroupingBase.GetGenericDivision(index)
 }
 
+// GetDivisionCount returns the number of divisions in this grouping
 func (grouping *addressDivisionGroupingInternal) GetDivisionCount() int {
 	return grouping.addressDivisionGroupingBase.GetDivisionCount()
 }
@@ -1020,6 +1022,11 @@ func (grouping *addressDivisionGroupingInternal) GetBlockCount(divisionCount int
 
 //// end needed for godoc / pkgsite
 
+// AddressDivisionGrouping objects consist of a series of AddressDivision objects, each division containing a sequential range of values.
+//
+// AddressDivisionGrouping objects are immutable.  This also makes them thread-safe.
+//
+// AddressDivision objects use uint64 to represent their values, so this places a cap on the size of the divisions in AddressDivisionGrouping.
 type AddressDivisionGrouping struct {
 	addressDivisionGroupingInternal
 }
@@ -1083,6 +1090,7 @@ func (grouping *AddressDivisionGrouping) CopyDivisions(divs []*AddressDivision) 
 	return grouping.copyDivisions(divs)
 }
 
+// GetDivisionStrings returns a slice containing each string returned from the String method of each division in the grouping.
 func (grouping *AddressDivisionGrouping) GetDivisionStrings() []string {
 	if grouping == nil {
 		return nil
@@ -1187,6 +1195,7 @@ func (grouping *AddressDivisionGrouping) ToDivGrouping() *AddressDivisionGroupin
 	return grouping
 }
 
+// GetDivision returns the division at the given index.
 func (grouping *AddressDivisionGrouping) GetDivision(index int) *AddressDivision {
 	return grouping.getDivision(index)
 }

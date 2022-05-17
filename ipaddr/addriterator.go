@@ -16,7 +16,7 @@
 
 package ipaddr
 
-// AddrIterator iterates through addresses, subnets and address ranges
+// AddressIterator iterates through addresses, subnets and address ranges
 type AddressIterator interface {
 	HasNext
 

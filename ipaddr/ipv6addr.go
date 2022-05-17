@@ -1814,7 +1814,7 @@ func (addr *IPv6Address) String() string {
 	return addr.init().addressInternal.toString()
 }
 
-// GetSegmentStrings returns an array with the strings of each segment being the string that is normalized with wildcards.
+// GetSegmentStrings returns a slice with the string for each segment being the string that is normalized with wildcards.
 func (addr *IPv6Address) GetSegmentStrings() []string {
 	if addr == nil {
 		return nil

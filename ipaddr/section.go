@@ -2688,7 +2688,7 @@ func (section *AddressSection) ToCustomString(stringOptions addrstr.StringOption
 	return section.toCustomString(stringOptions)
 }
 
-// GetSegmentStrings returns an array with the strings of each segment being the string that is normalized with wildcards.
+// GetSegmentStrings returns a slice with the string for each segment being the string that is normalized with wildcards.
 func (section *AddressSection) GetSegmentStrings() []string {
 	if section == nil {
 		return nil

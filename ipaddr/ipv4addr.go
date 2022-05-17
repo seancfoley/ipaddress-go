@@ -117,7 +117,7 @@ func NewIPv4AddressFromPrefixedBytes(bytes []byte, prefixLength PrefixLen) (addr
 	return
 }
 
-// NewIPv4AddressFromUint32 constructs an IPv4 address from the given value and prefix length.
+// NewIPv4AddressFromUint32 constructs an IPv4 address from the given value.
 func NewIPv4AddressFromUint32(val uint32) *IPv4Address {
 	section := NewIPv4SectionFromUint32(val, IPv4SegmentCount)
 	return createAddress(section.ToSectionBase(), NoZone).ToIPv4()
@@ -1447,7 +1447,7 @@ func (addr *IPv4Address) String() string {
 	return addr.init().toString()
 }
 
-// GetSegmentStrings returns an array with the strings of each segment being the string that is normalized with wildcards.
+// GetSegmentStrings returns a slice with the string for each segment being the string that is normalized with wildcards.
 func (addr *IPv4Address) GetSegmentStrings() []string {
 	if addr == nil {
 		return nil
@@ -1616,6 +1616,7 @@ func (addr *IPv4Address) ToBinaryString(with0bPrefix bool) (string, addrerr.Inco
 
 // ToInetAtonString returns a string with a format that is styled from the inet_aton routine.
 // The string can have an octal or hexadecimal radix rather than decimal.
+// When using octal, the octal segments each have a leading zero prefix of "0", and when using hex, a prefix of "0x".
 func (addr *IPv4Address) ToInetAtonString(radix Inet_aton_radix) string {
 	if addr == nil {
 		return nilString()
@@ -1625,7 +1626,13 @@ func (addr *IPv4Address) ToInetAtonString(radix Inet_aton_radix) string {
 
 // ToInetAtonJoinedString returns a string with a format that is styled from the inet_aton routine.
 // The string can have an octal or hexadecimal radix rather than decimal,
-// and can have less than the typical four IPv4 segments.
+// and can have less than the typical four IPv4 segments by joining the least significant segments together,
+// resulting in a string which just 1, 2 or 3 divisions.
+//
+// When using octal, the octal segments each have a leading zero prefix of "0", and when using hex, a prefix of "0x".
+//
+// If this represents a subnet section, this returns an error when unable to join two or more segments
+// into a division of a larger bit-length that represents the same set of values.
 func (addr *IPv4Address) ToInetAtonJoinedString(radix Inet_aton_radix, joinedCount int) (string, addrerr.IncompatibleAddressError) {
 	if addr == nil {
 		return nilString(), nil
