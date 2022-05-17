@@ -1105,6 +1105,7 @@ func (grouping *AddressDivisionGrouping) IsAdaptiveZero() bool {
 	return grouping != nil && grouping.matchesZeroGrouping()
 }
 
+// IsSectionBase returns true if this address division grouping originated as an address section.  If so, use ToSectionBase to convert back to the section type.
 func (grouping *AddressDivisionGrouping) IsSectionBase() bool {
 	return grouping != nil && grouping.isAddressSection()
 }

@@ -80,6 +80,7 @@ func (grouping *addressDivisionGroupingBase) GetGenericDivision(index int) Divis
 	return grouping.divisions.getGenericDivision(index)
 }
 
+// GetDivisionCount returns the number of divisions in this grouping
 func (grouping *addressDivisionGroupingBase) GetDivisionCount() int {
 	divisions := grouping.divisions
 	if divisions != nil {

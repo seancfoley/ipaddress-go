@@ -39,6 +39,7 @@ type PrefixLen = *PrefixBitCount
 // For arithmetic, you may wish to use BitCount instead, which you can get from a PrefixLen using the Len method.
 type PrefixBitCount uint8
 
+// ToPrefixLen converts the given int to a prefix length
 func ToPrefixLen(i int) PrefixLen {
 	res := PrefixBitCount(i)
 	return &res
@@ -61,6 +62,7 @@ func (p *PrefixBitCount) Len() BitCount {
 	return p.bitCount()
 }
 
+// IsNil returns true if this is nil, meaning it represents having no prefix length, or the absence of a prefix length
 func (p *PrefixBitCount) IsNil() bool {
 	return p == nil
 }

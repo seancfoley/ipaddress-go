@@ -394,7 +394,7 @@ func (rng *ipAddressSeqRangeInternal) GetPrefixLenForSingleBlock() PrefixLen {
 	for i := 0; i < count; i++ {
 		lowerSeg := lower.GetSegment(i)
 		upperSeg := upper.GetSegment(i)
-		segPrefix := GetPrefixLenForSingleBlock(lowerSeg.getDivisionValue(), upperSeg.getDivisionValue(), segBitCount)
+		segPrefix := getPrefixLenForSingleBlock(lowerSeg.getDivisionValue(), upperSeg.getDivisionValue(), segBitCount)
 		if segPrefix == nil {
 			return nil
 		}
@@ -1261,7 +1261,7 @@ func getMinPrefixLenForBlock(lower, upper DivInt, bitCount BitCount) BitCount {
 // If no such prefix length exists, returns nil.
 //
 // If lower and upper values are the same, this returns the bit count.
-func GetPrefixLenForSingleBlock(lower, upper DivInt, bitCount BitCount) PrefixLen {
+func getPrefixLenForSingleBlock(lower, upper DivInt, bitCount BitCount) PrefixLen {
 	prefixLen := getMinPrefixLenForBlock(lower, upper, bitCount)
 	if prefixLen == bitCount {
 		if lower == upper {

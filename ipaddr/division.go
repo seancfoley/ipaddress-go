@@ -381,7 +381,7 @@ func (div *addressDivisionInternal) GetMinPrefixLenForBlock() BitCount {
 //
 // If this division represents a single value, this returns the bit count of the segment.
 func (div *addressDivisionInternal) GetPrefixLenForSingleBlock() PrefixLen {
-	return GetPrefixLenForSingleBlock(div.getDivisionValue(), div.getUpperDivisionValue(), div.GetBitCount())
+	return getPrefixLenForSingleBlock(div.getDivisionValue(), div.getUpperDivisionValue(), div.GetBitCount())
 }
 
 // return whether the division range includes the block of values for the division prefix length,
@@ -550,16 +550,14 @@ func (div *addressDivisionInternal) getCount() *big.Int {
 	return bigZero().SetUint64((div.getUpperDivisionValue() - div.getDivisionValue()) + 1)
 }
 
-// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
-//     the 5 segment files are next (segment, ipsegment, ipv4/6segment, macsegment), then I don't know what is left, if anything
-//   in here we have IsSinglePrefix, GetPrefixCountLen, GetString, GetWildcardString
-
+// IsSinglePrefix returns true if the division value range spans just a single value of the given prefix length
 func (div *addressDivisionInternal) IsSinglePrefix(divisionPrefixLength BitCount) bool {
 	bitCount := div.GetBitCount()
 	divisionPrefixLength = checkBitCount(divisionPrefixLength, bitCount)
 	return div.isSinglePrefix(div.getDivisionValue(), div.getUpperDivisionValue(), divisionPrefixLength)
 }
 
+// GetPrefixCountLen returns the number of distinct prefixes in the division value range for the given prefix length
 func (div *addressDivisionInternal) GetPrefixCountLen(divisionPrefixLength BitCount) *big.Int {
 	if div.IsFullRange() {
 		return bigZero().Add(bigOneConst(), bigZero().SetUint64(div.getMaxValue()))
@@ -1111,6 +1109,11 @@ func (div *AddressDivision) ToSegmentBase() *AddressSegment {
 func (div *AddressDivision) ToDiv() *AddressDivision {
 	return div
 }
+
+// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
+//     the 5 segment files are next (segment, ipsegment, ipv4/6segment, macsegment), then HostName, then I don't know what is left, if anything, certainly not much
+//   in here we have GetString, GetWildcardString
+//
 
 func (div *AddressDivision) GetString() string {
 	if div == nil {

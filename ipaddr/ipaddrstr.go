@@ -53,7 +53,7 @@ func newIPAddressStringFromAddr(str string, addr *IPAddress) *IPAddressString {
 	}
 }
 
-var validator strValidator
+var validator hostIdentifierStringValidator = strValidator{}
 
 var defaultIPAddrParameters = new(addrstrparam.IPAddressStringParamsBuilder).ToParams()
 

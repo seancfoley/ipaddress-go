@@ -24,7 +24,7 @@ const (
 )
 
 // Interface for validation and parsing of host identifier strings
-type HostIdentifierStringValidator interface {
+type hostIdentifierStringValidator interface {
 	validateHostName(fromHost *HostName) (*parsedHost, addrerr.HostNameError)
 
 	validateIPAddressStr(fromString *IPAddressString) (ipAddressProvider, addrerr.AddressStringError)
@@ -34,4 +34,4 @@ type HostIdentifierStringValidator interface {
 	validatePrefixLenStr(fullAddr string, version IPVersion) (PrefixLen, addrerr.AddressStringError)
 }
 
-var _ HostIdentifierStringValidator = strValidator{}
+var _ hostIdentifierStringValidator = strValidator{}

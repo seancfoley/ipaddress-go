@@ -81,7 +81,7 @@ func (it *rangeIterator) Next() (res *IPAddressSeqRange) {
 	return
 }
 
-// IPAddressSeqRangeIterator iterates through IPv4 address sequential ranges
+// IPv4AddressSeqRangeIterator iterates through IPv4 address sequential ranges
 type IPv4AddressSeqRangeIterator interface {
 	HasNext
 
@@ -97,7 +97,7 @@ func (iter ipv4RangeIterator) Next() *IPv4AddressSeqRange {
 	return iter.IPAddressSeqRangeIterator.Next().ToIPv4()
 }
 
-// IPAddressSeqRangeIterator iterates through IPv6 address sequential ranges
+// IPv6AddressSeqRangeIterator iterates through IPv6 address sequential ranges
 type IPv6AddressSeqRangeIterator interface {
 	HasNext
 

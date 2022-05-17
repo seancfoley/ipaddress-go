@@ -32,10 +32,12 @@ type Partition struct {
 	count *big.Int
 }
 
+// IPv6Partition is a Partition of an IPv6 address
 type IPv6Partition struct {
 	p *Partition
 }
 
+// ForEach calls the action with each partition element
 func (p IPv6Partition) ForEach(action func(*IPv6Address)) {
 	p.p.ForEach(func(address *IPAddress) {
 		action(address.ToIPv6())
@@ -83,10 +85,12 @@ func (p IPv6Partition) PredicateForAny(predicate func(*IPv6Address) bool) bool {
 	})
 }
 
+// IPv4Partition is a Partition of an IPv4 address
 type IPv4Partition struct {
 	p *Partition
 }
 
+// ForEach calls the action with each partition element
 func (p IPv4Partition) ForEach(action func(*IPv4Address)) {
 	p.p.ForEach(func(address *IPAddress) {
 		action(address.ToIPv4())
@@ -150,7 +154,7 @@ func (p IPv4Partition) PredicateForAny(predicate func(*IPv4Address) bool) bool {
 //		return results;
 //	}
 
-// Supplies to the consumer each element of this partition.
+// ForEach calls the action with each partition element.
 func (p *Partition) ForEach(action func(*IPAddress)) {
 	if p.iterator == nil {
 		item := p.single
@@ -345,34 +349,42 @@ func PartitionIPWithSingleBlockSize(newAddr *IPAddress) *Partition {
 
 //TODO LATER partition ranges (not just addresses) with spanning blocks
 
+// IPAddressPredicateAdapter has methods to supply IP, IPv4, and IPv6 addresses to a wrapped predicate function that takes Address arguments
 type IPAddressPredicateAdapter struct {
 	Adapted func(*Address) bool
 }
 
+// IPPredicate calls the wrapped predicate function with the given IP address as the argument
 func (a IPAddressPredicateAdapter) IPPredicate(addr *IPAddress) bool {
 	return a.Adapted(addr.ToAddressBase())
 }
 
+// IPv4Predicate calls the wrapped predicate function with the given IPv4 address as the argument
 func (a IPAddressPredicateAdapter) IPv4Predicate(addr *IPv4Address) bool {
 	return a.Adapted(addr.ToAddressBase())
 }
 
+// IPv6Predicate calls the wrapped predicate function with the given IPv6 address as the argument
 func (a IPAddressPredicateAdapter) IPv6Predicate(addr *IPv6Address) bool {
 	return a.Adapted(addr.ToAddressBase())
 }
 
+// IPAddressActionAdapter has methods to supply IP, IPv4, and IPv6 addresses to a wrapped consumer function that takes Address arguments
 type IPAddressActionAdapter struct {
 	Adapted func(*Address)
 }
 
-func (a IPAddressActionAdapter) IPPredicate(addr *IPAddress) {
+// IPAction calls the wrapped consumer function with the given IP address as the argument
+func (a IPAddressActionAdapter) IPAction(addr *IPAddress) {
 	a.Adapted(addr.ToAddressBase())
 }
 
-func (a IPAddressActionAdapter) IPv4Predicate(addr *IPv4Address) {
+// IPv4Action calls the wrapped consumer function with the given IPv4 address as the argument
+func (a IPAddressActionAdapter) IPv4Action(addr *IPv4Address) {
 	a.Adapted(addr.ToAddressBase())
 }
 
-func (a IPAddressActionAdapter) IPv6Predicate(addr *IPv6Address) {
+// IPv6Action calls the wrapped consumer function with the given IPv6 address as the argument
+func (a IPAddressActionAdapter) IPv6Action(addr *IPv6Address) {
 	a.Adapted(addr.ToAddressBase())
 }
