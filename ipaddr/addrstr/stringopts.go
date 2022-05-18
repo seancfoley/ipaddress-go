@@ -69,6 +69,10 @@ type WildcardsBuilder struct {
 	wildcards
 }
 
+// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
+//      then addrstr and addrstrparam, then I don't know what is left, if anything, certainly not much
+//xxx
+
 func (wildcards *WildcardsBuilder) SetRangeSeparator(str string) *WildcardsBuilder {
 	wildcards.rangeSeparator = str
 	return wildcards

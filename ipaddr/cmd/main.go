@@ -467,7 +467,7 @@ func main() {
 	fmt.Printf("%v %v\n", pr1, pr2)
 
 	fmt.Printf("\n\n")
-	//_ = getDoc()
+	// _ = getDoc()
 
 	bn := ipaddr.AddressTrieNode{}
 	_ = bn
