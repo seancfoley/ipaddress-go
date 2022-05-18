@@ -30,6 +30,7 @@ type SegInt = uint32      // must be at least uint16 to handle IPv6, at least 32
 const SegIntSize = 32     // must match the bit count of SegInt
 type SegIntCount = uint64 // must be able to hold: (max value of SegInt) + 1
 
+// CompareSegInt returns a negative number, 0 or a positive number if integer one is less than, equal to, or greater than integer two.
 func CompareSegInt(one, two SegInt) int {
 	if one < two {
 		return -1
@@ -135,6 +136,7 @@ func (seg *addressSegmentInternal) toAddressSegment() *AddressSegment {
 	return (*AddressSegment)(unsafe.Pointer(seg))
 }
 
+// GetSegmentValue returns the lower value of the segment value range
 func (seg *addressSegmentInternal) GetSegmentValue() SegInt {
 	vals := seg.divisionValues
 	if vals == nil {
@@ -143,6 +145,7 @@ func (seg *addressSegmentInternal) GetSegmentValue() SegInt {
 	return vals.getSegmentValue()
 }
 
+// GetUpperSegmentValue returns the upper value of the segment value range
 func (seg *addressSegmentInternal) GetUpperSegmentValue() SegInt {
 	vals := seg.divisionValues
 	if vals == nil {
@@ -168,14 +171,17 @@ func (seg *addressSegmentInternal) MatchesValsWithMask(lowerValue, upperValue, m
 	return seg.matchesValsWithMask(DivInt(lowerValue), DivInt(upperValue), DivInt(mask))
 }
 
+// GetPrefixCountLen returns the count of the number of distinct prefix values for the given prefix length in the range of values of this segment
 func (seg *addressSegmentInternal) GetPrefixCountLen(segmentPrefixLength BitCount) *big.Int {
 	return bigZero().SetUint64(seg.GetPrefixValueCountLen(segmentPrefixLength))
 }
 
+// GetPrefixValueCountLen returns the same value as GetPrefixCountLen as an integer
 func (seg *addressSegmentInternal) GetPrefixValueCountLen(segmentPrefixLength BitCount) SegIntCount {
 	return getPrefixValueCount(seg.toAddressSegment(), segmentPrefixLength)
 }
 
+// GetValueCount returns the same value as GetCount as an integer
 func (seg *addressSegmentInternal) GetValueCount() SegIntCount {
 	return uint64(seg.GetUpperSegmentValue()-seg.GetSegmentValue()) + 1
 }
@@ -325,12 +331,16 @@ func (seg *addressSegmentInternal) GetTrailingBitCount(ones bool) BitCount {
 	return BitCount(bits.TrailingZeros32(uint32(val | (1 << bitCount))))
 }
 
+// GetSegmentNetworkMask returns a value comprising the same number of total bits as the bit-length of this segment,
+// the value that is all one-bits for the given number of bits followed by all zero-bits.
 func (seg *addressSegmentInternal) GetSegmentNetworkMask(networkBits BitCount) SegInt {
 	bitCount := seg.GetBitCount()
 	networkBits = checkBitCount(networkBits, bitCount)
 	return seg.GetMaxValue() & (^SegInt(0) << uint(bitCount-networkBits))
 }
 
+// GetSegmentHostMask returns a value comprising the same number of total bits as the bit-length of this segment,
+// the value that is all zero-bits for the given number of bits followed by all one-bits.
 func (seg *addressSegmentInternal) GetSegmentHostMask(networkBits BitCount) SegInt {
 	bitCount := seg.GetBitCount()
 	networkBits = checkBitCount(networkBits, bitCount)
@@ -716,6 +726,7 @@ func (seg *addressSegmentInternal) GetPrefixLenForSingleBlock() PrefixLen {
 	return seg.addressDivisionInternal.GetPrefixLenForSingleBlock()
 }
 
+// IsSinglePrefix determines if the segment has a single prefix value for the given prefix length.  You can call GetPrefixCountLen to get the count of prefixes.
 func (seg *addressSegmentInternal) IsSinglePrefix(divisionPrefixLength BitCount) bool {
 	return seg.addressDivisionInternal.IsSinglePrefix(divisionPrefixLength)
 }
@@ -724,6 +735,22 @@ func (seg *addressSegmentInternal) IsSinglePrefix(divisionPrefixLength BitCount)
 
 //
 
+// AddressSegment represents a single segment of an address.  A segment contains a single value or a range of sequential values and it has an assigned bit length.
+//
+// The current implementations of this class are the most common representations of IPv4, IPv6 and MAC;
+// segments are 1 byte for Ipv4, they are two bytes for Ipv6, and they are 1 byte for MAC addresses.
+//
+// There are alternative forms of dividing addresses into divisions, such as the dotted representation for MAC like 1111.2222.3333,
+// the embedded IPv4 representation for IPv6 like f:f:f:f:f:f:1.2.3.4, the inet_aton formats like 1.2 for IPv4, and so on.
+//
+// The general rules are that segments have a whole number of bytes, and in a given address all segments have the same length.
+//
+// When alternatives forms do not follow the general rules for segments,
+// you can use the {@link inet.ipaddr.format.standard.AddressDivision type instead.
+// Divisions do not have the restriction that divisions of an address are equal length and a whole number of bytes.
+// Divisions can be grouped using AddressDivisionGrouping.
+//
+// AddressSegment objects are immutable and thus also thread-safe.
 type AddressSegment struct {
 	addressSegmentInternal
 }
@@ -871,6 +898,14 @@ func (seg *AddressSegment) ToDiv() *AddressDivision {
 	return (*AddressDivision)(unsafe.Pointer(seg))
 }
 
+// GetString produces a normalized string to represent the segment.
+// If the segment is an IP segment string with CIDR network prefix block for its prefix length, then the string contains only the lower value of the block range.
+// Otherwise, the explicit range will be printed.
+// If the segment is not an IP segment, then the string is the same as that produced by GetWildcardString.
+//
+// The string returned is useful in the context of creating strings for address sections or full addresses,
+// in which case the radix and bit-length can be deduced from the context.
+// The String method produces strings more appropriate when no context is provided.
 func (seg *AddressSegment) GetString() string {
 	if seg == nil {
 		return nilString()
@@ -878,6 +913,12 @@ func (seg *AddressSegment) GetString() string {
 	return seg.getString()
 }
 
+// GetWildcardString produces a normalized string to represent the segment, favouring wildcards and range characters while ignoring any network prefix length.
+// The explicit range of a range-valued segment will be printed.
+//
+// The string returned is useful in the context of creating strings for address sections or full addresses,
+// in which case the radix and the bit-length can be deduced from the context.
+// The String method produces strings more appropriate when no context is provided.
 func (seg *AddressSegment) GetWildcardString() string {
 	if seg == nil {
 		return nilString()

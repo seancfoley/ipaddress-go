@@ -27,6 +27,7 @@ import (
 type IPv4SegInt = uint8
 type IPv4SegmentValueProvider func(segmentIndex int) IPv4SegInt
 
+// WrappedIPv4SegmentValueProvider converts the given IPv4SegmentValueProvider to a SegmentValueProvider
 func WrappedIPv4SegmentValueProvider(f IPv4SegmentValueProvider) SegmentValueProvider {
 	if f == nil {
 		return nil
@@ -36,6 +37,8 @@ func WrappedIPv4SegmentValueProvider(f IPv4SegmentValueProvider) SegmentValuePro
 	}
 }
 
+// WrappedSegmentValueProviderForIPv4 converts the given SegmentValueProvider to an IPv4SegmentValueProvider
+// Values that do not fit IPv4SegInt are truncated.
 func WrappedSegmentValueProviderForIPv4(f SegmentValueProvider) IPv4SegmentValueProvider {
 	if f == nil {
 		return nil
@@ -142,6 +145,12 @@ var zeroIPv4Seg = NewIPv4Segment(0)
 var zeroIPv4SegZeroPrefix = NewIPv4PrefixedSegment(0, cacheBitCount(0))
 var zeroIPv4SegPrefixBlock = NewIPv4RangePrefixedSegment(0, IPv4MaxValuePerSegment, cacheBitCount(0))
 
+// IPv4AddressSegment represents a segment of an IPv4 address.
+// An IPv4 segment contains a single value or a range of sequential values, a prefix length, and it has bit length of 8 bits.
+//
+// Like strings, segments are immutable, which also makes them concurrency-safe.
+//
+// See AddressSegment for more details regarding segments.
 type IPv4AddressSegment struct {
 	ipAddressSegmentInternal
 }
@@ -249,10 +258,12 @@ func (seg *IPv4AddressSegment) GetCount() *big.Int {
 	return seg.getCount()
 }
 
+// GetPrefixCountLen returns the count of the number of distinct prefix values for the given prefix length in the range of values of this segment
 func (seg *IPv4AddressSegment) GetPrefixCountLen(segmentPrefixLength BitCount) *big.Int {
 	return seg.init().ipAddressSegmentInternal.GetPrefixCountLen(segmentPrefixLength)
 }
 
+// GetPrefixValueCountLen returns the same value as GetPrefixCountLen as an integer
 func (seg *IPv4AddressSegment) GetPrefixValueCountLen(segmentPrefixLength BitCount) SegIntCount {
 	return seg.init().ipAddressSegmentInternal.GetPrefixValueCountLen(segmentPrefixLength)
 }
@@ -288,10 +299,13 @@ func (seg *IPv4AddressSegment) CopyUpperBytes(bytes []byte) []byte {
 	return seg.init().ipAddressSegmentInternal.CopyUpperBytes(bytes)
 }
 
+// GetPrefixValueCount returns the count of prefixes in this segment for its prefix length, or the total count if it has no prefix length.
 func (seg *IPv4AddressSegment) GetPrefixValueCount() SegIntCount {
 	return seg.init().ipAddressSegmentInternal.GetPrefixValueCount()
 }
 
+// MatchesWithPrefixMask applies the network mask of the given bit-length to this segment and then compares the result with the given value masked by the same mask,
+//returning true if the resulting range matches the given single value.
 func (seg *IPv4AddressSegment) MatchesWithPrefixMask(value IPv4SegInt, networkBits BitCount) bool {
 	return seg.init().ipAddressSegmentInternal.MatchesWithPrefixMask(SegInt(value), networkBits)
 }
@@ -329,18 +343,26 @@ func (seg *IPv4AddressSegment) GetLeadingBitCount(ones bool) BitCount {
 	return seg.init().ipAddressSegmentInternal.GetLeadingBitCount(ones)
 }
 
+// ToPrefixedNetworkSegment returns a segment with the network bits matching this segment but the host bits converted to zero.
+// The new segment will be assigned the given prefix length.
 func (seg *IPv4AddressSegment) ToPrefixedNetworkSegment(segmentPrefixLength PrefixLen) *IPv4AddressSegment {
 	return seg.init().toPrefixedNetworkDivision(segmentPrefixLength).ToIPv4()
 }
 
+// ToNetworkSegment returns a segment with the network bits matching this segment but the host bits converted to zero.
+// The new segment will have no assigned prefix length.
 func (seg *IPv4AddressSegment) ToNetworkSegment(segmentPrefixLength PrefixLen) *IPv4AddressSegment {
 	return seg.init().toNetworkDivision(segmentPrefixLength, false).ToIPv4()
 }
 
+// ToPrefixedHostSegment returns a segment with the host bits matching this segment but the network bits converted to zero.
+// The new segment will be assigned the given prefix length.
 func (seg *IPv4AddressSegment) ToPrefixedHostSegment(segmentPrefixLength PrefixLen) *IPv4AddressSegment {
 	return seg.init().toPrefixedHostDivision(segmentPrefixLength).ToIPv4()
 }
 
+// ToHostSegment returns a segment with the host bits matching this segment but the network bits converted to zero.
+// The new segment will have no assigned prefix length.
 func (seg *IPv4AddressSegment) ToHostSegment(segmentPrefixLength PrefixLen) *IPv4AddressSegment {
 	return seg.init().toHostDivision(segmentPrefixLength, false).ToIPv4()
 }
@@ -490,6 +512,13 @@ func (seg *IPv4AddressSegment) ToIP() *IPAddressSegment {
 	return (*IPAddressSegment)(seg.init())
 }
 
+// GetString produces a normalized string to represent the segment.
+// If the segment is a CIDR network prefix block for its prefix length, then the string contains only the lower value of the block range.
+// Otherwise, the explicit range will be printed.
+//
+// The string returned is useful in the context of creating strings for address sections or full addresses,
+// in which case the radix and bit-length can be deduced from the context.
+// The String method produces strings more appropriate when no context is provided.
 func (seg *IPv4AddressSegment) GetString() string {
 	if seg == nil {
 		return nilString()
@@ -497,6 +526,12 @@ func (seg *IPv4AddressSegment) GetString() string {
 	return seg.init().getString()
 }
 
+// GetWildcardString produces a normalized string to represent the segment, favouring wildcards and range characters while ignoring any network prefix length.
+// The explicit range of a range-valued segment will be printed.
+//
+// The string returned is useful in the context of creating strings for address sections or full addresses,
+// in which case the radix and the bit-length can be deduced from the context.
+// The String method produces strings more appropriate when no context is provided.
 func (seg *IPv4AddressSegment) GetWildcardString() string {
 	if seg == nil {
 		return nilString()
@@ -514,18 +549,22 @@ func (seg *IPv4AddressSegment) String() string {
 	return seg.init().toString()
 }
 
+// NewIPv4Segment constructs a segment of an IPv4 address with the given value.
 func NewIPv4Segment(val IPv4SegInt) *IPv4AddressSegment {
 	return newIPv4Segment(newIPv4SegmentVal(val))
 }
 
+// NewIPv4RangeSegment constructs a segment of an IPv4 subnet with the given range of sequential values.
 func NewIPv4RangeSegment(val, upperVal IPv4SegInt) *IPv4AddressSegment {
 	return newIPv4Segment(newIPv4SegmentPrefixedValues(val, upperVal, nil))
 }
 
+// NewIPv4PrefixedSegment constructs a segment of an IPv4 address with the given value and assigned prefix length.
 func NewIPv4PrefixedSegment(val IPv4SegInt, prefixLen PrefixLen) *IPv4AddressSegment {
 	return newIPv4Segment(newIPv4SegmentPrefixedVal(val, prefixLen))
 }
 
+// NewIPv4RangePrefixedSegment constructs a segment of an IPv4 subnet with the given range of sequential values and assigned prefix length.
 func NewIPv4RangePrefixedSegment(val, upperVal IPv4SegInt, prefixLen PrefixLen) *IPv4AddressSegment {
 	return newIPv4Segment(newIPv4SegmentPrefixedValues(val, upperVal, prefixLen))
 }

@@ -330,7 +330,7 @@ func (addrStr *MACAddressString) Equal(other *MACAddressString) bool {
 }
 
 // Wrap wraps this address string, returning a WrappedMACAddressString as an implementation of ExtendedIdentifierString,
-// which can be used to write code that works with different host identifier types polymorphically.
+// which can be used to write code that works with different host identifier types polymorphically,  including IPAddressString, MACAddressString, and HostName.
 func (addrStr *MACAddressString) Wrap() ExtendedIdentifierString {
 	return WrappedMACAddressString{addrStr}
 }

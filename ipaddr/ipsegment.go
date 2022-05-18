@@ -80,6 +80,7 @@ func (seg *ipAddressSegmentInternal) withoutPrefixLen() *IPAddressSegment {
 	return seg.toIPAddressSegment()
 }
 
+// GetPrefixValueCount returns the count of prefixes in this segment for its prefix length, or the total count if it has no prefix length.
 func (seg *ipAddressSegmentInternal) GetPrefixValueCount() SegIntCount {
 	prefixLength := seg.GetSegmentPrefixLen()
 	if prefixLength == nil {
@@ -109,6 +110,8 @@ func (seg *ipAddressSegmentInternal) GetSegmentPrefixLen() PrefixLen {
 	return seg.getDivisionPrefixLength()
 }
 
+// MatchesWithPrefixMask applies the network mask of the given bit-length to this segment and then compares the result with the given value masked by the same mask,
+//returning true if the resulting range matches the given single value.
 func (seg *ipAddressSegmentInternal) MatchesWithPrefixMask(value SegInt, networkBits BitCount) bool {
 	mask := seg.GetSegmentNetworkMask(networkBits)
 	matchingValue := value & mask
@@ -422,6 +425,7 @@ func (seg *ipAddressSegmentInternal) GetPrefixLenForSingleBlock() PrefixLen {
 	return seg.addressSegmentInternal.GetPrefixLenForSingleBlock()
 }
 
+// IsSinglePrefix determines if the segment has a single prefix value for the given prefix length.  You can call GetPrefixCountLen to get the count of prefixes.
 func (seg *ipAddressSegmentInternal) IsSinglePrefix(divisionPrefixLength BitCount) bool {
 	return seg.addressSegmentInternal.IsSinglePrefix(divisionPrefixLength)
 }
@@ -438,10 +442,12 @@ func (seg *ipAddressSegmentInternal) PrefixEqual(other AddressSegmentType, prefi
 	return seg.addressSegmentInternal.PrefixEqual(other, prefixLength)
 }
 
+// GetSegmentValue returns the lower value of the segment value range
 func (seg *ipAddressSegmentInternal) GetSegmentValue() SegInt {
 	return seg.addressSegmentInternal.GetSegmentValue()
 }
 
+// GetUpperSegmentValue returns the upper value of the segment value range
 func (seg *ipAddressSegmentInternal) GetUpperSegmentValue() SegInt {
 	return seg.addressSegmentInternal.GetUpperSegmentValue()
 }
@@ -463,14 +469,17 @@ func (seg *ipAddressSegmentInternal) MatchesValsWithMask(lowerValue, upperValue,
 	return seg.addressSegmentInternal.MatchesValsWithMask(lowerValue, upperValue, mask)
 }
 
+// GetPrefixCountLen returns the count of the number of distinct prefix values for the given prefix length in the range of values of this segment
 func (seg *ipAddressSegmentInternal) GetPrefixCountLen(segmentPrefixLength BitCount) *big.Int {
 	return seg.addressSegmentInternal.GetPrefixCountLen(segmentPrefixLength)
 }
 
+// GetPrefixValueCountLen returns the same value as GetPrefixCountLen as an integer
 func (seg *ipAddressSegmentInternal) GetPrefixValueCountLen(segmentPrefixLength BitCount) SegIntCount {
 	return seg.addressSegmentInternal.GetPrefixValueCountLen(segmentPrefixLength)
 }
 
+// GetValueCount returns the same value as GetCount as an integer
 func (seg *ipAddressSegmentInternal) GetValueCount() SegIntCount {
 	return seg.addressSegmentInternal.GetValueCount()
 }
@@ -533,6 +542,13 @@ func (seg *ipAddressSegmentInternal) ReverseBytes() (res *AddressSegment, err ad
 
 //// end needed for godoc / pkgsite
 
+// IPAddressSegment represents a single segment of an IP address.  An IP segment contains a single value or a range of sequential values, a prefix length, and it has an assigned bit length.
+//
+// For IPv4, segments are 1 byte.  For IPv6, they are two bytes.
+//
+// IPAddressSegment objects are immutable and thus also concurrency-safe.
+//
+// See AddressSegment for more details regarding segments.
 type IPAddressSegment struct {
 	ipAddressSegmentInternal
 }
@@ -597,18 +613,26 @@ func (seg *IPAddressSegment) ContainsPrefixBlock(divisionPrefixLen BitCount) boo
 	return seg.containsPrefixBlock(divisionPrefixLen)
 }
 
+// ToPrefixedNetworkSegment returns a segment with the network bits matching this segment but the host bits converted to zero.
+// The new segment will be assigned the given prefix length.
 func (seg *IPAddressSegment) ToPrefixedNetworkSegment(segmentPrefixLength PrefixLen) *IPAddressSegment {
 	return seg.toPrefixedNetworkDivision(segmentPrefixLength).ToIP()
 }
 
+// ToNetworkSegment returns a segment with the network bits matching this segment but the host bits converted to zero.
+// The new segment will have no assigned prefix length.
 func (seg *IPAddressSegment) ToNetworkSegment(segmentPrefixLength PrefixLen) *IPAddressSegment {
 	return seg.toNetworkDivision(segmentPrefixLength, false).ToIP()
 }
 
+// ToPrefixedHostSegment returns a segment with the host bits matching this segment but the network bits converted to zero.
+// The new segment will be assigned the given prefix length.
 func (seg *IPAddressSegment) ToPrefixedHostSegment(segmentPrefixLength PrefixLen) *IPAddressSegment {
 	return seg.toPrefixedHostDivision(segmentPrefixLength).ToIP()
 }
 
+// ToHostSegment returns a segment with the host bits matching this segment but the network bits converted to zero.
+// The new segment will have no assigned prefix length.
 func (seg *IPAddressSegment) ToHostSegment(segmentPrefixLength PrefixLen) *IPAddressSegment {
 	return seg.toHostDivision(segmentPrefixLength, false).ToIP()
 }
@@ -713,6 +737,13 @@ func (seg *IPAddressSegment) ToIPv6() *IPv6AddressSegment {
 	return nil
 }
 
+// GetString produces a normalized string to represent the segment.
+// If the segment is a CIDR network prefix block for its prefix length, then the string contains only the lower value of the block range.
+// Otherwise, the explicit range will be printed.
+//
+// The string returned is useful in the context of creating strings for address sections or full addresses,
+// in which case the radix and bit-length can be deduced from the context.
+// The String method produces strings more appropriate when no context is provided.
 func (seg *IPAddressSegment) GetString() string {
 	if seg == nil {
 		return nilString()
@@ -720,6 +751,12 @@ func (seg *IPAddressSegment) GetString() string {
 	return seg.getString()
 }
 
+// GetWildcardString produces a normalized string to represent the segment, favouring wildcards and range characters while ignoring any network prefix length.
+// The explicit range of a range-valued segment will be printed.
+//
+// The string returned is useful in the context of creating strings for address sections or full addresses,
+// in which case the radix and the bit-length can be deduced from the context.
+// The String method produces strings more appropriate when no context is provided.
 func (seg *IPAddressSegment) GetWildcardString() string {
 	if seg == nil {
 		return nilString()

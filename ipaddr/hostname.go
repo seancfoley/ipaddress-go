@@ -34,13 +34,13 @@ const (
 	IPv6EndBracket   = ']'
 )
 
-// NewHostName constructs an HostName that will parse the given string according to the default parameters
+// NewHostName constructs a HostName that will parse the given string according to the default parameters
 func NewHostName(str string) *HostName {
 	str = strings.TrimSpace(str)
 	return &HostName{str: str, params: defaultHostParameters, hostCache: &hostCache{}}
 }
 
-// NewHostNameParams constructs an HostName that will parse the given string according to the given parameters
+// NewHostNameParams constructs a HostName that will parse the given string according to the given parameters
 func NewHostNameParams(str string, params addrstrparam.HostNameParams) *HostName {
 	var prms addrstrparam.HostNameParams
 	if params == nil {
@@ -52,6 +52,7 @@ func NewHostNameParams(str string, params addrstrparam.HostNameParams) *HostName
 	return &HostName{str: str, params: prms, hostCache: &hostCache{}}
 }
 
+// NewHostNameFromAddrPort constructs a HostName from an IP address and a port.
 func NewHostNameFromAddrPort(addr *IPAddress, port int) *HostName {
 	portVal := PortInt(port)
 	hostStr := toNormalizedAddrPortString(addr, portVal)
@@ -67,6 +68,7 @@ func NewHostNameFromAddrPort(addr *IPAddress, port int) *HostName {
 	}
 }
 
+// NewHostNameFromAddr constructs a HostName from an IP address.
 func NewHostNameFromAddr(addr *IPAddress) *HostName {
 	hostStr := addr.ToNormalizedString()
 	return newHostNameFromAddr(hostStr, addr)
@@ -84,10 +86,12 @@ func newHostNameFromAddr(hostStr string, addr *IPAddress) *HostName { // same as
 	}
 }
 
+// NewHostNameFromNetTCPAddr constructs a HostName from a net.TCPAddr.
 func NewHostNameFromNetTCPAddr(addr *net.TCPAddr) (*HostName, addrerr.AddressValueError) {
 	return newHostNameFromSocketAddr(addr.IP, addr.Port, addr.Zone)
 }
 
+// NewHostNameFromNetUDPAddr constructs a HostName from a net.UDPAddr.
 func NewHostNameFromNetUDPAddr(addr *net.UDPAddr) (*HostName, addrerr.AddressValueError) {
 	return newHostNameFromSocketAddr(addr.IP, addr.Port, addr.Zone)
 }
@@ -116,6 +120,7 @@ func newHostNameFromSocketAddr(ip net.IP, port int, zone string) (hostName *Host
 	return
 }
 
+// NewHostNameFromNetIP constructs a HostName from a net.IP.
 func NewHostNameFromNetIP(bytes net.IP) (hostName *HostName, err addrerr.AddressValueError) {
 	var addr *IPAddress
 	addr, err = NewIPAddressFromNetIP(bytes)
@@ -129,6 +134,7 @@ func NewHostNameFromNetIP(bytes net.IP) (hostName *HostName, err addrerr.Address
 	return
 }
 
+// NewHostNameFromPrefixedNetIP constructs a HostName from a net.IP paired with a prefix length.
 func NewHostNameFromPrefixedNetIP(bytes net.IP, prefixLen PrefixLen) (hostName *HostName, err addrerr.AddressValueError) {
 	var addr *IPAddress
 	addr, err = NewIPAddressFromPrefixedNetIP(bytes, prefixLen)
@@ -143,6 +149,7 @@ func NewHostNameFromPrefixedNetIP(bytes net.IP, prefixLen PrefixLen) (hostName *
 	return
 }
 
+// NewHostNameFromNetIPAddr constructs a HostName from a net.IPAddr.
 func NewHostNameFromNetIPAddr(addr *net.IPAddr) (hostName *HostName, err addrerr.AddressValueError) {
 	var ipAddr *IPAddress
 	ipAddr, err = NewIPAddressFromNetIPAddr(addr)
@@ -156,6 +163,7 @@ func NewHostNameFromNetIPAddr(addr *net.IPAddr) (hostName *HostName, err addrerr
 	return
 }
 
+// NewHostNameFromPrefixedNetIPAddr constructs a HostName from a net.IPAddr paired with a prefix length.
 func NewHostNameFromPrefixedNetIPAddr(addr *net.IPAddr, prefixLen PrefixLen) (hostName *HostName, err addrerr.AddressValueError) {
 	var ipAddr *IPAddress
 	ipAddr, err = NewIPAddressFromPrefixedNetIPAddr(addr, prefixLen)
@@ -191,6 +199,19 @@ type hostCache struct {
 	qualifiedString *string
 }
 
+// HostName represents an internet host name.  Can be a fully qualified domain name, a simple host name, or an ip address string.
+// It can also include a port number or service name (which maps to a port).
+// It can include a prefix length or mask for either an ipaddress or host name string.  An IPv6 address can have an IPv6 zone.
+//
+// Supported formats
+//
+// You can use all host or address formats supported by nmap and all address formats supported by IPAddressString.
+// All manners of domain names are supported. When adding a prefix length or mask to a host name string, it is to denote the subnet of the resolved address.
+//
+// Validation is done separately from DNS resolution to avoid unnecessary DNS lookups.
+//
+// See rfc 3513, 2181, 952, 1035, 1034, 1123, 5890 or the list of rfcs for IPAddress.  For IPv6 addresses in host, see rfc 2732 specifying [] notation
+// and 3986 and 4038 (combining IPv6 [] with prefix or zone) and SMTP rfc 2821 for alternative uses of [] for both IPv4 and IPv6
 type HostName struct {
 	str    string
 	params addrstrparam.HostNameParams
@@ -204,6 +225,7 @@ func (host *HostName) init() *HostName {
 	return host
 }
 
+// GetValidationOptions returns the validation options supplied when constructing the HostName, or the default validation options if none were supplied.
 func (host *HostName) GetValidationOptions() addrstrparam.HostNameParams {
 	return host.init().params
 }
@@ -231,11 +253,13 @@ func (host *HostName) String() string {
 	return host.str
 }
 
+// IsAddressString returns whether this host name is a string representing an IP address or subnet.
 func (host *HostName) IsAddressString() bool {
 	host = host.init()
 	return host.IsValid() && host.parsedHost.isAddressString()
 }
 
+// IsAddress returns whether this host name is a string representing a valid specific IP address or subnet.
 func (host *HostName) IsAddress() bool {
 	if host.IsAddressString() {
 		addr, _ := host.init().parsedHost.asAddress()
@@ -244,6 +268,16 @@ func (host *HostName) IsAddress() bool {
 	return false
 }
 
+// TODO later add to doc below
+// In cases such as IPv6 literals and reverse DNS hosts, you can check the relevant methods isIpv6Literal or isReverseDNS,
+// in which case this method should return the associated address.  If this method returns nil then an error occurred
+//when producing the associated address, and that error is available from getAddressStringException.
+
+// AsAddress returns the address if this host name represents an ip address.  Otherwise, this returns nil.
+// Note that the translation includes prefix lengths and IPv6 zones.
+//
+// This does not resolve addresses or return resolved addresses.
+// Call ToAddress or GetAddress to get the resolved address.
 func (host *HostName) AsAddress() *IPAddress {
 	if host.IsAddress() {
 		addr, _ := host.parsedHost.asAddress()
@@ -252,23 +286,32 @@ func (host *HostName) AsAddress() *IPAddress {
 	return nil
 }
 
+// IsAllAddresses returns whether this is an IP address that represents the set all all valid IP addresses (as opposed to an empty string, a specific address, or an invalid format).
 func (host *HostName) IsAllAddresses() bool {
 	host = host.init()
 	return host.IsValid() && host.parsedHost.getAddressProvider().isProvidingAllAddresses()
 }
 
+// IsEmpty returns true if the host name is empty (zero-length).
 func (host *HostName) IsEmpty() bool {
 	host = host.init()
 	return host.IsValid() && ((host.IsAddressString() && host.parsedHost.getAddressProvider().isProvidingEmpty()) || len(host.GetNormalizedLabels()) == 0)
 }
 
+// GetAddress attempts to convert this host name to an IP address.
+// If this represents an ip address, returns that address.
+// If this represents a host, returns the resolved ip address of that host.
+// Otherwise, returns nil.
+// GetAddress is similar to ToAddress but does not return any errors.
+//
+// If you wish to get the represented address while avoiding DNS resolution, use AsAddress or AsAddressString
 func (host *HostName) GetAddress() *IPAddress {
 	addr, _ := host.ToAddress()
 	return addr
 }
 
 // ToAddress resolves to an address.
-// This method can potentially return a list of resolved addresses and an error as well if some resolved addresses were invalid.
+// This method can potentially return a list of resolved addresses and an error as well, if some resolved addresses were invalid.
 func (host *HostName) ToAddress() (addr *IPAddress, err addrerr.AddressError) {
 	addresses, err := host.ToAddresses()
 	if len(addresses) > 0 {
@@ -427,10 +470,14 @@ func (host *HostName) ToAddresses() (addrs []*IPAddress, err addrerr.AddressErro
 	return data.resolvedAddrs, nil
 }
 
+// IsValid returns whether this represents a valid host name or IP address format.
 func (host *HostName) IsValid() bool {
 	return host.init().Validate() == nil
 }
 
+// AsAddressString returns the address string if this host name represents an ip address or an ip address string.  Otherwise, this returns nil.
+// Note that translation includes prefix lengths and IPv6 zones.
+// This does not resolve host names.  Call ToAddress or GetAddress to get the resolved address.
 func (host *HostName) AsAddressString() *IPAddressString {
 	host = host.init()
 	if host.IsAddressString() {
@@ -784,6 +831,7 @@ func (host *HostName) ToNetUDPAddr(serviceMapper func(string) Port) *net.UDPAddr
 	return host.ToNetUDPAddrService(serviceMapper)
 }
 
+// ToNetIP is similar to ToAddress but returns the resulting address as a net.IP
 func (host *HostName) ToNetIP() net.IP {
 	if addr, err := host.ToAddress(); addr != nil && err == nil {
 		return addr.GetNetIP()
@@ -791,6 +839,7 @@ func (host *HostName) ToNetIP() net.IP {
 	return nil
 }
 
+// ToNetIPAddr is similar to ToAddress but returns the resulting address as a net.IPAddr
 func (host *HostName) ToNetIPAddr() *net.IPAddr {
 	if addr, err := host.ToAddress(); addr != nil && err == nil {
 		return &net.IPAddr{
@@ -919,6 +968,8 @@ func (host *HostName) Compare(other *HostName) int {
 	return strings.Compare(host.String(), other.String())
 }
 
+// Wrap wraps this host name, returning a WrappedHostName, an implementation of ExtendedIdentifierString,
+// which can be used to write code that works with a host identifier string including IPAddressString, MACAddressString, and HostName.
 func (host *HostName) Wrap() ExtendedIdentifierString {
 	return WrappedHostName{host}
 }

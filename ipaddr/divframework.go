@@ -66,10 +66,10 @@ type AddressSegmentType interface {
 	// Contains returns whether this segment is same type and version as the given segment and whether it contains all values in the given segment.
 	Contains(AddressSegmentType) bool
 
-	// GetSegmentValue returns the lower segment value as a SegInt, the same value as the DivInt value returned by getDivisionValue()
+	// GetSegmentValue returns the lower value of the segment value range as a SegInt
 	GetSegmentValue() SegInt
 
-	// GetUpperSegmentValue returns the upper segment value as a SegInt, the same value as the DivInt value returned by getUpperDivisionValue()
+	// GetUpperSegmentValue returns the upper value of the segment value range as a SegInt
 	GetUpperSegmentValue() SegInt
 
 	// ToSegmentBase converts to an AddressSegment, a polymorphic type usable with all address segments.

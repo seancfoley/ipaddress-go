@@ -25,6 +25,7 @@ import (
 type MACSegInt = uint8
 type MACSegmentValueProvider func(segmentIndex int) MACSegInt
 
+// WrappedMACSegmentValueProvider converts the given MACSegmentValueProvider to a SegmentValueProvider
 func WrappedMACSegmentValueProvider(f MACSegmentValueProvider) SegmentValueProvider {
 	if f == nil {
 		return nil
@@ -34,6 +35,8 @@ func WrappedMACSegmentValueProvider(f MACSegmentValueProvider) SegmentValueProvi
 	}
 }
 
+// WrappedSegmentValueProviderForMAC converts the given SegmentValueProvider to a MACSegmentValueProvider
+// Values that do not fit MACSegInt are truncated.
 func WrappedSegmentValueProviderForMAC(f SegmentValueProvider) MACSegmentValueProvider {
 	if f == nil {
 		return nil
@@ -138,6 +141,10 @@ var _ divisionValues = &macSegmentValues{}
 var zeroMACSeg = NewMACSegment(0)
 var allRangeMACSeg = NewMACRangeSegment(0, MACMaxValuePerSegment)
 
+// MACAddressSegment represents a segment of a MAC address.  For MAC, segments are 1 byte.
+// A MAC segment contains a single value or a range of sequential values, a prefix length, and it has bit length of 8 bits.
+//
+// Segments are immutable, which also makes them concurrency-safe.
 type MACAddressSegment struct {
 	addressSegmentInternal
 }
@@ -269,10 +276,12 @@ func (seg *MACAddressSegment) CopyUpperBytes(bytes []byte) []byte {
 	return seg.init().addressSegmentInternal.CopyUpperBytes(bytes)
 }
 
+// GetPrefixCountLen returns the count of the number of distinct prefix values for the given prefix length in the range of values of this segment
 func (seg *MACAddressSegment) GetPrefixCountLen(segmentPrefixLength BitCount) *big.Int {
 	return seg.init().addressSegmentInternal.GetPrefixCountLen(segmentPrefixLength)
 }
 
+// GetPrefixValueCountLen returns the same value as GetPrefixCountLen as an integer
 func (seg *MACAddressSegment) GetPrefixValueCountLen(segmentPrefixLength BitCount) SegIntCount {
 	return seg.init().addressSegmentInternal.GetPrefixValueCountLen(segmentPrefixLength)
 }
@@ -431,6 +440,9 @@ func (seg *MACAddressSegment) ToSegmentBase() *AddressSegment {
 	return (*AddressSegment)(seg.init())
 }
 
+// GetString produces a normalized string to represent the segment.
+//
+// For MAC segments, the string is the same as that produced by GetWildcardString.
 func (seg *MACAddressSegment) GetString() string {
 	if seg == nil {
 		return nilString()
@@ -438,6 +450,12 @@ func (seg *MACAddressSegment) GetString() string {
 	return seg.init().getString()
 }
 
+// GetWildcardString produces a normalized string to represent the segment, favouring wildcards and range characters.
+// The explicit range of a range-valued segment will be printed.
+//
+// The string returned is useful in the context of creating strings for address sections or full addresses,
+// in which case the radix and the bit-length can be deduced from the context.
+// The String method produces strings more appropriate when no context is provided.
 func (seg *MACAddressSegment) GetWildcardString() string {
 	if seg == nil {
 		return nilString()
@@ -454,10 +472,12 @@ func (seg *MACAddressSegment) String() string {
 	return seg.init().toString()
 }
 
+// NewMACSegment constructs a segment of a MAC address with the given value.
 func NewMACSegment(val MACSegInt) *MACAddressSegment {
 	return newMACSegment(newMACSegmentVal(val))
 }
 
+// NewMACRangeSegment constructs a segment of a MAC address collection with the given range of sequential values.
 func NewMACRangeSegment(val, upperVal MACSegInt) *MACAddressSegment {
 	return newMACSegment(newMACSegmentValues(val, upperVal))
 }

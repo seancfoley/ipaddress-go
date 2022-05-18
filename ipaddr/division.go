@@ -550,7 +550,7 @@ func (div *addressDivisionInternal) getCount() *big.Int {
 	return bigZero().SetUint64((div.getUpperDivisionValue() - div.getDivisionValue()) + 1)
 }
 
-// IsSinglePrefix returns true if the division value range spans just a single value of the given prefix length
+// IsSinglePrefix returns true if the division value range spans just a single prefix value for the given prefix length
 func (div *addressDivisionInternal) IsSinglePrefix(divisionPrefixLength BitCount) bool {
 	bitCount := div.GetBitCount()
 	divisionPrefixLength = checkBitCount(divisionPrefixLength, bitCount)
@@ -955,7 +955,7 @@ func NewRangePrefixDivision(val, upperVal DivInt, prefixLen PrefixLen, bitCount 
 }
 
 // AddressDivision represents an arbitrary division in an address or address division grouping.
-// It can contain a range of values and it has an assigned bit length.
+// It can contain a single value or a range of sequential values and it has an assigned bit length.
 // Like all address components, it is immutable.
 // Divisions that were converted from IPv4, IPv6 or MAC segments can be converted back to the same segment type and version.
 // Divisions that were not converted from IPv4, IPv6 or MAC cannot be converted to segments.
@@ -1110,11 +1110,14 @@ func (div *AddressDivision) ToDiv() *AddressDivision {
 	return div
 }
 
-// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
-//     the 5 segment files are next (segment, ipsegment, ipv4/6segment, macsegment), then HostName, then I don't know what is left, if anything, certainly not much
-//   in here we have GetString, GetWildcardString
+// GetString produces a normalized string to represent the segment.
+// If the segment is an IP segment string with CIDR network prefix block for its prefix length, then the string contains only the lower value of the block range.
+// Otherwise, the explicit range will be printed.
+// If the segment is not an IP segment, then the string is the same as that produced by GetWildcardString.
 //
-
+// The string returned is useful in the context of creating strings for address sections or full addresses,
+// in which case the radix and bit-length can be deduced from the context.
+// The String method produces strings more appropriate when no context is provided.
 func (div *AddressDivision) GetString() string {
 	if div == nil {
 		return nilString()
@@ -1122,6 +1125,12 @@ func (div *AddressDivision) GetString() string {
 	return div.getString()
 }
 
+// GetWildcardString produces a normalized string to represent the segment, favouring wildcards and range characters regardless of any network prefix length.
+// The explicit range of a range-valued segment will be printed.
+//
+// The string returned is useful in the context of creating strings for address sections or full addresses,
+// in which case the radix and the bit-length can be deduced from the context.
+// The String method produces strings more appropriate when no context is provided.
 func (div *AddressDivision) GetWildcardString() string {
 	if div == nil {
 		return nilString()

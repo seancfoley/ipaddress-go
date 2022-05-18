@@ -27,6 +27,7 @@ import (
 type IPv6SegInt = uint16
 type IPv6SegmentValueProvider func(segmentIndex int) IPv6SegInt
 
+// WrappedIPv6SegmentValueProvider converts the given IPv6SegmentValueProvider to a SegmentValueProvider
 func WrappedIPv6SegmentValueProvider(f IPv6SegmentValueProvider) SegmentValueProvider {
 	if f == nil {
 		return nil
@@ -36,6 +37,8 @@ func WrappedIPv6SegmentValueProvider(f IPv6SegmentValueProvider) SegmentValuePro
 	}
 }
 
+// WrappedSegmentValueProviderForIPv6 converts the given SegmentValueProvider to an IPv6SegmentValueProvider
+// Values that do not fit IPv6SegInt are truncated.
 func WrappedSegmentValueProviderForIPv6(f SegmentValueProvider) IPv6SegmentValueProvider {
 	if f == nil {
 		return nil
@@ -142,6 +145,12 @@ var zeroIPv6Seg = NewIPv6Segment(0)
 var zeroIPv6SegZeroPrefix = NewIPv6PrefixedSegment(0, cacheBitCount(0))
 var zeroIPv6SegPrefixBlock = NewIPv6RangePrefixedSegment(0, IPv6MaxValuePerSegment, cacheBitCount(0))
 
+// IPv6AddressSegment represents a segment of an IPv6 address.
+// An IPv6 segment contains a single value or a range of sequential values, a prefix length, and it has bit length of 16 bits.
+//
+// Like strings, segments are immutable, which also makes them concurrency-safe.
+//
+// See AddressSegment for more details regarding segments.
 type IPv6AddressSegment struct {
 	ipAddressSegmentInternal
 }
@@ -249,10 +258,12 @@ func (seg *IPv6AddressSegment) GetCount() *big.Int {
 	return seg.getCount()
 }
 
+// GetPrefixCountLen returns the count of the number of distinct prefix values for the given prefix length in the range of values of this segment
 func (seg *IPv6AddressSegment) GetPrefixCountLen(segmentPrefixLength BitCount) *big.Int {
 	return seg.init().ipAddressSegmentInternal.GetPrefixCountLen(segmentPrefixLength)
 }
 
+// GetPrefixValueCountLen returns the same value as GetPrefixCountLen as an integer
 func (seg *IPv6AddressSegment) GetPrefixValueCountLen(segmentPrefixLength BitCount) SegIntCount {
 	return seg.init().ipAddressSegmentInternal.GetPrefixValueCountLen(segmentPrefixLength)
 }
@@ -288,10 +299,13 @@ func (seg *IPv6AddressSegment) CopyUpperBytes(bytes []byte) []byte {
 	return seg.init().ipAddressSegmentInternal.CopyUpperBytes(bytes)
 }
 
+// GetPrefixValueCount returns the count of prefixes in this segment for its prefix length, or the total count if it has no prefix length.
 func (seg *IPv6AddressSegment) GetPrefixValueCount() SegIntCount {
 	return seg.init().ipAddressSegmentInternal.GetPrefixValueCount()
 }
 
+// MatchesWithPrefixMask applies the network mask of the given bit-length to this segment and then compares the result with the given value masked by the same mask,
+//returning true if the resulting range matches the given single value.
 func (seg *IPv6AddressSegment) MatchesWithPrefixMask(value IPv6SegInt, networkBits BitCount) bool {
 	return seg.init().ipAddressSegmentInternal.MatchesWithPrefixMask(SegInt(value), networkBits)
 }
@@ -320,7 +334,7 @@ func (seg *IPv6AddressSegment) GetTrailingBitCount(ones bool) BitCount {
 	return seg.init().ipAddressSegmentInternal.GetTrailingBitCount(ones)
 }
 
-//GetLeadingBitCount returns the number of consecutive leading one or zero bits.
+// GetLeadingBitCount returns the number of consecutive leading one or zero bits.
 // If ones is true, returns the number of consecutive leading one bits.
 // Otherwise, returns the number of consecutive leading zero bits.
 //
@@ -329,18 +343,26 @@ func (seg *IPv6AddressSegment) GetLeadingBitCount(ones bool) BitCount {
 	return seg.init().ipAddressSegmentInternal.GetLeadingBitCount(ones)
 }
 
+// ToPrefixedNetworkSegment returns a segment with the network bits matching this segment but the host bits converted to zero.
+// The new segment will be assigned the given prefix length.
 func (seg *IPv6AddressSegment) ToPrefixedNetworkSegment(segmentPrefixLength PrefixLen) *IPv6AddressSegment {
 	return seg.init().toPrefixedNetworkDivision(segmentPrefixLength).ToIPv6()
 }
 
+// ToNetworkSegment returns a segment with the network bits matching this segment but the host bits converted to zero.
+// The new segment will have no assigned prefix length.
 func (seg *IPv6AddressSegment) ToNetworkSegment(segmentPrefixLength PrefixLen) *IPv6AddressSegment {
 	return seg.init().toNetworkDivision(segmentPrefixLength, false).ToIPv6()
 }
 
+// ToPrefixedHostSegment returns a segment with the host bits matching this segment but the network bits converted to zero.
+// The new segment will be assigned the given prefix length.
 func (seg *IPv6AddressSegment) ToPrefixedHostSegment(segmentPrefixLength PrefixLen) *IPv6AddressSegment {
 	return seg.init().toPrefixedHostDivision(segmentPrefixLength).ToIPv6()
 }
 
+// ToHostSegment returns a segment with the host bits matching this segment but the network bits converted to zero.
+// The new segment will have no assigned prefix length.
 func (seg *IPv6AddressSegment) ToHostSegment(segmentPrefixLength PrefixLen) *IPv6AddressSegment {
 	return seg.init().toHostDivision(segmentPrefixLength, false).ToIPv6()
 }
@@ -583,6 +605,13 @@ func (seg *IPv6AddressSegment) ToIP() *IPAddressSegment {
 	return (*IPAddressSegment)(seg.init())
 }
 
+// GetString produces a normalized string to represent the segment.
+// If the segment is a CIDR network prefix block for its prefix length, then the string contains only the lower value of the block range.
+// Otherwise, the explicit range will be printed.
+//
+// The string returned is useful in the context of creating strings for address sections or full addresses,
+// in which case the radix and bit-length can be deduced from the context.
+// The String method produces strings more appropriate when no context is provided.
 func (seg *IPv6AddressSegment) GetString() string {
 	if seg == nil {
 		return nilString()
@@ -590,6 +619,12 @@ func (seg *IPv6AddressSegment) GetString() string {
 	return seg.init().getString()
 }
 
+// GetWildcardString produces a normalized string to represent the segment, favouring wildcards and range characters while ignoring any network prefix length.
+// The explicit range of a range-valued segment will be printed.
+//
+// The string returned is useful in the context of creating strings for address sections or full addresses,
+// in which case the radix and the bit-length can be deduced from the context.
+// The String method produces strings more appropriate when no context is provided.
 func (seg *IPv6AddressSegment) GetWildcardString() string {
 	if seg == nil {
 		return nilString()
@@ -607,18 +642,22 @@ func (seg *IPv6AddressSegment) String() string {
 	return seg.init().toString()
 }
 
+// NewIPv6Segment constructs a segment of an IPv6 address with the given value.
 func NewIPv6Segment(val IPv6SegInt) *IPv6AddressSegment {
 	return newIPv6Segment(newIPv6SegmentVal(val))
 }
 
+// NewIPv6RangeSegment constructs a segment of an IPv6 subnet with the given range of sequential values.
 func NewIPv6RangeSegment(val, upperVal IPv6SegInt) *IPv6AddressSegment {
 	return newIPv6Segment(newIPv6SegmentPrefixedValues(val, upperVal, nil))
 }
 
+// NewIPv6PrefixedSegment constructs a segment of an IPv6 address with the given value and assigned prefix length.
 func NewIPv6PrefixedSegment(val IPv6SegInt, prefixLen PrefixLen) *IPv6AddressSegment {
 	return newIPv6Segment(newIPv6SegmentPrefixedVal(val, prefixLen))
 }
 
+// NewIPv6RangePrefixedSegment constructs a segment of an IPv6 subnet with the given range of sequential values and assigned prefix length.
 func NewIPv6RangePrefixedSegment(val, upperVal IPv6SegInt, prefixLen PrefixLen) *IPv6AddressSegment {
 	return newIPv6Segment(newIPv6SegmentPrefixedValues(val, upperVal, prefixLen))
 }
