@@ -16,12 +16,15 @@
 
 package addrstrparam
 
+// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
+//      then addrstr and addrstrparam, then I don't know what is left, if anything, certainly not much
+
 type AddressStringFormatParams interface {
 	AllowsWildcardedSeparator() bool
 	AllowsLeadingZeros() bool
 	AllowsUnlimitedLeadingZeros() bool
 
-	// RangeParams describes whether ranges of values are allowed
+	// GetRangeParams returns the RangeParams describing whether ranges of values are allowed and what wildcards are allowed
 	GetRangeParams() RangeParams
 }
 
@@ -35,20 +38,21 @@ type AddressStringParams interface {
 	AllowsAll() bool
 }
 
+// RangeParams indicates what wildcards and ranges are allowed in the string
 type RangeParams interface {
-	// whether '*' is allowed to denote segments covering all possible segment values
+	// AllowsWildcard indicates whether '*' is allowed to denote segments covering all possible segment values
 	AllowsWildcard() bool
 
-	// whether '-' (or the expected range separator for the address) is allowed to denote a range from lower to higher, like 1-10
+	// AllowsRangeSeparator indicates whether '-' (or the expected range separator for the address) is allowed to denote a range from lower to higher, like 1-10
 	AllowsRangeSeparator() bool
 
-	// whether to allow a segment terminating with '_' characters, which represent any digit
+	// AllowsSingleWildcard indicates whether to allow a segment terminating with '_' characters, which represent any digit
 	AllowsSingleWildcard() bool
 
-	// whether '-' (or the expected range separator for the address) is allowed to denote a range from higher to lower, like 10-1
+	// AllowsReverseRange indicates whether '-' (or the expected range separator for the address) is allowed to denote a range from higher to lower, like 10-1
 	AllowsReverseRange() bool
 
-	// whether a missing range value before or after a '-' is allowed to denote the mininum or maximum potential value
+	// AllowsInferredBoundary indicates whether a missing range value before or after a '-' is allowed to denote the mininum or maximum potential value
 	AllowsInferredBoundary() bool
 }
 
@@ -61,6 +65,7 @@ type rangeParameters struct {
 }
 
 var (
+	// NoRange - use no wildcards nor range separators
 	NoRange RangeParams = &rangeParameters{
 		noWildcard:         true,
 		noValueRange:       true,
@@ -69,37 +74,37 @@ var (
 		noInferredBoundary: true,
 	}
 
-	// use this to support addresses like 1.*.3.4 or 1::*:3 or 1.2_.3.4 or 1::a__:3
+	// WildcardOnly - use this to support addresses like 1.*.3.4 or 1::*:3 or 1.2_.3.4 or 1::a__:3
 	WildcardOnly RangeParams = &rangeParameters{
 		noValueRange:   true,
 		noReverseRange: true,
 	}
 
-	// use this to support addresses supported by the default wildcard options and also addresses like 1.2-3.3.4 or 1:0-ff::
+	// WildcardAndRange - use this to support addresses supported by the default wildcard options and also addresses like 1.2-3.3.4 or 1:0-ff::
 	WildcardAndRange RangeParams = &rangeParameters{}
 )
 
-// whether '*' is allowed to denote segments covering all possible segment values
+// AllowsWildcard indicates whether '*' is allowed to denote segments covering all possible segment values
 func (builder *rangeParameters) AllowsWildcard() bool {
 	return !builder.noWildcard
 }
 
-// whether '-' (or the expected range separator for the address) is allowed to denote a range from lower to higher, like 1-10
+// AllowsRangeSeparator indicates whether '-' (or the expected range separator for the address) is allowed to denote a range from lower to higher, like 1-10
 func (builder *rangeParameters) AllowsRangeSeparator() bool {
 	return !builder.noValueRange
 }
 
-// whether '-' (or the expected range separator for the address) is allowed to denote a range from higher to lower, like 10-1
+// AllowsReverseRange indicates whether '-' (or the expected range separator for the address) is allowed to denote a range from higher to lower, like 10-1
 func (builder *rangeParameters) AllowsReverseRange() bool {
 	return !builder.noReverseRange
 }
 
-// whether a missing range value before or after a '-' is allowed to denote the mininum or maximum potential value
+// AllowsInferredBoundary indicates whether a missing range value before or after a '-' is allowed to denote the mininum or maximum potential value
 func (builder *rangeParameters) AllowsInferredBoundary() bool {
 	return !builder.noInferredBoundary
 }
 
-// whether to allow a segment terminating with '_' characters, which represent any digit
+// AllowsSingleWildcard indicates whether to allow a segment terminating with '_' characters, which represent any digit
 func (builder *rangeParameters) AllowsSingleWildcard() bool {
 	return !builder.noSingleWildcard
 }

@@ -1314,12 +1314,12 @@ func (section *IPv6AddressSection) IsAdaptiveZero() bool {
 }
 
 var (
-	compressAll            = new(addrstr.CompressOptionsBuilder).SetCompressSingle(true).SetRangeSelection(addrstr.ZerosOrHost).ToOptions()
-	compressMixed          = new(addrstr.CompressOptionsBuilder).SetCompressSingle(true).SetRangeSelection(addrstr.MixedPreferred).ToOptions()
-	compressAllNoSingles   = new(addrstr.CompressOptionsBuilder).SetRangeSelection(addrstr.ZerosOrHost).ToOptions()
-	compressHostPreferred  = new(addrstr.CompressOptionsBuilder).SetCompressSingle(true).SetRangeSelection(addrstr.HostPreferred).ToOptions()
-	compressZeros          = new(addrstr.CompressOptionsBuilder).SetCompressSingle(true).SetRangeSelection(addrstr.ZerosCompression).ToOptions()
-	compressZerosNoSingles = new(addrstr.CompressOptionsBuilder).SetRangeSelection(addrstr.ZerosCompression).ToOptions()
+	compressAll            = new(addrstr.CompressOptionsBuilder).SetCompressSingle(true).SetCompressionChoiceOptions(addrstr.ZerosOrHost).ToOptions()
+	compressMixed          = new(addrstr.CompressOptionsBuilder).SetCompressSingle(true).SetCompressionChoiceOptions(addrstr.MixedPreferred).ToOptions()
+	compressAllNoSingles   = new(addrstr.CompressOptionsBuilder).SetCompressionChoiceOptions(addrstr.ZerosOrHost).ToOptions()
+	compressHostPreferred  = new(addrstr.CompressOptionsBuilder).SetCompressSingle(true).SetCompressionChoiceOptions(addrstr.HostPreferred).ToOptions()
+	compressZeros          = new(addrstr.CompressOptionsBuilder).SetCompressSingle(true).SetCompressionChoiceOptions(addrstr.ZerosCompression).ToOptions()
+	compressZerosNoSingles = new(addrstr.CompressOptionsBuilder).SetCompressionChoiceOptions(addrstr.ZerosCompression).ToOptions()
 
 	uncWildcards = new(addrstr.WildcardOptionsBuilder).SetWildcardOptions(addrstr.WildcardsNetworkOnly).SetWildcards(
 		new(addrstr.WildcardsBuilder).SetRangeSeparator(IPv6UncRangeSeparatorStr).SetWildcard(SegmentWildcardStr).ToWildcards()).ToOptions()

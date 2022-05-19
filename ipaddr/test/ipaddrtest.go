@@ -3483,7 +3483,7 @@ func (t ipAddressTester) testNormalizedMC(original, expected string, keepMixed, 
 		val := w.GetAddress().ToIPv6()
 		var paramsBuilder = new(addrstr.IPv6StringOptionsBuilder)
 		if compress {
-			compressOpts := new(addrstr.CompressOptionsBuilder).SetCompressSingle(true).SetRangeSelection(addrstr.ZerosOrHost).ToOptions()
+			compressOpts := new(addrstr.CompressOptionsBuilder).SetCompressSingle(true).SetCompressionChoiceOptions(addrstr.ZerosOrHost).ToOptions()
 			paramsBuilder = paramsBuilder.SetCompressOptions(compressOpts)
 		}
 		fromString := val.ToAddressString()
@@ -3549,7 +3549,7 @@ func (t ipAddressTester) testMixedNoComp(original, expected, expectedNoCompressi
 	if normalized != expected {
 		t.addFailure(newFailure("mixed was "+normalized+" expected was "+expected, w))
 	} else {
-		compressOpts := new(addrstr.CompressOptionsBuilder).SetCompressSingle(true).SetRangeSelection(addrstr.ZerosOrHost).SetMixedOptions(addrstr.NoMixedCompression).ToOptions()
+		compressOpts := new(addrstr.CompressOptionsBuilder).SetCompressSingle(true).SetCompressionChoiceOptions(addrstr.ZerosOrHost).SetMixedCompressionOptions(addrstr.NoMixedCompression).ToOptions()
 		normalized, err := val.ToCustomString(new(addrstr.IPv6StringOptionsBuilder).SetMixed(true).SetCompressOptions(compressOpts).ToOptions())
 		if err != nil {
 			t.addFailure(newIPAddrFailure("ToCustomString errored with error: "+err.Error(), val.ToIP()))
