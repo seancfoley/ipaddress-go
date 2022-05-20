@@ -25,36 +25,6 @@ import (
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
 )
 
-///*
-//Error hierarchy:
-//
-//AddressError
-//	-addrerr.IncompatibleAddressError
-//		- SizeMismatchError
-//	- HostIdentifierError
-//		- addrerr.HostNameError
-//		- addrerr.AddressStringError
-//	- addrerr.AddressValueError
-//
-//unused:
-//NetworkMismatchException
-//InconsistentPrefixException
-//AddressPositionException
-//AddressConversionException
-//PrefixLenException
-//*/
-//
-//type AddressError interface {
-//	error
-//
-//	// GetKey() allows users to implement their own i18n error messages.
-//	// The keys and mappings are listed in IPAddressResources.properties,
-//	// so users of this library need only provide translations and implement
-//	// their own method of i18n to incorporate those translations,
-//	// such as the method provided by golang.org/x/text
-//	GetKey() string
-//}
-
 type addressError struct {
 	// key to look up the error message
 	key string
@@ -122,6 +92,7 @@ type hostNameError struct {
 	addressError
 }
 
+// GetAddrError returns the nested address error which is nil for a host name error
 func (a *hostNameError) GetAddrError() addrerr.AddressError {
 	return nil
 }
@@ -140,6 +111,7 @@ type hostAddressNestedError struct {
 	nested addrerr.AddressError
 }
 
+// GetAddrError returns the nested address error
 func (a *hostAddressNestedError) GetAddrError() addrerr.AddressError {
 	return a.nested
 }

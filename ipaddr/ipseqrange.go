@@ -27,6 +27,7 @@ import (
 	"unsafe"
 )
 
+// DefaultSeqRangeSeparator is the low to high value separator used when creating strings for IP ranges
 const DefaultSeqRangeSeparator = " -> "
 
 type rangeCache struct {

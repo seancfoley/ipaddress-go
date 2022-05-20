@@ -1027,6 +1027,9 @@ func (grouping *addressDivisionGroupingInternal) GetBlockCount(divisionCount int
 // AddressDivisionGrouping objects are immutable.  This also makes them thread-safe.
 //
 // AddressDivision objects use uint64 to represent their values, so this places a cap on the size of the divisions in AddressDivisionGrouping.
+//
+// AddressDivisionGrouping objects are similar to address sections and addresses, except that groupings can have divisions of differing bit-length,
+// including divisions that are not an exact number of bytes, whereas all segments in an address or address section must be equal bit size and an exact number of bytes.
 type AddressDivisionGrouping struct {
 	addressDivisionGroupingInternal
 }

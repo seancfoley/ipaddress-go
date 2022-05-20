@@ -16,12 +16,23 @@
 
 package addrstrparam
 
-// TODO go downwards through this file to doc each method, one by one.  For each one, document the method throughout the code, not just in here.
-//      then addrstr and addrstrparam, then I don't know what is left, if anything, certainly not much
-
 type AddressStringFormatParams interface {
+	// AllowsWildcardedSeparator controls whether the wildcard '*' or '%' can replace the segment separators '.' and ':'.
+	// If so, then you can write addresses like *.* or *:*
 	AllowsWildcardedSeparator() bool
+
+	// AllowsLeadingZeros indicates whether you allow addresses with segments that have leasing zeros like 001.2.3.004 or 1:000a::
+	// For IPV4, this option overrides inet_aton octal.
+	//
+	// Single segment addresses that must have the requisite length to be parsed are not affected by this flag.
 	AllowsLeadingZeros() bool
+
+	// AllowsUnlimitedLeadingZeros determines if you allow leading zeros that extend segments
+	// beyond the usual segment length, which is 3 for IPv4 dotted-decimal and 4 for IPv6.
+	// However, this only takes effect if leading zeros are allowed, which is when
+	// AllowsLeadingZeros is true or the address is IPv4 and Allows_inet_aton_octal is true.
+	//
+	// For example, this determines whether you allow 0001.0002.0003.0004
 	AllowsUnlimitedLeadingZeros() bool
 
 	// GetRangeParams returns the RangeParams describing whether ranges of values are allowed and what wildcards are allowed
@@ -29,7 +40,10 @@ type AddressStringFormatParams interface {
 }
 
 type AddressStringParams interface {
+	// AllowsEmpty indicates whether it allows zero-length address strings: ""
 	AllowsEmpty() bool
+
+	// AllowsSingleSegment allows an address to be specified as a single value, eg ffffffff, without the standard use of segments like 1.2.3.4 or 1:2:4:3:5:6:7:8
 	AllowsSingleSegment() bool
 
 	// AllowsAll indicates if we allow the string of just the wildcard "*" to denote all addresses of all version.
@@ -109,15 +123,18 @@ func (builder *rangeParameters) AllowsSingleWildcard() bool {
 	return !builder.noSingleWildcard
 }
 
+// RangeParamsBuilder is used to build an immutable RangeParams for parsing address strings
 type RangeParamsBuilder struct {
 	rangeParameters
 	parent interface{}
 }
 
+// ToParams returns an immutable RangeParams instance built by this builder
 func (builder *RangeParamsBuilder) ToParams() RangeParams {
 	return &builder.rangeParameters
 }
 
+// Set initializes this builder with the values from the given RangeParams
 func (builder *RangeParamsBuilder) Set(rangeParams RangeParams) *RangeParamsBuilder {
 	if rp, ok := rangeParams.(*rangeParameters); ok {
 		builder.rangeParameters = *rp
@@ -133,7 +150,7 @@ func (builder *RangeParamsBuilder) Set(rangeParams RangeParams) *RangeParamsBuil
 	return builder
 }
 
-// If this builder was obtained by a call to IPv4AddressStringParamsBuilder.GetRangeParamsBuilder(), returns the IPv4AddressStringParamsBuilder
+// GetIPv4ParentBuilder returns the IPv4AddressStringParamsBuilder if this builder was obtained by a call to IPv4AddressStringParamsBuilder.GetRangeParamsBuilder
 func (builder *RangeParamsBuilder) GetIPv4ParentBuilder() *IPv4AddressStringParamsBuilder {
 	parent := builder.parent
 	if p, ok := parent.(*IPv4AddressStringParamsBuilder); ok {
@@ -142,7 +159,7 @@ func (builder *RangeParamsBuilder) GetIPv4ParentBuilder() *IPv4AddressStringPara
 	return nil
 }
 
-// If this builder was obtained by a call to IPv6AddressStringParamsBuilder.GetRangeParamsBuilder(), returns the IPv6AddressStringParamsBuilder
+// GetIPv6ParentBuilder returns the IPv6AddressStringParamsBuilder if this builder was obtained by a call to IPv6AddressStringParamsBuilder.GetRangeParamsBuilder
 func (builder *RangeParamsBuilder) GetIPv6ParentBuilder() *IPv6AddressStringParamsBuilder {
 	parent := builder.parent
 	if p, ok := parent.(*IPv6AddressStringParamsBuilder); ok {
@@ -151,7 +168,7 @@ func (builder *RangeParamsBuilder) GetIPv6ParentBuilder() *IPv6AddressStringPara
 	return nil
 }
 
-// If this builder was obtained by a call to IPv6AddressStringParamsBuilder.GetRangeParamsBuilder(), returns the IPv6AddressStringParamsBuilder
+// GetMACParentBuilder returns the IPv6AddressStringParamsBuilder if this builder was obtained by a call to IPv6AddressStringParamsBuilder.GetRangeParamsBuilder
 func (builder *RangeParamsBuilder) GetMACParentBuilder() *MACAddressStringFormatParamsBuilder {
 	parent := builder.parent
 	if p, ok := parent.(*MACAddressStringFormatParamsBuilder); ok {
@@ -160,31 +177,31 @@ func (builder *RangeParamsBuilder) GetMACParentBuilder() *MACAddressStringFormat
 	return nil
 }
 
-// whether '*' is allowed to denote segments covering all possible segment values
+// AllowWildcard dictates whether '*' is allowed to denote segments covering all possible segment values
 func (builder *RangeParamsBuilder) AllowWildcard(allow bool) *RangeParamsBuilder {
 	builder.noWildcard = !allow
 	return builder
 }
 
-// whether '-' (or the expected range separator for the address) is allowed to denote a range from lower to higher, like 1-10
+// AllowRangeSeparator dictates whether '-' (or the expected range separator for the address) is allowed to denote a range from lower to higher, like 1-10
 func (builder *RangeParamsBuilder) AllowRangeSeparator(allow bool) *RangeParamsBuilder {
 	builder.noValueRange = !allow
 	return builder
 }
 
-// whether '-' (or the expected range separator for the address) is allowed to denote a range from higher to lower, like 10-1
+// AllowReverseRange dictates whether '-' (or the expected range separator for the address) is allowed to denote a range from higher to lower, like 10-1
 func (builder *RangeParamsBuilder) AllowReverseRange(allow bool) *RangeParamsBuilder {
 	builder.noReverseRange = !allow
 	return builder
 }
 
-// whether a missing range value before or after a '-' is allowed to denote the mininum or maximum potential value
+// AllowInferredBoundary dictates whether a missing range value before or after a '-' is allowed to denote the mininum or maximum potential value
 func (builder *RangeParamsBuilder) AllowInferredBoundary(allow bool) *RangeParamsBuilder {
 	builder.noInferredBoundary = !allow
 	return builder
 }
 
-// whether to allow a segment terminating with '_' characters, which represent any digit
+// AllowSingleWildcard dictates whether to allow a segment terminating with '_' characters, which represent any digit
 func (builder *RangeParamsBuilder) AllowSingleWildcard(allow bool) *RangeParamsBuilder {
 	builder.noSingleWildcard = !allow
 	return builder
@@ -194,14 +211,19 @@ type addressStringParameters struct {
 	noEmpty, noAll, noSingleSegment bool
 }
 
+// AllowsEmpty indicates whether it allows zero-length address strings: ""
 func (params *addressStringParameters) AllowsEmpty() bool {
 	return !params.noEmpty
 }
 
+// AllowsSingleSegment allows an address to be specified as a single value, eg ffffffff, without the standard use of segments like 1.2.3.4 or 1:2:4:3:5:6:7:8
 func (params *addressStringParameters) AllowsSingleSegment() bool {
 	return !params.noSingleSegment
 }
 
+// AllowsAll indicates if we allow the string of just the wildcard "*" to denote all addresses of all version.
+// If false, then for IP addresses we check the preferred version with GetPreferredVersion(), and then check AllowsWildcardedSeparator(),
+// to determine if the string represents all addresses of that version.
 func (params *addressStringParameters) AllowsAll() bool {
 	return !params.noAll
 }
@@ -223,6 +245,7 @@ func (builder *AddressStringParamsBuilder) set(params AddressStringParams) {
 	}
 }
 
+// ToParams returns an immutable AddressStringParams instance built by this builder
 func (builder *AddressStringParamsBuilder) ToParams() AddressStringParams {
 	return &builder.addressStringParameters
 }
@@ -248,18 +271,31 @@ type addressStringFormatParameters struct {
 	noWildcardedSeparator, noLeadingZeros, noUnlimitedLeadingZeros bool
 }
 
+// AllowsWildcardedSeparator controls whether the wildcard '*' or '%' can replace the segment separators '.' and ':'.
+// If so, then you can write addresses like *.* or *:*
 func (params *addressStringFormatParameters) AllowsWildcardedSeparator() bool {
 	return !params.noWildcardedSeparator
 }
 
+// AllowsLeadingZeros indicates whether you allow addresses with segments that have leasing zeros like 001.2.3.004 or 1:000a::
+// For IPV4, this option overrides inet_aton octal.
+//
+// Single segment addresses that must have the requisite length to be parsed are not affected by this flag.
 func (params *addressStringFormatParameters) AllowsLeadingZeros() bool {
 	return !params.noLeadingZeros
 }
 
+// AllowsUnlimitedLeadingZeros determines if you allow leading zeros that extend segments
+// beyond the usual segment length, which is 3 for IPv4 dotted-decimal and 4 for IPv6.
+// However, this only takes effect if leading zeros are allowed, which is when
+// AllowsLeadingZeros is true or the address is IPv4 and Allows_inet_aton_octal is true.
+//
+// For example, this determines whether you allow 0001.0002.0003.0004
 func (params *addressStringFormatParameters) AllowsUnlimitedLeadingZeros() bool {
 	return !params.noUnlimitedLeadingZeros
 }
 
+// GetRangeParams returns the RangeParams describing whether ranges of values are allowed and what wildcards are allowed
 func (params *addressStringFormatParameters) GetRangeParams() RangeParams {
 	return &params.rangeParams
 }
@@ -273,6 +309,7 @@ type AddressStringFormatParamsBuilder struct {
 	rangeParamsBuilder RangeParamsBuilder
 }
 
+// ToParams returns an immutable AddressStringFormatParams instance built by this builder
 func (builder *AddressStringFormatParamsBuilder) ToParams() AddressStringFormatParams {
 	result := &builder.addressStringFormatParameters
 	result.rangeParams = *builder.rangeParamsBuilder.ToParams().(*rangeParameters)
@@ -296,6 +333,7 @@ func (builder *AddressStringFormatParamsBuilder) setRangeParameters(rangeParams 
 	builder.rangeParamsBuilder.Set(rangeParams)
 }
 
+// GetRangeParamsBuilder returns a builder that builds the range parameters for these address string format parameters
 func (builder *AddressStringFormatParamsBuilder) GetRangeParamsBuilder() RangeParams {
 	return &builder.rangeParamsBuilder
 }

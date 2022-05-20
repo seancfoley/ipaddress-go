@@ -2266,7 +2266,7 @@ func createAllAddress(
 	segMaxVal := creator.getMaxValuePerSegment()
 	hasMask := mask != nil
 	prefLen := getPrefixLength(qualifier)
-	bitsPerSegment := BitsPerSegment(version)
+	bitsPerSegment := version.GetBitsPerSegment()
 	for i := 0; i < segmentCount; i++ {
 		var segmentMask *SegInt
 		if hasMask {

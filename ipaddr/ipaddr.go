@@ -125,7 +125,7 @@ func (version IPVersion) GetBytesPerSegment() int {
 	return 0
 }
 
-// GetBitsPerSegment returns the number of bits comprising each segment in this address.  Segments in the same address are equal length.
+// GetBitsPerSegment returns the number of bits comprising each segment for this address version, either 8 or 16 for IPv4 and IPv6 respectively.  Segments in the same address are equal length.
 func (version IPVersion) GetBitsPerSegment() BitCount {
 	if version.IsIPv4() {
 		return IPv4BitsPerSegment
@@ -679,9 +679,9 @@ var zeroIPAddr = createIPAddress(zeroSection, NoZone)
 
 //
 //
-// IPAddress represents an IP address or subnet, either IPv4 or IPv6.
+// IPAddress represents an IP address or subnet, either IPv4 or IPv6 (except for the zero-IPAddress which is neither).
 // An IP address is composed of range-valued segments and can optionally have an associated prefix length.
-// The zero value IPAddress has no segments, neither IPv4 nor IPv6, which is not compatible with zero value for ivp4 or ipv6.
+// The zero value IPAddress has no segments, neither IPv4 nor IPv6, which is not compatible with zero value for IPv4 or IPv6, those being 0.0.0.0 and :: respectively.
 type IPAddress struct {
 	ipAddressInternal
 }

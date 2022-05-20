@@ -2294,13 +2294,6 @@ var (
 		new(addrstr.WildcardsBuilder).SetWildcard(SegmentSqlWildcardStr).SetSingleWildcard(SegmentSqlSingleWildcardStr).ToWildcards()).ToOptions()
 )
 
-func BitsPerSegment(version IPVersion) BitCount {
-	if version == IPv4 {
-		return IPv4BitsPerSegment
-	}
-	return IPv6BitsPerSegment
-}
-
 // handles prefix block subnets, and ensures segment prefixes match the section prefix
 func assignPrefix(prefixLength PrefixLen, segments []*AddressDivision, res *IPAddressSection, singleOnly, checkPrefixes bool, boundaryBits BitCount) {
 	prefLen := prefixLength.bitCount()

@@ -19,6 +19,7 @@ package addrstrparam
 import "strings"
 
 // CopyIPAddressStringParams produces an immutable copy of the original IPAddressStringParams.
+// Copying an IPAddressStringParams created by an IPAddressStringParamsBuilder is unnecessary since it is already immutable.
 func CopyIPAddressStringParams(orig IPAddressStringParams) IPAddressStringParams {
 	if p, ok := orig.(*ipAddressStringParameters); ok {
 		return p
@@ -28,21 +29,30 @@ func CopyIPAddressStringParams(orig IPAddressStringParams) IPAddressStringParams
 
 // IPAddressStringParams provides parameters for parsing IP address strings,
 // indicating what to allow, what to disallow, and other options.
-// You can use IPAddressStringParamsBuilder to construct an IPAddressStringParams.
+//
+// This allows you to control the validation performed by IPAddressString.
+//
+// IPAddressString uses a default permissive IPAddressStringParams instance when you do not specify one.
+//
+// If you wish to use parameters different from the default, then use this interface.  Immutable instances can be constructed with IPAddressStringParamsBuilder.
 type IPAddressStringParams interface {
 	AddressStringParams
 
 	// AllowsPrefix indicates whether addresses with prefix length like 1.2.0.0/16 are allowed.
 	AllowsPrefix() bool
 
-	// EmptyStrParsedAs determines how an zero-length empty string is translated to an address.
+	// EmptyStrParsedAs determines how a zero-length empty string is translated to an address.
 	// If the option is ZeroAddressOption or LoopbackOption, then if defers to GetPreferredVersion() for the version.
 	EmptyStrParsedAs() EmptyStrOption
 
-	// EmptyStrParsedAs determines how the "all" string "*" is translated to addresses.
-	// If the option is AllPreferredIPVersion, then if defers to GetPreferredVersion() for the version.
+	// AllStrParsedAs determines how the "all" string "*" is translated to addresses.
+	// If the option is AllPreferredIPVersion, then it defers to GetPreferredVersion() for the version.
 	AllStrParsedAs() AllStrOption
 
+	// AllowsMask allows masks to follow valid addresses, such as 1.2.3.4/255.255.0.0 which has the mask 255.255.0.0
+	// If the mask is the mask for a network prefix length, this is interpreted as the subnet for that network prefix length.
+	// Otherwise the address is simply masked by the mask.
+	// For instance, 1.2.3.4/255.0.255.0 is 1.0.3.0, while 1.2.3.4/255.255.0.0 is 1.2.0.0/16.
 	AllowsMask() bool
 
 	// GetPreferredVersion indicates the version to use for ambiguous addresses strings,
@@ -53,89 +63,110 @@ type IPAddressStringParams interface {
 	// If either of AllowsIPv4() or AllowsIPv6() returns false, then those settings take precedence over this setting.
 	GetPreferredVersion() IPVersion
 
+	// AllowsIPv4 allows IPv4 addresses and subnets
 	AllowsIPv4() bool
+
+	// AllowsIPv6 allows IPv6 addresses and subnets
 	AllowsIPv6() bool
+
+	// GetIPv4Params returns the parameters that apply specifically to IPv4 addresses and subnets
 	GetIPv4Params() IPv4AddressStringParams
+
+	// GetIPv6Params returns the parameters that apply specifically to IPv6 addresses and subnets
 	GetIPv6Params() IPv6AddressStringParams
 }
 
+// EmptyStrOption is an option indicating how to translate an empty address string to an address
 type EmptyStrOption string
 
 const (
-	NoAddressOption   EmptyStrOption = "none"
-	ZeroAddressOption EmptyStrOption = "" // the default for Go is the zero address, which means zero strings are translated to zero addresses
-	LoopbackOption    EmptyStrOption = "loopback"
+	// NoAddressOption indicates that empty strings are not translated to addresses
+	NoAddressOption EmptyStrOption = "none"
+
+	// ZeroAddressOption is the default, which means empty strings are translated to zero addresses
+	ZeroAddressOption EmptyStrOption = ""
+
+	// LoopbackOption indicates empty strings are translated to loopback addresses
+	LoopbackOption EmptyStrOption = "loopback"
 )
 
+// AllStrOption is an option indicating how to translate an all address string, such as "*", to an address
 type AllStrOption string
 
 const (
-	AllAddresses          AllStrOption = "" // the default for Go
+	// AllAddresses is the default, indicating the all address string refers to all addresses of all IP versions
+	AllAddresses AllStrOption = "" // the default for Go
+
+	// AllPreferredIPVersion indicates the all address string refers to all addresses of the preferred IP version
 	AllPreferredIPVersion AllStrOption = "preferred"
 )
 
 var _ IPAddressStringParams = &ipAddressStringParameters{}
 
+// IPv4AddressStringParams provides parameters specific to IPv4 addresses and subnets
 type IPv4AddressStringParams interface {
 	IPAddressStringFormatParams
 
-	// Allows ipv4 inet_aton hexadecimal format 0xa.0xb.0xc.0cd
+	// Allows_inet_aton_hex allows IPv4 inet_aton hexadecimal format 0xa.0xb.0xc.0cd
 	Allows_inet_aton_hex() bool
 
-	// Allows ipv4 inet_aton octal format, 04.05.06.07 being an example.
+	// Allows_inet_aton_octal allows IPv4 inet_aton octal format, 04.05.06.07 being an example.
 	// Can be overridden by allowLeadingZeros
 	Allows_inet_aton_octal() bool
 
-	// Allows ipv4 joined segments like 1.2.3, 1.2, or just 1
+	// Allows_inet_aton_joinedSegments allows IPv4 joined segments like 1.2.3, 1.2, or just 1
 	//
 	// For the case of just 1 segment, the behaviour is controlled by allowSingleSegment
 	Allows_inet_aton_joinedSegments() bool
 
-	// If you allow ipv4 joined segments, whether you allow a mask that looks like a prefix length: 1.2.3.5/255
+	// Allows_inet_aton_single_segment_mask indicates whether you allow a mask that looks like a prefix length when you allow IPv4 joined segments: 1.2.3.5/255
 	Allows_inet_aton_single_segment_mask() bool
 
-	// Allows ipv4 inet_aton hexadecimal or octal to have leading zeros, such as in the first two segments of 0x0a.00b.c.d
+	// Allows_inet_aton_leading_zeros allows IPv4 inet_aton hexadecimal or octal to have leading zeros, such as in the first two segments of 0x0a.00b.c.d
 	// The first 0 is not considered a leading zero, it either denotes octal or hex depending on whether it is followed by an 'x'.
-	// ZerosCompression that appear afterwards are inet_aton leading zeros.
+	// Zeros that appear afterwards are inet_aton leading zeros.
 	Allows_inet_aton_leading_zeros() bool
 }
 
 var _ IPv4AddressStringParams = &ipv4AddressStringParameters{}
 
+// IPv6AddressStringParams provides parameters specific to IPv6 addresses and subnets
 type IPv6AddressStringParams interface {
 	IPAddressStringFormatParams
 
-	// Allow mixed-in embedded IPv4 like a:b:c:d:e:f:1.2.3.4
+	// AllowsMixed allows mixed-in embedded IPv4 like a:b:c:d:e:f:1.2.3.4
 	AllowsMixed() bool
 
-	// Allow zones like a:b:c:d:e:f:a:b%zone
+	// AllowsZone allows zones like a:b:c:d:e:f:a:b%zone
 	AllowsZone() bool
 
-	// Allow the zone character % with no following zone
+	// AllowsEmptyZone allows the zone character % with no following zone
 	AllowsEmptyZone() bool
 
-	// Allow IPv6 single-segment base 85 addresses
+	// AllowsBase85 allows IPv6 single-segment base 85 addresses
 	AllowsBase85() bool
 
-	// The parameters that will be used for embedded mixed addresses if AllowsMixed() is true
+	// GetMixedParams provides the IP parameters that for parsing the embedded IPv4 section of a mixed IPv6/v4 address, if AllowsMixed is true
 	GetMixedParams() IPAddressStringParams
 
-	// The IPv4 part of the IPAddressStringParams returned by GetMixedParameters(), which is the part that matters most
+	// GetEmbeddedIPv4AddressParams returns the IPv4 parameters for parsing the embedded IPv4 section of a mixed IPv6/v4 address
 	GetEmbeddedIPv4AddressParams() IPv4AddressStringParams
 }
 
 var _ IPv6AddressStringParams = &ipv6AddressStringParameters{}
 
+// IPAddressStringFormatParams provides format parameters that apply to all IP addresses, but can be different for IPv4 or IPv6,
+// allowing for cases where you may wish to allow something for one version but not the same for the other version
 type IPAddressStringFormatParams interface {
 	AddressStringFormatParams
 
-	// Allow prefix length values greater than 32 for IPv4 or greater than 128 for IPv6
+	// AllowsPrefixesBeyondAddressSize allows prefix length values greater than 32 for IPv4 or greater than 128 for IPv6
 	AllowsPrefixesBeyondAddressSize() bool
 
-	// Allow leading zeros in the prefix length like 1.2.3.4/016
+	// AllowsPrefixLenLeadingZeros allows leading zeros in the prefix length like 1.2.3.4/016
 	AllowsPrefixLenLeadingZeros() bool
 
-	// Allow binary addresses like 11111111.0.1.0 or 1111111111111111::
+	// AllowsBinary allows binary addresses like 11111111.0.1.0 or 1111111111111111::
 	AllowsBinary() bool
 }
 
@@ -173,43 +204,62 @@ type ipAddressStringParameters struct {
 	noPrefix, noMask, noIPv6, noIPv4 bool
 }
 
+// AllowsPrefix indicates whether addresses with prefix length like 1.2.0.0/16 are allowed.
 func (params *ipAddressStringParameters) AllowsPrefix() bool {
 	return !params.noPrefix
 }
 
+// EmptyStrParsedAs determines how a zero-length empty string is translated to an address.
+// If the option is ZeroAddressOption or LoopbackOption, then if defers to GetPreferredVersion() for the version.
 func (params *ipAddressStringParameters) EmptyStrParsedAs() EmptyStrOption {
 	return params.emptyStringOption
 }
 
+// AllStrParsedAs determines how the "all" string "*" is translated to addresses.
+// If the option is AllPreferredIPVersion, then it defers to GetPreferredVersion() for the version.
 func (params *ipAddressStringParameters) AllStrParsedAs() AllStrOption {
 	return params.allStringOption
 }
 
+// GetPreferredVersion indicates the version to use for ambiguous addresses strings,
+// like prefix lengths less than 32 bits which are translated to masks,
+// the "all" address or the "empty" address.
+// The default is IPv6.
+//
+// If either of AllowsIPv4() or AllowsIPv6() returns false, then those settings take precedence over this setting.
 func (params *ipAddressStringParameters) GetPreferredVersion() IPVersion {
 	return params.preferredVersion
 }
 
+// AllowsMask allows masks to follow valid addresses, such as 1.2.3.4/255.255.0.0 which has the mask 255.255.0.0
+// If the mask is the mask for a network prefix length, this is interpreted as the subnet for that network prefix length.
+// Otherwise the address is simply masked by the mask.
+// For instance, 1.2.3.4/255.0.255.0 is 1.0.3.0, while 1.2.3.4/255.255.0.0 is 1.2.0.0/16.
 func (params *ipAddressStringParameters) AllowsMask() bool {
 	return !params.noMask
 }
 
+// AllowsIPv4 allows IPv4 addresses and subnets
 func (params *ipAddressStringParameters) AllowsIPv4() bool {
 	return !params.noIPv4
 }
 
+// AllowsIPv6 allows IPv6 addresses and subnets
 func (params *ipAddressStringParameters) AllowsIPv6() bool {
 	return !params.noIPv6
 }
 
+// GetIPv4Params returns the parameters that apply specifically to IPv4 addresses and subnets
 func (params *ipAddressStringParameters) GetIPv4Params() IPv4AddressStringParams {
 	return &params.ipv4Params
 }
 
+// GetIPv6Params returns the parameters that apply specifically to IPv6 addresses and subnets
 func (params *ipAddressStringParameters) GetIPv6Params() IPv6AddressStringParams {
 	return &params.ipv6Params
 }
 
-// IPAddressStringParamsBuilder builds an IPAddressStringParameters
+// IPAddressStringParamsBuilder builds an immutable IPAddressStringParameters for controlling parsing of IP address strings.
 type IPAddressStringParamsBuilder struct {
 	params ipAddressStringParameters
 	AddressStringParamsBuilder
@@ -219,10 +269,12 @@ type IPAddressStringParamsBuilder struct {
 	parent *HostNameParamsBuilder
 }
 
+// GetParentBuilder returns the original HostNameParamsBuilder builder that this was obtained from, if this builder was obtained from a HostNameParamsBuilder
 func (builder *IPAddressStringParamsBuilder) GetParentBuilder() *HostNameParamsBuilder {
 	return builder.parent
 }
 
+// ToParams returns an immutable IPAddressStringParams instance built by this builder
 func (builder *IPAddressStringParamsBuilder) ToParams() IPAddressStringParams {
 	// We do not return a pointer to builder.params because that would make it possible to change a ipAddressStringParameters
 	// by continuing to use the same builder,
@@ -235,18 +287,21 @@ func (builder *IPAddressStringParamsBuilder) ToParams() IPAddressStringParams {
 	return &result
 }
 
+// GetIPv6AddressParamsBuilder returns a builder that builds the IPv6AddressStringParams for the IPAddressStringParams being built by this builder
 func (builder *IPAddressStringParamsBuilder) GetIPv6AddressParamsBuilder() (result *IPv6AddressStringParamsBuilder) {
 	result = &builder.ipv6Builder
 	result.parent = builder
 	return
 }
 
+// GetIPv4AddressParamsBuilder returns a builder that builds the IPv4AddressStringParams for the IPAddressStringParams being built by this builder
 func (builder *IPAddressStringParamsBuilder) GetIPv4AddressParamsBuilder() (result *IPv4AddressStringParamsBuilder) {
 	result = &builder.ipv4Builder
 	result.parent = builder
 	return
 }
 
+// Set populates this builder with the values from the given IPAddressStringParams
 func (builder *IPAddressStringParamsBuilder) Set(params IPAddressStringParams) *IPAddressStringParamsBuilder {
 	return builder.set(params, false)
 }
@@ -271,69 +326,95 @@ func (builder *IPAddressStringParamsBuilder) set(params IPAddressStringParams, i
 	return builder
 }
 
+// AllowEmpty dictates whether to allow empty zero-length address strings
 func (builder *IPAddressStringParamsBuilder) AllowEmpty(allow bool) *IPAddressStringParamsBuilder {
 	builder.allowEmpty(allow)
 	return builder
 }
 
+// AllowSingleSegment dictates whether to allow an address to be specified as a single value, eg ffffffff, without the standard use of segments like 1.2.3.4 or 1:2:4:3:5:6:7:8
 func (builder *IPAddressStringParamsBuilder) AllowSingleSegment(allow bool) *IPAddressStringParamsBuilder {
 	builder.allowSingleSegment(allow)
 	return builder
 }
 
+// AllowAll dictates whether to alloww the string of just the wildcard "*" to denote all addresses of all version.
+// If false, then for IP addresses we check the preferred version with GetPreferredVersion(), and then check AllowsWildcardedSeparator(),
+// to determine if the string represents all addresses of that version.
 func (builder *IPAddressStringParamsBuilder) AllowAll(allow bool) *IPAddressStringParamsBuilder {
 	builder.allowAll(allow)
 	return builder
 }
 
+// ParseEmptyStrAs dictates how a zero-length empty string is translated to an address.
+// If the option is ZeroAddressOption or LoopbackOption, then if defers to GetPreferredVersion() for the version.
 func (builder *IPAddressStringParamsBuilder) ParseEmptyStrAs(option EmptyStrOption) *IPAddressStringParamsBuilder {
 	builder.params.emptyStringOption = option
 	builder.AllowEmpty(true)
 	return builder
 }
 
+// ParseAllStrAs dictates how the "all" string "*" is translated to addresses.
+//// If the option is AllPreferredIPVersion, then it defers to GetPreferredVersion() for the version.
 func (builder *IPAddressStringParamsBuilder) ParseAllStrAs(option AllStrOption) *IPAddressStringParamsBuilder {
 	builder.params.allStringOption = option
 	return builder
 }
 
+// SetPreferredVersion dictates the version to use for ambiguous addresses strings,
+// like prefix lengths less than 32 bits which are translated to masks,
+// the "all" address or the "empty" address.
+// The default is IPv6.
+//
+// If either of AllowsIPv4 or AllowsIPv6 returns false, then those settings take precedence over this setting.
 func (builder *IPAddressStringParamsBuilder) SetPreferredVersion(version IPVersion) *IPAddressStringParamsBuilder {
 	builder.params.preferredVersion = version
 	return builder
 }
 
+// AllowPrefix dictates whether to allow addresses with prefix length like 1.2.0.0/16 are allowed.
 func (builder *IPAddressStringParamsBuilder) AllowPrefix(allow bool) *IPAddressStringParamsBuilder {
 	builder.params.noPrefix = !allow
 	return builder
 }
 
+// AllowMask dictates whether to allow masks to follow valid addresses, such as 1.2.3.4/255.255.0.0 which has the mask 255.255.0.0
+// If the mask is the mask for a network prefix length, this is interpreted as the subnet for that network prefix length.
+// Otherwise the address is simply masked by the mask.
+// For instance, 1.2.3.4/255.0.255.0 is 1.0.3.0, while 1.2.3.4/255.255.0.0 is 1.2.0.0/16.
 func (builder *IPAddressStringParamsBuilder) AllowMask(allow bool) *IPAddressStringParamsBuilder {
 	builder.params.noMask = !allow
 	return builder
 }
 
+// AllowIPv4 dictates whether to allow IPv4 addresses and subnets
 func (builder *IPAddressStringParamsBuilder) AllowIPv4(allow bool) *IPAddressStringParamsBuilder {
 	builder.params.noIPv4 = !allow
 	return builder
 }
 
+// AllowIPv6 dictates whether to allow IPv6 addresses and subnets
 func (builder *IPAddressStringParamsBuilder) AllowIPv6(allow bool) *IPAddressStringParamsBuilder {
 	builder.params.noIPv6 = !allow
 	return builder
 }
 
+// AllowWildcardedSeparator dictates whether the wildcard '*' or '%' can replace the segment separators '.' and ':'.
+// If so, then you can write addresses like *.* or *:*
 func (builder *IPAddressStringParamsBuilder) AllowWildcardedSeparator(allow bool) *IPAddressStringParamsBuilder {
 	builder.GetIPv4AddressParamsBuilder().AllowWildcardedSeparator(allow)
 	builder.GetIPv6AddressParamsBuilder().AllowWildcardedSeparator(allow)
 	return builder
 }
 
+// SetRangeParams populates this builder with the values from the given RangeParams
 func (builder *IPAddressStringParamsBuilder) SetRangeParams(rangeParams RangeParams) *IPAddressStringParamsBuilder {
 	builder.GetIPv4AddressParamsBuilder().SetRangeParams(rangeParams)
 	builder.GetIPv6AddressParamsBuilder().SetRangeParams(rangeParams)
 	return builder
 }
 
+// Allow_inet_aton dictates whether to allow any IPv4 inet_aton format, whether hex, octal, or joined segments
 func (builder *IPAddressStringParamsBuilder) Allow_inet_aton(allow bool) *IPAddressStringParamsBuilder {
 	builder.GetIPv4AddressParamsBuilder().Allow_inet_aton(allow)
 	builder.GetIPv6AddressParamsBuilder().Allow_mixed_inet_aton(allow)
@@ -348,18 +429,22 @@ type ipAddressStringFormatParameters struct {
 	noBinary bool
 }
 
+// AllowsPrefixesBeyondAddressSize allows prefix length values greater than 32 for IPv4 or greater than 128 for IPv6
 func (params *ipAddressStringFormatParameters) AllowsPrefixesBeyondAddressSize() bool {
 	return params.allowPrefixesBeyondAddrSize
 }
 
+// AllowsPrefixLenLeadingZeros allows leading zeros in the prefix length like 1.2.3.4/016
 func (params *ipAddressStringFormatParameters) AllowsPrefixLenLeadingZeros() bool {
 	return !params.noPrefixLengthLeadingZeros
 }
 
+// AllowsBinary allows binary addresses like 11111111.0.1.0 or 1111111111111111::
 func (params *ipAddressStringFormatParameters) AllowsBinary() bool {
 	return !params.noBinary
 }
 
+// IPAddressStringFormatParamsBuilder builds an immutable IPAddressStringFormatParams for controlling parsing of IP address strings
 type IPAddressStringFormatParamsBuilder struct {
 	AddressStringFormatParamsBuilder
 
@@ -368,10 +453,12 @@ type IPAddressStringFormatParamsBuilder struct {
 	parent *IPAddressStringParamsBuilder
 }
 
+// GetParentBuilder returns the original IPAddressStringParamsBuilder builder that this was obtained from, if this builder was obtained from a IPAddressStringParamsBuilder
 func (builder *IPAddressStringFormatParamsBuilder) GetParentBuilder() *IPAddressStringParamsBuilder {
 	return builder.parent
 }
 
+// ToParams returns an immutable IPAddressStringFormatParams instance built by this builder
 func (builder *IPAddressStringFormatParamsBuilder) ToParams() IPAddressStringFormatParams {
 	result := &builder.ipParams
 	result.addressStringFormatParameters = *builder.AddressStringFormatParamsBuilder.ToParams().(*addressStringFormatParameters)
@@ -391,14 +478,17 @@ func (builder *IPAddressStringFormatParamsBuilder) set(params IPAddressStringFor
 	builder.AddressStringFormatParamsBuilder.set(params)
 }
 
+// AllowsPrefixesBeyondAddressSize allows prefix length values greater than 32 for IPv4 or greater than 128 for IPv6
 func (builder *IPAddressStringFormatParamsBuilder) AllowsPrefixesBeyondAddressSize() bool {
 	return builder.ipParams.AllowsPrefixesBeyondAddressSize()
 }
 
+// AllowsPrefixLenLeadingZeros allows leading zeros in the prefix length like 1.2.3.4/016
 func (builder *IPAddressStringFormatParamsBuilder) AllowsPrefixLenLeadingZeros() bool {
 	return builder.ipParams.AllowsPrefixLenLeadingZeros()
 }
 
+// AllowsBinary allows binary addresses like 11111111.0.1.0 or 1111111111111111::
 func (builder *IPAddressStringFormatParamsBuilder) AllowsBinary() bool {
 	return builder.ipParams.AllowsBinary()
 }
@@ -423,22 +513,27 @@ type ipv6AddressStringParameters struct {
 	embeddedParams *ipAddressStringParameters
 }
 
+// AllowsMixed allows mixed-in embedded IPv4 like a:b:c:d:e:f:1.2.3.4
 func (params *ipv6AddressStringParameters) AllowsMixed() bool {
 	return !params.noMixed
 }
 
+// AllowsZone allows zones like a:b:c:d:e:f:a:b%zone
 func (params *ipv6AddressStringParameters) AllowsZone() bool {
 	return !params.noZone
 }
 
+// AllowsEmptyZone allows the zone character % with no following zone
 func (params *ipv6AddressStringParameters) AllowsEmptyZone() bool {
 	return !params.noEmptyZone
 }
 
+// AllowsBase85 allows IPv6 single-segment base 85 addresses
 func (params *ipv6AddressStringParameters) AllowsBase85() bool {
 	return !params.noBase85
 }
 
+// GetMixedParams provides the parameters that for parsing the embedded IPv4 section of a mixed IPv6/v4 address, if AllowsMixed is true
 func (params *ipv6AddressStringParameters) GetMixedParams() IPAddressStringParams {
 	result := params.embeddedParams
 	if result == nil {
@@ -447,10 +542,12 @@ func (params *ipv6AddressStringParameters) GetMixedParams() IPAddressStringParam
 	return result
 }
 
+// GetEmbeddedIPv4AddressParams returns the IPv4 parameters for parsing the embedded IPv4 section of a mixed IPv6/v4 address
 func (params *ipv6AddressStringParameters) GetEmbeddedIPv4AddressParams() IPv4AddressStringParams {
 	return params.embeddedParams.GetIPv4Params()
 }
 
+// IPv6AddressStringParamsBuilder builds an immutable IPv6AddressStringParams for controlling parsing of IPv6 address strings
 type IPv6AddressStringParamsBuilder struct {
 	// This is not anonymous since it clashes with IPAddressStringFormatParamsBuilder,
 	// both have ipAddressStringFormatParameters and AddressStringFormatParams
@@ -462,6 +559,7 @@ type IPv6AddressStringParamsBuilder struct {
 	IPAddressStringFormatParamsBuilder
 }
 
+// ToParams returns an immutable IPv6AddressStringParams instance built by this builder
 func (builder *IPv6AddressStringParamsBuilder) ToParams() IPv6AddressStringParams {
 	result := &builder.params
 	result.ipAddressStringFormatParameters = *builder.IPAddressStringFormatParamsBuilder.ToParams().(*ipAddressStringFormatParameters)
@@ -473,33 +571,40 @@ func (builder *IPv6AddressStringParamsBuilder) ToParams() IPv6AddressStringParam
 	return result
 }
 
+// GetRangeParamsBuilder returns a builder that builds the range parameters for these IPv6 address string parameters
 func (builder *IPv6AddressStringParamsBuilder) GetRangeParamsBuilder() *RangeParamsBuilder {
 	result := &builder.rangeParamsBuilder
 	result.parent = builder
 	return result
 }
 
+// AllowsMixed allows mixed-in embedded IPv4 like a:b:c:d:e:f:1.2.3.4
 func (builder *IPv6AddressStringParamsBuilder) AllowsMixed() bool {
 	return builder.params.AllowsMixed()
 }
 
+// AllowsZone allows zones like a:b:c:d:e:f:a:b%zone
 func (builder *IPv6AddressStringParamsBuilder) AllowsZone() bool {
 	return builder.params.AllowsZone()
 }
 
+// AllowsEmptyZone allows the zone character % with no following zone
 func (builder *IPv6AddressStringParamsBuilder) AllowsEmptyZone() bool {
 	return builder.params.AllowsEmptyZone()
 }
 
+// AllowsBase85 allows IPv6 single-segment base 85 addresses
 func (builder *IPv6AddressStringParamsBuilder) AllowsBase85() bool {
 	return builder.params.AllowsBase85()
 }
 
+// AllowBase85 dictates whether to allow IPv6 single-segment base 85 addresses
 func (builder *IPv6AddressStringParamsBuilder) AllowBase85(allow bool) *IPv6AddressStringParamsBuilder {
 	builder.params.noBase85 = !allow
 	return builder
 }
 
+// Set populates this builder with the values from the given IPv6AddressStringParams
 func (builder *IPv6AddressStringParamsBuilder) Set(params IPv6AddressStringParams) *IPv6AddressStringParamsBuilder {
 	return builder.set(params, false)
 }
@@ -522,11 +627,12 @@ func (builder *IPv6AddressStringParamsBuilder) set(params IPv6AddressStringParam
 	return builder
 }
 
+// AllowZone dictates whether to allow zones like a:b:c:d:e:f:a:b%zone
 func (builder *IPv6AddressStringParamsBuilder) AllowZone(allow bool) *IPv6AddressStringParamsBuilder {
 	builder.params.noZone = !allow
 
 	//we must decide whether to treat the % character as a zone when parsing the mixed part
-	//if considered zone, then the zone character is actually part of the encompassing ipv6 address
+	//if considered zone, then the zone character is actually part of the encompassing IPv6 address
 	//otherwise, the zone character is an sql wildcard that is part of the mixed address
 	//So whether we consider the % character a zone must match the same setting for the encompassing address
 
@@ -537,6 +643,7 @@ func (builder *IPv6AddressStringParamsBuilder) AllowZone(allow bool) *IPv6Addres
 	return builder
 }
 
+// AllowEmptyZone dictates whether to allow the zone character % with no following zone
 func (builder *IPv6AddressStringParamsBuilder) AllowEmptyZone(allow bool) *IPv6AddressStringParamsBuilder {
 	builder.params.noEmptyZone = !allow
 	if ipv4Builder := builder.getEmbeddedIPv4ParametersBuilder(); ipv4Builder != nil {
@@ -545,6 +652,7 @@ func (builder *IPv6AddressStringParamsBuilder) AllowEmptyZone(allow bool) *IPv6A
 	return builder
 }
 
+// AllowMixed dictates whether to allow mixed-in embedded IPv4 like a:b:c:d:e:f:1.2.3.4
 func (builder *IPv6AddressStringParamsBuilder) AllowMixed(allow bool) *IPv6AddressStringParamsBuilder {
 	builder.params.noMixed = !allow
 	return builder
@@ -564,10 +672,12 @@ func (builder *IPv6AddressStringParamsBuilder) getEmbeddedIPv4ParametersBuilder(
 	return
 }
 
+// GetEmbeddedIPv4AddressParamsBuilder returns a builder to build the IPv4 parameters that controls parsing of the embedded IPv4 section of a mixed IPv6/v4 address
 func (builder *IPv6AddressStringParamsBuilder) GetEmbeddedIPv4AddressParamsBuilder() (result *IPv4AddressStringParamsBuilder) {
 	return builder.getEmbeddedIPv4ParametersBuilder().GetIPv4AddressParamsBuilder()
 }
 
+// Allow_mixed_inet_aton dictates whether to allow inet_aton style formats, whether hex, octal, or joined segments, in the embedded IPv4 section of a mixed IPv6/v4 address
 func (builder *IPv6AddressStringParamsBuilder) Allow_mixed_inet_aton(allow bool) *IPv6AddressStringParamsBuilder {
 	builder.getEmbeddedIPv4ParametersBuilder().GetIPv4AddressParamsBuilder().Allow_inet_aton(allow)
 	if allow { // if we allow inet_aton in the mixed part, then of course that insinuates that we allow the mixed part
@@ -576,41 +686,57 @@ func (builder *IPv6AddressStringParamsBuilder) Allow_mixed_inet_aton(allow bool)
 	return builder
 }
 
+// AllowBinary dictates whether to allow binary addresses like 11111111.0.1.0 or 1111111111111111::
 func (builder *IPv6AddressStringParamsBuilder) AllowBinary(allow bool) *IPv6AddressStringParamsBuilder {
 	builder.GetEmbeddedIPv4AddressParamsBuilder().AllowBinary(allow)
 	builder.allowBinary(allow)
 	return builder
 }
 
+// AllowWildcardedSeparator dictates whether the wildcard '*' or '%' can replace the segment separators '.' and ':'.
+// If so, then you can write addresses like *.* or *:*
 func (builder *IPv6AddressStringParamsBuilder) AllowWildcardedSeparator(allow bool) *IPv6AddressStringParamsBuilder {
 	builder.GetEmbeddedIPv4AddressParamsBuilder().AllowWildcardedSeparator(allow)
 	builder.allowWildcardedSeparator(allow)
 	return builder
 }
 
+// AllowLeadingZeros dictates whether to allow addresses with segments that have leasing zeros like 001.2.3.004 or 1:000a::
+// For IPV4, this option overrides inet_aton octal.
+//
+// Single segment addresses that must have the requisite length to be parsed are not affected by this flag.
 func (builder *IPv6AddressStringParamsBuilder) AllowLeadingZeros(allow bool) *IPv6AddressStringParamsBuilder {
 	builder.GetEmbeddedIPv4AddressParamsBuilder().allowLeadingZeros(allow)
 	builder.allowLeadingZeros(allow)
 	return builder
 }
 
+// AllowUnlimitedLeadingZeros dictates whether to allow leading zeros that extend segments
+// beyond the usual segment length, which is 3 for IPv4 dotted-decimal and 4 for IPv6.
+// However, this only takes effect if leading zeros are allowed, which is when
+// AllowsLeadingZeros is true or the address is IPv4 and Allows_inet_aton_octal is true.
+//
+// For example, this determines whether you allow 0001.0002.0003.0004
 func (builder *IPv6AddressStringParamsBuilder) AllowUnlimitedLeadingZeros(allow bool) *IPv6AddressStringParamsBuilder {
 	builder.GetEmbeddedIPv4AddressParamsBuilder().AllowUnlimitedLeadingZeros(allow)
 	builder.allowUnlimitedLeadingZeros(allow)
 	return builder
 }
 
+// SetRangeParams populates this builder with the values from the given RangeParams
 func (builder *IPv6AddressStringParamsBuilder) SetRangeParams(rangeParams RangeParams) *IPv6AddressStringParamsBuilder {
 	builder.GetEmbeddedIPv4AddressParamsBuilder().SetRangeParams(rangeParams)
 	builder.setRangeParameters(rangeParams)
 	return builder
 }
 
+// AllowPrefixesBeyondAddressSize dictates whether to allow prefix length values greater than 32 for IPv4 or greater than 128 for IPv6
 func (builder *IPv6AddressStringParamsBuilder) AllowPrefixesBeyondAddressSize(allow bool) *IPv6AddressStringParamsBuilder {
 	builder.allowPrefixesBeyondAddressSize(allow)
 	return builder
 }
 
+// AllowPrefixLenLeadingZeros dictates whether to allow leading zeros in the prefix length like 1.2.3.4/016
 func (builder *IPv6AddressStringParamsBuilder) AllowPrefixLenLeadingZeros(allow bool) *IPv6AddressStringParamsBuilder {
 	builder.allowPrefixLengthLeadingZeros(allow)
 	return builder
@@ -626,26 +752,37 @@ type ipv4AddressStringParameters struct {
 	no_inet_aton_leading_zeros bool
 }
 
+// Allows_inet_aton_hex allows IPv4 inet_aton hexadecimal format 0xa.0xb.0xc.0cd
 func (params *ipv4AddressStringParameters) Allows_inet_aton_hex() bool {
 	return !params.no_inet_aton_hex
 }
 
+// Allows_inet_aton_octal allows IPv4 inet_aton octal format, 04.05.06.07 being an example.
+// Can be overridden by AllowLeadingZeros
 func (params *ipv4AddressStringParameters) Allows_inet_aton_octal() bool {
 	return !params.no_inet_aton_octal
 }
 
+// Allows_inet_aton_joinedSegments allows IPv4 joined segments like 1.2.3, 1.2, or just 1
+//
+// For the case of just 1 segment, the behaviour is controlled by allowSingleSegment
 func (params *ipv4AddressStringParameters) Allows_inet_aton_joinedSegments() bool {
 	return !params.no_inet_aton_joinedSegments
 }
 
+// Allows_inet_aton_single_segment_mask indicates whether you allow a mask that looks like a prefix length when you allow IPv4 joined segments: 1.2.3.5/255
 func (params *ipv4AddressStringParameters) Allows_inet_aton_single_segment_mask() bool {
 	return params.inet_aton_single_segment_mask
 }
 
+// Allows_inet_aton_leading_zeros allows IPv4 inet_aton hexadecimal or octal to have leading zeros, such as in the first two segments of 0x0a.00b.c.d
+// The first 0 is not considered a leading zero, it either denotes octal or hex depending on whether it is followed by an 'x'.
+// Zeros that appear afterwards are inet_aton leading zeros.
 func (params *ipv4AddressStringParameters) Allows_inet_aton_leading_zeros() bool {
 	return !params.no_inet_aton_leading_zeros
 }
 
+// IPv4AddressStringParamsBuilder builds an immutable IPv4AddressStringParams for controlling parsing of IPv4 address strings
 type IPv4AddressStringParamsBuilder struct {
 	// This is not anonymous since it clashes with IPAddressStringFormatParamsBuilder,
 	// both have ipAddressStringFormatParameters and AddressStringFormatParams
@@ -657,6 +794,7 @@ type IPv4AddressStringParamsBuilder struct {
 	mixedParent *IPv6AddressStringParamsBuilder
 }
 
+// ToParams returns an immutable IPv4AddressStringParams instance built by this builder
 func (builder *IPv4AddressStringParamsBuilder) ToParams() IPv4AddressStringParams {
 	result := &builder.params
 	result.ipAddressStringFormatParameters = *builder.IPAddressStringFormatParamsBuilder.ToParams().(*ipAddressStringFormatParameters)
@@ -669,12 +807,14 @@ func (builder *IPv4AddressStringParamsBuilder) GetEmbeddedIPv4AddressParentBuild
 	return builder.mixedParent
 }
 
+// GetRangeParamsBuilder returns a builder that builds the range parameters for these IPv4 address string parameters
 func (builder *IPv4AddressStringParamsBuilder) GetRangeParamsBuilder() *RangeParamsBuilder {
 	result := &builder.rangeParamsBuilder
 	result.parent = builder
 	return result
 }
 
+// Set populates this builder with the values from the given IPv4AddressStringParams
 func (builder *IPv4AddressStringParamsBuilder) Set(params IPv4AddressStringParams) *IPv4AddressStringParamsBuilder {
 	if p, ok := params.(*ipv4AddressStringParameters); ok {
 		builder.params = *p
@@ -691,6 +831,7 @@ func (builder *IPv4AddressStringParamsBuilder) Set(params IPv4AddressStringParam
 	return builder
 }
 
+// Allow_inet_aton dictates whether to allow any IPv4 inet_aton format, whether hex, octal, or joined segments
 func (builder *IPv4AddressStringParamsBuilder) Allow_inet_aton(allow bool) *IPv4AddressStringParamsBuilder {
 	builder.params.no_inet_aton_joinedSegments = !allow
 	builder.params.no_inet_aton_octal = !allow
@@ -699,60 +840,86 @@ func (builder *IPv4AddressStringParamsBuilder) Allow_inet_aton(allow bool) *IPv4
 	return builder
 }
 
+// Allow_inet_aton_hex dictates whether to allow IPv4 inet_aton hexadecimal format 0xa.0xb.0xc.0cd
 func (builder *IPv4AddressStringParamsBuilder) Allow_inet_aton_hex(allow bool) *IPv4AddressStringParamsBuilder {
 	builder.params.no_inet_aton_hex = !allow
 	return builder
 }
 
+// Allow_inet_aton_octal dictates whether to allow IPv4 inet_aton octal format, 04.05.06.07 being an example.
 func (builder *IPv4AddressStringParamsBuilder) Allow_inet_aton_octal(allow bool) *IPv4AddressStringParamsBuilder {
 	builder.params.no_inet_aton_octal = !allow
 	return builder
 }
 
+// Allow_inet_aton_leading_zeros dictates whether to allow IPv4 inet_aton hexadecimal or octal to have leading zeros, such as in the first two segments of 0x0a.00b.c.d
+//	The first 0 is not considered a leading zero, it either denotes octal or hex depending on whether it is followed by an 'x'.
+//	Zeros that appear afterwards are inet_aton leading zeros.
 func (builder *IPv4AddressStringParamsBuilder) Allow_inet_aton_leading_zeros(allow bool) *IPv4AddressStringParamsBuilder {
 	builder.params.no_inet_aton_leading_zeros = !allow
 	return builder
 }
 
+// Allow_inet_aton_joinedSegments dictates whether to allow IPv4 joined segments like 1.2.3, 1.2, or just 1
+//
+// For the case of just 1 segment, the behaviour is controlled by AllowSingleSegment
 func (builder *IPv4AddressStringParamsBuilder) Allow_inet_aton_joinedSegments(allow bool) *IPv4AddressStringParamsBuilder {
 	builder.params.no_inet_aton_joinedSegments = !allow
 	return builder
 }
 
+// Allow_inet_aton_single_segment_mask dictates whether to allow a mask that looks like a prefix length when you allow IPv4 joined segments: 1.2.3.5/255
 func (builder *IPv4AddressStringParamsBuilder) Allow_inet_aton_single_segment_mask(allow bool) *IPv4AddressStringParamsBuilder {
 	builder.params.inet_aton_single_segment_mask = allow
 	return builder
 }
+
+// AllowWildcardedSeparator dictates whether the wildcard '*' or '%' can replace the segment separators '.' and ':'.
+// If so, then you can write addresses like *.* or *:*
 func (builder *IPv4AddressStringParamsBuilder) AllowWildcardedSeparator(allow bool) *IPv4AddressStringParamsBuilder {
 	builder.allowWildcardedSeparator(allow)
 	return builder
 }
 
+// AllowLeadingZeros dictates whether to allow addresses with segments that have leasing zeros like 001.2.3.004 or 1:000a::
+// For IPV4, this option overrides inet_aton octal.
+//
+// Single segment addresses that must have the requisite length to be parsed are not affected by this flag.
 func (builder *IPv4AddressStringParamsBuilder) AllowLeadingZeros(allow bool) *IPv4AddressStringParamsBuilder {
 	builder.allowLeadingZeros(allow)
 	return builder
 }
 
+// AllowUnlimitedLeadingZeros dictates whether to allow leading zeros that extend segments
+// beyond the usual segment length, which is 3 for IPv4 dotted-decimal and 4 for IPv6.
+// However, this only takes effect if leading zeros are allowed, which is when
+// AllowsLeadingZeros is true or the address is IPv4 and Allows_inet_aton_octal is true.
+//
+// For example, this determines whether you allow 0001.0002.0003.0004
 func (builder *IPv4AddressStringParamsBuilder) AllowUnlimitedLeadingZeros(allow bool) *IPv4AddressStringParamsBuilder {
 	builder.allowUnlimitedLeadingZeros(allow)
 	return builder
 }
 
+// SetRangeParams populates this builder with the values from the given RangeParams
 func (builder *IPv4AddressStringParamsBuilder) SetRangeParams(rangeParams RangeParams) *IPv4AddressStringParamsBuilder {
 	builder.setRangeParameters(rangeParams)
 	return builder
 }
 
+// AllowPrefixesBeyondAddressSize dictates whether to allow prefix length values greater than 32 for IPv4 or greater than 128 for IPv6
 func (builder *IPv4AddressStringParamsBuilder) AllowPrefixesBeyondAddressSize(allow bool) *IPv4AddressStringParamsBuilder {
 	builder.allowPrefixesBeyondAddressSize(allow)
 	return builder
 }
 
+// AllowPrefixLenLeadingZeros dictates whether to allow leading zeros in the prefix length like 1.2.3.4/016
 func (builder *IPv4AddressStringParamsBuilder) AllowPrefixLenLeadingZeros(allow bool) *IPv4AddressStringParamsBuilder {
 	builder.allowPrefixLengthLeadingZeros(allow)
 	return builder
 }
 
+// AllowBinary dictates whether to allow binary addresses like 11111111.0.1.0 or 1111111111111111::
 func (builder *IPv4AddressStringParamsBuilder) AllowBinary(allow bool) *IPv4AddressStringParamsBuilder {
 	builder.allowBinary(allow)
 	return builder
@@ -763,9 +930,14 @@ func (builder *IPv4AddressStringParamsBuilder) AllowBinary(allow bool) *IPv4Addr
 type IPVersion string
 
 const (
+	// IndeterminateIPVersion represents an unspecified IP address version
 	IndeterminateIPVersion IPVersion = ""
-	IPv4                   IPVersion = "IPv4"
-	IPv6                   IPVersion = "IPv6"
+
+	// IPv4 represents Internet Protocol version 4
+	IPv4 IPVersion = "IPv4"
+
+	// IPv6 represents Internet Protocol version 6
+	IPv6 IPVersion = "IPv6"
 )
 
 // IsIPv6 returns true if this represents version 6
@@ -778,6 +950,7 @@ func (version IPVersion) IsIPv4() bool {
 	return strings.EqualFold(string(version), string(IPv4))
 }
 
+// IsIndeterminate returns true if this represents an unspecified IP address version
 func (version IPVersion) IsIndeterminate() bool {
 	if len(version) == 4 {
 		// we allow mixed case in the event code is converted a string to IPVersion
