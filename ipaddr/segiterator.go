@@ -16,6 +16,7 @@
 
 package ipaddr
 
+// HasNext is a component of all interfaces, defining the HasNext interface method
 type HasNext interface {
 	// HasNext returns true if there is another address to iterate, false otherwise
 	HasNext() bool

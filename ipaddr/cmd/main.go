@@ -180,6 +180,11 @@ func main() {
 	ipv6Prefixed = ipv6Addr.ToPrefixBlockLen(40)
 	fmt.Printf("40 block is %+v\n", ipv6Prefixed)
 
+	mixedGrouping, _ := ipv6Addr.GetMixedAddressGrouping()
+	fmt.Printf("mixed grouping of %v is %v and again %s\n", ipv6Addr, mixedGrouping.String(), mixedGrouping)
+	mixedGrouping, _ = ipv6Prefixed.GetMixedAddressGrouping()
+	fmt.Printf("mixed grouping of 40 block %v is %v and again %s\n", ipv6Prefixed, mixedGrouping.String(), mixedGrouping)
+
 	addrDown := ipv6Prefixed.ToAddressBase()
 	fmt.Printf("addr down converted 40 block is %+v\n", addrDown)
 

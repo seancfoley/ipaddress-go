@@ -72,8 +72,6 @@ type divisionValues interface {
 }
 
 func newDivValues(value, upperValue DivInt, prefLen PrefixLen, bitCount BitCount) *divValues {
-	// TODO does it makes any sense to avoid these checks?  Could have an internal newRangePrefixDivision that avoids them
-	// But we rarely create divisions and division groupings (actually, not as rare as you think, we often create them and covnert them to segments after)
 	if value > upperValue {
 		value, upperValue = upperValue, value
 	}
@@ -83,6 +81,10 @@ func newDivValues(value, upperValue DivInt, prefLen PrefixLen, bitCount BitCount
 		upperValue &= max
 	}
 	prefLen = checkPrefLen(prefLen, bitCount)
+	return newDivValuesUnchecked(value, upperValue, prefLen, bitCount)
+}
+
+func newDivValuesUnchecked(value, upperValue DivInt, prefLen PrefixLen, bitCount BitCount) *divValues {
 	return &divValues{
 		value:      value,
 		upperValue: upperValue,
@@ -180,7 +182,7 @@ func (div *divValues) getUpperDivisionValue() DivInt {
 }
 
 func (div *divValues) deriveNew(val, upperVal DivInt, prefLen PrefixLen) divisionValues {
-	return NewRangePrefixDivision(val, upperVal, prefLen, div.bitCount)
+	return newRangePrefixDivision(val, upperVal, prefLen, div.bitCount)
 }
 
 func (div *divValues) getSegmentValue() SegInt {
@@ -192,11 +194,11 @@ func (div *divValues) getUpperSegmentValue() SegInt {
 }
 
 func (div *divValues) deriveNewMultiSeg(val, upperVal SegInt, prefLen PrefixLen) divisionValues {
-	return NewRangePrefixDivision(DivInt(val), DivInt(upperVal), prefLen, div.bitCount)
+	return newRangePrefixDivision(DivInt(val), DivInt(upperVal), prefLen, div.bitCount)
 }
 
 func (div *divValues) deriveNewSeg(val SegInt, prefLen PrefixLen) divisionValues {
-	return NewPrefixDivision(DivInt(val), prefLen, div.bitCount)
+	return newPrefixDivision(DivInt(val), prefLen, div.bitCount)
 }
 
 var _ divisionValues = &divValues{}
@@ -950,6 +952,28 @@ func NewRangePrefixDivision(val, upperVal DivInt, prefixLen PrefixLen, bitCount 
 	return &AddressDivision{
 		addressDivisionInternal{
 			addressDivisionBase{newDivValues(val, upperVal, prefixLen, bitCount)},
+		},
+	}
+}
+
+// The following avoid the prefix length checks, value to BitCount checks, and low to high check inside newDivValues
+
+func newDivision(val DivInt, bitCount BitCount) *AddressDivision {
+	return newRangePrefixDivision(val, val, nil, bitCount)
+}
+
+func newRangeDivision(val, upperVal DivInt, bitCount BitCount) *AddressDivision {
+	return newRangePrefixDivision(val, upperVal, nil, bitCount)
+}
+
+func newPrefixDivision(val DivInt, prefixLen PrefixLen, bitCount BitCount) *AddressDivision {
+	return newRangePrefixDivision(val, val, prefixLen, bitCount)
+}
+
+func newRangePrefixDivision(val, upperVal DivInt, prefixLen PrefixLen, bitCount BitCount) *AddressDivision {
+	return &AddressDivision{
+		addressDivisionInternal{
+			addressDivisionBase{newDivValuesUnchecked(val, upperVal, prefixLen, bitCount)},
 		},
 	}
 }

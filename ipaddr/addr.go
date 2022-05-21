@@ -1247,7 +1247,7 @@ func (addr *Address) GetSegments() []*AddressSegment {
 	return addr.GetSection().GetSegments()
 }
 
-//TODO I am thinking this should not panic, just return nil.
+//TODO NOW I am thinking this should not panic, just return nil.
 // The only downside is code outside the method doing the same check as inside.
 // But that is optimized out.  Why panic when you can avoid it?
 // Panic is reserved for situations where progression of the program not possible.

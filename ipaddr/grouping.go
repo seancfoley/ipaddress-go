@@ -379,6 +379,9 @@ func (grouping addressDivisionGroupingInternal) Format(state fmt.State, verb run
 	if sect := grouping.toAddressSection(); sect != nil {
 		sect.Format(state, verb)
 		return
+	} else if mixed := grouping.toAddressDivisionGrouping().ToMixedIPv6v4(); mixed != nil {
+		mixed.Format(state, verb)
+		return
 	}
 	// divisions are printed like slices of *AddressDivision (which are Stringers) with division separated by spaces and enclosed in square brackets,
 	// sections are printed like addresses with segments separated by segment separators
@@ -914,7 +917,7 @@ func (grouping *addressDivisionGroupingInternal) createNewPrefixedDivisions(bits
 					if networkPrefixLength != nil {
 						segPrefixBits = getDivisionPrefixLength(originalDivBitSize, networkPrefixLength.bitCount()-bitsSoFar)
 					}
-					div := NewRangePrefixDivision(divLowerValue, divUpperValue, segPrefixBits, originalDivBitSize)
+					div := newRangePrefixDivision(divLowerValue, divUpperValue, segPrefixBits, originalDivBitSize)
 					divs[divCount-i-1] = div
 					if segBits == 0 && i > 0 {
 						//get next seg

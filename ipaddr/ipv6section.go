@@ -17,6 +17,7 @@
 package ipaddr
 
 import (
+	"fmt"
 	"math/big"
 	"math/bits"
 	"sync/atomic"
@@ -2039,11 +2040,47 @@ func (grouping *IPv6v4MixedAddressGrouping) GetIPv4AddressSection() *IPv4Address
 // String implements the fmt.Stringer interface,
 // as a slice string with each division converted to a string by String ( ie "[ div0 div1 ...]"),
 // or "<nil>" if the receiver is a nil pointer
-func (grouping *IPv6v4MixedAddressGrouping) String() string { //TODO print the same way we print with ToMixedString
+func (grouping *IPv6v4MixedAddressGrouping) String() string {
 	if grouping == nil {
 		return nilString()
 	}
-	return grouping.toString()
+	// used to use grouping.toString() but decided to use a mixed string instead
+	parms := mixedParams
+	ipv6Sect := grouping.GetIPv6AddressSection().encompassingSection
+	stringParams := from(parms, ipv6Sect) // I guess this would have to be on the ipv6 section - but no compress host
+	params := &ipv6v4MixedParams{
+		ipv6Params: stringParams,
+		ipv4Params: toIPParams(parms.GetIPv4Opts()),
+	}
+	result := params.toZonedString(grouping, NoZone)
+	return result
+}
+
+// Format is intentionally the only method with non-pointer receivers.  It is not intended to be called directly, it is intended for use by the fmt package.
+// When called by a function in the fmt package, nil values are detected before this method is called, avoiding a panic when calling this method.
+
+// Format implements fmt.Formatter interface. It accepts the formats
+// 'v' for the default address and section format (either the normalized or canonical string),
+// 's' (string) for the same
+// 'q' for a quoted string
+func (grouping IPv6v4MixedAddressGrouping) Format(state fmt.State, verb rune) {
+	var str string
+	switch verb {
+	case 's', 'v', 'q':
+		str = grouping.String()
+		if verb == 'q' {
+			if state.Flag('#') {
+				str = "`" + str + "`"
+			} else {
+				str = `"` + str + `"`
+			}
+		}
+	default:
+		// format not supported
+		_, _ = fmt.Fprintf(state, "%%!%c(address=%s)", verb, grouping.String())
+		return
+	}
+	_, _ = state.Write([]byte(str))
 }
 
 var ffMACSeg, feMACSeg = NewMACSegment(0xff), NewMACSegment(0xfe)

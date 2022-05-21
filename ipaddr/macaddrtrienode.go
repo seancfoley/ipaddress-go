@@ -387,7 +387,7 @@ func (node *MACAddressTrieNode) ElementsContaining(addr *MACAddress) *MACAddress
 	return node.toBase().elementsContaining(addr.ToAddressBase()).ToMAC()
 }
 
-// LongestPrefixMatch returns the address pr subnet with the longest prefix of all the added subnets or address whose prefix matches the given address.
+// LongestPrefixMatch returns the address or subnet with the longest prefix of all the added subnets or the address whose prefix matches the given address.
 // This is equivalent to finding the containing subnet or address with the smallest subnet size.
 //
 // If the argument is not a single address nor prefix block, this method will panic.
@@ -904,7 +904,7 @@ func (node *MACAddressAssociativeTrieNode) ElementsContaining(addr *MACAddress) 
 	return node.toBase().elementsContaining(addr.ToAddressBase()).ToMACAssociative()
 }
 
-// LongestPrefixMatch returns the address pr subnet with the longest prefix of all the added subnets or address whose prefix matches the given address.
+// LongestPrefixMatch returns the address or subnet with the longest prefix of all the added subnets or the address whose prefix matches the given address.
 // This is equivalent to finding the containing subnet or address with the smallest subnet size.
 //
 // If the argument is not a single address nor prefix block, this method will panic.

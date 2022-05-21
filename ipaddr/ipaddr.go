@@ -1870,11 +1870,11 @@ func (addr *IPAddress) GetSegmentStrings() []string {
 	return addr.init().getSegmentStrings()
 }
 
-//TODO maybe change to upper case see https://www.ieee802.org/1/files/public/docs2020/yangsters-smansfield-mac-address-format-0420-v01.pdf
+//I considered changing to uppercase, see https://www.ieee802.org/1/files/public/docs2020/yangsters-smansfield-mac-address-format-0420-v01.pdf
 //and https://standards.ieee.org/wp-content/uploads/import/documents/tutorials/macgrp.pdf and https://en.wikipedia.org/wiki/MAC_address
 //canonicalParams = new MACStringOptions.Builder().setSeparator(MACAddress.DASH_SEGMENT_SEPARATOR).setUppercase(true).setExpandedSegments(true).setWildcards(new Wildcards(MACAddress.DASHED_SEGMENT_RANGE_SEPARATOR_STR, Address.SEGMENT_WILDCARD_STR, null)).toOptions();
 // Search docs for: An example is "01-23-45-67-89-ab"
-// ACTUALLY, maybe not: https://www.mef.net/wp-content/uploads/MEF-89.pdf
+// But ACTUALLY, in the ends I decided not to: https://www.mef.net/wp-content/uploads/MEF-89.pdf
 
 // ToCanonicalString produces a canonical string for the address.
 //

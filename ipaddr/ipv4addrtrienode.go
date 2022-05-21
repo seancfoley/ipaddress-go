@@ -387,7 +387,7 @@ func (node *IPv4AddressTrieNode) ElementsContaining(addr *IPv4Address) *IPv4Addr
 	return node.toBase().elementsContaining(addr.ToAddressBase()).ToIPv4()
 }
 
-// LongestPrefixMatch returns the address pr subnet with the longest prefix of all the added subnets or address whose prefix matches the given address.
+// LongestPrefixMatch returns the address or subnet with the longest prefix of all the added subnets or the address whose prefix matches the given address.
 // This is equivalent to finding the containing subnet or address with the smallest subnet size.
 //
 // If the argument is not a single address nor prefix block, this method will panic.
@@ -904,7 +904,7 @@ func (node *IPv4AddressAssociativeTrieNode) ElementsContaining(addr *IPv4Address
 	return node.toBase().elementsContaining(addr.ToAddressBase()).ToIPv4Associative()
 }
 
-// LongestPrefixMatch returns the address pr subnet with the longest prefix of all the added subnets or address whose prefix matches the given address.
+// LongestPrefixMatch returns the address or subnet with the longest prefix of all the added subnets or the address whose prefix matches the given address.
 // This is equivalent to finding the containing subnet or address with the smallest subnet size.
 //
 // If the argument is not a single address nor prefix block, this method will panic.

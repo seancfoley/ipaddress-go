@@ -301,7 +301,7 @@ func (section *IPv4AddressSection) GetCount() *big.Int {
 	})
 }
 
-//TODO consider adding GetIPv4Count GetIPv4PrefixCount GetIPv4BlockCount to IPv4Address too, not just IPv4AddressSection
+//TODO NOW consider adding GetIPv4Count GetIPv4PrefixCount GetIPv4BlockCount to IPv4Address too, not just IPv4AddressSection
 // maybe I wanted to reduce clutter?  not sure
 
 // GetIPv4Count returns the count of possible distinct values for this section.
@@ -1440,7 +1440,7 @@ func (section *IPv4AddressSection) joinSegments(joinCount int) (*AddressDivision
 			}
 		}
 	}
-	return NewRangePrefixDivision(lower, upper, prefix, (BitCount(joinCount)+1)<<3), nil
+	return newRangePrefixDivision(lower, upper, prefix, (BitCount(joinCount)+1)<<3), nil
 }
 
 func (section *IPv4AddressSection) toNormalizedString(stringOptions addrstr.IPStringOptions) string {

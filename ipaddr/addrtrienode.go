@@ -370,6 +370,7 @@ func toAssociativeAddressTrieNode(node *tree.BinTrieNode) *AssociativeAddressTri
 //
 //
 
+// AddressTrieNode is a node for a compact binary prefix trie whose elements (keys) are prefix block subnets or addresses.
 type AddressTrieNode struct {
 	addressTrieNode
 }
@@ -411,10 +412,16 @@ func (node *AddressTrieNode) ToMAC() *MACAddressTrieNode {
 	return nil
 }
 
+// ToAssociative converts to the associative trie node representation of this trie node.
+// The node is unchanged, the returned node is the same underlying node.
 func (node *AddressTrieNode) ToAssociative() *AssociativeAddressTrieNode {
 	return (*AssociativeAddressTrieNode)(node)
 }
 
+// ToIPv4Associative converts to an IPv4AddressAssociativeTrieNode if this node originated as an IPv4 address trie node.
+// If not, ToIPv4Associative returns nil.
+//
+// ToIPv4Associative can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (node *AddressTrieNode) ToIPv4Associative() *IPv4AddressAssociativeTrieNode {
 	if node == nil || node.GetKey().IsIPv4() {
 		return (*IPv4AddressAssociativeTrieNode)(node)
@@ -422,6 +429,10 @@ func (node *AddressTrieNode) ToIPv4Associative() *IPv4AddressAssociativeTrieNode
 	return nil
 }
 
+// ToIPv6Associative converts to an IPv6AddressAssociativeTrieNode if this node originated as an IPv6 address trie node.
+// If not, ToIPv6Associative returns nil.
+//
+// ToIPv6Associative can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (node *AddressTrieNode) ToIPv6Associative() *IPv6AddressAssociativeTrieNode {
 	if node == nil || node.GetKey().IsIPv6() {
 		return (*IPv6AddressAssociativeTrieNode)(node)
@@ -429,6 +440,10 @@ func (node *AddressTrieNode) ToIPv6Associative() *IPv6AddressAssociativeTrieNode
 	return nil
 }
 
+// ToMACAssociative converts to an MACAddressAssociativeTrieNode if this node originated as a MAC address trie node.
+// If not, ToMACAssociative returns nil.
+//
+// ToMACAssociative can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (node *AddressTrieNode) ToMACAssociative() *MACAddressAssociativeTrieNode {
 	if node == nil || node.GetKey().IsMAC() {
 		return (*MACAddressAssociativeTrieNode)(node)
@@ -441,12 +456,12 @@ func (node *AddressTrieNode) tobase() *addressTrieNode {
 	return (*addressTrieNode)(unsafe.Pointer(node))
 }
 
-// GetKey gets the key used for placing the node in the tree.
+// GetKey gets the key used to place the node in the tree.
 func (node *AddressTrieNode) GetKey() *Address {
 	return node.tobase().getKey()
 }
 
-// IsRoot returns whether this is the root of the backing tree.
+// IsRoot returns whether this node is the root of the backing tree.
 func (node *AddressTrieNode) IsRoot() bool {
 	return node.toTrieNode().IsRoot()
 }
@@ -475,7 +490,7 @@ func (node *AddressTrieNode) Clear() {
 	node.toTrieNode().Clear()
 }
 
-// IsLeaf returns whether this node is in the tree (a node for which IsAdded() is true)
+// IsLeaf returns whether this node is in the tree (a node for which IsAdded is true)
 // and there are no elements in the sub-tree with this node as the root.
 func (node *AddressTrieNode) IsLeaf() bool {
 	return node.toTrieNode().IsLeaf()
@@ -518,18 +533,24 @@ func (node *AddressTrieNode) PreviousNode() *AddressTrieNode {
 	return toAddressTrieNode(node.toTrieNode().PreviousNode())
 }
 
+// FirstNode returns the first (the lowest valued) node in the sub-trie originating from this node
 func (node *AddressTrieNode) FirstNode() *AddressTrieNode {
 	return toAddressTrieNode(node.toTrieNode().FirstNode())
 }
 
+// FirstAddedNode returns the first (the lowest valued) added node in the sub-trie originating from this node
+// or nil if there are no added entries in this tree or sub-trie
 func (node *AddressTrieNode) FirstAddedNode() *AddressTrieNode {
 	return toAddressTrieNode(node.toTrieNode().FirstAddedNode())
 }
 
+// LastNode returns the last (the highest valued) node in the sub-trie originating from this node
 func (node *AddressTrieNode) LastNode() *AddressTrieNode {
 	return toAddressTrieNode(node.toTrieNode().LastNode())
 }
 
+// LastAddedNode returns the last (the highest valued) added node in the sub-trie originating from this node,
+// or nil if there are no added entries in this tree or sub-trie
 func (node *AddressTrieNode) LastAddedNode() *AddressTrieNode {
 	return toAddressTrieNode(node.toTrieNode().LastAddedNode())
 }
@@ -598,18 +619,52 @@ func (node *AddressTrieNode) BlockSizeCachingAllNodeIterator() CachingAddressTri
 	return node.tobase().blockSizeCachingAllNodeIterator()
 }
 
+// ContainingFirstIterator returns an iterator that does a pre-order binary tree traversal of the added nodes
+// of the sub-trie with this node as the root.
+//
+// All added nodes will be visited before their added sub-nodes.
+// For an address trie this means added containing subnet blocks will be visited before their added contained addresses and subnet blocks.
+//
+// Once a given node is visited, the iterator allows you to cache an object corresponding to the
+// lower or upper sub-node that can be retrieved when you later visit that sub-node.
+//
+// Objects are cached only with nodes to be visited.
+// So for this iterator that means an object will be cached with the first added lower or upper sub-node,
+// the next lower or upper sub-node to be visited,
+// which is not necessarily the direct lower or upper sub-node of a given node.
+//
+// The caching allows you to provide iteration context from a parent to its sub-nodes when iterating.
+// The caching and retrieval is done in constant-time and linear space (proportional to tree size).
 func (node *AddressTrieNode) ContainingFirstIterator(forwardSubNodeOrder bool) CachingAddressTrieNodeIterator {
 	return node.tobase().containingFirstIterator(forwardSubNodeOrder)
 }
 
+// ContainingFirstAllNodeIterator returns an iterator that does a pre-order binary tree traversal of all the nodes
+// of the sub-trie with this node as the root.
+//
+// All nodes will be visited before their sub-nodes.
+// For an address trie this means containing subnet blocks will be visited before their contained addresses and subnet blocks.
+//
+// Once a given node is visited, the iterator allows you to cache an object corresponding to the
+// lower or upper sub-node that can be retrieved when you later visit that sub-node.
+// That allows you to provide iteration context from a parent to its sub-nodes when iterating.
+// The caching and retrieval is done in constant-time and linear space (proportional to tree size).
 func (node *AddressTrieNode) ContainingFirstAllNodeIterator(forwardSubNodeOrder bool) CachingAddressTrieNodeIterator {
 	return node.tobase().containingFirstAllNodeIterator(forwardSubNodeOrder)
 }
 
+// ContainedFirstIterator returns an iterator that does a post-order binary tree traversal of the added nodes
+// of the sub-trie with this node as the root.
+// All added sub-nodes will be visited before their parent nodes.
+// For an address trie this means contained addresses and subnets will be visited before their containing subnet blocks.
 func (node *AddressTrieNode) ContainedFirstIterator(forwardSubNodeOrder bool) AddressTrieNodeIteratorRem {
 	return node.tobase().containedFirstIterator(forwardSubNodeOrder)
 }
 
+// ContainedFirstAllNodeIterator returns an iterator that does a post-order binary tree traversal of all the nodes
+// of the sub-trie with this node as the root.
+// All sub-nodes will be visited before their parent nodes.
+// For an address trie this means contained addresses and subnets will be visited before their containing subnet blocks.
 func (node *AddressTrieNode) ContainedFirstAllNodeIterator(forwardSubNodeOrder bool) AddressTrieNodeIterator {
 	return node.tobase().containedFirstAllNodeIterator(forwardSubNodeOrder)
 }
@@ -727,7 +782,7 @@ func (node *AddressTrieNode) ElementsContaining(addr *Address) *AddressTrieNode 
 	return node.tobase().elementsContaining(addr)
 }
 
-// LongestPrefixMatch returns the address pr subnet with the longest prefix of all the added subnets or address whose prefix matches the given address.
+// LongestPrefixMatch returns the address or subnet with the longest prefix of all the added subnets or the address whose prefix matches the given address.
 // This is equivalent to finding the containing subnet or address with the smallest subnet size.
 //
 // If the argument is not a single address nor prefix block, this method will panic.
@@ -862,6 +917,9 @@ type NodeValue = tree.V
 //
 //
 
+// AssociativeAddressTrieNode represents a node of an associative compact binary prefix trie.
+// The keys is a prefix block subnet or address.  The node also has an associated value.
+// Associative nodes can be converted to non-associative nodes and back again without losing their value.
 type AssociativeAddressTrieNode struct {
 	addressTrieNode
 }
@@ -874,6 +932,8 @@ func (node *AssociativeAddressTrieNode) toBase() *addressTrieNode {
 	return (*addressTrieNode)(unsafe.Pointer(node))
 }
 
+// ToBase converts to the polymorphic base representation of this associative trie node.
+// The node is unchanged, the returned node is the same underlying node.
 func (node *AssociativeAddressTrieNode) ToBase() *AddressTrieNode {
 	return (*AddressTrieNode)(node)
 }
@@ -1001,18 +1061,24 @@ func (node *AssociativeAddressTrieNode) PreviousNode() *AssociativeAddressTrieNo
 	return toAssociativeAddressTrieNode(node.toTrieNode().PreviousNode())
 }
 
+// FirstNode returns the first (the lowest valued) node in the sub-trie originating from this node
 func (node *AssociativeAddressTrieNode) FirstNode() *AssociativeAddressTrieNode {
 	return toAssociativeAddressTrieNode(node.toTrieNode().FirstNode())
 }
 
+// FirstAddedNode returns the first (the lowest valued) added node in the sub-trie originating from this node
+// or nil if there are no added entries in this tree or sub-trie
 func (node *AssociativeAddressTrieNode) FirstAddedNode() *AssociativeAddressTrieNode {
 	return toAssociativeAddressTrieNode(node.toTrieNode().FirstAddedNode())
 }
 
+// LastNode returns the last (the highest valued) node in the sub-trie originating from this node
 func (node *AssociativeAddressTrieNode) LastNode() *AssociativeAddressTrieNode {
 	return toAssociativeAddressTrieNode(node.toTrieNode().LastNode())
 }
 
+// LastAddedNode returns the last (the highest valued) added node in the sub-trie originating from this node,
+// or nil if there are no added entries in this tree or sub-trie
 func (node *AssociativeAddressTrieNode) LastAddedNode() *AssociativeAddressTrieNode {
 	return toAssociativeAddressTrieNode(node.toTrieNode().LastAddedNode())
 }
@@ -1081,18 +1147,52 @@ func (node *AssociativeAddressTrieNode) BlockSizeCachingAllNodeIterator() Cachin
 	return cachingAssociativeAddressTrieNodeIterator{node.toBase().blockSizeCachingAllNodeIterator()}
 }
 
+// ContainingFirstIterator returns an iterator that does a pre-order binary tree traversal of the added nodes
+// of the sub-trie with this node as the root.
+//
+// All added nodes will be visited before their added sub-nodes.
+// For an address trie this means added containing subnet blocks will be visited before their added contained addresses and subnet blocks.
+//
+// Once a given node is visited, the iterator allows you to cache an object corresponding to the
+// lower or upper sub-node that can be retrieved when you later visit that sub-node.
+//
+// Objects are cached only with nodes to be visited.
+// So for this iterator that means an object will be cached with the first added lower or upper sub-node,
+// the next lower or upper sub-node to be visited,
+// which is not necessarily the direct lower or upper sub-node of a given node.
+//
+// The caching allows you to provide iteration context from a parent to its sub-nodes when iterating.
+// The caching and retrieval is done in constant-time and linear space (proportional to tree size).
 func (node *AssociativeAddressTrieNode) ContainingFirstIterator(forwardSubNodeOrder bool) CachingAssociativeAddressTrieNodeIterator {
 	return cachingAssociativeAddressTrieNodeIterator{node.toBase().containingFirstIterator(forwardSubNodeOrder)}
 }
 
+// ContainingFirstAllNodeIterator returns an iterator that does a pre-order binary tree traversal of all the nodes
+// of the sub-trie with this node as the root.
+//
+// All nodes will be visited before their sub-nodes.
+// For an address trie this means containing subnet blocks will be visited before their contained addresses and subnet blocks.
+//
+// Once a given node is visited, the iterator allows you to cache an object corresponding to the
+// lower or upper sub-node that can be retrieved when you later visit that sub-node.
+// That allows you to provide iteration context from a parent to its sub-nodes when iterating.
+// The caching and retrieval is done in constant-time and linear space (proportional to tree size).
 func (node *AssociativeAddressTrieNode) ContainingFirstAllNodeIterator(forwardSubNodeOrder bool) CachingAssociativeAddressTrieNodeIterator {
 	return cachingAssociativeAddressTrieNodeIterator{node.toBase().containingFirstAllNodeIterator(forwardSubNodeOrder)}
 }
 
+// ContainedFirstIterator returns an iterator that does a post-order binary tree traversal of the added nodes
+// of the sub-trie with this node as the root.
+// All added sub-nodes will be visited before their parent nodes.
+// For an address trie this means contained addresses and subnets will be visited before their containing subnet blocks.
 func (node *AssociativeAddressTrieNode) ContainedFirstIterator(forwardSubNodeOrder bool) AssociativeAddressTrieNodeIteratorRem {
 	return associativeAddressTrieNodeIteratorRem{node.toBase().containedFirstIterator(forwardSubNodeOrder)}
 }
 
+// ContainedFirstAllNodeIterator returns an iterator that does a post-order binary tree traversal of all the nodes
+// of the sub-trie with this node as the root.
+// All sub-nodes will be visited before their parent nodes.
+// For an address trie this means contained addresses and subnets will be visited before their containing subnet blocks.
 func (node *AssociativeAddressTrieNode) ContainedFirstAllNodeIterator(forwardSubNodeOrder bool) AssociativeAddressTrieNodeIterator {
 	return associativeAddressTrieNodeIterator{node.toBase().containedFirstAllNodeIterator(forwardSubNodeOrder)}
 }
@@ -1224,7 +1324,7 @@ func (node *AssociativeAddressTrieNode) ElementsContaining(addr *Address) *Assoc
 	return node.toBase().elementsContaining(addr).ToAssociative()
 }
 
-// LongestPrefixMatch returns the address pr subnet with the longest prefix of all the added subnets or address whose prefix matches the given address.
+// LongestPrefixMatch returns the address or subnet with the longest prefix of all the added subnets or the address whose prefix matches the given address.
 // This is equivalent to finding the containing subnet or address with the smallest subnet size.
 //
 // If the argument is not a single address nor prefix block, this method will panic.

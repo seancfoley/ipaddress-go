@@ -810,7 +810,7 @@ func (section *MACAddressSection) GetDottedGrouping() (*AddressDivisionGrouping,
 		}
 		val := (segment1.GetSegmentValue() << uint(bitsPerSeg)) | segment2.GetSegmentValue()
 		upperVal := (segment1.GetUpperSegmentValue() << uint(bitsPerSeg)) | segment2.GetUpperSegmentValue()
-		vals := NewRangeDivision(DivInt(val), DivInt(upperVal), newSegmentBitCount)
+		vals := newRangeDivision(DivInt(val), DivInt(upperVal), newSegmentBitCount)
 		newSegs[newSegIndex] = createAddressDivision(vals)
 		newSegIndex++
 	}
@@ -818,7 +818,7 @@ func (section *MACAddressSection) GetDottedGrouping() (*AddressDivisionGrouping,
 		segment := section.GetSegment(segIndex)
 		val := segment.GetSegmentValue() << uint(bitsPerSeg)
 		upperVal := segment.GetUpperSegmentValue() << uint(bitsPerSeg)
-		vals := NewRangeDivision(DivInt(val), DivInt(upperVal), newSegmentBitCount)
+		vals := newRangeDivision(DivInt(val), DivInt(upperVal), newSegmentBitCount)
 		newSegs[newSegIndex] = createAddressDivision(vals)
 	}
 	grouping := createInitializedGrouping(newSegs, section.getPrefixLen())
