@@ -2412,6 +2412,8 @@ func NewIPAddressFromNetIPMask(ip net.IPMask) (*IPAddress, addrerr.AddressValueE
 	return addrFromBytes(ip)
 }
 
+//TODO from bytes
+
 // NewIPAddressFromNetIP constructs an address from a net.IP.
 // An error is returned when the IP has an invalid number of bytes.  IPv4 should have 4 bytes or less, IPv6 16 bytes or less, although extra leading zeros are tolerated.
 func NewIPAddressFromNetIP(ip net.IP) (*IPAddress, addrerr.AddressValueError) {

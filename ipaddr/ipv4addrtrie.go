@@ -192,8 +192,8 @@ func (trie *IPv4AddressTrie) ElementsContainedBy(addr *IPv4Address) *IPv4Address
 //
 // If the argument is not a single address nor prefix block, this method will panic.
 // The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
-func (trie *IPv4AddressTrie) ElementsContaining(addr *IPv4Address) *IPv4AddressTrieNode {
-	return trie.elementsContaining(addr.ToAddressBase()).ToIPv4()
+func (trie *IPv4AddressTrie) ElementsContaining(addr *IPv4Address) *ContainmentPath {
+	return trie.elementsContaining(addr.ToAddressBase())
 }
 
 // LongestPrefixMatch returns the address added to the trie with the longest matching prefix compared to the provided address, or nil if no matching address
@@ -581,8 +581,8 @@ func (trie *IPv4AddressAssociativeTrie) ElementsContainedBy(addr *IPv4Address) *
 //
 // If the argument is not a single address nor prefix block, this method will panic.
 // The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
-func (trie *IPv4AddressAssociativeTrie) ElementsContaining(addr *IPv4Address) *IPv4AddressAssociativeTrieNode {
-	return trie.elementsContaining(addr.ToAddressBase()).ToIPv4Associative()
+func (trie *IPv4AddressAssociativeTrie) ElementsContaining(addr *IPv4Address) *ContainmentPath {
+	return trie.elementsContaining(addr.ToAddressBase())
 }
 
 // LongestPrefixMatch returns the address added to the trie with the longest matching prefix compared to the provided address, or nil if no matching address

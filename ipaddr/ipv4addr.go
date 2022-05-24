@@ -203,6 +203,44 @@ func (addr *IPv4Address) GetCount() *big.Int {
 	return addr.getCount()
 }
 
+// GetIPv4Count returns the count of possible distinct values for this section.
+// It is the same as GetCount but returns the value as a uint64 instead of a big integer.
+// If not representing multiple values, the count is 1.
+//
+// Use IsMultiple if you simply want to know if the count is greater than 1.
+func (addr *IPv4Address) GetIPv4Count() uint64 {
+	if addr == nil {
+		return 0
+	}
+	return addr.GetSection().GetIPv4Count()
+}
+
+// GetIPv4PrefixCount returns the number of distinct prefix values in this section.
+// It is the same as GetPrefixCount but returns the value as a uint64 instead of a big integer.
+//
+// The prefix length is given by GetPrefixLen.
+//
+// If this has a non-nil prefix length, returns the number of distinct prefix values.
+//
+// If this has a nil prefix length, returns the same value as GetIPv4Count
+func (addr *IPv4Address) GetIPv4PrefixCount() uint64 {
+	return addr.GetSection().GetIPv4PrefixCount()
+}
+
+// GetIPv4PrefixCountLen gives count available as a uint64 instead of big.Int
+//
+// It is the similar to GetPrefixCountLen but returns a uint64, not a *big.Int
+func (addr *IPv4Address) GetIPv4PrefixCountLen(prefixLength BitCount) uint64 {
+	return addr.GetSection().GetIPv4PrefixCountLen(prefixLength)
+}
+
+// GetIPv4BlockCount returns the count of distinct values in the given number of initial (more significant) segments.
+//
+// It is similar to GetBlockCount but returns a uint64 instead of a big integer.
+func (addr *IPv4Address) GetIPv4BlockCount(segmentCount int) uint64 {
+	return addr.GetSection().GetIPv4BlockCount(segmentCount)
+}
+
 // IsMultiple returns true if this represents more than a single individual address, whether it is a subnet of multiple addresses.
 func (addr *IPv4Address) IsMultiple() bool {
 	return addr != nil && addr.isMultiple()

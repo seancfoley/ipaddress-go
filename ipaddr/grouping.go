@@ -89,7 +89,8 @@ func (grouping *addressDivisionGroupingInternal) initMultiple() {
 func (grouping *addressDivisionGroupingInternal) getDivision(index int) *AddressDivision {
 	divsArray := grouping.divisions
 	if divsArray != nil {
-		return divsArray.(standardDivArray).divisions[index]
+		standardDivsArray := divsArray.(standardDivArray)
+		return standardDivsArray.divisions[index]
 	}
 	panic("invalid index") // must be consistent with above code which panics with invalid index
 }

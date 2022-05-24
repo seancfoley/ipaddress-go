@@ -107,9 +107,9 @@ func (trie *addressTrie) elementsContainedBy(addr *Address) *AddressTrieNode {
 	return toAddressTrieNode(trie.trie.ElementsContainedBy(&addressTrieKey{addr}))
 }
 
-func (trie *addressTrie) elementsContaining(addr *Address) *AddressTrieNode {
+func (trie *addressTrie) elementsContaining(addr *Address) *ContainmentPath {
 	addr = mustBeBlockOrAddress(addr)
-	return toAddressTrieNode(trie.trie.ElementsContaining(&addressTrieKey{addr}))
+	return toContainmentPath(trie.trie.ElementsContaining(&addressTrieKey{addr}))
 }
 
 func (trie *addressTrie) longestPrefixMatch(addr *Address) *Address {
@@ -541,7 +541,7 @@ func (trie *AddressTrie) ElementsContainedBy(addr *Address) *AddressTrieNode {
 //
 // If the argument is not a single address nor prefix block, this method will panic.
 // The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
-func (trie *AddressTrie) ElementsContaining(addr *Address) *AddressTrieNode {
+func (trie *AddressTrie) ElementsContaining(addr *Address) *ContainmentPath {
 	return trie.elementsContaining(addr)
 }
 
@@ -978,8 +978,8 @@ func (trie *AssociativeAddressTrie) ElementsContainedBy(addr *Address) *Associat
 //
 // If the argument is not a single address nor prefix block, this method will panic.
 // The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
-func (trie *AssociativeAddressTrie) ElementsContaining(addr *Address) *AssociativeAddressTrieNode {
-	return trie.elementsContaining(addr).ToAssociative()
+func (trie *AssociativeAddressTrie) ElementsContaining(addr *Address) *ContainmentPath {
+	return trie.elementsContaining(addr)
 }
 
 // LongestPrefixMatch returns the address with the longest matching prefix compared to the provided address

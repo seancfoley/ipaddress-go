@@ -197,6 +197,102 @@ func getMatchingBits(segment1, segment2 *AddressSegment, maxBits, bitsPerSegment
 	}
 }
 
+// ContainmentPath represents a path through the trie of containing subnets,
+// each node in the path contained by the previous node,
+// the first node corresponding to the shortest prefix match, the last element corresponding to the longest prefix match.
+type ContainmentPath struct {
+	path tree.Path
+}
+
+// ShortestPrefixMatch returns the beginning of the Path of containing subnets, which may or may not match the tree root of the originating tree.
+// If there are no containing elements (prefix matches) this returns nil.
+func (path *ContainmentPath) ShortestPrefixMatch() *ContainmentPathNode {
+	return toContainmentPathNode(path.path.GetRoot())
+}
+
+// LongestPrefixMatch returns the end of the Path of containing subnets, which may or may not match a leaf in the originating tree.
+// If there are no containing elements (prefix matches) this returns nil.
+func (path *ContainmentPath) LongestPrefixMatch() *ContainmentPathNode {
+	return toContainmentPathNode(path.path.GetLeaf())
+}
+
+// Count returns the count of containing subnets in the path of containing subnets, starting from this node and moving downwards to sub-nodes.
+// This is a constant-time operation since the size is maintained in each node and adjusted with each add and Remove operation in the sub-tree.
+func (path *ContainmentPath) Count() int {
+	if path == nil {
+		return 0
+	}
+	return path.path.Size()
+}
+
+// String returns a visual representation of the Path with one node per line.
+func (path *ContainmentPath) String() string {
+	if path == nil {
+		return nilString()
+	}
+	return path.path.String()
+}
+
+func toContainmentPath(node *tree.Path) *ContainmentPath {
+	return (*ContainmentPath)(unsafe.Pointer(node))
+}
+
+// ContainmentPathNode is a node in a ContainmentPath
+type ContainmentPathNode struct {
+	pathNode tree.PathNode
+}
+
+// Previous gets the node contained by this node
+func (node *ContainmentPathNode) Next() *ContainmentPathNode {
+	return toContainmentPathNode(node.pathNode.Next())
+}
+
+// Previous gets the node containing this node
+func (node *ContainmentPathNode) Previous() *ContainmentPathNode {
+	return toContainmentPathNode(node.pathNode.Previous())
+}
+
+// GetKey gets the containing block or matching address corresponding to this node
+func (node *ContainmentPathNode) GetKey() *Address {
+	key := node.pathNode.GetKey()
+	return key.(*addressTrieKey).Address
+}
+
+// GetValue returns the value assigned to the block or address, if the node was an associative node from an associative trie, otherwise it returns nil
+func (node *ContainmentPathNode) GetValue() NodeValue {
+	return node.pathNode.GetValue()
+}
+
+// Count returns the count of containing subnets in the path of containing subnets, starting from this node and moving downwards to sub-nodes.
+// This is a constant-time operation since the size is maintained in each node and adjusted with each add and Remove operation in the sub-tree.
+func (node *ContainmentPathNode) Count() int {
+	if node == nil {
+		return 0
+	}
+	return node.pathNode.Size()
+}
+
+// String returns a visual representation of this node including the address key
+func (node *ContainmentPathNode) String() string {
+	if node == nil {
+		return nilString()
+	}
+	return node.pathNode.String()
+}
+
+// ListString returns a visual representation of the containing subnets starting from this node and moving downwards to sub-nodes.
+func (node *ContainmentPathNode) ListString() string {
+	return node.pathNode.ListString(true, true)
+}
+
+func toContainmentPathNode(node *tree.PathNode) *ContainmentPathNode {
+	return (*ContainmentPathNode)(unsafe.Pointer(node))
+}
+
+//
+//
+//
+//
 type addressTrieNode struct {
 	tree.BinTrieNode
 }
@@ -316,9 +412,9 @@ func (node *addressTrieNode) elementsContainedBy(addr *Address) *AddressTrieNode
 	return toAddressTrieNode(node.toTrieNode().ElementsContainedBy(&addressTrieKey{addr}))
 }
 
-func (node *addressTrieNode) elementsContaining(addr *Address) *AddressTrieNode {
+func (node *addressTrieNode) elementsContaining(addr *Address) *ContainmentPath {
 	addr = mustBeBlockOrAddress(addr)
-	return toAddressTrieNode(node.toTrieNode().ElementsContaining(&addressTrieKey{addr}))
+	return toContainmentPath(node.toTrieNode().ElementsContaining(&addressTrieKey{addr}))
 }
 
 func (node *addressTrieNode) longestPrefixMatch(addr *Address) *Address {
@@ -778,7 +874,7 @@ func (node *AddressTrieNode) ElementsContainedBy(addr *Address) *AddressTrieNode
 //
 // If the argument is not a single address nor prefix block, this method will panic.
 // The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
-func (node *AddressTrieNode) ElementsContaining(addr *Address) *AddressTrieNode {
+func (node *AddressTrieNode) ElementsContaining(addr *Address) *ContainmentPath {
 	return node.tobase().elementsContaining(addr)
 }
 
@@ -1320,8 +1416,8 @@ func (node *AssociativeAddressTrieNode) ElementsContainedBy(addr *Address) *Asso
 //
 // If the argument is not a single address nor prefix block, this method will panic.
 // The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
-func (node *AssociativeAddressTrieNode) ElementsContaining(addr *Address) *AssociativeAddressTrieNode {
-	return node.toBase().elementsContaining(addr).ToAssociative()
+func (node *AssociativeAddressTrieNode) ElementsContaining(addr *Address) *ContainmentPath {
+	return node.toBase().elementsContaining(addr)
 }
 
 // LongestPrefixMatch returns the address or subnet with the longest prefix of all the added subnets or the address whose prefix matches the given address.

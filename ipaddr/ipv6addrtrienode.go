@@ -383,8 +383,8 @@ func (node *IPv6AddressTrieNode) ElementsContainedBy(addr *IPv6Address) *IPv6Add
 //
 // If the argument is not a single address nor prefix block, this method will panic.
 // The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
-func (node *IPv6AddressTrieNode) ElementsContaining(addr *IPv6Address) *IPv6AddressTrieNode {
-	return node.toBase().elementsContaining(addr.ToAddressBase()).ToIPv6()
+func (node *IPv6AddressTrieNode) ElementsContaining(addr *IPv6Address) *ContainmentPath {
+	return node.toBase().elementsContaining(addr.ToAddressBase())
 }
 
 // LongestPrefixMatch returns the address or subnet with the longest prefix of all the added subnets or the address whose prefix matches the given address.
@@ -900,8 +900,8 @@ func (node *IPv6AddressAssociativeTrieNode) ElementsContainedBy(addr *IPv6Addres
 //
 // If the argument is not a single address nor prefix block, this method will panic.
 // The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
-func (node *IPv6AddressAssociativeTrieNode) ElementsContaining(addr *IPv6Address) *IPv6AddressAssociativeTrieNode {
-	return node.toBase().elementsContaining(addr.ToAddressBase()).ToIPv6Associative()
+func (node *IPv6AddressAssociativeTrieNode) ElementsContaining(addr *IPv6Address) *ContainmentPath {
+	return node.toBase().elementsContaining(addr.ToAddressBase())
 }
 
 // LongestPrefixMatch returns the address or subnet with the longest prefix of all the added subnets or the address whose prefix matches the given address.

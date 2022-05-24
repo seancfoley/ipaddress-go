@@ -192,8 +192,8 @@ func (trie *MACAddressTrie) ElementsContainedBy(addr *MACAddress) *MACAddressTri
 //
 // If the argument is not a single address nor prefix block, this method will panic.
 // The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
-func (trie *MACAddressTrie) ElementsContaining(addr *MACAddress) *MACAddressTrieNode {
-	return trie.elementsContaining(addr.ToAddressBase()).ToMAC()
+func (trie *MACAddressTrie) ElementsContaining(addr *MACAddress) *ContainmentPath {
+	return trie.elementsContaining(addr.ToAddressBase())
 }
 
 // LongestPrefixMatch returns the address added to the trie with the longest matching prefix compared to the provided address, or nil if no matching address
@@ -590,8 +590,8 @@ func (trie *MACAddressAssociativeTrie) ElementsContainedBy(addr *MACAddress) *MA
 //
 // If the argument is not a single address nor prefix block, this method will panic.
 // The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
-func (trie *MACAddressAssociativeTrie) ElementsContaining(addr *MACAddress) *MACAddressAssociativeTrieNode {
-	return trie.elementsContaining(addr.ToAddressBase()).ToMACAssociative()
+func (trie *MACAddressAssociativeTrie) ElementsContaining(addr *MACAddress) *ContainmentPath {
+	return trie.elementsContaining(addr.ToAddressBase())
 }
 
 // LongestPrefixMatch returns the address added to the trie with the longest matching prefix compared to the provided address, or nil if no matching address

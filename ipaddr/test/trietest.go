@@ -1087,29 +1087,28 @@ func (t trieTester) testContains(trie *ipaddr.AddressTrie) {
 			addedParent = next
 		}
 		if addedParent == nil {
-			if containing != nil || lpm != nil {
+			//fmt.Printf("empty containing is %s\n", containing)
+			if (containing != nil && containing.Count() > 0) || lpm != nil {
 				t.addFailure(newTrieFailure("containing is "+containing.String()+" for address "+halfwayAddr.String()+" instead of expected nil", trie))
 			} else if elementsContains {
 				t.addFailure(newTrieFailure("containing is true for address "+halfwayAddr.String()+" instead of expected false", trie))
 			}
 		} else {
-			lastContaining := containing
-			for lastContaining != nil {
-				lower := lastContaining.GetLowerSubNode()
-				if lower != nil {
-					lastContaining = lower
-				} else {
-					upper := lastContaining.GetUpperSubNode()
-					if upper != nil {
-						lastContaining = upper
-					} else {
+			var lastContaining *ipaddr.ContainmentPathNode
+			//fmt.Printf("containing is %s\n", containing)
+			if containing.Count() > 0 {
+				lastContaining = containing.ShortestPrefixMatch()
+				for {
+					if next := lastContaining.Next(); next == nil {
 						break
+					} else {
+						lastContaining = next
 					}
 				}
 			}
-			if lastContaining == nil || !lastContaining.Equal(addedParent) {
+			if lastContaining == nil || !lastContaining.GetKey().Equal(addedParent.GetKey()) || lastContaining.GetValue() != addedParent.GetValue() {
 				t.addFailure(newTrieFailure("containing ends with "+lastContaining.String()+" for address "+halfwayAddr.String()+" instead of expected "+addedParent.String(), trie))
-			} else if !lastContaining.Equal(smallestContaining) {
+			} else if !lastContaining.GetKey().Equal(smallestContaining.GetKey()) || lastContaining.GetValue() != smallestContaining.GetValue() {
 				t.addFailure(newTrieFailure("containing ends with "+lastContaining.String()+" for address "+halfwayAddr.String()+" instead of expected smallest containing "+smallestContaining.String(), trie))
 			} else if lastContaining.GetKey() != lpm {
 				t.addFailure(newTrieFailure("containing ends with addr "+lastContaining.GetKey().String()+" for address "+halfwayAddr.String()+" instead of expected "+lpm.String(), trie))

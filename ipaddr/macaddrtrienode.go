@@ -383,8 +383,8 @@ func (node *MACAddressTrieNode) ElementsContainedBy(addr *MACAddress) *MACAddres
 //
 // If the argument is not a single address nor prefix block, this method will panic.
 // The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
-func (node *MACAddressTrieNode) ElementsContaining(addr *MACAddress) *MACAddressTrieNode {
-	return node.toBase().elementsContaining(addr.ToAddressBase()).ToMAC()
+func (node *MACAddressTrieNode) ElementsContaining(addr *MACAddress) *ContainmentPath {
+	return node.toBase().elementsContaining(addr.ToAddressBase())
 }
 
 // LongestPrefixMatch returns the address or subnet with the longest prefix of all the added subnets or the address whose prefix matches the given address.
@@ -900,8 +900,8 @@ func (node *MACAddressAssociativeTrieNode) ElementsContainedBy(addr *MACAddress)
 //
 // If the argument is not a single address nor prefix block, this method will panic.
 // The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
-func (node *MACAddressAssociativeTrieNode) ElementsContaining(addr *MACAddress) *MACAddressAssociativeTrieNode {
-	return node.toBase().elementsContaining(addr.ToAddressBase()).ToMACAssociative()
+func (node *MACAddressAssociativeTrieNode) ElementsContaining(addr *MACAddress) *ContainmentPath {
+	return node.toBase().elementsContaining(addr.ToAddressBase())
 }
 
 // LongestPrefixMatch returns the address or subnet with the longest prefix of all the added subnets or the address whose prefix matches the given address.

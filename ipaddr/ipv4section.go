@@ -301,9 +301,6 @@ func (section *IPv4AddressSection) GetCount() *big.Int {
 	})
 }
 
-//TODO NOW consider adding GetIPv4Count GetIPv4PrefixCount GetIPv4BlockCount to IPv4Address too, not just IPv4AddressSection
-// maybe I wanted to reduce clutter?  not sure
-
 // GetIPv4Count returns the count of possible distinct values for this section.
 // It is the same as GetCount but returns the value as a uint64 instead of a big integer.
 // If not representing multiple values, the count is 1,
@@ -346,7 +343,7 @@ func (section *IPv4AddressSection) GetPrefixCount() *big.Int {
 //
 // If this has a non-nil prefix length, returns the number of distinct prefix values.
 //
-// If this has a nil prefix length, returns the same value as GetCount
+// If this has a nil prefix length, returns the same value as GetIPv4Count
 func (section *IPv4AddressSection) GetIPv4PrefixCount() uint64 {
 	return section.cacheUint64PrefixCount(func() uint64 {
 		return section.getIPv4PrefixCount()
@@ -371,6 +368,20 @@ func (section *IPv4AddressSection) GetPrefixCountLen(prefixLen BitCount) *big.In
 	return section.calcCount(func() *big.Int { return new(big.Int).SetUint64(section.GetIPv4PrefixCountLen(prefixLen)) })
 }
 
+// GetIPv4PrefixCountLen returns the number of distinct prefix values in this item for the given prefix length
+//
+// It is the same as GetPrefixCountLen but returns a uint64, not a *big.Int
+func (section *IPv4AddressSection) GetIPv4PrefixCountLen(prefixLength BitCount) uint64 {
+	if !section.isMultiple() {
+		return 1
+	} else if prefixLength >= section.GetBitCount() {
+		return section.GetIPv4Count()
+	} else if prefixLength < 0 {
+		prefixLength = 0
+	}
+	return longPrefixCount(section.ToSectionBase(), prefixLength)
+}
+
 // GetIPv4BlockCount returns the count of distinct values in the given number of initial (more significant) segments.
 // It is similar to GetBlockCount but returns a uint64 instead of a big integer.
 func (section *IPv4AddressSection) GetIPv4BlockCount(segmentCount int) uint64 {
@@ -387,18 +398,6 @@ func (section *IPv4AddressSection) GetBlockCount(segmentCount int) *big.Int {
 		return bigOne()
 	}
 	return section.calcCount(func() *big.Int { return new(big.Int).SetUint64(section.GetIPv4BlockCount(segmentCount)) })
-}
-
-// GetIPv4PrefixCountLen gives count available as a uint64 instead of big.Int
-func (section *IPv4AddressSection) GetIPv4PrefixCountLen(prefixLength BitCount) uint64 {
-	if !section.isMultiple() {
-		return 1
-	} else if prefixLength >= section.GetBitCount() {
-		return section.GetIPv4Count()
-	} else if prefixLength < 0 {
-		prefixLength = 0
-	}
-	return longPrefixCount(section.ToSectionBase(), prefixLength)
 }
 
 // GetSegment returns the segment at the given index.
