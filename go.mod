@@ -20,6 +20,3 @@ go 1.12
 
 require github.com/seancfoley/bintree v1.1.0
 
-retract v0.0.0-20220113165635-21f206932b4b
-retract v0.0.0-20220113165635-21f2069
-
