@@ -31,7 +31,7 @@ func createIPSection(segments []*AddressDivision, prefixLength PrefixLen, addrTy
 			addressSectionInternal{
 				addressDivisionGroupingInternal{
 					addressDivisionGroupingBase: addressDivisionGroupingBase{
-						divisions:    standardDivArray{segments},
+						divisions:    standardDivArray(segments),
 						addrType:     addrType,
 						cache:        &valueCache{},
 						prefixLength: prefixLength,
@@ -114,6 +114,20 @@ type ipAddressSectionInternal struct {
 // GetSegment will panic given a negative index or index larger than the segment count.
 func (section *ipAddressSectionInternal) GetSegment(index int) *IPAddressSegment {
 	return section.getDivision(index).ToIP()
+}
+
+// ForEachSegment visits each segment in order from most-significant to least, the most significant with index 0, calling the given function for each, terminating early if the function returns true
+// Returns the number of visited segments.
+func (section *ipAddressSectionInternal) ForEachSegment(consumer func(segmentIndex int, segment *IPAddressSegment) (stop bool)) int {
+	divArray := section.getDivArray()
+	if divArray != nil {
+		for i, div := range divArray {
+			if consumer(i, div.ToIP()) {
+				return i + 1
+			}
+		}
+	}
+	return len(divArray)
 }
 
 // GetIPVersion returns the IP version of this IP address section
@@ -965,7 +979,7 @@ func (section *ipAddressSectionInternal) getNetworkSectionLen(networkPrefixLengt
 		}
 		newSegments = createSegmentArray(networkSegmentCount)
 		//if networkSegmentCount > 0 {
-		section.copySubSegmentsToSlice(0, prefixedSegmentIndex, newSegments)
+		section.copySubDivisions(0, prefixedSegmentIndex, newSegments)
 		newSegments[prefixedSegmentIndex] = createAddressDivision(lastSeg.deriveNewMultiSeg(lower, upper, segPrefLength))
 		//}
 	} else {
@@ -1012,7 +1026,7 @@ func (section *ipAddressSectionInternal) getHostSectionLen(networkPrefixLength B
 		}
 		hostSegmentCount := segmentCount - prefixedSegmentIndex
 		newSegments = createSegmentArray(hostSegmentCount)
-		section.copySubSegmentsToSlice(prefixedSegmentIndex+1, prefixedSegmentIndex+hostSegmentCount, newSegments[1:])
+		section.copySubDivisions(prefixedSegmentIndex+1, prefixedSegmentIndex+hostSegmentCount, newSegments[1:])
 		newSegments[0] = createAddressDivision(firstSeg.deriveNewMultiSeg(segLower, segUpper, segPrefLength))
 	} else {
 		prefLen = cacheBitCount(0)
@@ -1069,7 +1083,7 @@ func (section *ipAddressSectionInternal) getOredSegments(
 		}
 		if !segsSame(segmentPrefixLength, seg.getDivisionPrefixLength(), value, origValue, upperValue, origUpperValue) {
 			newSegments := createSegmentArray(count)
-			section.copySubSegmentsToSlice(0, i, newSegments)
+			section.copySubDivisions(0, i, newSegments)
 			newSegments[i] = createAddressDivision(seg.deriveNewMultiSeg(value, upperValue, segmentPrefixLength))
 			for i++; i < count; i++ {
 				segmentPrefixLength = getSegmentPrefixLength(bitsPerSegment, networkPrefixLength, i)
@@ -1768,13 +1782,22 @@ func (section *IPAddressSection) GetHostMask() *IPAddressSection {
 // CopySubSegments copies the existing segments from the given start index until but not including the segment at the given end index,
 // into the given slice, as much as can be fit into the slice, returning the number of segments copied
 func (section *IPAddressSection) CopySubSegments(start, end int, segs []*IPAddressSegment) (count int) {
-	return section.visitSubDivisions(start, end, func(index int, div *AddressDivision) bool { segs[index] = div.ToIP(); return false }, len(segs))
+	start, end, targetStart := adjust1To1StartIndices(start, end, section.GetDivisionCount(), len(segs))
+	segs = segs[targetStart:]
+	return section.forEachSubDivision(start, end, func(index int, div *AddressDivision) {
+		segs[index] = div.ToIP()
+	}, len(segs))
 }
 
 // CopySegments copies the existing segments into the given slice,
 // as much as can be fit into the slice, returning the number of segments copied
 func (section *IPAddressSection) CopySegments(segs []*IPAddressSegment) (count int) {
-	return section.visitDivisions(func(index int, div *AddressDivision) bool { segs[index] = div.ToIP(); return false }, len(segs))
+	return section.ForEachSegment(func(index int, seg *IPAddressSegment) (stop bool) {
+		if stop = index >= len(segs); !stop {
+			segs[index] = seg
+		}
+		return
+	})
 }
 
 // GetSegments returns a slice with the address segments.  The returned slice is not backed by the same array as this section.

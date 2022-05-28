@@ -268,7 +268,7 @@ func (host *HostName) IsAddress() bool {
 	return false
 }
 
-// TODO later add to doc below
+// TODO LATER add to doc below
 // In cases such as IPv6 literals and reverse DNS hosts, you can check the relevant methods isIpv6Literal or isReverseDNS,
 // in which case this method should return the associated address.  If this method returns nil then an error occurred
 //when producing the associated address, and that error is available from getAddressStringException.

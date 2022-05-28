@@ -366,7 +366,7 @@ func newIPv6AddressFromMAC(prefixSection *IPv6AddressSection, suffix *MACAddress
 	if err := toIPv6SegmentsFromEUI(segments, 4, suffix, prefixLen); err != nil {
 		return nil, err
 	}
-	prefixSection.copySubSegmentsToSlice(0, 4, segments)
+	prefixSection.copySubDivisions(0, 4, segments)
 	res := createIPv6Section(segments)
 	res.prefixLength = prefixLen
 	res.isMult = suffix.isMultiple() || prefixSection.isMultipleTo(4)
@@ -653,7 +653,13 @@ func (addr *IPv6Address) GetSegmentCount() int {
 	return addr.GetDivisionCount()
 }
 
-// GetGenericDivision returns the segment at the given index as an DivisionType
+// ForEachSegment visits each segment in order from most-significant to least, the most significant with index 0, calling the given function for each, terminating early if the function returns true
+// Returns the number of visited segments.
+func (addr *IPv6Address) ForEachSegment(consumer func(segmentIndex int, segment *IPv6AddressSegment) (stop bool)) int {
+	return addr.GetSection().ForEachSegment(consumer)
+}
+
+// GetGenericDivision returns the segment at the given index as a DivisionType
 func (addr *IPv6Address) GetGenericDivision(index int) DivisionType {
 	return addr.init().getDivision(index)
 }
@@ -1676,22 +1682,34 @@ func (addr *IPv6Address) ReverseSegments() *IPv6Address {
 }
 
 // ReplaceLen replaces segments starting from startIndex and ending before endIndex with the same number of segments starting at replacementStartIndex from the replacement section
+// Mappings to or from indices outside the range of this or the replacement address are skipped.
 func (addr *IPv6Address) ReplaceLen(startIndex, endIndex int, replacement *IPv6Address, replacementIndex int) *IPv6Address {
-	startIndex, endIndex, replacementIndex =
-		adjust1To1Indices(startIndex, endIndex, IPv6SegmentCount, replacementIndex, IPv6SegmentCount)
+	if replacementIndex <= 0 {
+		startIndex -= replacementIndex
+		replacementIndex = 0
+	} else if replacementIndex >= IPv6SegmentCount {
+		return addr
+	}
+	// We must do a 1 to 1 adjustment of indices before calling the section replace which would do an adjustment of indices not 1 to 1.
+	// Here we assume replacementIndex is 0 and working on the subsection starting at that index.
+	// In other words, a replacementIndex of x on the whole section is equivalent to replacementIndex of 0 on the shorter subsection starting at x.
+	// Then afterwards we use the original replacement index to work on the whole section again, adjusting as needed.
+	startIndex, endIndex, replacementIndexAdjustment := adjust1To1Indices(startIndex, endIndex, IPv6SegmentCount, IPv6SegmentCount-replacementIndex)
 	if startIndex == endIndex {
 		return addr
 	}
+	replacementIndex += replacementIndexAdjustment
 	count := endIndex - startIndex
-	return addr.checkIdentity(addr.GetSection().ReplaceLen(startIndex, endIndex, replacement.GetSection(), replacementIndex, replacementIndex+count))
+	return addr.init().checkIdentity(addr.GetSection().ReplaceLen(startIndex, endIndex, replacement.GetSection(), replacementIndex, replacementIndex+count))
 }
 
 // Replace replaces segments starting from startIndex with segments from the replacement section
 func (addr *IPv6Address) Replace(startIndex int, replacement *IPv6AddressSection) *IPv6Address {
+	// We must do a 1 to 1 adjustment of indices before calling the section replace which would do an adjustment of indices not 1 to 1.
 	startIndex, endIndex, replacementIndex :=
-		adjust1To1Indices(startIndex, startIndex+replacement.GetSegmentCount(), IPv6SegmentCount, 0, replacement.GetSegmentCount())
+		adjust1To1Indices(startIndex, startIndex+replacement.GetSegmentCount(), IPv6SegmentCount, replacement.GetSegmentCount())
 	count := endIndex - startIndex
-	return addr.checkIdentity(addr.GetSection().ReplaceLen(startIndex, endIndex, replacement, replacementIndex, replacementIndex+count))
+	return addr.init().checkIdentity(addr.GetSection().ReplaceLen(startIndex, endIndex, replacement, replacementIndex, replacementIndex+count))
 }
 
 // GetLeadingBitCount returns the number of consecutive leading one or zero bits.
@@ -2060,8 +2078,8 @@ func (addr *IPv6Address) ToKey() *IPv6AddressKey {
 		Zone: addr.GetZone(),
 	}
 	section := addr.GetSection()
-	divs := section.divisions.(standardDivArray)
-	for i, div := range divs.divisions {
+	divs := section.getDivArray()
+	for i, div := range divs {
 		seg := div.ToIPv6()
 		vals := &key.Values[i]
 		vals.Value, vals.UpperValue = seg.GetIPv6SegmentValue(), seg.GetIPv6UpperSegmentValue()

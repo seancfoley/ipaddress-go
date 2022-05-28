@@ -73,7 +73,7 @@ func (grouping *addressDivisionGroupingBase) getDivision(index int) *addressDivi
 	return grouping.divisions.getDivision(index)
 }
 
-// GetGenericDivision returns the division as an DivisionType,
+// GetGenericDivision returns the division as a DivisionType,
 // allowing all division types and aggregated division types to be represented by a single type,
 // useful for comparisons and other common uses.
 func (grouping *addressDivisionGroupingBase) GetGenericDivision(index int) DivisionType {
@@ -501,48 +501,44 @@ type divArray interface {
 	fmt.Stringer
 }
 
-var zeroDivs = make([]*AddressDivision, 0)
-var zeroStandardDivArray = standardDivArray{zeroDivs}
+var _ divArray = standardDivArray{}
 
-type standardDivArray struct {
-	divisions []*AddressDivision
-}
+var zeroDivs = make([]*AddressDivision, 0)
+var zeroStandardDivArray = standardDivArray(zeroDivs)
+
+type standardDivArray []*AddressDivision
 
 func (grouping standardDivArray) getDivisionCount() int {
-	return len(grouping.divisions)
+	return len(grouping)
 }
 
 func (grouping standardDivArray) getDivision(index int) *addressDivisionBase {
-	return (*addressDivisionBase)(unsafe.Pointer(grouping.divisions[index]))
+	return (*addressDivisionBase)(unsafe.Pointer(grouping[index]))
 }
 
 func (grouping standardDivArray) getGenericDivision(index int) DivisionType {
-	return grouping.divisions[index]
+	return grouping[index]
 }
 
 func (grouping standardDivArray) copyDivisions(divs []*AddressDivision) (count int) {
-	return copy(divs, grouping.divisions)
+	return copy(divs, grouping)
 }
 
 func (grouping standardDivArray) copySubDivisions(start, end int, divs []*AddressDivision) (count int) {
-	return copy(divs, grouping.divisions[start:end])
+	return copy(divs, grouping[start:end])
 }
 
 func (grouping standardDivArray) getSubDivisions(index, endIndex int) (divs []*AddressDivision) {
-	return grouping.divisions[index:endIndex]
-}
-
-func (grouping standardDivArray) getDivisions() (divs []*AddressDivision) {
-	return grouping.divisions
+	return grouping[index:endIndex]
 }
 
 func (grouping standardDivArray) init() standardDivArray {
-	if grouping.divisions == nil {
+	if grouping == nil {
 		return zeroStandardDivArray
 	}
 	return grouping
 }
 
 func (grouping standardDivArray) String() string {
-	return fmt.Sprint(grouping.init().divisions)
+	return fmt.Sprint(grouping.init())
 }

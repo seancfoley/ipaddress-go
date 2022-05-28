@@ -838,7 +838,13 @@ func (addr *IPAddress) GetSegmentCount() int {
 	return addr.getDivisionCount()
 }
 
-// GetGenericDivision returns the segment at the given index as an DivisionType
+// ForEachSegment visits each segment in order from most-significant to least, the most significant with index 0, calling the given function for each, terminating early if the function returns true
+// Returns the number of visited segments.
+func (addr *IPAddress) ForEachSegment(consumer func(segmentIndex int, segment *IPAddressSegment) (stop bool)) int {
+	return addr.GetSection().ForEachSegment(consumer)
+}
+
+// GetGenericDivision returns the segment at the given index as a DivisionType
 func (addr *IPAddress) GetGenericDivision(index int) DivisionType {
 	return addr.getDivision(index)
 }
@@ -2412,7 +2418,11 @@ func NewIPAddressFromNetIPMask(ip net.IPMask) (*IPAddress, addrerr.AddressValueE
 	return addrFromBytes(ip)
 }
 
-//TODO from bytes
+// NewIPAddressFromBytes constructs an address from a slice of bytes.
+// An error is returned when the IP has an invalid number of bytes.  IPv4 should have 4 bytes or less, IPv6 16 bytes or less, although extra leading zeros are tolerated.
+func NewIPAddressFromBytes(ip net.IP) (*IPAddress, addrerr.AddressValueError) {
+	return addrFromBytes(ip)
+}
 
 // NewIPAddressFromNetIP constructs an address from a net.IP.
 // An error is returned when the IP has an invalid number of bytes.  IPv4 should have 4 bytes or less, IPv6 16 bytes or less, although extra leading zeros are tolerated.

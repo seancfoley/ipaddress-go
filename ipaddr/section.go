@@ -34,7 +34,7 @@ func createSection(segments []*AddressDivision, prefixLength PrefixLen, addrType
 		addressSectionInternal{
 			addressDivisionGroupingInternal{
 				addressDivisionGroupingBase: addressDivisionGroupingBase{
-					divisions:    standardDivArray{segments},
+					divisions:    standardDivArray(segments),
 					prefixLength: prefixLength,
 					addrType:     addrType,
 					cache:        &valueCache{},
@@ -415,6 +415,20 @@ func (section *addressSectionInternal) GetSegmentCount() int {
 	return section.GetDivisionCount()
 }
 
+// ForEachSegment visits each segment in order from most-significant to least, the most significant with index 0, calling the given function for each, terminating early if the function returns true
+// Returns the number of visited segments.
+func (section *addressSectionInternal) ForEachSegment(consumer func(segmentIndex int, segment *AddressSegment) (stop bool)) int {
+	divArray := section.getDivArray()
+	if divArray != nil {
+		for i, div := range divArray {
+			if consumer(i, div.ToSegmentBase()) {
+				return i + 1
+			}
+		}
+	}
+	return len(divArray)
+}
+
 // GetBitCount returns the number of bits in each value comprising this address item
 func (section *addressSectionInternal) GetBitCount() BitCount {
 	divLen := section.GetDivisionCount()
@@ -497,14 +511,6 @@ func (section *addressSectionInternal) getSubSection(index, endIndex int) *Addre
 		return createSection(segs, newPrefLen, addrType)
 	}
 	return createInitializedSection(segs, newPrefLen, addrType)
-}
-
-func (section *addressSectionInternal) copySegmentsToSlice(divs []*AddressDivision) (count int) {
-	return section.copyDivisions(divs)
-}
-
-func (section *addressSectionInternal) copySubSegmentsToSlice(start, end int, divs []*AddressDivision) (count int) {
-	return section.visitSubDivisions(start, end, func(index int, div *AddressDivision) bool { divs[index] = div; return false }, len(divs))
 }
 
 func (section *addressSectionInternal) getLowestHighestSections() (lower, upper *AddressSection) {
@@ -731,11 +737,11 @@ func (section *addressSectionInternal) replace(
 	totalSegmentCount := segmentCount + otherSegmentCount - (endIndex - index)
 	segs := createSegmentArray(totalSegmentCount)
 	sect := section.toAddressSection()
-	sect.copySubSegmentsToSlice(0, index, segs)
+	sect.copySubDivisions(0, index, segs)
 	if index < totalSegmentCount {
-		replacement.copySubSegmentsToSlice(replacementStartIndex, replacementEndIndex, segs[index:])
+		replacement.copySubDivisions(replacementStartIndex, replacementEndIndex, segs[index:])
 		if index+otherSegmentCount < totalSegmentCount {
-			sect.copySubSegmentsToSlice(endIndex, segmentCount, segs[index+otherSegmentCount:])
+			sect.copySubDivisions(endIndex, segmentCount, segs[index+otherSegmentCount:])
 		}
 	}
 	addrType := sect.getAddrType()
@@ -1849,7 +1855,7 @@ func (section *addressSectionInternal) getSubnetSegments( // called by methods t
 		}
 		if !segsSame(segmentPrefixLength, seg.getDivisionPrefixLength(), value, origValue, upperValue, origUpperValue) {
 			newSegments := createSegmentArray(count)
-			section.copySubSegmentsToSlice(0, i, newSegments)
+			section.copySubDivisions(0, i, newSegments)
 			newSegments[i] = createAddressDivision(seg.deriveNewMultiSeg(value, upperValue, segmentPrefixLength))
 			for i++; i < count; i++ {
 				segmentPrefixLength = getSegmentPrefixLength(bitsPerSegment, networkPrefixLength, i)
@@ -2266,13 +2272,22 @@ func (section *AddressSection) GetSubSection(index, endIndex int) *AddressSectio
 // CopySubSegments copies the existing segments from the given start index until but not including the segment at the given end index,
 // into the given slice, as much as can be fit into the slice, returning the number of segments copied
 func (section *AddressSection) CopySubSegments(start, end int, segs []*AddressSegment) (count int) {
-	return section.visitSubDivisions(start, end, func(index int, div *AddressDivision) bool { segs[index] = div.ToSegmentBase(); return false }, len(segs))
+	start, end, targetStart := adjust1To1StartIndices(start, end, section.GetDivisionCount(), len(segs))
+	segs = segs[targetStart:]
+	return section.forEachSubDivision(start, end, func(index int, div *AddressDivision) {
+		segs[index] = div.ToSegmentBase()
+	}, len(segs))
 }
 
 // CopySegments copies the existing segments into the given slice,
 // as much as can be fit into the slice, returning the number of segments copied
 func (section *AddressSection) CopySegments(segs []*AddressSegment) (count int) {
-	return section.visitDivisions(func(index int, div *AddressDivision) bool { segs[index] = div.ToSegmentBase(); return false }, len(segs))
+	return section.ForEachSegment(func(index int, seg *AddressSegment) (stop bool) {
+		if stop = index >= len(segs); !stop {
+			segs[index] = seg
+		}
+		return
+	})
 }
 
 // GetSegments returns a slice with the address segments.  The returned slice is not backed by the same array as this section.

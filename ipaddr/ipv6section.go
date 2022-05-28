@@ -33,7 +33,7 @@ func createIPv6Section(segments []*AddressDivision) *IPv6AddressSection {
 			addressSectionInternal{
 				addressDivisionGroupingInternal{
 					addressDivisionGroupingBase: addressDivisionGroupingBase{
-						divisions: standardDivArray{segments},
+						divisions: standardDivArray(segments),
 						addrType:  ipv6Type,
 						cache: &valueCache{
 							stringCache: stringCache{
@@ -477,6 +477,20 @@ func (section *IPv6AddressSection) GetSegment(index int) *IPv6AddressSegment {
 	return section.getDivision(index).ToIPv6()
 }
 
+// ForEachSegment visits each segment in order from most-significant to least, the most significant with index 0, calling the given function for each, terminating early if the function returns true
+// Returns the number of visited segments.
+func (section *IPv6AddressSection) ForEachSegment(consumer func(segmentIndex int, segment *IPv6AddressSegment) (stop bool)) int {
+	divArray := section.getDivArray()
+	if divArray != nil {
+		for i, div := range divArray {
+			if consumer(i, div.ToIPv6()) {
+				return i + 1
+			}
+		}
+	}
+	return len(divArray)
+}
+
 // GetTrailingSection gets the subsection from the series starting from the given index.
 // The first segment is at index 0.
 func (section *IPv6AddressSection) GetTrailingSection(index int) *IPv6AddressSection {
@@ -536,13 +550,22 @@ func (section *IPv6AddressSection) GetHostMask() *IPv6AddressSection {
 // CopySubSegments copies the existing segments from the given start index until but not including the segment at the given end index,
 // into the given slice, as much as can be fit into the slice, returning the number of segments copied
 func (section *IPv6AddressSection) CopySubSegments(start, end int, segs []*IPv6AddressSegment) (count int) {
-	return section.visitSubDivisions(start, end, func(index int, div *AddressDivision) bool { segs[index] = div.ToIPv6(); return false }, len(segs))
+	start, end, targetStart := adjust1To1StartIndices(start, end, section.GetDivisionCount(), len(segs))
+	segs = segs[targetStart:]
+	return section.forEachSubDivision(start, end, func(index int, div *AddressDivision) {
+		segs[index] = div.ToIPv6()
+	}, len(segs))
 }
 
 // CopySegments copies the existing segments into the given slice,
 // as much as can be fit into the slice, returning the number of segments copied
 func (section *IPv6AddressSection) CopySegments(segs []*IPv6AddressSegment) (count int) {
-	return section.visitDivisions(func(index int, div *AddressDivision) bool { segs[index] = div.ToIPv6(); return false }, len(segs))
+	return section.ForEachSegment(func(index int, seg *IPv6AddressSegment) (stop bool) {
+		if stop = index >= len(segs); !stop {
+			segs[index] = seg
+		}
+		return
+	})
 }
 
 // GetSegments returns a slice with the address segments.  The returned slice is not backed by the same array as this section.
@@ -1867,7 +1890,7 @@ func (section *IPv6AddressSection) createNonMixedSection() *EmbeddedIPv6AddressS
 		result = section
 	} else {
 		nonMixed := make([]*AddressDivision, nonMixedCount)
-		section.copySubSegmentsToSlice(0, nonMixedCount, nonMixed)
+		section.copySubDivisions(0, nonMixedCount, nonMixed)
 		result = createIPv6Section(nonMixed)
 		result.initMultAndPrefLen()
 	}
@@ -1931,7 +1954,7 @@ func createMixedAddressGrouping(divisions []*AddressDivision, mixedCache *mixedC
 	grouping := &IPv6v4MixedAddressGrouping{
 		addressDivisionGroupingInternal: addressDivisionGroupingInternal{
 			addressDivisionGroupingBase: addressDivisionGroupingBase{
-				divisions: standardDivArray{divisions},
+				divisions: standardDivArray(divisions),
 				addrType:  ipv6v4MixedType,
 				cache:     &valueCache{mixed: mixedCache},
 			},
@@ -1952,8 +1975,8 @@ func newIPv6v4MixedGrouping(ipv6Section *EmbeddedIPv6AddressSection, ipv4Section
 	ipv6Len := ipv6Section.GetSegmentCount()
 	ipv4Len := ipv4Section.GetSegmentCount()
 	allSegs := make([]*AddressDivision, ipv6Len+ipv4Len)
-	ipv6Section.copySubSegmentsToSlice(0, ipv6Len, allSegs)
-	ipv4Section.copySubSegmentsToSlice(0, ipv4Len, allSegs[ipv6Len:])
+	ipv6Section.copySubDivisions(0, ipv6Len, allSegs)
+	ipv4Section.copySubDivisions(0, ipv4Len, allSegs[ipv6Len:])
 	grouping := createMixedAddressGrouping(allSegs, &mixedCache{
 		embeddedIPv6Section: ipv6Section,
 		embeddedIPv4Section: ipv4Section,

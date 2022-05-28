@@ -28,7 +28,7 @@ func createMACSection(segments []*AddressDivision) *MACAddressSection {
 		addressSectionInternal{
 			addressDivisionGroupingInternal{
 				addressDivisionGroupingBase: addressDivisionGroupingBase{
-					divisions: standardDivArray{segments},
+					divisions: standardDivArray(segments),
 					addrType:  macType,
 					cache: &valueCache{
 						stringCache: stringCache{
@@ -385,6 +385,20 @@ func (section *MACAddressSection) GetSegment(index int) *MACAddressSegment {
 	return section.getDivision(index).ToMAC()
 }
 
+// ForEachSegment visits each segment in order from most-significant to least, the most significant with index 0, calling the given function for each, terminating early if the function returns true
+// Returns the number of visited segments.
+func (section *MACAddressSection) ForEachSegment(consumer func(segmentIndex int, segment *MACAddressSegment) (stop bool)) int {
+	divArray := section.getDivArray()
+	if divArray != nil {
+		for i, div := range divArray {
+			if consumer(i, div.ToMAC()) {
+				return i + 1
+			}
+		}
+	}
+	return len(divArray)
+}
+
 // ToDivGrouping converts to an AddressDivisionGrouping, a polymorphic type usable with all address sections and division groupings.
 // Afterwards, you can convert back with ToMAC.
 //
@@ -419,16 +433,25 @@ func (section *MACAddressSection) GetSubSection(index, endIndex int) *MACAddress
 	return section.getSubSection(index, endIndex).ToMAC()
 }
 
-// CopySubSegments copies the existing segments from the given start index until but not including the segment at the given end index,
-// into the given slice, as much as can be fit into the slice, returning the number of segments copied
-func (section *MACAddressSection) CopySubSegments(start, end int, segs []*MACAddressSegment) (count int) {
-	return section.visitSubDivisions(start, end, func(index int, div *AddressDivision) bool { segs[index] = div.ToMAC(); return false }, len(segs))
-}
-
 // CopySegments copies the existing segments into the given slice,
 // as much as can be fit into the slice, returning the number of segments copied
 func (section *MACAddressSection) CopySegments(segs []*MACAddressSegment) (count int) {
-	return section.visitDivisions(func(index int, div *AddressDivision) bool { segs[index] = div.ToMAC(); return false }, len(segs))
+	return section.ForEachSegment(func(index int, seg *MACAddressSegment) (stop bool) {
+		if stop = index >= len(segs); !stop {
+			segs[index] = seg
+		}
+		return
+	})
+}
+
+// CopySubSegments copies the existing segments from the given start index until but not including the segment at the given end index,
+// into the given slice, as much as can be fit into the slice, returning the number of segments copied
+func (section *MACAddressSection) CopySubSegments(start, end int, segs []*MACAddressSegment) (count int) {
+	start, end, targetStart := adjust1To1StartIndices(start, end, section.GetDivisionCount(), len(segs))
+	segs = segs[targetStart:]
+	return section.forEachSubDivision(start, end, func(index int, div *AddressDivision) {
+		segs[index] = div.ToMAC()
+	}, len(segs))
 }
 
 // GetSegments returns a slice with the address segments.  The returned slice is not backed by the same array as this section.

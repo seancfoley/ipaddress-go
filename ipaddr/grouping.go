@@ -28,7 +28,7 @@ func createGrouping(divs []*AddressDivision, prefixLength PrefixLen, addrType ad
 	grouping := &AddressDivisionGrouping{
 		addressDivisionGroupingInternal{
 			addressDivisionGroupingBase: addressDivisionGroupingBase{
-				divisions:    standardDivArray{divs},
+				divisions:    standardDivArray(divs),
 				prefixLength: prefixLength,
 				addrType:     addrType,
 				cache:        &valueCache{},
@@ -85,52 +85,71 @@ func (grouping *addressDivisionGroupingInternal) initMultiple() {
 	return
 }
 
-// getDivision returns the division or panics if the index is negative or too large
-func (grouping *addressDivisionGroupingInternal) getDivision(index int) *AddressDivision {
-	divsArray := grouping.divisions
-	if divsArray != nil {
-		standardDivsArray := divsArray.(standardDivArray)
-		return standardDivsArray.divisions[index]
-	}
-	panic("invalid index") // must be consistent with above code which panics with invalid index
-}
-
-// getDivisionsInternal returns the divisions slice, only to be used internally
-func (grouping *addressDivisionGroupingInternal) getDivisionsInternal() []*AddressDivision {
-	divsArray := grouping.divisions
-	if divsArray != nil {
-		return divsArray.(standardDivArray).getDivisions()
+func (grouping *addressDivisionGroupingInternal) getDivArray() standardDivArray {
+	if divsArray := grouping.divisions; divsArray != nil {
+		return divsArray.(standardDivArray)
 	}
 	return nil
 }
 
+// getDivision returns the division or panics if the index is negative or too large
+func (grouping *addressDivisionGroupingInternal) getDivision(index int) *AddressDivision {
+	return grouping.getDivArray()[index]
+}
+
+// getDivisionsInternal returns the divisions slice, only to be used internally
+func (grouping *addressDivisionGroupingInternal) getDivisionsInternal() []*AddressDivision {
+	return grouping.getDivArray()
+}
+
 func (grouping *addressDivisionGroupingInternal) getDivisionCount() int {
-	divsArray := grouping.divisions
-	if divsArray != nil {
-		return divsArray.(standardDivArray).getDivisionCount()
+	if divArray := grouping.getDivArray(); divArray != nil {
+		return divArray.getDivisionCount()
 	}
 	return 0
 }
 
-func adjust1To1Indices(sourceStart, sourceEnd, sourceCount, targetStart, targetCount int) (newSourceStart, newSourceEnd, newTargetStart int) {
+func (grouping *addressDivisionGroupingInternal) forEachSubDivision(start, end int, target func(index int, div *AddressDivision), targetLen int) (count int) {
+	divArray := grouping.getDivArray()
+	if divArray != nil {
+		// if not enough space in target, adjust
+		if targetEnd := start + targetLen; end > targetEnd {
+			end = targetEnd
+		}
+		divArray = divArray[start:end]
+		for i, div := range divArray {
+			target(i, div)
+		}
+	}
+	return len(divArray)
+}
+
+func adjust1To1StartIndices(sourceStart, sourceEnd, sourceCount, targetCount int) (newSourceStart, newSourceEnd, newTargetStart int) {
+	// both sourceCount and targetCount are lengths of their respective slices, so never negative
+	targetStart := 0
 	if sourceStart < 0 {
 		targetStart -= sourceStart
 		sourceStart = 0
+		if targetStart > targetCount || targetStart < 0 /* overflow */ {
+			targetStart = targetCount
+		}
+	} else if sourceStart > sourceCount {
+		sourceStart = sourceCount
 	}
 	// how many to copy?
 	if sourceEnd > sourceCount { // end index exceeds available
 		sourceEnd = sourceCount
+	} else if sourceEnd < sourceStart {
+		sourceEnd = sourceStart
 	}
-	calcCount := sourceEnd - sourceStart
-	if calcCount <= 0 { // end index below start index
-		return sourceStart, sourceStart, targetStart
-	}
-	// if not enough space in target, adjust count and end
-	if space := targetCount - targetStart; calcCount > space {
-		if space <= 0 {
-			return sourceStart, sourceStart, targetStart
-		}
-		sourceEnd = sourceStart + space
+	return sourceStart, sourceEnd, targetStart
+}
+
+func adjust1To1Indices(sourceStart, sourceEnd, sourceCount, targetCount int) (newSourceStart, newSourceEnd, newTargetStart int) {
+	var targetStart int
+	sourceStart, sourceEnd, targetStart = adjust1To1StartIndices(sourceStart, sourceEnd, sourceCount, targetCount)
+	if limitEnd := sourceStart + (targetCount - targetStart); sourceEnd > limitEnd {
+		sourceEnd = limitEnd
 	}
 	return sourceStart, sourceEnd, targetStart
 }
@@ -161,50 +180,12 @@ func adjustIndices(
 	return startIndex, endIndex, replacementStartIndex, replacementEndIndex
 }
 
-func (grouping *addressDivisionGroupingInternal) visitDivisions(target func(index int, div *AddressDivision) bool, targetLen int) (count int) {
-	if grouping.hasNoDivisions() {
-		return
-	}
-	count = grouping.GetDivisionCount()
-	if count > targetLen {
-		count = targetLen
-	}
-	for start := 0; start < count; start++ {
-		if target(start, grouping.getDivision(start)) {
-			break
-		}
-	}
-	return
-}
-
-func (grouping *addressDivisionGroupingInternal) visitSubDivisions(start, end int, target func(index int, div *AddressDivision) (stop bool), targetLen int) (count int) {
-	if grouping.hasNoDivisions() {
-		return
-	}
-	targetIndex := 0
-	start, end, targetIndex = adjust1To1Indices(start, end, grouping.GetDivisionCount(), targetIndex, targetLen)
-
-	// now iterate start to end
-	index := start
-	for index < end {
-		exitEarly := target(targetIndex, grouping.getDivision(index))
-		index++
-		if exitEarly {
-			break
-		}
-		targetIndex++
-	}
-	return index - start
-}
-
 // copySubDivisions copies the existing segments from the given start index until but not including the segment at the given end index,
 // into the given slice, as much as can be fit into the slice, returning the number of segments copied
 func (grouping *addressDivisionGroupingInternal) copySubDivisions(start, end int, divs []*AddressDivision) (count int) {
-	divsArray := grouping.divisions
-	if divsArray != nil {
-		targetIndex := 0
-		start, end, targetIndex = adjust1To1Indices(start, end, grouping.GetDivisionCount(), targetIndex, len(divs))
-		return divsArray.(standardDivArray).copySubDivisions(start, end, divs)
+	if divArray := grouping.getDivArray(); divArray != nil {
+		start, end, targetIndex := adjust1To1Indices(start, end, grouping.GetDivisionCount(), len(divs))
+		return divArray.copySubDivisions(start, end, divs[targetIndex:])
 	}
 	return
 }
@@ -212,17 +193,16 @@ func (grouping *addressDivisionGroupingInternal) copySubDivisions(start, end int
 // copyDivisions copies the existing segments from the given start index until but not including the segment at the given end index,
 // into the given slice, as much as can be fit into the slice, returning the number of segments copied
 func (grouping *addressDivisionGroupingInternal) copyDivisions(divs []*AddressDivision) (count int) {
-	divsArray := grouping.divisions
-	if divsArray != nil {
-		return divsArray.(standardDivArray).copyDivisions(divs)
+	if divArray := grouping.getDivArray(); divArray != nil {
+		return divArray.copyDivisions(divs)
 	}
 	return
 }
 
 func (grouping *addressDivisionGroupingInternal) getSubDivisions(start, end int) []*AddressDivision {
-	divsArray := grouping.divisions
-	if divsArray != nil {
-		return divsArray.(standardDivArray).getSubDivisions(start, end)
+	divArray := grouping.getDivArray()
+	if divArray != nil {
+		return divArray.getSubDivisions(start, end)
 	} else if start != 0 || end != 0 {
 		panic("invalid subslice")
 	}
@@ -391,14 +371,14 @@ func (grouping addressDivisionGroupingInternal) Format(state fmt.State, verb run
 
 func (grouping addressDivisionGroupingInternal) defaultFormat(state fmt.State, verb rune) {
 	s := flagsFromState(state, verb)
-	_, _ = state.Write([]byte(fmt.Sprintf(s, grouping.initDivs().divisions.(standardDivArray).divisions)))
+	_, _ = state.Write([]byte(fmt.Sprintf(s, grouping.initDivs().getDivArray())))
 }
 
 func (grouping *addressDivisionGroupingInternal) toString() string {
 	if sect := grouping.toAddressSection(); sect != nil {
 		return sect.ToNormalizedString()
 	}
-	return fmt.Sprint(grouping.initDivs().divisions.(standardDivArray).divisions)
+	return fmt.Sprint(grouping.initDivs().getDivArray())
 }
 
 func (grouping *addressDivisionGroupingInternal) initDivs() *addressDivisionGroupingInternal {
@@ -1206,6 +1186,20 @@ func (grouping *AddressDivisionGrouping) ToDivGrouping() *AddressDivisionGroupin
 // GetDivision returns the division at the given index.
 func (grouping *AddressDivisionGrouping) GetDivision(index int) *AddressDivision {
 	return grouping.getDivision(index)
+}
+
+// ForEachDivision visits each segment in order from most-significant to least, the most significant with index 0, calling the given function for each, terminating early if the function returns true
+// ForEachDivision returns the number of visited segments.
+func (grouping *AddressDivisionGrouping) ForEachDivision(consumer func(divisionIndex int, division *AddressDivision) (stop bool)) int {
+	divArray := grouping.getDivArray()
+	if divArray != nil {
+		for i, div := range divArray {
+			if consumer(i, div) {
+				return i + 1
+			}
+		}
+	}
+	return len(divArray)
 }
 
 // String implements the fmt.Stringer interface,

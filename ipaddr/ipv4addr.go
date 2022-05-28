@@ -370,7 +370,13 @@ func (addr *IPv4Address) GetSegmentCount() int {
 	return addr.GetDivisionCount()
 }
 
-// GetGenericDivision returns the segment at the given index as an DivisionType
+// ForEachSegment visits each segment in order from most-significant to least, the most significant with index 0, calling the given function for each, terminating early if the function returns true.
+// Returns the number of visited segments.
+func (addr *IPv4Address) ForEachSegment(consumer func(segmentIndex int, segment *IPv4AddressSegment) (stop bool)) int {
+	return addr.GetSection().ForEachSegment(consumer)
+}
+
+// GetGenericDivision returns the segment at the given index as a DivisionType
 func (addr *IPv4Address) GetGenericDivision(index int) DivisionType {
 	return addr.init().getDivision(index)
 }
@@ -1349,24 +1355,33 @@ func (addr *IPv4Address) ReverseSegments() *IPv4Address {
 // ReplaceLen replaces segments starting from startIndex and ending before endIndex with the same number of segments starting at replacementStartIndex from the replacement section
 // Mappings to or from indices outside the range of this or the replacement address are skipped.
 func (addr *IPv4Address) ReplaceLen(startIndex, endIndex int, replacement *IPv4Address, replacementIndex int) *IPv4Address {
-	startIndex, endIndex, replacementIndex =
-		adjust1To1Indices(startIndex, endIndex, IPv4SegmentCount, replacementIndex, IPv4SegmentCount)
+	if replacementIndex <= 0 {
+		startIndex -= replacementIndex
+		replacementIndex = 0
+	} else if replacementIndex >= IPv4SegmentCount {
+		return addr
+	}
+	// We must do a 1 to 1 adjustment of indices before calling the section replace which would do an adjustment of indices not 1 to 1.
+	// Here we assume replacementIndex is 0 and working on the subsection starting at that index.
+	// In other words, a replacementIndex of x on the whole section is equivalent to replacementIndex of 0 on the shorter subsection starting at x.
+	// Then afterwards we use the original replacement index to work on the whole section again, adjusting as needed.
+	startIndex, endIndex, replacementIndexAdjustment := adjust1To1Indices(startIndex, endIndex, IPv4SegmentCount, IPv4SegmentCount-replacementIndex)
 	if startIndex == endIndex {
 		return addr
 	}
+	replacementIndex += replacementIndexAdjustment
 	count := endIndex - startIndex
-	addr = addr.init()
-	return addr.checkIdentity(addr.GetSection().ReplaceLen(startIndex, endIndex, replacement.GetSection(), replacementIndex, replacementIndex+count))
+	return addr.init().checkIdentity(addr.GetSection().ReplaceLen(startIndex, endIndex, replacement.GetSection(), replacementIndex, replacementIndex+count))
 }
 
 // Replace replaces segments starting from startIndex with segments from the replacement section.
 // Mappings to or from indices outside the range of this address or the replacement section are skipped.
 func (addr *IPv4Address) Replace(startIndex int, replacement *IPv4AddressSection) *IPv4Address {
+	// We must do a 1 to 1 adjustment of indices before calling the section replace which would do an adjustment of indices not 1 to 1.
 	startIndex, endIndex, replacementIndex :=
-		adjust1To1Indices(startIndex, startIndex+replacement.GetSegmentCount(), IPv4SegmentCount, 0, replacement.GetSegmentCount())
+		adjust1To1Indices(startIndex, startIndex+replacement.GetSegmentCount(), IPv4SegmentCount, replacement.GetSegmentCount())
 	count := endIndex - startIndex
-	addr = addr.init()
-	return addr.checkIdentity(addr.GetSection().ReplaceLen(startIndex, endIndex, replacement, replacementIndex, replacementIndex+count))
+	return addr.init().checkIdentity(addr.GetSection().ReplaceLen(startIndex, endIndex, replacement, replacementIndex, replacementIndex+count))
 }
 
 // GetLeadingBitCount returns the number of consecutive leading one or zero bits.
@@ -1732,8 +1747,8 @@ func (addr *IPv4Address) ToKey() *IPv4AddressKey {
 		},
 	}
 	section := addr.GetSection()
-	divs := section.divisions.(standardDivArray)
-	for i, div := range divs.divisions {
+	divs := section.getDivArray()
+	for i, div := range divs {
 		seg := div.ToIPv4()
 		vals := &key.Values[i]
 		vals.Value, vals.UpperValue = seg.GetIPv4SegmentValue(), seg.GetIPv4UpperSegmentValue()

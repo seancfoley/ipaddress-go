@@ -830,7 +830,7 @@ func (addr *addressInternal) prefixIterator(isBlockIterator bool) AddressIterato
 		var hostSegIteratorProducer func(index int) SegmentIterator
 		if isBlockIterator {
 			hostSegIteratorProducer = func(index int) SegmentIterator {
-				seg := address.GetSegment(index)
+				seg := address.getSegment(index)
 				if seg.isPrefixed() { // IP address segments know their own prefix, MAC segments do not
 					return seg.prefixBlockIterator()
 				}
@@ -839,7 +839,7 @@ func (addr *addressInternal) prefixIterator(isBlockIterator bool) AddressIterato
 			}
 		} else {
 			hostSegIteratorProducer = func(index int) SegmentIterator {
-				seg := address.GetSegment(index)
+				seg := address.getSegment(index)
 				if seg.isPrefixed() { // IP address segments know their own prefix, MACS segments do not
 					return seg.prefixIterator()
 				}
@@ -850,7 +850,7 @@ func (addr *addressInternal) prefixIterator(isBlockIterator bool) AddressIterato
 		iterator = segmentsIterator(
 			segCount,
 			nil, //when no prefix we defer to other iterator, when there is one we use the whole original section in the encompassing iterator and not just the original segments
-			func(index int) SegmentIterator { return address.GetSegment(index).iterator() },
+			func(index int) SegmentIterator { return address.getSegment(index).iterator() },
 			nil,
 			networkSegIndex,
 			hostSegIndex,
@@ -885,10 +885,10 @@ func (addr *addressInternal) blockIterator(segmentCount int) AddressIterator {
 	if !useOriginal {
 		var hostSegIteratorProducer func(index int) SegmentIterator
 		hostSegIteratorProducer = func(index int) SegmentIterator {
-			return address.GetSegment(index).identityIterator()
+			return address.getSegment(index).identityIterator()
 		}
 		segIteratorProducer := func(index int) SegmentIterator {
-			return address.GetSegment(index).iterator()
+			return address.getSegment(index).iterator()
 		}
 		iterator = segmentsIterator(
 			allSegsCount,
@@ -1247,35 +1247,6 @@ func (addr *Address) GetSegments() []*AddressSegment {
 	return addr.GetSection().GetSegments()
 }
 
-// TODO NOW I am thinking this should not panic, just return nil.
-//  The only downside is code outside the method doing the same check as inside.
-//  But that is optimized out, maybe - maybe not.  Why panic when you can avoid it?
-//  Actually, that is not the only downside, we are also always checking for panic anyway, which is a bit of a waste too.
-//
-//  Panic is reserved for situations where progression of the program not possible.
-// But returning nil avoids that.
-// Maps in golang return zero value when not present.  So you could use that as model and not slice.
-// It also fits with what you did with CopySubSegments, allowing for negative and indices larger than seg count
-// Search for: will panic given a negative index or index larger than the
-// Maybe also search for the word "panic"
-//
-// ALso, you would want to avoid the method with the check internally, so you'd want to note every GetDivision and GetSegment,
-// then rename them to lowercase, then put back the public ones.
-//
-// Now I am leaning away - do you really want to have a check externally as is typical,
-// then in the code it checks again, then the panic check still there from the compiler?  3 checks?
-// This is not quite the same as the prefix length stuff or the copy/visit stuff, the copy/visit stuff sits a level above the access code
-//
-// I guess my original motivation was that slices panic perhaps in part because returning a zero value is misleading, for non-pointers.
-// But for pointers we can avoid the ambiguity.
-// Really having trouble making up my mind.
-//
-// It's also a pain in the ass if I try to maintain two separate pathways to getSegment, one with the check and one without.
-// Hmmmmm
-// Could also put the check in different places, since I can use a constant for IPv4 and IPv6 addresses
-// Nah, no need to bother with that.  But a part of me still likes returning nil.
-
-//
 // GetSegment returns the segment at the given index.
 // The first segment is at index 0.
 // GetSegment will panic given a negative index or index larger than the segment count.
@@ -1287,6 +1258,12 @@ func (addr *Address) GetSegment(index int) *AddressSegment {
 // For example, IPv4 addresses have 4, IPv6 addresses have 8.
 func (addr *Address) GetSegmentCount() int {
 	return addr.getDivisionCount()
+}
+
+// ForEachSegment visits each segment in order from most-significant to least, the most significant with index 0, calling the given function for each, terminating early if the function returns true
+// Returns the number of visited segments.
+func (addr *Address) ForEachSegment(consumer func(segmentIndex int, segment *AddressSegment) (stop bool)) int {
+	return addr.GetSection().ForEachSegment(consumer)
 }
 
 // GetGenericDivision returns the segment at the given index as a DivisionType.

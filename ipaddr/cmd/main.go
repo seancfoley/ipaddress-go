@@ -175,6 +175,28 @@ func main() {
 	//fmt.Printf("All the formats: %v %x %X %o %O %b %#x %#o %#b\n",
 	//	ipv6Addr, ipv6Addr, ipv6Addr, ipv6Addr, ipv6Addr, ipv6Addr, ipv6Addr, ipv6Addr, ipv6Addr)
 
+	fmt.Println(ipv6Addr)
+	ipv6Addr.ForEachSegment(func(i int, seg *ipaddr.IPv6AddressSegment) bool {
+		fmt.Printf("visiting %d seg %s\n", i, seg)
+		return false
+	})
+
+	ipv4Addr, _ = ipaddr.NewIPv4AddressFromBytes([]byte{1, 0, 1, 0})
+	fmt.Println()
+	fmt.Println(ipv4Addr)
+	ipv4Addr.ForEachSegment(func(i int, seg *ipaddr.IPv4AddressSegment) bool {
+		fmt.Printf("visiting %d seg %s\n", i, seg)
+		return false
+	})
+
+	fmt.Println()
+	fmt.Println(cidr)
+	cidr.ForEachSegment(func(i int, seg *ipaddr.IPAddressSegment) bool {
+		fmt.Printf("visiting %d seg %s\n", i, seg)
+		return false
+	})
+	fmt.Println()
+
 	ipv6Prefixed := ipv6Addr.ToPrefixBlockLen(32)
 	fmt.Printf("32 block is %+v\n", ipv6Prefixed)
 	ipv6Prefixed = ipv6Addr.ToPrefixBlockLen(40)

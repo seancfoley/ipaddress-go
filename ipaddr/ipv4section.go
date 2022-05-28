@@ -31,7 +31,7 @@ func createIPv4Section(segments []*AddressDivision) *IPv4AddressSection {
 			addressSectionInternal{
 				addressDivisionGroupingInternal{
 					addressDivisionGroupingBase: addressDivisionGroupingBase{
-						divisions: standardDivArray{segments},
+						divisions: standardDivArray(segments),
 						addrType:  ipv4Type,
 						cache: &valueCache{
 							stringCache: stringCache{
@@ -407,6 +407,20 @@ func (section *IPv4AddressSection) GetSegment(index int) *IPv4AddressSegment {
 	return section.getDivision(index).ToIPv4()
 }
 
+// ForEachSegment visits each segment in order from most-significant to least, the most significant with index 0, calling the given function for each, terminating early if the function returns true
+// Returns the number of visited segments.
+func (section *IPv4AddressSection) ForEachSegment(consumer func(segmentIndex int, segment *IPv4AddressSegment) (stop bool)) int {
+	divArray := section.getDivArray()
+	if divArray != nil {
+		for i, div := range divArray {
+			if consumer(i, div.ToIPv4()) {
+				return i + 1
+			}
+		}
+	}
+	return len(divArray)
+}
+
 // GetTrailingSection gets the subsection from the series starting from the given index.
 // The first segment is at index 0.
 func (section *IPv4AddressSection) GetTrailingSection(index int) *IPv4AddressSection {
@@ -466,13 +480,22 @@ func (section *IPv4AddressSection) GetHostMask() *IPv4AddressSection {
 // CopySubSegments copies the existing segments from the given start index until but not including the segment at the given end index,
 // into the given slice, as much as can be fit into the slice, returning the number of segments copied
 func (section *IPv4AddressSection) CopySubSegments(start, end int, segs []*IPv4AddressSegment) (count int) {
-	return section.visitSubDivisions(start, end, func(index int, div *AddressDivision) bool { segs[index] = div.ToIPv4(); return false }, len(segs))
+	start, end, targetStart := adjust1To1StartIndices(start, end, section.GetDivisionCount(), len(segs))
+	segs = segs[targetStart:]
+	return section.forEachSubDivision(start, end, func(index int, div *AddressDivision) {
+		segs[index] = div.ToIPv4()
+	}, len(segs))
 }
 
 // CopySegments copies the existing segments into the given slice,
 // as much as can be fit into the slice, returning the number of segments copied
 func (section *IPv4AddressSection) CopySegments(segs []*IPv4AddressSegment) (count int) {
-	return section.visitDivisions(func(index int, div *AddressDivision) bool { segs[index] = div.ToIPv4(); return false }, len(segs))
+	return section.ForEachSegment(func(index int, seg *IPv4AddressSegment) (stop bool) {
+		if stop = index >= len(segs); !stop {
+			segs[index] = seg
+		}
+		return
+	})
 }
 
 // GetSegments returns a slice with the address segments.  The returned slice is not backed by the same array as this section.
@@ -1405,7 +1428,7 @@ func (section *IPv4AddressSection) ToJoinedSegments(joinCount int) (AddressDivis
 	}
 	notJoinedCount := totalCount - 1
 	segs := make([]*AddressDivision, totalCount)
-	section.copySubSegmentsToSlice(0, notJoinedCount, segs)
+	section.copySubDivisions(0, notJoinedCount, segs)
 	segs[notJoinedCount] = joinedSegment
 	equivalentPart := createInitializedGrouping(segs, section.getPrefixLen())
 	return equivalentPart, nil

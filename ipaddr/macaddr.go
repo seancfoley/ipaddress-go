@@ -395,7 +395,13 @@ func (addr *MACAddress) GetSegmentCount() int {
 	return addr.GetDivisionCount()
 }
 
-// GetGenericDivision returns the segment at the given index as an DivisionType
+// ForEachSegment visits each segment in order from most-significant to least, the most significant with index 0, calling the given function for each, terminating early if the function returns true
+// Returns the number of visited segments.
+func (addr *MACAddress) ForEachSegment(consumer func(segmentIndex int, segment *MACAddressSegment) (stop bool)) int {
+	return addr.GetSection().ForEachSegment(consumer)
+}
+
+// GetGenericDivision returns the segment at the given index as a DivisionType
 func (addr *MACAddress) GetGenericDivision(index int) DivisionType {
 	return addr.init().getDivision(index)
 }
@@ -831,22 +837,35 @@ func (addr *MACAddress) ReverseSegments() *MACAddress {
 }
 
 // ReplaceLen replaces segments starting from startIndex and ending before endIndex with the same number of segments starting at replacementStartIndex from the replacement section
+// Mappings to or from indices outside the range of this or the replacement address are skipped.
 func (addr *MACAddress) ReplaceLen(startIndex, endIndex int, replacement *MACAddress, replacementIndex int) *MACAddress {
-	startIndex, endIndex, replacementIndex =
-		adjust1To1Indices(startIndex, endIndex, addr.GetSegmentCount(), replacementIndex, replacement.GetSegmentCount())
+	replacementSegCount := replacement.GetSegmentCount()
+	if replacementIndex <= 0 {
+		startIndex -= replacementIndex
+		replacementIndex = 0
+	} else if replacementIndex >= replacementSegCount {
+		return addr
+	}
+	// We must do a 1 to 1 adjustment of indices before calling the section replace which would do an adjustment of indices not 1 to 1.
+	// Here we assume replacementIndex is 0 and working on the subsection starting at that index.
+	// In other words, a replacementIndex of x on the whole section is equivalent to replacementIndex of 0 on the shorter subsection starting at x.
+	// Then afterwards we use the original replacement index to work on the whole section again, adjusting as needed.
+	startIndex, endIndex, replacementIndexAdjustment := adjust1To1Indices(startIndex, endIndex, addr.GetSegmentCount(), replacementSegCount-replacementIndex)
 	if startIndex == endIndex {
 		return addr
 	}
+	replacementIndex += replacementIndexAdjustment
 	count := endIndex - startIndex
-	return addr.checkIdentity(addr.GetSection().ReplaceLen(startIndex, endIndex, replacement.GetSection(), replacementIndex, replacementIndex+count))
+	return addr.init().checkIdentity(addr.GetSection().ReplaceLen(startIndex, endIndex, replacement.GetSection(), replacementIndex, replacementIndex+count))
 }
 
 // Replace replaces segments starting from startIndex with segments from the replacement section
 func (addr *MACAddress) Replace(startIndex int, replacement *MACAddressSection) *MACAddress {
+	// We must do a 1 to 1 adjustment of indices before calling the section replace which would do an adjustment of indices not 1 to 1.
 	startIndex, endIndex, replacementIndex :=
-		adjust1To1Indices(startIndex, startIndex+replacement.GetSegmentCount(), addr.GetSegmentCount(), 0, replacement.GetSegmentCount())
+		adjust1To1Indices(startIndex, startIndex+replacement.GetSegmentCount(), addr.GetSegmentCount(), replacement.GetSegmentCount())
 	count := endIndex - startIndex
-	return addr.checkIdentity(addr.GetSection().ReplaceLen(startIndex, endIndex, replacement, replacementIndex, replacementIndex+count))
+	return addr.init().checkIdentity(addr.GetSection().ReplaceLen(startIndex, endIndex, replacement, replacementIndex, replacementIndex+count))
 }
 
 // GetOUISection returns a section with the first 3 segments, the organizational unique identifier
@@ -1188,8 +1207,8 @@ func (addr *MACAddress) ToKey() *MACAddressKey {
 		SegmentCount: uint8(addr.GetSegmentCount()),
 	}
 	section := addr.GetSection()
-	divs := section.divisions.(standardDivArray)
-	for i, div := range divs.divisions {
+	divs := section.getDivArray()
+	for i, div := range divs {
 		seg := div.ToMAC()
 		vals := &key.Values[i]
 		vals.Value, vals.UpperValue = seg.GetMACSegmentValue(), seg.GetMACUpperSegmentValue()
