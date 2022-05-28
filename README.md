@@ -14,9 +14,9 @@ Also available as a [Java](https://www.oracle.com/java/) library from the [IPAdd
 
 Version | Notes         |
 ------- | ------------- |
-[1.1.2](https://github.com/seancfoley/ipaddress-go/releases/tag/v1.1.2) | Requires Go 1.12 or higher |
+[1.2.0](https://github.com/seancfoley/ipaddress-go/releases/tag/v1.2.0) | Requires Go 1.12 or higher |
 
-go get github.com/seancfoley/ipaddress-go@v1.1.2
+go get github.com/seancfoley/ipaddress-go@v1.2.0
 
 ## Getting Started
 
