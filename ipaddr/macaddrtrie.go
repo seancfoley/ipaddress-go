@@ -21,7 +21,7 @@ import (
 	"unsafe"
 )
 
-// MACAddressTrie represents an MAC address binary trie.
+// MACAddressTrie represents a MAC address binary trie.
 //
 // The keys are MAC addresses or prefix blocks.
 //
@@ -88,13 +88,13 @@ func (trie *MACAddressTrie) AddedNodesTreeString() string {
 	return trie.toTrie().AddedNodesTreeString()
 }
 
-// Iterator returns an iterator that iterates through the elements of the sub-trie with this node as the root.
+// Iterator returns an iterator that iterates through the added prefix blocks and addresses in the trie.
 // The iteration is in sorted element order.
 func (trie *MACAddressTrie) Iterator() MACAddressIterator {
 	return macAddressIterator{trie.toBase().iterator()}
 }
 
-// DescendingIterator returns an iterator that iterates through the elements of the sub-trie with this node as the root.
+// DescendingIterator returns an iterator that iterates through the added prefix blocks and addresses in the trie.
 // The iteration is in reverse sorted element order.
 func (trie *MACAddressTrie) DescendingIterator() MACAddressIterator {
 	return macAddressIterator{trie.toBase().descendingIterator()}
@@ -243,12 +243,12 @@ func (trie *MACAddressTrie) GetAddedNode(addr *MACAddress) *MACAddressTrieNode {
 	return trie.getAddedNode(addr.ToAddressBase()).ToMAC()
 }
 
-// AllNodeIterator returns an iterator that iterates through all the nodes of the trie in forward or reverse tree order.
+// AllNodeIterator returns an iterator that iterates through all the nodes in the trie in forward or reverse tree order.
 func (trie *MACAddressTrie) AllNodeIterator(forward bool) MACTrieNodeIteratorRem {
 	return macTrieNodeIteratorRem{trie.toBase().allNodeIterator(forward)}
 }
 
-// NodeIterator returns an iterator that iterates through the added nodes of the trie in forward or reverse tree order.
+// NodeIterator returns an iterator that iterates through the added nodes in the trie in forward or reverse tree order.
 func (trie *MACAddressTrie) NodeIterator(forward bool) MACTrieNodeIteratorRem {
 	return macTrieNodeIteratorRem{trie.toBase().nodeIterator(forward)}
 }
@@ -382,7 +382,7 @@ func (trie MACAddressTrie) Format(state fmt.State, verb rune) {
 	trie.trie.Format(state, verb)
 }
 
-// NewMACAddressTrie constructs an MAC address trie with the root as the zero-prefix block
+// NewMACAddressTrie constructs a MAC address trie with the root as the zero-prefix block
 // If extended is true, the trie will consist of 64-bit EUI addresses, otherwise the addresses will be 48-bit.
 // If you wish to construct a trie in which the address size is determined by the first added address,
 // use the zero-value MACAddressTrie{}
@@ -415,7 +415,7 @@ func NewMACAddressTrie(extended bool) *MACAddressTrie {
 ////////
 ////////
 
-// MACAddressAssociativeTrie represents an MAC address associative binary trie.
+// MACAddressAssociativeTrie represents a MAC address associative binary trie.
 //
 // The keys are MAC addresses or prefix blocks.  Each can be mapped to a value.
 //
@@ -487,13 +487,13 @@ func (trie *MACAddressAssociativeTrie) AddedNodesTreeString() string {
 	return trie.toTrie().AddedNodesTreeString()
 }
 
-// Iterator returns an iterator that iterates through the elements of the sub-trie with this node as the root.
+// Iterator returns an iterator that iterates through the added prefix blocks and addresses in the trie.
 // The iteration is in sorted element order.
 func (trie *MACAddressAssociativeTrie) Iterator() MACAddressIterator {
 	return macAddressIterator{trie.toBase().iterator()}
 }
 
-// DescendingIterator returns an iterator that iterates through the elements of the sub-trie with this node as the root.
+// DescendingIterator returns an iterator that iterates through the added prefix blocks and addresses in the trie.
 // The iteration is in reverse sorted element order.
 func (trie *MACAddressAssociativeTrie) DescendingIterator() MACAddressIterator {
 	return macAddressIterator{trie.toBase().descendingIterator()}
@@ -641,7 +641,7 @@ func (trie *MACAddressAssociativeTrie) GetAddedNode(addr *MACAddress) *MACAddres
 	return trie.getAddedNode(addr.ToAddressBase()).ToMACAssociative()
 }
 
-// NodeIterator iterates through the added nodes of the sub-trie with this node as the root, in forward or reverse tree order.
+// NodeIterator returns an iterator that iterates through all the added nodes in the trie in forward or reverse tree order.
 func (trie *MACAddressAssociativeTrie) NodeIterator(forward bool) MACAssociativeTrieNodeIteratorRem {
 	return macAssociativeTrieNodeIteratorRem{trie.toBase().nodeIterator(forward)}
 }
@@ -881,7 +881,7 @@ func (trie MACAddressAssociativeTrie) Format(state fmt.State, verb rune) {
 	trie.ToBase().Format(state, verb)
 }
 
-// NewMACAddressAssociativeTrie constructs an MAC associative address trie with the root as the zero-prefix prefix block
+// NewMACAddressAssociativeTrie constructs a MAC associative address trie with the root as the zero-prefix prefix block
 func NewMACAddressAssociativeTrie(extended bool) *MACAddressAssociativeTrie {
 	var rootAddr *Address
 	if extended {

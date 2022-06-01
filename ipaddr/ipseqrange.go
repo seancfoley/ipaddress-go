@@ -1174,7 +1174,8 @@ func join(ranges []*IPAddressSeqRange) []*IPAddressSeqRange {
 			rng2 := ranges[j]
 			nextLower := rng2.GetLower()
 			doJoin := compareLowIPAddressValues(currentUpper, nextLower) >= 0
-			if !doJoin {
+			//if !doJoin && nextLower.GetIPVersion().Equal(currentUpper.GetIPVersion()) {
+			if !doJoin && nextLower.getAddrType() == currentUpper.getAddrType() {
 				doJoin = currentUpper.increment(1).equals(nextLower)
 				isMultiJoin = true
 			}

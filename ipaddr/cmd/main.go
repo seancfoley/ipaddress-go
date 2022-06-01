@@ -391,6 +391,15 @@ func main() {
 	splitIntoBlocksSeq("1.2.3.4", "1.2.4.4") // 16 8 4 2 1
 	splitIntoBlocksSeq("0.0.0.0", "255.0.0.0")
 
+	ipZero := &ipaddr.IPAddress{}
+	ipZeroAgain := &ipaddr.IPAddress{}
+	merged := ipZero.MergeToPrefixBlocks(ipZeroAgain, ipZero)
+	//mergedOld := ipZero.MergeToPrefixBlocksOld(ipZeroAgain, ipZero)
+	//fmt.Printf("new %v len %d\nold %v len %d", merged, len(merged), mergedOld, len(mergedOld))
+	fmt.Printf("new %v len %d\n", merged, len(merged))
+	merged = ipZero.MergeToPrefixBlocks(ipZeroAgain, ipZero, addrStrIPv6Pref1.GetAddress().ToIP())
+	fmt.Printf("new %v len %d\n", merged, len(merged))
+
 	fmt.Printf("%v\n\n", merge("209.152.214.112/30", "209.152.214.116/31", "209.152.214.118/31"))
 	fmt.Printf("%v\n\n", merge("209.152.214.112/30", "209.152.214.116/32", "209.152.214.118/31"))
 	fmt.Printf("%v\n\n", merge("1:2:3:4:8000::/65", "1:2:3:4::/66", "1:2:3:4:4000::/66", "1:2:3:5:4000::/66", "1:2:3:5::/66", "1:2:3:5:8000::/65"))
@@ -572,6 +581,7 @@ func main() {
 		addr := ipaddr.NewIPAddressString(t).GetAddress()
 		fmt.Printf("%s\n", addr.AssignMinPrefixForBlock())
 	}
+
 }
 
 func splitIntoBlocks(one, two string) {

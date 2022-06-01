@@ -74,7 +74,7 @@ func (iter cachingMACTrieNodeIterator) Remove() *MACAddressTrieNode {
 //////////////////////////////////////////////////////////////////
 //////
 
-// MACAssociativeTrieNodeIteratorRem iterates through an MAC associative address trie, until both Next returns nil and HasNext returns false
+// MACAssociativeTrieNodeIteratorRem iterates through a MAC associative address trie, until both Next returns nil and HasNext returns false
 type MACAssociativeTrieNodeIteratorRem interface {
 	MACAssociativeTrieNodeIterator
 
@@ -83,7 +83,7 @@ type MACAssociativeTrieNodeIteratorRem interface {
 	Remove() *MACAddressAssociativeTrieNode
 }
 
-// MACAssociativeTrieNodeIterator iterates through an MAC associative address trie, until both Next returns nil and HasNext returns false
+// MACAssociativeTrieNodeIterator iterates through a MAC associative address trie, until both Next returns nil and HasNext returns false
 type MACAssociativeTrieNodeIterator interface {
 	HasNext
 

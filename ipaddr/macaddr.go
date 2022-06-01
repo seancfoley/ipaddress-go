@@ -1152,7 +1152,7 @@ func (addr *MACAddress) ToCustomString(stringOptions addrstr.StringOptions) stri
 }
 
 // ToAddressString retrieves or generates a MACAddressString instance for this MACAddress instance.
-// This may be the MACAddressString this instance was generated from, if it was generated from an MACAddressString.
+// This may be the MACAddressString this instance was generated from, if it was generated from a MACAddressString.
 //
 // In general, users are intended to create MACAddress instances from MACAddressString instances,
 // while the reverse direction is generally not common and not useful, except under specific circumstances.

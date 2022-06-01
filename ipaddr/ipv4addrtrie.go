@@ -88,13 +88,13 @@ func (trie *IPv4AddressTrie) AddedNodesTreeString() string {
 	return trie.toTrie().AddedNodesTreeString()
 }
 
-// Iterator returns an iterator that iterates through the elements of the sub-trie with this node as the root.
+// Iterator returns an iterator that iterates through the added prefix blocks and addresses in the trie.
 // The iteration is in sorted element order.
 func (trie *IPv4AddressTrie) Iterator() IPv4AddressIterator {
 	return ipv4AddressIterator{trie.toBase().iterator()}
 }
 
-// DescendingIterator returns an iterator that iterates through the elements of the sub-trie with this node as the root.
+// DescendingIterator returns an iterator that iterates through the added prefix blocks and addresses in the trie.
 // The iteration is in reverse sorted element order.
 func (trie *IPv4AddressTrie) DescendingIterator() IPv4AddressIterator {
 	return ipv4AddressIterator{trie.toBase().descendingIterator()}
@@ -243,12 +243,12 @@ func (trie *IPv4AddressTrie) GetAddedNode(addr *IPv4Address) *IPv4AddressTrieNod
 	return trie.getAddedNode(addr.ToAddressBase()).ToIPv4()
 }
 
-// AllNodeIterator returns an iterator that iterates through all the nodes of the trie in forward or reverse tree order.
+// AllNodeIterator returns an iterator that iterates through all the nodes in the trie in forward or reverse tree order.
 func (trie *IPv4AddressTrie) AllNodeIterator(forward bool) IPv4TrieNodeIteratorRem {
 	return ipv4TrieNodeIteratorRem{trie.toBase().allNodeIterator(forward)}
 }
 
-// NodeIterator returns an iterator that iterates through the added nodes of the trie in forward or reverse tree order.
+// NodeIterator returns an iterator that iterates through the added nodes in the trie in forward or reverse tree order.
 func (trie *IPv4AddressTrie) NodeIterator(forward bool) IPv4TrieNodeIteratorRem {
 	return ipv4TrieNodeIteratorRem{trie.toBase().nodeIterator(forward)}
 }
@@ -478,13 +478,13 @@ func (trie *IPv4AddressAssociativeTrie) AddedNodesTreeString() string {
 	return trie.toTrie().AddedNodesTreeString()
 }
 
-// Iterator returns an iterator that iterates through the elements of the sub-trie with this node as the root.
+// Iterator returns an iterator that iterates through the added prefix blocks and addresses in the trie.
 // The iteration is in sorted element order.
 func (trie *IPv4AddressAssociativeTrie) Iterator() IPv4AddressIterator {
 	return ipv4AddressIterator{trie.toBase().iterator()}
 }
 
-// DescendingIterator returns an iterator that iterates through the elements of the sub-trie with this node as the root.
+// DescendingIterator returns an iterator that iterates through the added prefix blocks and addresses in the trie.
 // The iteration is in reverse sorted element order.
 func (trie *IPv4AddressAssociativeTrie) DescendingIterator() IPv4AddressIterator {
 	return ipv4AddressIterator{trie.toBase().descendingIterator()}
@@ -632,7 +632,7 @@ func (trie *IPv4AddressAssociativeTrie) GetAddedNode(addr *IPv4Address) *IPv4Add
 	return trie.getAddedNode(addr.ToAddressBase()).ToIPv4Associative()
 }
 
-// NodeIterator iterates through the added nodes of the sub-trie with this node as the root, in forward or reverse tree order.
+// NodeIterator returns an iterator that iterates through all the added nodes in the trie in forward or reverse tree order.
 func (trie *IPv4AddressAssociativeTrie) NodeIterator(forward bool) IPv4AssociativeTrieNodeIteratorRem {
 	return ipv4AssociativeTrieNodeIteratorRem{trie.toBase().nodeIterator(forward)}
 }

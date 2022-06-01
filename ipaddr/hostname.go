@@ -374,31 +374,15 @@ func (host *HostName) ToAddresses() (addrs []*IPAddress, err addrerr.AddressErro
 							}
 						}
 					}
-					if byteLen == IPv6ByteCount {
-						ipv6Addr, addrErr := NewIPv6AddressFromPrefixedBytes(ip, networkPrefixLength) // addrerr.AddressValueError
-						if addrErr != nil {
-							errs = append(errs, addrErr)
-						} else {
-							cache := ipv6Addr.cache
-							if cache != nil {
-								cache.identifierStr = &IdentifierStr{host}
-							}
-							addrs = append(addrs, ipv6Addr.ToIP())
+					ipAddr, addrErr := NewIPAddressFromPrefixedNetIP(ip, networkPrefixLength)
+					if addrErr != nil {
+						errs = append(errs, addrErr)
+					} else {
+						cache := ipAddr.cache
+						if cache != nil {
+							cache.identifierStr = &IdentifierStr{host}
 						}
-					} else if byteLen == IPv4ByteCount {
-						if networkPrefixLength != nil && networkPrefixLength.bitCount() > IPv4BitCount {
-							networkPrefixLength = cacheBitCount(IPv4BitCount)
-						}
-						ipv4Addr, addrErr := NewIPv4AddressFromPrefixedBytes(ip, networkPrefixLength) // addrerr.AddressValueError
-						if addrErr != nil {
-							errs = append(errs, addrErr)
-						} else {
-							cache := ipv4Addr.cache
-							if cache != nil {
-								cache.identifierStr = &IdentifierStr{host}
-							}
-							addrs = append(addrs, ipv4Addr.ToIP())
-						}
+						addrs = append(addrs, ipAddr)
 					}
 				}
 				if len(errs) > 0 {
@@ -408,53 +392,56 @@ func (host *HostName) ToAddresses() (addrs []*IPAddress, err addrerr.AddressErro
 				if count > 0 {
 					// sort by preferred version
 					preferredVersion := IPVersion(validationOptions.GetPreferredVersion())
-					boundaryCase := 8
-					if count > boundaryCase {
-						c := 0
-						newAddrs := make([]*IPAddress, count)
-						for _, val := range addrs {
-							if val.getIPVersion() == preferredVersion {
-								newAddrs[c] = val
-								c++
-							}
-						}
-						for i := 0; c < count; i++ {
-							val := addrs[i]
-							if val.getIPVersion() != preferredVersion {
-								newAddrs[c] = val
-								c++
-							}
-						}
-						addrs = newAddrs
-					} else {
-						preferredIndex := 0
-					top:
-						for i := 0; i < count; i++ {
-							notPreferred := addrs[i]
-							if notPreferred.getIPVersion() != preferredVersion {
-								var j int
-								if preferredIndex == 0 {
-									j = i + 1
-								} else {
-									j = preferredIndex
+					if !preferredVersion.IsIndeterminate() {
+						preferredAddrType := preferredVersion.toType()
+						boundaryCase := 8 // we sort differently based on list size
+						if count > boundaryCase {
+							c := 0
+							newAddrs := make([]*IPAddress, count)
+							for _, val := range addrs {
+								if val.getAddrType() == preferredAddrType {
+									newAddrs[c] = val
+									c++
 								}
-								for ; j < len(addrs); j++ {
-									preferred := addrs[j]
-									if preferred.getIPVersion() == preferredVersion {
-										addrs[i] = preferred
-										// don't swap so the non-preferred order is preserved,
-										// instead shift each upwards by one spot
-										k := i + 1
-										for ; k < j; k++ {
-											addrs[k], notPreferred = notPreferred, addrs[k]
-										}
-										addrs[k] = notPreferred
-										preferredIndex = j + 1
-										continue top
+							}
+							for i := 0; c < count; i++ {
+								val := addrs[i]
+								if val.getAddrType() != preferredAddrType {
+									newAddrs[c] = val
+									c++
+								}
+							}
+							addrs = newAddrs
+						} else {
+							preferredIndex := 0
+						top:
+							for i := 0; i < count; i++ {
+								val := addrs[i]
+								if val.getAddrType() != preferredAddrType {
+									var j int
+									if preferredIndex == 0 {
+										j = i + 1
+									} else {
+										j = preferredIndex
 									}
+									for ; j < len(addrs); j++ {
+										if addrs[j].getAddrType() == preferredAddrType {
+											// move the preferred into the non-preferred's spot
+											addrs[i] = addrs[j]
+											// don't swap so the non-preferred order is preserved,
+											// instead shift each upwards by one spot
+											k := i + 1
+											for ; k < j; k++ {
+												addrs[k], val = val, addrs[k]
+											}
+											addrs[k] = val
+											preferredIndex = j + 1
+											continue top
+										}
+									}
+									// no more preferred so nothing more to do
+									break
 								}
-								// no more preferred
-								break
 							}
 						}
 					}
@@ -517,7 +504,7 @@ func (host *HostName) ToNormalizedString() string {
 	return *str
 }
 
-// ToNormalizedString provides a normalized string which is lowercase for host strings, and which is a normalized string for addresses.
+// ToNormalizedWildcardString provides a normalized string which is lowercase for host strings, and which is a normalized string for addresses.
 func (host *HostName) ToNormalizedWildcardString() string {
 	host = host.init()
 	str := host.normalizedWildcardString
@@ -530,7 +517,7 @@ func (host *HostName) ToNormalizedWildcardString() string {
 	return *str
 }
 
-// ToNormalizedString provides a normalized string which is lowercase for host strings, and which is a normalized string for addresses.
+// ToQualifiedString provides a normalized string which is lowercase for host strings, and which is a normalized string for addresses.
 func (host *HostName) ToQualifiedString() string {
 	host = host.init()
 	str := host.qualifiedString
@@ -580,7 +567,7 @@ func (host *HostName) toNormalizedString(wildcard, addTrailingDot bool) string {
 			service := host.parsedHost.getService()
 			if service != "" {
 				builder.WriteByte(PortSeparator)
-				builder.WriteString(string(service))
+				builder.WriteString(service)
 			}
 		}
 		return builder.String()
@@ -784,7 +771,7 @@ func (host *HostName) IsLoopback() bool {
 	return host.IsAddress() && host.AsAddress().IsLoopback()
 }
 
-// ToTCPAddrService returns the TCPAddr if this HostName both resolves to an address and has an associated service or port, otherwise returns nil
+// ToNetTCPAddrService returns the TCPAddr if this HostName both resolves to an address and has an associated service or port, otherwise returns nil
 func (host *HostName) ToNetTCPAddrService(serviceMapper func(string) Port) *net.TCPAddr {
 	if host.IsValid() {
 		port := host.GetPort()
@@ -807,13 +794,13 @@ func (host *HostName) ToNetTCPAddrService(serviceMapper func(string) Port) *net.
 	return nil
 }
 
-// ToTCPAddr returns the TCPAddr if this HostName both resolves to an address and has an associated port.
+// ToNetTCPAddr returns the TCPAddr if this HostName both resolves to an address and has an associated port.
 // Otherwise, it returns nil.
 func (host *HostName) ToNetTCPAddr() *net.TCPAddr {
 	return host.ToNetTCPAddrService(nil)
 }
 
-// ToUDPAddrService returns the UDPAddr if this HostName both resolves to an address and has an associated service or port
+// ToNetUDPAddrService returns the UDPAddr if this HostName both resolves to an address and has an associated service or port
 func (host *HostName) ToNetUDPAddrService(serviceMapper func(string) Port) *net.UDPAddr {
 	tcpAddr := host.ToNetTCPAddrService(serviceMapper)
 	if tcpAddr != nil {
@@ -826,7 +813,7 @@ func (host *HostName) ToNetUDPAddrService(serviceMapper func(string) Port) *net.
 	return nil
 }
 
-// ToUDPAddr returns the UDPAddr if this HostName both resolves to an address and has an associated port
+// ToNetUDPAddr returns the UDPAddr if this HostName both resolves to an address and has an associated port
 func (host *HostName) ToNetUDPAddr(serviceMapper func(string) Port) *net.UDPAddr {
 	return host.ToNetUDPAddrService(serviceMapper)
 }
@@ -906,7 +893,7 @@ func (host *HostName) Compare(other *HostName) int {
 				if networkPrefixLength != nil {
 					if otherPrefixLength != nil {
 						if *networkPrefixLength != *otherPrefixLength {
-							return int(otherPrefixLength.bitCount() - networkPrefixLength.bitCount())
+							return otherPrefixLength.bitCount() - networkPrefixLength.bitCount()
 						}
 						//fall through to compare ports
 					} else {

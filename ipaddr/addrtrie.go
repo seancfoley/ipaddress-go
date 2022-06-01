@@ -142,8 +142,6 @@ func (trie *addressTrie) getAddedNode(addr *Address) *AddressTrieNode {
 	return toAddressTrieNode(trie.trie.GetAddedNode(&addressTrieKey{addr}))
 }
 
-// Returns an iterator that iterates through the elements of the sub-tree with this node as the root.
-// The iteration is in sorted element order.
 func (trie *addressTrie) iterator() AddressIterator {
 	if trie == nil {
 		return nilAddrIterator()
@@ -151,8 +149,6 @@ func (trie *addressTrie) iterator() AddressIterator {
 	return addressKeyIterator{trie.trie.Iterator()}
 }
 
-// Returns an iterator that iterates through the elements of the subtrie with this node as the root.
-// The iteration is in reverse sorted element order.
 func (trie *addressTrie) descendingIterator() AddressIterator {
 	if trie == nil {
 		return nilAddrIterator()
@@ -354,7 +350,7 @@ func (trie *AddressTrie) ToIPv6() *IPv6AddressTrie {
 	return nil
 }
 
-// ToMAC converts this trie to an MAC trie.  If this trie has no root, or the trie has an MAC root, the trie can be converted, otherwise, this method returns nil.
+// ToMAC converts this trie to a MAC trie.  If this trie has no root, or the trie has a MAC root, the trie can be converted, otherwise, this method returns nil.
 // The underlying trie does not change.  The MAC type simply provides type safety, because you cannot mix different address versions or types in the same trie.
 // Mixing versions and or types will cause a panic.
 func (trie *AddressTrie) ToMAC() *MACAddressTrie {
@@ -396,7 +392,7 @@ func (trie *AddressTrie) ToIPv6Associative() *IPv6AddressAssociativeTrie {
 	return nil
 }
 
-// ToMACAssociative converts this trie to an MAC associative trie.  If this trie has no root, or the trie has an MAC root, the trie can be converted, otherwise, this method returns nil.
+// ToMACAssociative converts this trie to a MAC associative trie.  If this trie has no root, or the trie has a MAC root, the trie can be converted, otherwise, this method returns nil.
 // The underlying trie does not change.  The MAC type simply provides type safety, because you cannot mix different address versions or types in the same trie.
 // Mixing versions and or types will cause a panic.
 func (trie *AddressTrie) ToMACAssociative() *MACAddressAssociativeTrie {
@@ -592,24 +588,24 @@ func (trie *AddressTrie) GetAddedNode(addr *Address) *AddressTrieNode {
 	return trie.getAddedNode(addr)
 }
 
-// Iterator returns an iterator that iterates through the elements of the sub-tree with this node as the root.
+// Iterator returns an iterator that iterates through the added addresses and prefix blocks in the trie.
 // The iteration is in sorted element order.
 func (trie *AddressTrie) Iterator() AddressIterator {
 	return trie.tobase().iterator()
 }
 
-// DescendingIterator returns an iterator that iterates through the elements of the subtrie with this node as the root.
+// DescendingIterator returns an iterator that iterates through the added addresses and prefix blocks in the trie.
 // The iteration is in reverse sorted element order.
 func (trie *AddressTrie) DescendingIterator() AddressIterator {
 	return trie.tobase().descendingIterator()
 }
 
-// NodeIterator returns an iterator that iterates through all the added nodes of the trie in forward or reverse tree order.
+// NodeIterator returns an iterator that iterates through all the added nodes in the trie in forward or reverse tree order.
 func (trie *AddressTrie) NodeIterator(forward bool) AddressTrieNodeIteratorRem {
 	return trie.tobase().nodeIterator(forward)
 }
 
-// AllNodeIterator returns an iterator that iterates through all the nodes of the trie in forward or reverse tree order.
+// AllNodeIterator returns an iterator that iterates through all the nodes in the trie in forward or reverse tree order.
 func (trie *AddressTrie) AllNodeIterator(forward bool) AddressTrieNodeIteratorRem {
 	return trie.tobase().allNodeIterator(forward)
 }
@@ -874,13 +870,13 @@ func (trie *AssociativeAddressTrie) AddedNodesTreeString() string {
 	return trie.toTrie().AddedNodesTreeString()
 }
 
-// Iterator returns an iterator that iterates through the elements of the sub-tree with this node as the root.
+// Iterator returns an iterator that iterates through the added addresses and prefix blocks in the trie.
 // The iteration is in sorted element order.
 func (trie *AssociativeAddressTrie) Iterator() AddressIterator {
 	return trie.tobase().iterator()
 }
 
-// DescendingIterator returns an iterator that iterates through the elements of the subtrie with this node as the root.
+// DescendingIterator returns an iterator that iterates through the added addresses and prefix blocks in the trie.
 // The iteration is in reverse sorted element order.
 func (trie *AssociativeAddressTrie) DescendingIterator() AddressIterator {
 	return trie.tobase().descendingIterator()
@@ -1029,12 +1025,12 @@ func (trie *AssociativeAddressTrie) GetAddedNode(addr *Address) *AssociativeAddr
 	return trie.getAddedNode(addr).ToAssociative()
 }
 
-// NodeIterator iterates through the added nodes of the sub-trie with this node as the root, in forward or reverse tree order.
+// NodeIterator returns an iterator that iterates through all the added nodes in the trie in forward or reverse tree order.
 func (trie *AssociativeAddressTrie) NodeIterator(forward bool) AssociativeAddressTrieNodeIteratorRem {
 	return associativeAddressTrieNodeIteratorRem{trie.tobase().nodeIterator(forward)}
 }
 
-// AllNodeIterator returns an iterator that iterates through all the nodes of the trie in forward or reverse tree order.
+// AllNodeIterator returns an iterator that iterates through all the nodes in the trie in forward or reverse tree order.
 func (trie *AssociativeAddressTrie) AllNodeIterator(forward bool) AssociativeAddressTrieNodeIteratorRem {
 	return associativeAddressTrieNodeIteratorRem{trie.tobase().allNodeIterator(forward)}
 }

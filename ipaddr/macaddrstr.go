@@ -99,7 +99,7 @@ type macAddrStringCache struct {
 //
 //
 // Usage
-// Once you have constructed a MACAddressString object, you can convert it to an MACAddress object with GetAddress or ToAddress.
+// Once you have constructed a MACAddressString object, you can convert it to a MACAddress object with GetAddress or ToAddress.
 //
 // For empty addresses, both ToAddress and GetAddress return nil.  For invalid addresses, GetAddress and ToAddress return nil, with ToAddress also returning an error.
 //

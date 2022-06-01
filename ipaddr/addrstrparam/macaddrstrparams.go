@@ -31,7 +31,7 @@ const (
 )
 
 // CopyMACAddressStringParams produces an immutable copy of the original MACAddressStringParams.
-// Copying a MACAddressStringParams created by an MACAddressStringParamsBuilder is unnecessary since it is already immutable.
+// Copying a MACAddressStringParams created by a MACAddressStringParamsBuilder is unnecessary since it is already immutable.
 func CopyMACAddressStringParams(orig MACAddressStringParams) MACAddressStringParams {
 	if p, ok := orig.(*macAddressStringParameters); ok {
 		return p

@@ -160,22 +160,22 @@ func (node *IPv4AddressTrieNode) LastAddedNode() *IPv4AddressTrieNode {
 	return toIPv4AddressTrieNode(node.toTrieNode().LastAddedNode())
 }
 
-// LowerAddedNode returns the added node, in this sub-trie with this node as root, whose address is the highest address strictly less than the given address.
+// LowerAddedNode returns the added node, in this sub-trie with this node as the root, whose address is the highest address strictly less than the given address.
 func (node *IPv4AddressTrieNode) LowerAddedNode(addr *Address) *IPv4AddressTrieNode {
 	return node.toBase().lowerAddedNode(addr).ToIPv4()
 }
 
-// FloorAddedNode returns the added node, in this sub-trie with this node as root, whose address is the highest address less than or equal to the given address.
+// FloorAddedNode returns the added node, in this sub-trie with this node as the root, whose address is the highest address less than or equal to the given address.
 func (node *IPv4AddressTrieNode) FloorAddedNode(addr *Address) *IPv4AddressTrieNode {
 	return node.toBase().floorAddedNode(addr).ToIPv4()
 }
 
-// HigherAddedNode returns the added node, in this sub-trie with this node as root, whose address is the lowest address strictly greater than the given address.
+// HigherAddedNode returns the added node, in this sub-trie with this node as the root, whose address is the lowest address strictly greater than the given address.
 func (node *IPv4AddressTrieNode) HigherAddedNode(addr *Address) *IPv4AddressTrieNode {
 	return node.toBase().higherAddedNode(addr).ToIPv4()
 }
 
-// CeilingAddedNode returns the added node, in this sub-trie with this node as root, whose address is the lowest address greater than or equal to the given address.
+// CeilingAddedNode returns the added node, in this sub-trie with this node as the root, whose address is the lowest address greater than or equal to the given address.
 func (node *IPv4AddressTrieNode) CeilingAddedNode(addr *Address) *IPv4AddressTrieNode {
 	return node.toBase().ceilingAddedNode(addr).ToIPv4()
 }
@@ -280,13 +280,13 @@ func (node *IPv4AddressTrieNode) Clone() *IPv4AddressTrieNode {
 	return toIPv4AddressTrieNode(node.toTrieNode().Clone())
 }
 
-// CloneTree clones the sub-trie starting with this node as root.
+// CloneTree clones the sub-trie starting with this node as the root.
 // The nodes are cloned, but their keys and values are not cloned.
 func (node *IPv4AddressTrieNode) CloneTree() *IPv4AddressTrieNode {
 	return toIPv4AddressTrieNode(node.toTrieNode().CloneTree())
 }
 
-// AsNewTrie creates a new sub-trie, copying the nodes starting with this node as root.
+// AsNewTrie creates a new sub-trie, copying the nodes starting with this node as the root.
 // The nodes are copies of the nodes in this sub-trie, but their keys and values are not copies.
 func (node *IPv4AddressTrieNode) AsNewTrie() *IPv4AddressTrie {
 	return toAddressTrie(node.toTrieNode().AsNewTrie()).ToIPv4()
@@ -470,7 +470,7 @@ func (node *IPv4AddressTrieNode) IsEmpty() bool {
 	return node.Size() == 0
 }
 
-// TreeString returns a visual representation of the sub-trie with this node as root, with one node per line.
+// TreeString returns a visual representation of the sub-trie with this node as the root, with one node per line.
 //
 // withNonAddedKeys: whether to show nodes that are not added nodes
 // withSizes: whether to include the counts of added nodes in each sub-trie
@@ -667,22 +667,22 @@ func (node *IPv4AddressAssociativeTrieNode) LastAddedNode() *IPv4AddressAssociat
 	return toIPv4AAssociativeAddressTrieNode(node.toTrieNode().LastAddedNode())
 }
 
-// LowerAddedNode returns the added node, in this sub-trie with this node as root, whose address is the highest address strictly less than the given address.
+// LowerAddedNode returns the added node, in this sub-trie with this node as the root, whose address is the highest address strictly less than the given address.
 func (node *IPv4AddressAssociativeTrieNode) LowerAddedNode(addr *Address) *IPv4AddressAssociativeTrieNode {
 	return node.toBase().lowerAddedNode(addr).ToIPv4Associative()
 }
 
-// FloorAddedNode returns the added node, in this sub-trie with this node as root, whose address is the highest address less than or equal to the given address.
+// FloorAddedNode returns the added node, in this sub-trie with this node as the root, whose address is the highest address less than or equal to the given address.
 func (node *IPv4AddressAssociativeTrieNode) FloorAddedNode(addr *Address) *IPv4AddressAssociativeTrieNode {
 	return node.toBase().floorAddedNode(addr).ToIPv4Associative()
 }
 
-// HigherAddedNode returns the added node, in this sub-trie with this node as root, whose address is the lowest address strictly greater than the given address.
+// HigherAddedNode returns the added node, in this sub-trie with this node as the root, whose address is the lowest address strictly greater than the given address.
 func (node *IPv4AddressAssociativeTrieNode) HigherAddedNode(addr *Address) *IPv4AddressAssociativeTrieNode {
 	return node.toBase().higherAddedNode(addr).ToIPv4Associative()
 }
 
-// CeilingAddedNode returns the added node, in this sub-trie with this node as root, whose address is the lowest address greater than or equal to the given address.
+// CeilingAddedNode returns the added node, in this sub-trie with this node as the root, whose address is the lowest address greater than or equal to the given address.
 func (node *IPv4AddressAssociativeTrieNode) CeilingAddedNode(addr *Address) *IPv4AddressAssociativeTrieNode {
 	return node.toBase().ceilingAddedNode(addr).ToIPv4Associative()
 }
@@ -787,13 +787,13 @@ func (node *IPv4AddressAssociativeTrieNode) Clone() *IPv4AddressAssociativeTrieN
 	return toIPv4AAssociativeAddressTrieNode(node.toTrieNode().Clone())
 }
 
-// CloneTree clones the sub-trie starting with this node as root.
+// CloneTree clones the sub-trie starting with this node as the root.
 // The nodes are cloned, but their keys and values are not cloned.
 func (node *IPv4AddressAssociativeTrieNode) CloneTree() *IPv4AddressAssociativeTrieNode {
 	return toIPv4AAssociativeAddressTrieNode(node.toTrieNode().CloneTree())
 }
 
-// AsNewTrie creates a new sub-trie, copying the nodes starting with this node as root.
+// AsNewTrie creates a new sub-trie, copying the nodes starting with this node as the root.
 // The nodes are copies of the nodes in this sub-trie, but their keys and values are not copies.
 func (node *IPv4AddressAssociativeTrieNode) AsNewTrie() *IPv4AddressAssociativeTrie {
 	return toAddressTrie(node.toTrieNode().AsNewTrie()).ToIPv4Associative()
@@ -998,7 +998,7 @@ func (node *IPv4AddressAssociativeTrieNode) IsEmpty() bool {
 	return node.Size() == 0
 }
 
-// TreeString returns a visual representation of the sub-trie with this node as root, with one node per line.
+// TreeString returns a visual representation of the sub-trie with this node as the root, with one node per line.
 //
 // withNonAddedKeys: whether to show nodes that are not added nodes
 // withSizes: whether to include the counts of added nodes in each sub-trie

@@ -49,12 +49,12 @@ const (
 
 // IsIPv6 returns true if this represents version 6
 func (version IPVersion) IsIPv6() bool {
-	return strings.EqualFold(string(version), string(IPv6))
+	return len(version) == 4 && strings.EqualFold(string(version), string(IPv6))
 }
 
 // IsIPv4 returns true if this represents version 4
 func (version IPVersion) IsIPv4() bool {
-	return strings.EqualFold(string(version), string(IPv4))
+	return len(version) == 4 && strings.EqualFold(string(version), string(IPv4))
 }
 
 // IsIndeterminate returns true if this represents an unspecified IP address version
@@ -62,7 +62,22 @@ func (version IPVersion) IsIndeterminate() bool {
 	if len(version) == 4 {
 		// we allow mixed case in the event code is converted a string to IPVersion
 		dig := version[3]
-		return (dig != '4' && dig != '6') || !strings.EqualFold(string(version[:3]), "IPv")
+		if dig != '4' && dig != '6' {
+			return true
+		}
+		dig = version[0]
+		if dig != 'I' && dig != 'i' {
+			return true
+		}
+		dig = version[1]
+		if dig != 'P' && dig != 'p' {
+			return true
+		}
+		dig = version[2]
+		if dig != 'v' && dig != 'V' {
+			return true
+		}
+		return false
 	}
 	return true
 }
@@ -77,7 +92,7 @@ func (version IPVersion) index() int {
 	return 2
 }
 
-// Equal returns whether the given version matches this version.
+// Equal returns whether the given version matches this version.  Two indeterminate versions always match, even if their associated strings do not.
 func (version IPVersion) Equal(other IPVersion) bool {
 	return strings.EqualFold(string(version), string(other)) || (version.IsIndeterminate() && other.IsIndeterminate())
 }
@@ -2471,7 +2486,8 @@ func NewIPAddressFromNetIPNet(ipnet *net.IPNet) (*IPAddress, addrerr.AddressErro
 		return nil, err
 	} else if mask == nil {
 		return nil, &addressValueError{addressError: addressError{key: "ipaddress.error.exceeds.size"}}
-	} else if !addr.GetIPVersion().Equal(mask.GetIPVersion()) {
+	} else if addr.getAddrType() != mask.getAddrType() {
+		//} else if !addr.GetIPVersion().Equal(mask.GetIPVersion()) {
 		return nil, &incompatibleAddressError{addressError{key: "ipaddress.error.ipMismatch"}}
 	}
 	prefLen := mask.GetBlockMaskPrefixLen(true)

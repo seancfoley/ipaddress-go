@@ -369,7 +369,7 @@ func (rng *IPv4AddressSeqRange) SpanWithSequentialBlocks() []*IPv4Address {
 	return rng.GetLower().SpanWithSequentialBlocksTo(rng.GetUpper())
 }
 
-// Joins the given ranges into the fewest number of ranges.
+// Join joins the given ranges into the fewest number of ranges.
 // The returned array will be sorted by ascending lowest range value.
 func (rng *IPv4AddressSeqRange) Join(ranges ...*IPv4AddressSeqRange) []*IPv4AddressSeqRange {
 	origLen := len(ranges)

@@ -233,7 +233,7 @@ func (grouping *addressDivisionGroupingBase) getBlockCountBig(segmentCount int) 
 	}
 	res := bigOne()
 	if grouping.isMultiple() {
-		for i := 0; i < divCount; i++ {
+		for i := 0; i < segmentCount; i++ {
 			division := grouping.getDivision(i)
 			if division.isMultiple() {
 				res.Mul(res, division.getCount())

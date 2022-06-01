@@ -497,7 +497,7 @@ func (node *AddressTrieNode) ToIPv6() *IPv6AddressTrieNode {
 	return nil
 }
 
-// ToMAC converts to an MACAddressTrieNode if this node originated as an MAC address trie node.
+// ToMAC converts to a MACAddressTrieNode if this node originated as a MAC address trie node.
 // If not, ToMAC returns nil.
 //
 // ToMAC can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
@@ -536,7 +536,7 @@ func (node *AddressTrieNode) ToIPv6Associative() *IPv6AddressAssociativeTrieNode
 	return nil
 }
 
-// ToMACAssociative converts to an MACAddressAssociativeTrieNode if this node originated as a MAC address trie node.
+// ToMACAssociative converts to a MACAddressAssociativeTrieNode if this node originated as a MAC address trie node.
 // If not, ToMACAssociative returns nil.
 //
 // ToMACAssociative can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
@@ -651,22 +651,22 @@ func (node *AddressTrieNode) LastAddedNode() *AddressTrieNode {
 	return toAddressTrieNode(node.toTrieNode().LastAddedNode())
 }
 
-// LowerAddedNode returns the added node, in this sub-trie with this node as root, whose address is the highest address strictly less than the given address.
+// LowerAddedNode returns the added node, in this sub-trie with this node as the root, whose address is the highest address strictly less than the given address.
 func (node *AddressTrieNode) LowerAddedNode(addr *Address) *AddressTrieNode {
 	return node.tobase().lowerAddedNode(addr)
 }
 
-// FloorAddedNode returns the added node, in this sub-trie with this node as root, whose address is the highest address less than or equal to the given address.
+// FloorAddedNode returns the added node, in this sub-trie with this node as the root, whose address is the highest address less than or equal to the given address.
 func (node *AddressTrieNode) FloorAddedNode(addr *Address) *AddressTrieNode {
 	return node.tobase().floorAddedNode(addr)
 }
 
-// HigherAddedNode returns the added node, in this sub-trie with this node as root, whose address is the lowest address strictly greater than the given address.
+// HigherAddedNode returns the added node, in this sub-trie with this node as the root, whose address is the lowest address strictly greater than the given address.
 func (node *AddressTrieNode) HigherAddedNode(addr *Address) *AddressTrieNode {
 	return node.tobase().higherAddedNode(addr)
 }
 
-// CeilingAddedNode returns the added node, in this sub-trie with this node as root, whose address is the lowest address greater than or equal to the given address.
+// CeilingAddedNode returns the added node, in this sub-trie with this node as the root, whose address is the lowest address greater than or equal to the given address.
 func (node *AddressTrieNode) CeilingAddedNode(addr *Address) *AddressTrieNode {
 	return node.tobase().ceilingAddedNode(addr)
 }
@@ -771,13 +771,13 @@ func (node *AddressTrieNode) Clone() *AddressTrieNode {
 	return toAddressTrieNode(node.toTrieNode().Clone())
 }
 
-// CloneTree clones the sub-tree starting with this node as root.
+// CloneTree clones the sub-tree starting with this node as the root.
 // The nodes are cloned, but their keys and values are not cloned.
 func (node *AddressTrieNode) CloneTree() *AddressTrieNode {
 	return toAddressTrieNode(node.toTrieNode().CloneTree())
 }
 
-// AsNewTrie creates a new sub-trie, copying the nodes starting with this node as root.
+// AsNewTrie creates a new sub-trie, copying the nodes starting with this node as the root.
 // The nodes are copies of the nodes in this sub-trie, but their keys and values are not copies.
 func (node *AddressTrieNode) AsNewTrie() *AddressTrie {
 	return toAddressTrie(node.toTrieNode().AsNewTrie())
@@ -969,7 +969,7 @@ func (node *AddressTrieNode) IsEmpty() bool {
 	return node.Size() == 0
 }
 
-// TreeString returns a visual representation of the sub-tree with this node as root, with one node per line.
+// TreeString returns a visual representation of the sub-tree with this node as the root, with one node per line.
 //
 // withNonAddedKeys: whether to show nodes that are not added nodes
 // withSizes: whether to include the counts of added nodes in each sub-tree
@@ -1056,7 +1056,7 @@ func (node *AssociativeAddressTrieNode) ToIPv6() *IPv6AddressAssociativeTrieNode
 	return nil
 }
 
-// ToMAC converts to an MACAddressAssociativeTrieNode if this node originated as a MAC address trie node.
+// ToMAC converts to a MACAddressAssociativeTrieNode if this node originated as a MAC address trie node.
 // If not, ToMAC returns nil.
 //
 // ToMAC can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
@@ -1179,22 +1179,22 @@ func (node *AssociativeAddressTrieNode) LastAddedNode() *AssociativeAddressTrieN
 	return toAssociativeAddressTrieNode(node.toTrieNode().LastAddedNode())
 }
 
-// LowerAddedNode returns the added node, in this sub-trie with this node as root, whose address is the highest address strictly less than the given address.
+// LowerAddedNode returns the added node, in this sub-trie with this node as the root, whose address is the highest address strictly less than the given address.
 func (node *AssociativeAddressTrieNode) LowerAddedNode(addr *Address) *AssociativeAddressTrieNode {
 	return node.toBase().lowerAddedNode(addr).ToAssociative()
 }
 
-// FloorAddedNode returns the added node, in this sub-trie with this node as root, whose address is the highest address less than or equal to the given address.
+// FloorAddedNode returns the added node, in this sub-trie with this node as the root, whose address is the highest address less than or equal to the given address.
 func (node *AssociativeAddressTrieNode) FloorAddedNode(addr *Address) *AssociativeAddressTrieNode {
 	return node.toBase().floorAddedNode(addr).ToAssociative()
 }
 
-// HigherAddedNode returns the added node, in this sub-trie with this node as root, whose address is the lowest address strictly greater than the given address.
+// HigherAddedNode returns the added node, in this sub-trie with this node as the root, whose address is the lowest address strictly greater than the given address.
 func (node *AssociativeAddressTrieNode) HigherAddedNode(addr *Address) *AssociativeAddressTrieNode {
 	return node.toBase().higherAddedNode(addr).ToAssociative()
 }
 
-// CeilingAddedNode returns the added node, in this sub-trie with this node as root, whose address is the lowest address greater than or equal to the given address.
+// CeilingAddedNode returns the added node, in this sub-trie with this node as the root, whose address is the lowest address greater than or equal to the given address.
 func (node *AssociativeAddressTrieNode) CeilingAddedNode(addr *Address) *AssociativeAddressTrieNode {
 	return node.toBase().ceilingAddedNode(addr).ToAssociative()
 }
@@ -1300,14 +1300,14 @@ func (node *AssociativeAddressTrieNode) Clone() *AssociativeAddressTrieNode {
 	return toAssociativeAddressTrieNode(node.toTrieNode().Clone())
 }
 
-// CloneTree clones the sub-tree starting with this node as root.
+// CloneTree clones the sub-tree starting with this node as the root.
 // The nodes are cloned, but their keys and values are not cloned.
 func (node *AssociativeAddressTrieNode) CloneTree() *AssociativeAddressTrieNode {
 	//return node.cloneTree().ToAssociative()
 	return toAssociativeAddressTrieNode(node.toTrieNode().CloneTree())
 }
 
-// AsNewTrie creates a new sub-trie, copying the nodes starting with this node as root.
+// AsNewTrie creates a new sub-trie, copying the nodes starting with this node as the root.
 // The nodes are copies of the nodes in this sub-trie, but their keys and values are not copies.
 func (node *AssociativeAddressTrieNode) AsNewTrie() *AssociativeAddressTrie {
 	return toAddressTrie(node.toTrieNode().AsNewTrie()).ToAssociative()
@@ -1515,7 +1515,7 @@ func (node *AssociativeAddressTrieNode) IsEmpty() bool {
 	return node.Size() == 0
 }
 
-// TreeString returns a visual representation of the sub-tree with this node as root, with one node per line.
+// TreeString returns a visual representation of the sub-tree with this node as the root, with one node per line.
 //
 // withNonAddedKeys: whether to show nodes that are not added nodes
 // withSizes: whether to include the counts of added nodes in each sub-tree

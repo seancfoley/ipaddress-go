@@ -29,7 +29,7 @@ func toMACAAssociativeAddressTrieNode(node *tree.BinTrieNode) *MACAddressAssocia
 	return (*MACAddressAssociativeTrieNode)(unsafe.Pointer(node))
 }
 
-// MACAddressTrieNode represents a node in an MACAddressTrie.
+// MACAddressTrieNode represents a node in a MACAddressTrie.
 //
 // Trie nodes are created by tries during add operations.
 //
@@ -160,22 +160,22 @@ func (node *MACAddressTrieNode) LastAddedNode() *MACAddressTrieNode {
 	return toMACAddressTrieNode(node.toTrieNode().LastAddedNode())
 }
 
-// LowerAddedNode returns the added node, in this sub-trie with this node as root, whose address is the highest address strictly less than the given address.
+// LowerAddedNode returns the added node, in this sub-trie with this node as the root, whose address is the highest address strictly less than the given address.
 func (node *MACAddressTrieNode) LowerAddedNode(addr *Address) *MACAddressTrieNode {
 	return node.toBase().lowerAddedNode(addr).ToMAC()
 }
 
-// FloorAddedNode returns the added node, in this sub-trie with this node as root, whose address is the highest address less than or equal to the given address.
+// FloorAddedNode returns the added node, in this sub-trie with this node as the root, whose address is the highest address less than or equal to the given address.
 func (node *MACAddressTrieNode) FloorAddedNode(addr *Address) *MACAddressTrieNode {
 	return node.toBase().floorAddedNode(addr).ToMAC()
 }
 
-// HigherAddedNode returns the added node, in this sub-trie with this node as root, whose address is the lowest address strictly greater than the given address.
+// HigherAddedNode returns the added node, in this sub-trie with this node as the root, whose address is the lowest address strictly greater than the given address.
 func (node *MACAddressTrieNode) HigherAddedNode(addr *Address) *MACAddressTrieNode {
 	return node.toBase().higherAddedNode(addr).ToMAC()
 }
 
-// CeilingAddedNode returns the added node, in this sub-trie with this node as root, whose address is the lowest address greater than or equal to the given address.
+// CeilingAddedNode returns the added node, in this sub-trie with this node as the root, whose address is the lowest address greater than or equal to the given address.
 func (node *MACAddressTrieNode) CeilingAddedNode(addr *Address) *MACAddressTrieNode {
 	return node.toBase().ceilingAddedNode(addr).ToMAC()
 }
@@ -280,13 +280,13 @@ func (node *MACAddressTrieNode) Clone() *MACAddressTrieNode {
 	return toMACAddressTrieNode(node.toTrieNode().Clone())
 }
 
-// CloneTree clones the sub-trie starting with this node as root.
+// CloneTree clones the sub-trie starting with this node as the root.
 // The nodes are cloned, but their keys and values are not cloned.
 func (node *MACAddressTrieNode) CloneTree() *MACAddressTrieNode {
 	return toMACAddressTrieNode(node.toTrieNode().CloneTree())
 }
 
-// AsNewTrie creates a new sub-trie, copying the nodes starting with this node as root.
+// AsNewTrie creates a new sub-trie, copying the nodes starting with this node as the root.
 // The nodes are copies of the nodes in this sub-trie, but their keys and values are not copies.
 func (node *MACAddressTrieNode) AsNewTrie() *MACAddressTrie {
 	return toAddressTrie(node.toTrieNode().AsNewTrie()).ToMAC()
@@ -470,7 +470,7 @@ func (node *MACAddressTrieNode) IsEmpty() bool {
 	return node.Size() == 0
 }
 
-// TreeString returns a visual representation of the sub-trie with this node as root, with one node per line.
+// TreeString returns a visual representation of the sub-trie with this node as the root, with one node per line.
 //
 // withNonAddedKeys: whether to show nodes that are not added nodes
 // withSizes: whether to include the counts of added nodes in each sub-trie
@@ -511,7 +511,7 @@ func (node MACAddressTrieNode) Format(state fmt.State, verb rune) {
 //
 //
 
-// MACAddressAssociativeTrieNode is a node in an MACAddressAssociativeTrie.
+// MACAddressAssociativeTrieNode is a node in a MACAddressAssociativeTrie.
 //
 // In an associative trie, each key or node can be associated with a value.
 //
@@ -667,22 +667,22 @@ func (node *MACAddressAssociativeTrieNode) LastAddedNode() *MACAddressAssociativ
 	return toMACAAssociativeAddressTrieNode(node.toTrieNode().LastAddedNode())
 }
 
-// LowerAddedNode returns the added node, in this sub-trie with this node as root, whose address is the highest address strictly less than the given address.
+// LowerAddedNode returns the added node, in this sub-trie with this node as the root, whose address is the highest address strictly less than the given address.
 func (node *MACAddressAssociativeTrieNode) LowerAddedNode(addr *Address) *MACAddressAssociativeTrieNode {
 	return node.toBase().lowerAddedNode(addr).ToMACAssociative()
 }
 
-// FloorAddedNode returns the added node, in this sub-trie with this node as root, whose address is the highest address less than or equal to the given address.
+// FloorAddedNode returns the added node, in this sub-trie with this node as the root, whose address is the highest address less than or equal to the given address.
 func (node *MACAddressAssociativeTrieNode) FloorAddedNode(addr *Address) *MACAddressAssociativeTrieNode {
 	return node.toBase().floorAddedNode(addr).ToMACAssociative()
 }
 
-// HigherAddedNode returns the added node, in this sub-trie with this node as root, whose address is the lowest address strictly greater than the given address.
+// HigherAddedNode returns the added node, in this sub-trie with this node as the root, whose address is the lowest address strictly greater than the given address.
 func (node *MACAddressAssociativeTrieNode) HigherAddedNode(addr *Address) *MACAddressAssociativeTrieNode {
 	return node.toBase().higherAddedNode(addr).ToMACAssociative()
 }
 
-// CeilingAddedNode returns the added node, in this sub-trie with this node as root, whose address is the lowest address greater than or equal to the given address.
+// CeilingAddedNode returns the added node, in this sub-trie with this node as the root, whose address is the lowest address greater than or equal to the given address.
 func (node *MACAddressAssociativeTrieNode) CeilingAddedNode(addr *Address) *MACAddressAssociativeTrieNode {
 	return node.toBase().ceilingAddedNode(addr).ToMACAssociative()
 }
@@ -787,13 +787,13 @@ func (node *MACAddressAssociativeTrieNode) Clone() *MACAddressAssociativeTrieNod
 	return toMACAAssociativeAddressTrieNode(node.toTrieNode().Clone())
 }
 
-// CloneTree clones the sub-trie starting with this node as root.
+// CloneTree clones the sub-trie starting with this node as the root.
 // The nodes are cloned, but their keys and values are not cloned.
 func (node *MACAddressAssociativeTrieNode) CloneTree() *MACAddressAssociativeTrieNode {
 	return toMACAAssociativeAddressTrieNode(node.toTrieNode().CloneTree())
 }
 
-// AsNewTrie creates a new sub-trie, copying the nodes starting with this node as root.
+// AsNewTrie creates a new sub-trie, copying the nodes starting with this node as the root.
 // The nodes are copies of the nodes in this sub-trie, but their keys and values are not copies.
 func (node *MACAddressAssociativeTrieNode) AsNewTrie() *MACAddressAssociativeTrie {
 	return toAddressTrie(node.toTrieNode().AsNewTrie()).ToMACAssociative()
@@ -998,7 +998,7 @@ func (node *MACAddressAssociativeTrieNode) IsEmpty() bool {
 	return node.Size() == 0
 }
 
-// TreeString returns a visual representation of the sub-trie with this node as root, with one node per line.
+// TreeString returns a visual representation of the sub-trie with this node as the root, with one node per line.
 //
 // withNonAddedKeys: whether to show nodes that are not added nodes
 // withSizes: whether to include the counts of added nodes in each sub-trie

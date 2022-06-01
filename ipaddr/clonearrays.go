@@ -48,18 +48,16 @@ func cloneIPv6Sections(sect *IPv6AddressSection, orig []*IPv6AddressSection) []E
 	return result
 }
 
+// returns a slice of addresses that match the same IP version as the given
 func filterCloneIPAddrs(addr *IPAddress, orig []*IPAddress) []ExtendedIPSegmentSeries {
-	if addr == nil {
-		panic("no receiver")
-	}
+	addrType := addr.getAddrType()
 	origCount := len(orig)
 	count := origCount + 1
 	result := make([]ExtendedIPSegmentSeries, 0, count)
 	result = append(result, wrapIPAddress(addr))
-	version := addr.getIPVersion()
 	for _, a := range orig {
-		if version.Equal(a.GetIPVersion()) {
-			result = append(result, wrapIPAddress(a))
+		if addrType == a.getAddrType() {
+			result = append(result, a.Wrap())
 		}
 	}
 	return result
