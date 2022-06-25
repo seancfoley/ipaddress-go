@@ -1145,7 +1145,7 @@ func (section *ipAddressSectionInternal) getHostMask(network IPAddressNetwork) *
 	if section.isPrefixed() {
 		prefLen = section.getNetworkPrefixLen().bitCount()
 	}
-	return network.GetNetworkMask(prefLen).GetSubSection(0, section.GetSegmentCount())
+	return network.GetHostMask(prefLen).GetSubSection(0, section.GetSegmentCount())
 }
 
 func (section *ipAddressSectionInternal) insert(index int, other *IPAddressSection, segmentToBitsShift uint) *IPAddressSection {
