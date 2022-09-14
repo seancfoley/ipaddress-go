@@ -2,7 +2,7 @@
 
 [Go](https://golang.org/) library for handling IP addresses and subnets, both IPv4 and IPv6
 
-IP network manipulation, operations, iterations, containment checks, longest prefix match, and data structures, with polymporphic code
+IP network manipulation, operations, iterations, containment checks, longest prefix match, subnetting, and data structures, with polymporphic code
 
 [View Project Page](https://seancfoley.github.io/IPAddress/)
 
