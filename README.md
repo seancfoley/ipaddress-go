@@ -10,17 +10,17 @@ IP address and network manipulation, CIDR, operations, iterations, containment c
 
 [View Code Examples](https://github.com/seancfoley/ipaddress-go/wiki/Code-Examples)
 
-Also available as a [Java](https://www.oracle.com/java/) library from the [IPAddress repository](https://github.com/seancfoley/IPAddress)
-
-As a [Java](https://www.oracle.com/java/) library, it is also interoperable with [Kotlin](https://kotlinlang.org/), [Scala](https://scala-lang.org/), [Groovy](http://www.groovy-lang.org/) and [Clojure](https://clojure.org/)
-
-![Go](https://github.com/seancfoley/IPAddress/blob/gh-pages/images/go_logo.png?raw=true) ![Java](https://github.com/seancfoley/IPAddress/blob/gh-pages/images/java_logo.png?raw=true)  ![Kotlin](https://github.com/seancfoley/IPAddress/blob/gh-pages/images/kotlin_logo.png?raw=true) ![Scala](https://github.com/seancfoley/IPAddress/blob/gh-pages/images/scala.png?raw=true)![Groovy](https://github.com/seancfoley/IPAddress/blob/gh-pages/images/groovy.png?raw=true)![Clojure](https://github.com/seancfoley/IPAddress/blob/gh-pages/images/clojure.png?raw=true)
-
 Version | Notes         |
 ------- | ------------- |
 [1.2.0](https://github.com/seancfoley/ipaddress-go/releases/tag/v1.2.0) | Requires Go 1.12 or higher |
 
 go get github.com/seancfoley/ipaddress-go@v1.2.0
+
+Also available as a [Java](https://www.oracle.com/java/) library from the [IPAddress repository](https://github.com/seancfoley/IPAddress)
+
+![Go](https://github.com/seancfoley/IPAddress/blob/gh-pages/images/go_logo.png?raw=true) ![Java](https://github.com/seancfoley/IPAddress/blob/gh-pages/images/java_logo.png?raw=true)  ![Kotlin](https://github.com/seancfoley/IPAddress/blob/gh-pages/images/kotlin_logo.png?raw=true) ![Scala](https://github.com/seancfoley/IPAddress/blob/gh-pages/images/scala.png?raw=true)![Groovy](https://github.com/seancfoley/IPAddress/blob/gh-pages/images/groovy.png?raw=true)![Clojure](https://github.com/seancfoley/IPAddress/blob/gh-pages/images/clojure.png?raw=true)
+
+As a [Java](https://www.oracle.com/java/) library, it is also interoperable with [Kotlin](https://kotlinlang.org/), [Scala](https://scala-lang.org/), [Groovy](http://www.groovy-lang.org/) and [Clojure](https://clojure.org/)
 
 ## Getting Started
 
