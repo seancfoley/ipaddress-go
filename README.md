@@ -10,9 +10,9 @@ IP address and network manipulation, CIDR, operations, iterations, containment c
 
 [View Code Examples](https://github.com/seancfoley/ipaddress-go/wiki/Code-Examples)
 
-Version | Notes         |
-------- | ------------- |
-[1.2.0](https://github.com/seancfoley/ipaddress-go/releases/tag/v1.2.0) | Requires Go 1.12 or higher |
+| Version | Notes         |
+| ------- | ------------- |
+| [1.2.0](https://github.com/seancfoley/ipaddress-go/releases/tag/v1.2.0) | Requires Go 1.12 or higher |
 
 go get github.com/seancfoley/ipaddress-go@v1.2.0
 
