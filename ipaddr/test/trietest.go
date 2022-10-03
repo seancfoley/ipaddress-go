@@ -20,13 +20,14 @@ import (
 	"github.com/seancfoley/ipaddress-go/ipaddr"
 	"reflect"
 	"strconv"
+	"sync/atomic"
 )
 
 type trieTester struct {
 	testBase
 }
 
-var didOneMegaTree bool
+var didOneMegaTree int32
 
 func (t trieTester) run() {
 
@@ -136,22 +137,25 @@ func (t trieTester) run() {
 		t.testRemoveMAC(treeAddrs)
 	}
 
-	cached := t.getAllCached()
-	if len(cached) > 0 && !didOneMegaTree {
-		didOneMegaTree = true
-		ipv6Tree1 := ipaddr.NewIPv6AddressTrie()
-		t.createIPv6SampleTreeAddrs(ipv6Tree1, cached)
-		//fmt.Println(ipv6Tree1)
-		//fmt.Printf("ipv6 mega tree has %v elements", ipv6Tree1.Size())
-		t.testIterate(ipv6Tree1.ToBase())
-		t.testContains(ipv6Tree1.ToBase())
+	doMegaTree := atomic.CompareAndSwapInt32(&didOneMegaTree, 0, 1)
+	if doMegaTree {
+		cached := t.getAllCached() //TODO figure out why this gives nothing, when not "limited", should be using the caching I think
+		if len(cached) > 0 {
+			fmt.Println("doing the mega")
+			ipv6Tree1 := ipaddr.NewIPv6AddressTrie()
+			t.createIPv6SampleTreeAddrs(ipv6Tree1, cached)
+			//fmt.Println(ipv6Tree1)
+			//fmt.Printf("ipv6 mega tree has %v elements", ipv6Tree1.Size())
+			t.testIterate(ipv6Tree1.ToBase())
+			t.testContains(ipv6Tree1.ToBase())
 
-		ipv4Tree1 := ipaddr.NewIPv4AddressTrie()
-		t.createIPv4SampleTreeAddrs(ipv4Tree1, cached)
-		//fmt.Println(ipv4Tree1)
-		//fmt.Printf("ipv4 mega tree has %v elements", ipv4Tree1.Size())
-		t.testIterate(ipv4Tree1.ToBase())
-		t.testContains(ipv4Tree1.ToBase())
+			ipv4Tree1 := ipaddr.NewIPv4AddressTrie()
+			t.createIPv4SampleTreeAddrs(ipv4Tree1, cached)
+			//fmt.Println(ipv4Tree1)
+			//fmt.Printf("ipv4 mega tree has %v elements", ipv4Tree1.Size())
+			t.testIterate(ipv4Tree1.ToBase())
+			t.testContains(ipv4Tree1.ToBase())
+		}
 	}
 
 	t.testString(treeOne)
