@@ -175,14 +175,14 @@ func (section *ipAddressSectionInternal) GetBlockMaskPrefixLen(network bool) Pre
 	cachedMaskLens := (*maskLenSetting)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&cache.cachedMaskLens))))
 	if cachedMaskLens == nil {
 		networkMaskLen, hostMaskLen := section.checkForPrefixMask()
-		res := &maskLenSetting{networkMaskLen, hostMaskLen}
+		cachedMaskLens = &maskLenSetting{networkMaskLen, hostMaskLen}
 		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache.cachedMaskLens))
-		atomicStorePointer(dataLoc, unsafe.Pointer(res))
+		atomicStorePointer(dataLoc, unsafe.Pointer(cachedMaskLens))
 	}
 	if network {
-		return cache.cachedMaskLens.networkMaskLen
+		return cachedMaskLens.networkMaskLen
 	}
-	return cache.cachedMaskLens.hostMaskLen
+	return cachedMaskLens.hostMaskLen
 }
 
 func (section *ipAddressSectionInternal) checkForPrefixMask() (networkMaskLen, hostMaskLen PrefixLen) {
