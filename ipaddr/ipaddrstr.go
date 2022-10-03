@@ -351,11 +351,7 @@ func (addrStr *IPAddressString) IsValid() bool {
 //
 // If you have a prefixed address and you wish to get only the host without the prefix, use GetHostAddress.
 func (addrStr *IPAddressString) GetAddress() *IPAddress {
-	provider, err := addrStr.getAddressProvider()
-	if err != nil {
-		return nil
-	}
-	addr, _ := provider.getProviderAddress()
+	addr, _ := addrStr.ToAddress()
 	return addr
 }
 
@@ -380,11 +376,7 @@ func (addrStr *IPAddressString) ToAddress() (*IPAddress, addrerr.AddressError) {
 
 // GetVersionedAddress is similar to ToVersionedAddress, but returns nil rather than an error when the address is invalid or does not match the supplied version.
 func (addrStr *IPAddressString) GetVersionedAddress(version IPVersion) *IPAddress {
-	provider, err := addrStr.getAddressProvider()
-	if err != nil {
-		return nil
-	}
-	addr, _ := provider.getVersionedAddress(version)
+	addr, _ := addrStr.ToVersionedAddress(version)
 	return addr
 }
 
@@ -416,11 +408,7 @@ func (addrStr *IPAddressString) ToVersionedAddress(version IPVersion) (*IPAddres
 // GetHostAddress parses the address while ignoring the prefix length or mask.
 // GetHostAddress returns nil for an invalid string.  If you wish to receive an error instead, use ToHostAddress.
 func (addrStr *IPAddressString) GetHostAddress() *IPAddress {
-	provider, err := addrStr.getAddressProvider()
-	if err != nil {
-		return nil
-	}
-	addr, _ := provider.getProviderHostAddress()
+	addr, _ := addrStr.ToHostAddress()
 	return addr
 }
 
@@ -474,12 +462,12 @@ func (addrStr *IPAddressString) GetSequentialRange() (res *IPAddressSeqRange) {
 // ToSequentialRange returns the range of sequential addresses from the lowest address specified in this address string to the highest.
 //
 // This is similar to GetSequentialRange except that this method provides a descriptive error when nil is returned. See GetSequentialRange for more details.
-func (addrStr *IPAddressString) ToSequentialRange() (res *IPAddressSeqRange, err addrerr.AddressStringError) {
-	addrStr = addrStr.init()
-	if err = addrStr.Validate(); err == nil {
-		res = addrStr.addressProvider.getProviderSeqRange()
+func (addrStr *IPAddressString) ToSequentialRange() (*IPAddressSeqRange, addrerr.AddressStringError) {
+	provider, err := addrStr.getAddressProvider()
+	if err != nil {
+		return nil, err
 	}
-	return
+	return provider.getProviderSeqRange(), nil
 }
 
 // ValidateIPv4 validates that this string is a valid IPv4 address, returning nil, and if not, returns an error with a descriptive message indicating why it is not.
