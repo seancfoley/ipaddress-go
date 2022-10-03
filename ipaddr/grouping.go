@@ -18,10 +18,10 @@ package ipaddr
 
 import (
 	"fmt"
-	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
 	"math/big"
-	"sync/atomic"
 	"unsafe"
+
+	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
 )
 
 func createGrouping(divs []*AddressDivision, prefixLength PrefixLen, addrType addrType) *AddressDivisionGrouping {
@@ -49,13 +49,6 @@ func createInitializedGrouping(divs []*AddressDivision, prefixLength PrefixLen) 
 	result := createGrouping(divs, prefixLength, zeroType)
 	result.initMultiple() // assigns isMult
 	return result
-}
-
-// NewDivisionGrouping creates an arbitrary grouping of divisions.
-// To create address sections or addresses, use the constructors that are specific to the address version or type.
-// The AddressDivision instances can be created with the NewDivision, NewRangeDivision, NewPrefixDivision or NewRangePrefixDivision functions.
-func NewDivisionGrouping(divs []*AddressDivision, prefixLength PrefixLen) *AddressDivisionGrouping {
-	return createInitializedGrouping(divs, prefixLength)
 }
 
 var (
@@ -213,29 +206,40 @@ func (grouping *addressDivisionGroupingInternal) isAddressSection() bool {
 	return grouping != nil && grouping.matchesAddrSectionType()
 }
 
-func (grouping *addressDivisionGroupingInternal) compareSize(other StandardDivGroupingType) int { // the getCount() is optimized which is why we do not defer to the method in addressDivisionGroupingBase
-	if other == nil || other.ToDivGrouping() == nil {
-		// our size is 1 or greater, other 0
-		return 1
-	}
-	if !grouping.isMultiple() {
-		if other.IsMultiple() {
-			return -1
-		}
-		return 0
-	} else if !other.IsMultiple() {
-		return 1
-	}
-	return grouping.getCount().CmpAbs(other.GetCount())
+func (grouping *addressDivisionGroupingInternal) compareSize(other AddressItem) int { // the getCount() is optimized which is why we do not defer to the method in addressDivisionGroupingBase
+	return compareCount(grouping.toAddressDivisionGrouping(), other)
 }
 
 func (grouping *addressDivisionGroupingInternal) getCount() *big.Int {
 	if !grouping.isMultiple() {
 		return bigOne()
-	} else if section := grouping.toAddressSection(); section != nil {
-		return section.GetCount()
+	} else {
+		g := grouping.toAddressDivisionGrouping()
+		if sect := g.ToIPv4(); sect != nil {
+			return sect.GetCount()
+		} else if sect := g.ToIPv6(); sect != nil {
+			return sect.GetCount()
+		} else if sect := g.ToMAC(); sect != nil {
+			return sect.GetCount()
+		}
 	}
 	return grouping.addressDivisionGroupingBase.getCount()
+}
+
+func (grouping *addressDivisionGroupingInternal) getCachedCount() *big.Int {
+	if !grouping.isMultiple() {
+		return bigOne()
+	} else {
+		g := grouping.toAddressDivisionGrouping()
+		if sect := g.ToIPv4(); sect != nil {
+			return sect.getCachedCount()
+		} else if sect := g.ToIPv6(); sect != nil {
+			return sect.getCachedCount()
+		} else if sect := g.ToMAC(); sect != nil {
+			return sect.getCachedCount()
+		}
+	}
+	return grouping.addressDivisionGroupingBase.getCachedCount()
 }
 
 // GetPrefixCount returns the number of distinct prefix values in this item.
@@ -388,29 +392,6 @@ func (grouping *addressDivisionGroupingInternal) initDivs() *addressDivisionGrou
 	return grouping
 }
 
-func (grouping *addressDivisionGroupingInternal) getPrefixLen() PrefixLen {
-	return grouping.prefixLength
-}
-
-// GetPrefixLen returns the prefix length, or nil if there is no prefix length.
-//
-// A prefix length indicates the number of bits in the initial part of the address item that comprises the prefix.
-//
-// A prefix is a part of the address item that is not specific to that address but common amongst a group of such items, such as a CIDR prefix block subnet.
-func (grouping *addressDivisionGroupingInternal) GetPrefixLen() PrefixLen {
-	return grouping.getPrefixLen().copy()
-}
-
-func (grouping *addressDivisionGroupingInternal) isPrefixed() bool {
-	return grouping.prefixLength != nil
-}
-
-//TODO LATER eventually when supporting large divisions,
-//might move containsPrefixBlock(prefixLen BitCount), containsSinglePrefixBlock(prefixLen BitCount),
-// GetMinPrefixLenForBlock, and GetPrefixLenForSingleBlock into groupingBase code
-// IsPrefixBlock, IsSinglePrefixBlock
-// which looks straightforward since none deal with DivInt, instead they all call into divisionValues interface
-
 // ContainsPrefixBlock returns whether the values of this item contains the block of values for the given prefix length.
 //
 // Unlike ContainsSinglePrefixBlock, whether there are multiple prefix values in this item for the given prefix length makes no difference.
@@ -420,7 +401,7 @@ func (grouping *addressDivisionGroupingInternal) ContainsPrefixBlock(prefixLen B
 	if section := grouping.toAddressSection(); section != nil {
 		return section.ContainsPrefixBlock(prefixLen)
 	}
-	prefixLen = checkSubnet(grouping.toAddressDivisionGrouping(), prefixLen)
+	prefixLen = checkSubnet(grouping, prefixLen)
 	divisionCount := grouping.GetDivisionCount()
 	var prevBitCount BitCount
 	for i := 0; i < divisionCount; i++ {
@@ -451,7 +432,7 @@ func (grouping *addressDivisionGroupingInternal) ContainsPrefixBlock(prefixLen B
 //
 // Use GetPrefixLenForSingleBlock to determine whether there is a prefix length for which this method returns true.
 func (grouping *addressDivisionGroupingInternal) ContainsSinglePrefixBlock(prefixLen BitCount) bool {
-	prefixLen = checkSubnet(grouping.toAddressDivisionGrouping(), prefixLen)
+	prefixLen = checkSubnet(grouping, prefixLen)
 	divisionCount := grouping.GetDivisionCount()
 	var prevBitCount BitCount
 	for i := 0; i < divisionCount; i++ {
@@ -502,28 +483,30 @@ func (grouping *addressDivisionGroupingInternal) IsSinglePrefixBlock() bool { //
 		prefLen := grouping.getPrefixLen()
 		return prefLen != nil && grouping.ContainsSinglePrefixBlock(prefLen.bitCount())
 	}
-	cache := grouping.cache
+	return cacheIsSinglePrefixBlock(grouping.cache, grouping.getPrefixLen(), calc)
+}
+
+func cacheIsSinglePrefixBlock(cache *valueCache, prefLen PrefixLen, calc func() bool) bool {
 	if cache == nil {
 		return calc()
 	}
-	res := cache.isSinglePrefixBlock
+	res := (*bool)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&cache.isSinglePrefixBlock))))
 	if res == nil {
 		if calc() {
 			res = &trueVal
 
 			// we can also set related cache fields
-			pref := grouping.getPrefixLen()
 			dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache.equivalentPrefix))
-			equivPref := cachePrefix(pref.bitCount())
-			atomic.StorePointer(dataLoc, unsafe.Pointer(equivPref))
+			equivPref := cachePrefix(prefLen.bitCount())
+			atomicStorePointer(dataLoc, unsafe.Pointer(equivPref))
 
 			dataLoc = (*unsafe.Pointer)(unsafe.Pointer(&cache.minPrefix))
-			atomic.StorePointer(dataLoc, unsafe.Pointer(pref))
+			atomicStorePointer(dataLoc, unsafe.Pointer(prefLen))
 		} else {
 			res = &falseVal
 		}
 		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache.isSinglePrefixBlock))
-		atomic.StorePointer(dataLoc, unsafe.Pointer(res))
+		atomicStorePointer(dataLoc, unsafe.Pointer(res))
 	}
 	return *res
 }
@@ -556,16 +539,19 @@ func (grouping *addressDivisionGroupingInternal) GetMinPrefixLenForBlock() BitCo
 		}
 		return totalPrefix
 	}
-	cache := grouping.cache
+	return cacheMinPrefix(grouping.cache, calc)
+}
+
+func cacheMinPrefix(cache *valueCache, calc func() BitCount) BitCount {
 	if cache == nil {
 		return calc()
 	}
-	res := cache.minPrefix
+	res := (PrefixLen)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&cache.minPrefix))))
 	if res == nil {
 		val := calc()
 		res = cacheBitCount(val)
 		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache.minPrefix))
-		atomic.StorePointer(dataLoc, unsafe.Pointer(res))
+		atomicStorePointer(dataLoc, unsafe.Pointer(res))
 	}
 	return res.bitCount()
 }
@@ -599,33 +585,36 @@ func (grouping *addressDivisionGroupingInternal) GetPrefixLenForSingleBlock() Pr
 		}
 		return cachePrefix(totalPrefix)
 	}
-	cache := grouping.cache
+	return cachePrefLenSingleBlock(grouping.cache, grouping.getPrefixLen(), calc)
+}
+
+func cachePrefLenSingleBlock(cache *valueCache, prefLen PrefixLen, calc func() *PrefixLen) PrefixLen {
 	if cache == nil {
 		return *calc()
 	}
-	res := cache.equivalentPrefix
+	res := (*PrefixLen)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&cache.equivalentPrefix))))
 	if res == nil {
 		res = calc()
 		if *res == nil {
 			// we can also set related cache fields
 			dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache.isSinglePrefixBlock))
-			atomic.StorePointer(dataLoc, unsafe.Pointer(&falseVal))
+			atomicStorePointer(dataLoc, unsafe.Pointer(&falseVal))
 		} else {
 			// we can also set related cache fields
 			var isSingleBlock *bool
-			if grouping.isPrefixed() && (*res).Equal(grouping.getPrefixLen()) {
+			if prefLen != nil && (*res).Equal(prefLen) {
 				isSingleBlock = &trueVal
 			} else {
 				isSingleBlock = &falseVal
 			}
 			dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache.isSinglePrefixBlock))
-			atomic.StorePointer(dataLoc, unsafe.Pointer(isSingleBlock))
+			atomicStorePointer(dataLoc, unsafe.Pointer(isSingleBlock))
 
 			dataLoc = (*unsafe.Pointer)(unsafe.Pointer(&cache.minPrefix))
-			atomic.StorePointer(dataLoc, unsafe.Pointer(*res))
+			atomicStorePointer(dataLoc, unsafe.Pointer(*res))
 		}
 		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache.equivalentPrefix))
-		atomic.StorePointer(dataLoc, unsafe.Pointer(res))
+		atomicStorePointer(dataLoc, unsafe.Pointer(res))
 	}
 	return *res
 }
@@ -651,8 +640,7 @@ func (grouping *addressDivisionGroupingInternal) Bytes() []byte {
 	if grouping.hasNoDivisions() {
 		return emptyBytes
 	}
-	cached := grouping.getBytes()
-	return cloneBytes(cached)
+	return cloneBytes(grouping.getBytes())
 }
 
 // UpperBytes returns the highest individual division grouping in this grouping as a byte slice
@@ -660,8 +648,7 @@ func (grouping *addressDivisionGroupingInternal) UpperBytes() []byte {
 	if grouping.hasNoDivisions() {
 		return emptyBytes
 	}
-	cached := grouping.getUpperBytes()
-	return cloneBytes(cached)
+	return cloneBytes(grouping.getUpperBytes())
 }
 
 // CopyBytes copies the value of the lowest division grouping in the range into a byte slice
@@ -673,7 +660,7 @@ func (grouping *addressDivisionGroupingInternal) UpperBytes() []byte {
 func (grouping *addressDivisionGroupingInternal) CopyBytes(bytes []byte) []byte {
 	if grouping.hasNoDivisions() {
 		if bytes != nil {
-			return bytes
+			return bytes[:0]
 		}
 		return emptyBytes
 	}
@@ -689,7 +676,7 @@ func (grouping *addressDivisionGroupingInternal) CopyBytes(bytes []byte) []byte 
 func (grouping *addressDivisionGroupingInternal) CopyUpperBytes(bytes []byte) []byte {
 	if grouping.hasNoDivisions() {
 		if bytes != nil {
-			return bytes
+			return bytes[:0]
 		}
 		return emptyBytes
 	}
@@ -784,26 +771,6 @@ func (grouping *addressDivisionGroupingInternal) calcBytes() (bytes, upperBytes 
 		}
 	}
 	return
-}
-
-// IsSequential returns whether the grouping represents a range of values that are sequential.
-//
-// Generally, this means that any division covering a range of values must be followed by divisions that are full range, covering all values.
-func (grouping *addressDivisionGroupingInternal) IsSequential() bool {
-	count := grouping.GetDivisionCount()
-	if count > 1 {
-		for i := 0; i < count; i++ {
-			if grouping.getDivision(i).isMultiple() {
-				for i++; i < count; i++ {
-					if !grouping.getDivision(i).IsFullRange() {
-						return false
-					}
-				}
-				return true
-			}
-		}
-	}
-	return true
 }
 
 func (grouping *addressDivisionGroupingInternal) createNewDivisions(bitsPerDigit BitCount) ([]*AddressDivision, addrerr.IncompatibleAddressError) {
@@ -938,13 +905,13 @@ func (grouping *addressDivisionGroupingInternal) createNewPrefixedDivisions(bits
 //// only needed for godoc / pkgsite
 
 // GetBitCount returns the number of bits in each value comprising this address item
-func (grouping addressDivisionGroupingInternal) GetBitCount() BitCount {
+func (grouping *addressDivisionGroupingInternal) GetBitCount() BitCount {
 	return grouping.addressDivisionGroupingBase.GetBitCount()
 }
 
 // GetByteCount returns the number of bytes required for each value comprising this address item,
 // rounding up if the bit count is not a multiple of 8.
-func (grouping addressDivisionGroupingInternal) GetByteCount() int {
+func (grouping *addressDivisionGroupingInternal) GetByteCount() int {
 	return grouping.addressDivisionGroupingBase.GetByteCount()
 }
 
@@ -1004,6 +971,16 @@ func (grouping *addressDivisionGroupingInternal) GetBlockCount(divisionCount int
 	return grouping.addressDivisionGroupingBase.GetBlockCount(divisionCount)
 }
 
+// NewDivisionGrouping creates an arbitrary grouping of divisions.
+// To create address sections or addresses, use the constructors that are specific to the address version or type.
+// The AddressDivision instances can be created with the NewDivision, NewRangeDivision, NewPrefixDivision or NewRangePrefixDivision functions.
+func NewDivisionGrouping(divs []*AddressDivision) *AddressDivisionGrouping {
+	//TODO we need to verify the prefix length order in the segments -
+	// which, regardless of whether these are IP dvisions, need to follow the proper order,
+	// assuming they even store a prefix length
+	return createInitializedGrouping(cloneDivs(divs), nil)
+}
+
 //// end needed for godoc / pkgsite
 
 // AddressDivisionGrouping objects consist of a series of AddressDivision objects, each division containing a sequential range of values.
@@ -1029,13 +1006,13 @@ func (grouping *AddressDivisionGrouping) Compare(item AddressItem) int {
 // Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one grouping represents more individual address groupings than another.
 //
 // CompareSize returns a positive integer if this address division grouping has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
-func (grouping *AddressDivisionGrouping) CompareSize(other StandardDivGroupingType) int {
+func (grouping *AddressDivisionGrouping) CompareSize(other AddressItem) int {
 	if grouping == nil {
-		if other != nil && other.ToDivGrouping() != nil {
-			// we have size 0, other has size >= 1
-			return -1
+		if isNilItem(other) {
+			return 0
 		}
-		return 0
+		// we have size 0, other has size >= 1
+		return -1
 	}
 	return grouping.compareSize(other)
 }
@@ -1066,13 +1043,13 @@ func (grouping *AddressDivisionGrouping) IsPrefixed() bool {
 }
 
 // CopySubDivisions copies the existing divisions from the given start index until but not including the division at the given end index,
-// into the given slice, as much as can be fit into the slice, returning the number of segments copied
+// into the given slice, as much as can be fit into the slice, returning the number of divisions copied
 func (grouping *AddressDivisionGrouping) CopySubDivisions(start, end int, divs []*AddressDivision) (count int) {
 	return grouping.copySubDivisions(start, end, divs)
 }
 
 // CopyDivisions copies the existing divisions from the given start index until but not including the division at the given end index,
-// into the given slice, as much as can be fit into the slice, returning the number of segments copied
+// into the given slice, as much as can be fit into the slice, returning the number of divisions copied
 func (grouping *AddressDivisionGrouping) CopyDivisions(divs []*AddressDivision) (count int) {
 	return grouping.copyDivisions(divs)
 }

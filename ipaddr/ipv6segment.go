@@ -18,7 +18,6 @@ package ipaddr
 
 import (
 	"math/big"
-	"sync/atomic"
 	"unsafe"
 
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
@@ -123,6 +122,16 @@ func (seg *ipv6SegmentValues) calcBytesInternal() (bytes, upperBytes []byte) {
 	return
 }
 
+func (seg *ipv6SegmentValues) bytesInternal(upper bool) []byte {
+	var val IPv6SegInt
+	if upper {
+		val = seg.upperValue
+	} else {
+		val = seg.value
+	}
+	return []byte{byte(val >> 8), byte(val)}
+}
+
 func (seg *ipv6SegmentValues) deriveNew(val, upperVal DivInt, prefLen PrefixLen) divisionValues {
 	return newIPv6SegmentPrefixedValues(IPv6SegInt(val), IPv6SegInt(upperVal), prefLen)
 }
@@ -211,6 +220,29 @@ func (seg *IPv6AddressSegment) Compare(item AddressItem) int {
 		seg = seg.init()
 	}
 	return CountComparator.Compare(seg, item)
+}
+
+// CompareSize compares the counts of two segments, the number of individual values within.
+//
+// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one represents more individual values than another.
+//
+// CompareSize returns a positive integer if this segment has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
+func (seg *IPv6AddressSegment) CompareSize(other AddressItem) int {
+	if seg == nil {
+		if isNilItem(other) {
+			return 0
+		}
+		// we have size 0, other has size >= 1
+		return -1
+	}
+	//if addr == nil { TODO remove
+	//	if other != nil && other.ToAddressBase() != nil {
+	//		// we have size 0, other has size >= 1
+	//		return -1
+	//	}
+	//	return 0
+	//}
+	return seg.init().compareSize(other)
 }
 
 // GetBitCount returns the number of bits in each value comprising this address item, which is 16
@@ -734,7 +766,8 @@ func newIPv6SegmentVal(value IPv6SegInt) *ipv6SegmentValues {
 		blockIndex := value >> 8 // divide by 0x100
 		firstBlockVal := blockIndex << 8
 		resultIndex := value - firstBlockVal // mod 0x100
-		block := cache[blockIndex]
+		block := (*ipv6DivsBlock)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&cache[blockIndex]))))
+		//block := cache[blockIndex]
 		if block == nil {
 			block = &ipv6DivsBlock{make([]ipv6SegmentValues, 0x100)}
 			vals := block.block
@@ -746,7 +779,7 @@ func newIPv6SegmentVal(value IPv6SegInt) *ipv6SegmentValues {
 				item.cache.isSinglePrefBlock = &falseVal
 			}
 			dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache[blockIndex]))
-			atomic.StorePointer(dataLoc, unsafe.Pointer(block))
+			atomicStorePointer(dataLoc, unsafe.Pointer(block))
 		}
 		result := &block.block[resultIndex]
 		return result
@@ -773,16 +806,16 @@ func newIPv6SegmentPrefixedVal(value IPv6SegInt, prefLen PrefixLen) (result *ipv
 	prefLen = cacheBitCount(prefixIndex) // this ensures we use the prefix length cache for all segments
 	if useIPv6SegmentCache {
 		cache := segmentPrefixCacheIPv6
-		prefixCache := cache[prefixIndex]
+		prefixCache := (*ipv6DivsPartition)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&cache[prefixIndex]))))
 		if prefixCache == nil {
 			prefixCache = &ipv6DivsPartition{make([]*ipv6DivsBlock, (IPv6MaxValuePerSegment>>8)+1)}
 			dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache[prefixIndex]))
-			atomic.StorePointer(dataLoc, unsafe.Pointer(prefixCache))
+			atomicStorePointer(dataLoc, unsafe.Pointer(prefixCache))
 		}
 		blockIndex := value >> 8 // divide by 0x100
 		firstBlockVal := blockIndex << 8
 		resultIndex := value - (firstBlockVal) // mod 0x100
-		blockCache := prefixCache.block[blockIndex]
+		blockCache := (*ipv6DivsBlock)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&prefixCache.block[blockIndex]))))
 		if blockCache == nil {
 			blockCache = &ipv6DivsBlock{make([]ipv6SegmentValues, (IPv6MaxValuePerSegment>>8)+1)}
 			vals := blockCache.block
@@ -801,7 +834,7 @@ func newIPv6SegmentPrefixedVal(value IPv6SegInt, prefLen PrefixLen) (result *ipv
 				item.cache.isSinglePrefBlock = isSinglePrefBlock
 			}
 			dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&prefixCache.block[blockIndex]))
-			atomic.StorePointer(dataLoc, unsafe.Pointer(blockCache))
+			atomicStorePointer(dataLoc, unsafe.Pointer(blockCache))
 		}
 		result := &blockCache.block[resultIndex]
 		return result
@@ -856,7 +889,7 @@ func newIPv6SegmentPrefixedValues(value, upperValue IPv6SegInt, prefLen PrefixLe
 			if value == prefixBlockLower && upperValue == prefixBlockUpper {
 				// cache is the prefix block for any prefix length
 				cache := prefixBlocksCacheIPv6
-				prefixCache := cache[prefixIndex]
+				prefixCache := (*ipv6DivsPartition)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&cache[prefixIndex]))))
 				if prefixCache == nil {
 					if prefixIndex <= 8 { // 1 block of size (1 << prefix)
 						prefixCache = &ipv6DivsPartition{make([]*ipv6DivsBlock, 1)}
@@ -864,13 +897,13 @@ func newIPv6SegmentPrefixedValues(value, upperValue IPv6SegInt, prefLen PrefixLe
 						prefixCache = &ipv6DivsPartition{make([]*ipv6DivsBlock, 1<<uint(prefixIndex-8))}
 					}
 					dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache[prefixIndex]))
-					atomic.StorePointer(dataLoc, unsafe.Pointer(prefixCache))
+					atomicStorePointer(dataLoc, unsafe.Pointer(prefixCache))
 				}
 				valueIndex := value >> shiftBits
 				blockIndex := valueIndex >> 8 // divide by 0x100
 				firstBlockVal := blockIndex << 8
 				resultIndex := valueIndex - (firstBlockVal) // mod 0x100
-				blockCache := prefixCache.block[blockIndex]
+				blockCache := (*ipv6DivsBlock)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&prefixCache.block[blockIndex]))))
 				if blockCache == nil {
 					if prefixIndex <= 8 { // 1 block of size (1 << prefix)
 						blockCache = &ipv6DivsBlock{make([]ipv6SegmentValues, 1<<uint(prefixIndex))}
@@ -887,7 +920,7 @@ func newIPv6SegmentPrefixedValues(value, upperValue IPv6SegInt, prefLen PrefixLe
 						item.cache.isSinglePrefBlock = &trueVal
 					}
 					dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&prefixCache.block[blockIndex]))
-					atomic.StorePointer(dataLoc, unsafe.Pointer(blockCache))
+					atomicStorePointer(dataLoc, unsafe.Pointer(blockCache))
 				}
 				result := &blockCache.block[resultIndex]
 				return result

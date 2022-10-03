@@ -18,7 +18,6 @@ package ipaddr
 
 import (
 	"math/big"
-	"sync/atomic"
 	"unsafe"
 
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
@@ -139,6 +138,13 @@ func (seg *ipv4SegmentValues) calcBytesInternal() (bytes, upperBytes []byte) {
 	return
 }
 
+func (seg *ipv4SegmentValues) bytesInternal(upper bool) []byte {
+	if upper {
+		return []byte{byte(seg.upperValue)}
+	}
+	return []byte{byte(seg.value)}
+}
+
 var _ divisionValues = &ipv4SegmentValues{}
 
 var zeroIPv4Seg = NewIPv4Segment(0)
@@ -199,6 +205,22 @@ func (seg *IPv4AddressSegment) Compare(item AddressItem) int {
 		seg = seg.init()
 	}
 	return CountComparator.Compare(seg, item)
+}
+
+// CompareSize compares the counts of two segments, the number of individual values within.
+//
+// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one represents more individual values than another.
+//
+// CompareSize returns a positive integer if this segment has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
+func (seg *IPv4AddressSegment) CompareSize(other AddressItem) int {
+	if seg == nil {
+		if isNilItem(other) {
+			return 0
+		}
+		// we have size 0, other has size >= 1
+		return -1
+	}
+	return seg.init().compareSize(other)
 }
 
 // PrefixContains returns whether the prefix values in the prefix of the given segment are also prefix values in this segment.
@@ -663,7 +685,7 @@ func newIPv4SegmentPrefixedVal(value IPv4SegInt, prefLen PrefixLen) (result *ipv
 	if useIPv4SegmentCache {
 		prefixIndex := segmentPrefixLength
 		cache := segmentPrefixCacheIPv4
-		block := cache[prefixIndex]
+		block := (*ipv4DivsBlock)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&cache[prefixIndex]))))
 		if block == nil {
 			block = &ipv4DivsBlock{make([]ipv4SegmentValues, IPv4MaxValuePerSegment+1)}
 			vals := block.block
@@ -682,7 +704,7 @@ func newIPv4SegmentPrefixedVal(value IPv4SegInt, prefLen PrefixLen) (result *ipv
 				value.cache.isSinglePrefBlock = isSinglePrefBlock
 			}
 			dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache[prefixIndex]))
-			atomic.StorePointer(dataLoc, unsafe.Pointer(block))
+			atomicStorePointer(dataLoc, unsafe.Pointer(block))
 		}
 		result = &block.block[value]
 		return result
@@ -739,7 +761,8 @@ func newIPv4SegmentPrefixedValues(value, upperValue IPv4SegInt, prefLen PrefixLe
 				valueIndex := value >> shiftBits
 				cache := prefixBlocksCacheIPv4
 				prefixIndex := segmentPrefixLength
-				block := cache[prefixIndex]
+				block := (*ipv4DivsBlock)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&cache[prefixIndex]))))
+				//block := cache[prefixIndex]
 				var result *ipv4SegmentValues
 				if block == nil {
 					block = &ipv4DivsBlock{make([]ipv4SegmentValues, 1<<uint(segmentPrefixLength))}
@@ -753,7 +776,7 @@ func newIPv4SegmentPrefixedValues(value, upperValue IPv4SegInt, prefLen PrefixLe
 						value.cache.isSinglePrefBlock = &trueVal
 					}
 					dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache[prefixIndex]))
-					atomic.StorePointer(dataLoc, unsafe.Pointer(block))
+					atomicStorePointer(dataLoc, unsafe.Pointer(block))
 				}
 				result = &block.block[valueIndex]
 				return result

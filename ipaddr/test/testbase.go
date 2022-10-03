@@ -799,18 +799,20 @@ func (t testBase) testIPv6OnlyStrings(w *ipaddr.IPAddressString, ipAddr *ipaddr.
 	base85String string) {
 
 	base85 := ""
-	//try { TODO LATER base85
-	//	base85 = ipAddr.toBase85String();
-	//	boolean b85Match = base85.equals(base85String);
-	//	if(!b85Match) {
-	//		addFailure(new Failure("failed expected: " + base85String + " actual: " + base85, w));
-	//	}
-	//} catch(IncompatibleAddressException e) {
-	//	boolean isMatch = base85String == null;
-	//	if(!isMatch) {
-	//		addFailure(new Failure("failed expected non-null, actual: " + e, w));
-	//	}
-	//}
+
+	var err error
+	base85, err = ipAddr.ToBase85String()
+	if err != nil {
+		isMatch := base85String == ""
+		if !isMatch {
+			t.addFailure(newIPAddrFailure("failed expected: "+base85String+" actual: "+err.Error(), w.GetAddress()))
+		}
+	} else {
+		b85Match := base85 == base85String
+		if !b85Match {
+			t.addFailure(newIPAddrFailure("failed expected: "+base85String+" actual: "+base85, w.GetAddress()))
+		}
+	}
 
 	m, _ := ipAddr.ToMixedString()
 
@@ -847,9 +849,6 @@ func (t testBase) testIPv6OnlyStrings(w *ipaddr.IPAddressString, ipAddr *ipaddr.
 			}
 		}
 	}
-	//} catch(IncompatibleAddressException e) {
-	//	addFailure(new Failure("unexpected throw " + e.toString()));
-	//}
 	t.incrementTestCount()
 }
 
@@ -871,7 +870,6 @@ func (t testBase) confirmAddrStrings(ipAddr *ipaddr.IPAddress, strs ...string) b
 		if str == "" {
 			continue
 		}
-
 		addrString := t.createParamsAddress(str, defaultOptions)
 		addr := addrString.GetAddress()
 		if !ipAddr.Equal(addr) {
@@ -973,7 +971,6 @@ func (t testBase) testMACStrings(w *ipaddr.MACAddressString,
 			t.addFailure(newMACFailure("failed expected non-nil, actual: "+err.Error(), w))
 		}
 	} else {
-
 		isMatch := singleHex == (hexNoPrefix)
 		if !isMatch {
 			t.addFailure(newMACFailure("failed expected: "+singleHex+" actual: "+hexNoPrefix, w))
@@ -1588,12 +1585,14 @@ func (t testBase) hostLabelsHostTest(host *ipaddr.HostName, labels []string) {
 	}
 	t.incrementTestCount()
 }
+
 func min(a, b ipaddr.BitCount) ipaddr.BitCount {
 	if a < b {
 		return a
 	}
 	return b
 }
+
 func max(a, b ipaddr.BitCount) ipaddr.BitCount {
 	if a > b {
 		return a

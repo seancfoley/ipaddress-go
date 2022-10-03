@@ -1181,13 +1181,13 @@ func (addr *IPv6Address) Equal(other AddressType) bool {
 // Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one subnet represents more individual addresses than another.
 //
 // CompareSize returns a positive integer if this address or subnet has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
-func (addr *IPv6Address) CompareSize(other AddressType) int {
+func (addr *IPv6Address) CompareSize(other AddressItem) int {
 	if addr == nil {
-		if other != nil && other.ToAddressBase() != nil {
-			// we have size 0, other has size >= 1
-			return -1
+		if isNilItem(other) {
+			return 0
 		}
-		return 0
+		// we have size 0, other has size >= 1
+		return -1
 	}
 	return addr.init().compareSize(other)
 }
@@ -1996,6 +1996,29 @@ func (addr *IPv6Address) ToBinaryString(with0bPrefix bool) (string, addrerr.Inco
 		return nilString(), nil
 	}
 	return addr.init().toBinaryString(with0bPrefix)
+}
+
+// ToBase85String creates the base 85 string, which is described by RFC 1924
+// It may be written as a range of two values if a range that is not a prefixed block.
+//
+// If a subnet cannot be written as a single prefix block or a range of two values, an error is returned.
+func (addr *IPv6Address) ToBase85String() (string, addrerr.IncompatibleAddressError) {
+	if addr == nil {
+		return nilString(), nil
+	}
+	if addr.hasZone() {
+		cache := addr.getStringCache()
+		if cache == nil {
+			return addr.GetSection().toBase85String(addr.zone)
+		}
+		var cacheField **string
+		cacheField = &cache.base85String
+		return cacheStrErr(cacheField,
+			func() (string, addrerr.IncompatibleAddressError) {
+				return addr.GetSection().toBase85String(addr.zone)
+			})
+	}
+	return addr.GetSection().ToBase85String()
 }
 
 // ToMixedString produces the mixed IPv6/IPv4 string.  It is the shortest such string (ie fully compressed).

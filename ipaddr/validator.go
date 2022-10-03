@@ -16,7 +16,10 @@
 
 package ipaddr
 
-import "github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
+import (
+	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
+	"github.com/seancfoley/ipaddress-go/ipaddr/addrstrparam"
+)
 
 const (
 	SmtpIPv6Identifier = "IPv6:"
@@ -25,11 +28,11 @@ const (
 
 // Interface for validation and parsing of host identifier strings
 type hostIdentifierStringValidator interface {
-	validateHostName(fromHost *HostName) (*parsedHost, addrerr.HostNameError)
+	validateHostName(fromHost *HostName, validationOptions addrstrparam.HostNameParams) (*parsedHost, addrerr.HostNameError)
 
-	validateIPAddressStr(fromString *IPAddressString) (ipAddressProvider, addrerr.AddressStringError)
+	validateIPAddressStr(fromString *IPAddressString, validationOptions addrstrparam.IPAddressStringParams) (ipAddressProvider, addrerr.AddressStringError)
 
-	validateMACAddressStr(fromString *MACAddressString) (macAddressProvider, addrerr.AddressStringError)
+	validateMACAddressStr(fromString *MACAddressString, validationOptions addrstrparam.MACAddressStringParams) (macAddressProvider, addrerr.AddressStringError)
 
 	validatePrefixLenStr(fullAddr string, version IPVersion) (PrefixLen, addrerr.AddressStringError)
 }

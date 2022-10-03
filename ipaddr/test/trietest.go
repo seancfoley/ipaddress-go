@@ -1339,7 +1339,6 @@ func (t trieTester) testMap(trie *ipaddr.AssociativeAddressTrie, addrs []*ipaddr
 	if trie2.Size() != len(addrs) {
 		t.addFailure(newTrieFailure("got size mismatch, got "+strconv.Itoa(trie.Size())+" not "+strconv.Itoa(len(addrs)), trie2.ToBase()))
 	}
-	i = 0
 	for i, addr := range addrs {
 		v := trie2.Get(addr)
 		expected := valueProducer(i + 1)
@@ -1347,7 +1346,6 @@ func (t trieTester) testMap(trie *ipaddr.AssociativeAddressTrie, addrs []*ipaddr
 			t.addFailure(newTrieFailure(fmt.Sprintf("get mismatch, got %v, not %v", v, expected), trie.ToBase()))
 		}
 	}
-	i = 0
 	for i, addr := range addrs {
 		_, v := trie2.Put(addr, valueProducer(i))
 		expected := valueProducer(i + 1)
@@ -1361,7 +1359,6 @@ func (t trieTester) testMap(trie *ipaddr.AssociativeAddressTrie, addrs []*ipaddr
 		}
 	}
 
-	i = 0
 	k := 0
 	for i, addr := range addrs {
 		if i%2 == 0 {

@@ -18,13 +18,16 @@ package ipaddr
 
 import (
 	"sync"
-	"sync/atomic"
 	"unsafe"
 
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
 )
 
 type ParsedMACAddress struct {
+	//TODO make ParsedMACAddress non-public and go thru the list to make any others non-public
+	// https://pkg.go.dev/github.com/seancfoley/ipaddress-go@v1.2.1/ipaddr
+	// like HasNext? AddressScheme? IPAddressActionAdapter?
+
 	macAddressParseData
 
 	originator   *MACAddressString
@@ -37,8 +40,8 @@ func (parseData *ParsedMACAddress) getMACAddressParseData() *macAddressParseData
 }
 
 func (parseData *ParsedMACAddress) getAddress() (*MACAddress, addrerr.IncompatibleAddressError) {
-	addr := parseData.address
 	var err addrerr.IncompatibleAddressError
+	addr := (*MACAddress)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&parseData.address))))
 	if addr == nil {
 		parseData.creationLock.Lock()
 		addr = parseData.address
@@ -47,7 +50,7 @@ func (parseData *ParsedMACAddress) getAddress() (*MACAddress, addrerr.Incompatib
 			if err == nil {
 				parseData.segmentData = nil // no longer needed
 				dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&parseData.address))
-				atomic.StorePointer(dataLoc, unsafe.Pointer(addr))
+				atomicStorePointer(dataLoc, unsafe.Pointer(addr))
 			}
 		}
 		parseData.creationLock.Unlock()

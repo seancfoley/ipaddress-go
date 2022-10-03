@@ -18,6 +18,7 @@ package ipaddr
 
 import (
 	"math"
+	"math/big"
 	"strings"
 	"sync/atomic"
 	"unicode"
@@ -137,9 +138,8 @@ func isSingleSegmentIPv4(
 
 type strValidator struct{}
 
-func (strValidator) validateIPAddressStr(fromString *IPAddressString) (prov ipAddressProvider, err addrerr.AddressStringError) {
+func (strValidator) validateIPAddressStr(fromString *IPAddressString, validationOptions addrstrparam.IPAddressStringParams) (prov ipAddressProvider, err addrerr.AddressStringError) {
 	str := fromString.str
-	validationOptions := fromString.GetValidationOptions()
 	pa := parsedIPAddress{
 		originator:         fromString,
 		options:            validationOptions,
@@ -156,9 +156,8 @@ func (strValidator) validateIPAddressStr(fromString *IPAddressString) (prov ipAd
 	return chooseIPAddressProvider(fromString, str, validationOptions, &pa)
 }
 
-func (strValidator) validateMACAddressStr(fromString *MACAddressString) (prov macAddressProvider, err addrerr.AddressStringError) {
+func (strValidator) validateMACAddressStr(fromString *MACAddressString, validationOptions addrstrparam.MACAddressStringParams) (prov macAddressProvider, err addrerr.AddressStringError) {
 	str := fromString.str
-	validationOptions := fromString.GetValidationOptions()
 	pa := ParsedMACAddress{
 		originator:          fromString,
 		macAddressParseData: macAddressParseData{addressParseData: addressParseData{str: str}},
@@ -264,6 +263,8 @@ func validateAddress(
 	var currentChar byte
 	for {
 		if index >= strEndIndex {
+			// for ipv6 or ipv4 we set current char to be the right separator to parse the last segment,
+			// so that is why we have the check here for index == strEndIndex and not index >= strEndIndex
 			atEnd = index == strEndIndex
 			if atEnd {
 				parseData.setAddressEndIndex(index)
@@ -407,7 +408,7 @@ func validateAddress(
 						if serr != nil {
 							return serr
 						} else if isSingleSeg {
-							// we are not base 85, so throw if necessary
+							// we are not base 85, so error if necessary
 							if extendedCharacterIndex >= 0 {
 								return &addressStringIndexError{
 									addressStringError{addressError{str: str, key: "ipaddress.error.invalid.character.at.index"}},
@@ -442,7 +443,7 @@ func validateAddress(
 							if serr != nil {
 								return serr
 							} else if isSingleSeg {
-								// we are not base 85, so throw if necessary
+								// we are not base 85, so error if necessary
 								if extendedCharacterIndex >= 0 {
 									return &addressStringIndexError{
 										addressStringError{addressError{str: str, key: "ipaddress.error.invalid.character.at.index"}},
@@ -1263,32 +1264,44 @@ func validateAddress(
 								segmentValueStartIndex = index
 							}
 							//the remaining possibilities are base85 only
-						} else if currentChar == AlternativeRangeSeparator {
-							if canBeBase85 {
-								if extendedCharacterIndex < 0 {
-									extendedCharacterIndex = index
-								} else if extendedRangeWildcardIndex >= 0 {
-									return &addressStringIndexError{
-										addressStringError{addressError{str: str, key: "ipaddress.error.invalid.character.combination.at.index"}},
-										index}
-								}
-								extendedRangeWildcardIndex = index
-							} else {
+						} else if currentChar == AlternativeRangeSeparatorStr[0] {
+							if index+1 == strEndIndex {
 								return &addressStringIndexError{
 									addressStringError{addressError{str: str, key: "ipaddress.error.invalid.character.at.index"}},
 									index}
 							}
-							index++
-						} else if currentChar == IPv6AlternativeZoneSeparator {
-							if canBeBase85 && !isMac && ipv6SpecificOptions.AllowsZone() {
-								strEndIndex = index
-								ipParseData.setZoned(true)
-								ipParseData.setBase85Zoned(true)
-								ipParseData.setQualifierIndex(index + 1)
+							currentChar = str[index+1]
+							if currentChar == AlternativeRangeSeparatorStr[1] {
+								if canBeBase85 {
+									if extendedCharacterIndex < 0 {
+										extendedCharacterIndex = index
+									} else if extendedRangeWildcardIndex >= 0 {
+										return &addressStringIndexError{
+											addressStringError{addressError{str: str, key: "ipaddress.error.invalid.character.combination.at.index"}},
+											index}
+									}
+									extendedRangeWildcardIndex = index
+								} else {
+									return &addressStringIndexError{
+										addressStringError{addressError{str: str, key: "ipaddress.error.invalid.character.at.index"}},
+										index}
+								}
+								index += 2
+							} else if currentChar == IPv6AlternativeZoneSeparatorStr[1] {
+								if canBeBase85 && !isMac && ipv6SpecificOptions.AllowsZone() {
+									strEndIndex = index
+									ipParseData.setZoned(true)
+									ipParseData.setBase85Zoned(true)
+									ipParseData.setQualifierIndex(index + 2)
+								} else {
+									return &addressStringIndexError{
+										addressStringError{addressError{str: str, key: "ipaddress.error.invalid.character.at.index"}},
+										index}
+								}
 							} else {
 								return &addressStringIndexError{
 									addressStringError{addressError{str: str, key: "ipaddress.error.invalid.character.at.index"}},
-									index}
+									index - 1}
 							}
 						} else {
 							if canBeBase85 {
@@ -1707,10 +1720,10 @@ func validateAddress(
 							frontIsBinary = true
 						} else if isSingleIPv6 { //We need this special block here because single ipv6 hex is 128 bits and cannot fit into a long
 							if frontDigitCount == 129 { // binary
-								frontStartIndex++       // exclude the 'b' in 0b1100
-								frontDigitCount--       // exclude the 'b'
-								upperRadix = 2          // radix
-								upperRadix = rangeFlags // radix
+								frontStartIndex++ // exclude the 'b' in 0b1100
+								frontDigitCount-- // exclude the 'b'
+								upperRadix = 2    // radix
+								rangeFlags = 2    // radix
 								ipParseData.setHasBinaryDigits(true)
 								frontMidIndex := frontEndIndex - 64
 								extendedFront = parseLong2(str, frontStartIndex, frontMidIndex)
@@ -1757,7 +1770,7 @@ func validateAddress(
 						extendedFront, extendedValue = extendedValue, extendedFront
 					}
 					if isSingleIPv6 {
-						assign6Attributes4Values2Flags(frontStartIndex, frontEndIndex, frontLeadingZeroStartIndex, startIndex, backEndIndex, segmentValueStartIndex,
+						assign7Attributes4Values1Flags(frontStartIndex, frontEndIndex, frontLeadingZeroStartIndex, startIndex, backEndIndex, segmentValueStartIndex,
 							parseData, segCount, front, extendedFront, value, extendedValue, rangeFlags|keyRangeWildcard, upperRadix)
 					} else {
 						if !frontUppercase && !frontEmpty && !isReversed && !frontIsBinary {
@@ -2386,7 +2399,7 @@ func assign4Attributes(start, end int, parseData *addressParseData, parsedSegInd
 		keyUpperStrEndIndex, uend)
 }
 
-func assign6Attributes4Values2Flags(frontStart, frontEnd, frontLeadingZeroStartIndex, start, end, leadingZeroStartIndex int,
+func assign7Attributes4Values1Flags(frontStart, frontEnd, frontLeadingZeroStartIndex, start, end, leadingZeroStartIndex int,
 	parseData *addressParseData, parsedSegIndex int, frontValue, frontExtendedValue, value, extendedValue uint64, flags uint32, upperRadix uint32) {
 	parseData.set8Index4ValuesFlags(parsedSegIndex,
 		flagsIndex, flags,
@@ -2493,6 +2506,9 @@ func isHexDelimiter(c byte) bool {
 	return c == 'x' || c == 'X'
 }
 
+var lowBitsVal uint64 = 0xffffffffffffffff
+var lowBitsMask = new(big.Int).SetUint64(lowBitsVal)
+
 func parseBase85(
 	validationOptions addrstrparam.IPAddressStringParams,
 	str string,
@@ -2502,117 +2518,134 @@ func parseBase85(
 	extendedRangeWildcardIndex,
 	totalCharacterCount,
 	index int) (bool, addrerr.AddressStringError) {
-	//TODO LATER parseBase85
-	//addressParseData parseData = ipAddressParseData.getAddressParseData();
-	//if(extendedRangeWildcardIndex < 0) {
-	//	if(totalCharacterCount == ipv6Base85SingleSegmentDigitCount) {
-	//		if(!validationOptions.allowIPv6) {
-	//			throw new addrerr.AddressStringError(str, "ipaddress.error.ipv6");
-	//		}
-	//		ipAddressParseData.setVersion(IPVersion.ipv6AddrType);
-	//		BigInteger val = parseBase85(str, strStartIndex, strEndIndex);
-	//		long value = val.and(LOW_BITS_MASK).longValue();
-	//		BigInteger shift64 = val.shiftRight(Long.SIZE);
-	//		long extendedValue = shift64.longValue();
-	//		//note that even with the correct number of digits, we can have a value too large
-	//		BigInteger shiftMore = shift64.shiftRight(Long.SIZE);
-	//		if(!shiftMore.equals(BigInteger.ZERO)) {
-	//			throw new addrerr.AddressStringError(str, "ipaddress.error.address.too.large");
-	//		}
-	//		parseData.initSegmentData(1);
-	//		parseData.incrementSegmentCount();
-	//		assignAttributesValuesFlags(strStartIndex, strEndIndex, strStartIndex, parseData, 0, value, extendedValue, IPv6Address.BASE_85_RADIX);
-	//		ipAddressParseData.setBase85(true);
-	//		return true;
-	//	}
-	//} else {
-	//	if(totalCharacterCount == (ipv6Base85SingleSegmentDigitCount << 1) + 1 /* two base 85 addresses */ ||
-	//			(totalCharacterCount == ipv6Base85SingleSegmentDigitCount + 1 &&
-	//			(extendedRangeWildcardIndex == 0 || extendedRangeWildcardIndex + 1 == strEndIndex)) /* inferred boundary */) {/* note that we already check that extendedRangeWildcardIndex is at index 20 */
-	//		if(!validationOptions.allowIPv6) {
-	//			throw new addrerr.AddressStringError(str, "ipaddress.error.ipv6");
-	//		}
-	//		IPv6AddressStringParams ipv6SpecificOptions = validationOptions.getIPv6Parameters();
-	//		if(!ipv6SpecificOptions.rangeOptions.allowsRangeSeparator()) {
-	//			throw new addrerr.AddressStringError(str, "ipaddress.error.no.range");
-	//		}
-	//		ipAddressParseData.setVersion(IPVersion.ipv6AddrType);
-	//		int frontEndIndex = extendedRangeWildcardIndex, flags = 0;
-	//		long value, value2, extendedValue, extendedValue2;
-	//		int lowerStart, lowerEnd, upperStart, upperEnd;
-	//
-	//		if(frontEndIndex == strStartIndex + ipv6Base85SingleSegmentDigitCount) {
-	//			BigInteger val = parseBase85(str, strStartIndex, frontEndIndex);
-	//			value = val.and(LOW_BITS_MASK).longValue();
-	//			BigInteger shift64 = val.shiftRight(Long.SIZE);
-	//			extendedValue = shift64.longValue();
-	//			if(frontEndIndex + 1 < strEndIndex) {
-	//				BigInteger val2 = parseBase85(str, frontEndIndex + 1, strEndIndex);
-	//				value2 = val2.and(LOW_BITS_MASK).longValue();
-	//				shift64 = val2.shiftRight(Long.SIZE);
-	//				extendedValue2 = shift64.longValue();
-	//				BigInteger shiftMoreVal2 = shift64.shiftRight(Long.SIZE);
-	//
-	//				if(val.Compare(val2) > 0) {
-	//					BigInteger shiftMoreVal = shift64.shiftRight(Long.SIZE);
-	//					if(!ipv6SpecificOptions.rangeOptions.allowsReverseRange()) {
-	//						throw new addrerr.AddressStringError(str, "ipaddress.error.invalidRange");
-	//					} else if(!shiftMoreVal.equals(BigInteger.ZERO)) {
-	//						throw new addrerr.AddressStringError(str, "ipaddress.error.address.too.large");
-	//					}
-	//					lowerStart = frontEndIndex + 1;
-	//					lowerEnd = strEndIndex;
-	//					upperStart = strStartIndex;
-	//					upperEnd = frontEndIndex;
-	//				} else {
-	//					if(!shiftMoreVal2.equals(BigInteger.ZERO)) {
-	//						throw new addrerr.AddressStringError(str, "ipaddress.error.address.too.large");
-	//					}
-	//					lowerStart = strStartIndex;
-	//					lowerEnd = frontEndIndex;
-	//					upperStart = frontEndIndex + 1;
-	//					upperEnd = strEndIndex;
-	//				}
-	//			} else {
-	//				if(!ipv6SpecificOptions.rangeOptions.allowsInferredBoundary()) {
-	//					throw new addrerr.AddressStringError(str, "ipaddress.error.empty.segment.at.index", index);
-	//				}
-	//				lowerStart = strStartIndex;
-	//				lowerEnd = frontEndIndex;
-	//				upperStart = upperEnd = strEndIndex;
-	//				value2 = extendedValue2 = -1;
-	//				flags = addressParseData.keyInferredUpperBoundary;
-	//			}
-	//		} else if(frontEndIndex == 0) {
-	//			if(!ipv6SpecificOptions.rangeOptions.allowsInferredBoundary()) {
-	//				throw new addrerr.AddressStringError(str, "ipaddress.error.empty.segment.at.index", index);
-	//			}
-	//			lowerStart = lowerEnd = 0;
-	//			value = extendedValue = 0;
-	//			flags = addressParseData.keyInferredLowerBoundary;
-	//			BigInteger val2 = parseBase85(str, frontEndIndex + 1, strEndIndex);
-	//			value2 = val2.and(LOW_BITS_MASK).longValue();
-	//			BigInteger shift64 = val2.shiftRight(Long.SIZE);
-	//			extendedValue2 = shift64.longValue();
-	//			BigInteger shiftMoreVal2 = shift64.shiftRight(Long.SIZE);
-	//			if(!shiftMoreVal2.equals(BigInteger.ZERO)) {
-	//				throw new addrerr.AddressStringError(str, "ipaddress.error.address.too.large");
-	//			}
-	//			upperStart = 1;
-	//			upperEnd = strEndIndex;
-	//		} else {
-	//			throw new addrerr.AddressStringError(str, extendedRangeWildcardIndex);
-	//		}
-	//		parseData.incrementSegmentCount();
-	//		parseData.initSegmentData(1);
-	//		//parseData.setHasRange();
-	//		assignAttributesValuesFlags(lowerStart, lowerEnd, lowerStart, upperStart, upperEnd, upperStart,
-	//				parseData, 0, value, extendedValue, value2, extendedValue2,
-	//				addressParseData.keyRangeWildcard | IPv6Address.BASE_85_RADIX | flags, IPv6Address.BASE_85_RADIX);
-	//		ipAddressParseData.setBase85(true);
-	//		return true;
-	//	}
-	//}
+
+	parseData := ipAddressParseData.getAddressParseData()
+	if extendedRangeWildcardIndex < 0 {
+		if totalCharacterCount == ipv6Base85SingleSegmentDigitCount {
+			if !validationOptions.AllowsIPv6() {
+				return false, &addressStringError{addressError{str: str, key: "ipaddress.error.ipv6"}}
+			}
+			ipAddressParseData.setVersion(IPv6)
+			val := parse85(str, strStartIndex, strEndIndex)
+			var lowBits, highBits big.Int
+			lowBits.And(val, lowBitsMask)
+			val.Rsh(val, 64)
+			highBits.And(val, lowBitsMask)
+			val.Rsh(val, 64)
+			//note that even with the correct number of base-85 digits, we can have a value too large
+			if !bigIsZero(val) {
+				return false, &addressStringError{addressError{str: str, key: "ipaddress.error.address.too.large"}}
+			}
+			value, extendedValue := lowBits.Uint64(), highBits.Uint64()
+			parseData.initSegmentData(1)
+			parseData.incrementSegmentCount()
+			assign3Attributes2Values1Flags(strStartIndex, strEndIndex, strStartIndex, parseData, 0, value, extendedValue, 85)
+			ipAddressParseData.setBase85(true)
+			return true, nil
+		}
+	} else {
+		if totalCharacterCount == (ipv6Base85SingleSegmentDigitCount<<1)+len(IPv6AlternativeRangeSeparatorStr) /* two base 85 addresses */ ||
+			(totalCharacterCount == ipv6Base85SingleSegmentDigitCount+len(IPv6AlternativeRangeSeparatorStr) &&
+				(extendedRangeWildcardIndex == 0 || extendedRangeWildcardIndex+len(IPv6AlternativeRangeSeparatorStr) == strEndIndex)) { /* note that we already check that extendedRangeWildcardIndex is at index 20 */
+			if !validationOptions.AllowsIPv6() {
+				return false, &addressStringError{addressError{str: str, key: "ipaddress.error.ipv6"}}
+			}
+			ipv6SpecificOptions := validationOptions.GetIPv6Params()
+			if !ipv6SpecificOptions.GetRangeParams().AllowsRangeSeparator() {
+				return false, &addressStringError{addressError{str: str, key: "ipaddress.error.no.range"}}
+			}
+			ipAddressParseData.setVersion(IPv6)
+			frontEndIndex, flags := extendedRangeWildcardIndex, uint32(0)
+			var value, value2, extendedValue, extendedValue2 uint64
+			var lowerStart, lowerEnd, upperStart, upperEnd int
+			//
+			if frontEndIndex == strStartIndex+ipv6Base85SingleSegmentDigitCount {
+				val := parse85(str, strStartIndex, frontEndIndex)
+				var lowBits, highBits big.Int
+				lowBits.And(val, lowBitsMask)
+				val.Rsh(val, 64)
+				highBits.And(val, lowBitsMask)
+				value, extendedValue = lowBits.Uint64(), highBits.Uint64()
+				if frontEndIndex+len(IPv6AlternativeRangeSeparatorStr) < strEndIndex {
+					val2 := parse85(str, frontEndIndex+len(IPv6AlternativeRangeSeparatorStr), strEndIndex)
+					var lowBits, highBits big.Int
+					lowBits.And(val2, lowBitsMask)
+					val2.Rsh(val2, 64)
+					highBits.And(val2, lowBitsMask)
+					value2, extendedValue2 = lowBits.Uint64(), highBits.Uint64()
+					if val.Cmp(val2) > 0 {
+						if !ipv6SpecificOptions.GetRangeParams().AllowsReverseRange() {
+							return false, &addressStringError{addressError{str: str, key: "ipaddress.error.invalidRange"}}
+						}
+						//note that even with the correct number of base-85 digits, we can have a value too large
+						val.Rsh(val, 64)
+						if !bigIsZero(val) {
+							return false, &addressStringError{addressError{str: str, key: "ipaddress.error.address.too.large"}}
+						}
+						lowerStart = frontEndIndex + len(IPv6AlternativeRangeSeparatorStr)
+						lowerEnd = strEndIndex
+						upperStart = strStartIndex
+						upperEnd = frontEndIndex
+					} else {
+						//note that even with the correct number of base-85 digits, we can have a value too large
+						val2.Rsh(val2, 64)
+						if !bigIsZero(val2) {
+							return false, &addressStringError{addressError{str: str, key: "ipaddress.error.address.too.large"}}
+						}
+						lowerStart = strStartIndex
+						lowerEnd = frontEndIndex
+						upperStart = frontEndIndex + len(IPv6AlternativeRangeSeparatorStr)
+						upperEnd = strEndIndex
+					}
+				} else {
+					if !ipv6SpecificOptions.GetRangeParams().AllowsInferredBoundary() {
+						return false, &addressStringIndexError{
+							addressStringError{addressError{str: str, key: "ipaddress.error.empty.segment.at.index"}},
+							extendedRangeWildcardIndex}
+					}
+					lowerStart = strStartIndex
+					lowerEnd = frontEndIndex
+					upperStart = strEndIndex
+					upperEnd = strEndIndex
+					value2 = lowBitsVal
+					extendedValue2 = lowBitsVal
+					flags = keyInferredUpperBoundary
+				}
+			} else if frontEndIndex == 0 {
+				if !ipv6SpecificOptions.GetRangeParams().AllowsInferredBoundary() {
+					return false, &addressStringIndexError{
+						addressStringError{addressError{str: str, key: "ipaddress.error.empty.segment.at.index"}},
+						index}
+				}
+				flags = keyInferredLowerBoundary
+				val2 := parse85(str, frontEndIndex+len(IPv6AlternativeRangeSeparatorStr), strEndIndex)
+				var lowBits, highBits big.Int
+				lowBits.And(val2, lowBitsMask)
+				val2.Rsh(val2, 64)
+				highBits.And(val2, lowBitsMask)
+				val2.Rsh(val2, 64)
+				//note that even with the correct number of base-85 digits, we can have a value too large
+				if !bigIsZero(val2) {
+					return false, &addressStringError{addressError{str: str, key: "ipaddress.error.address.too.large"}}
+				}
+				value2, extendedValue2 = lowBits.Uint64(), highBits.Uint64()
+				upperStart = len(IPv6AlternativeRangeSeparatorStr)
+				upperEnd = strEndIndex
+			} else {
+				return false, &addressStringIndexError{
+					addressStringError{addressError{str: str, key: "ipaddress.error.invalid.character.at.index"}},
+					extendedRangeWildcardIndex}
+			}
+			parseData.incrementSegmentCount()
+			parseData.initSegmentData(1)
+			//parseData.setHasRange();
+			assign7Attributes4Values1Flags(lowerStart, lowerEnd, lowerStart, upperStart, upperEnd, upperStart,
+				parseData, 0, value, extendedValue, value2, extendedValue2,
+				keyRangeWildcard|85|flags, 85)
+			ipAddressParseData.setBase85(true)
+			return true, nil
+		}
+	}
 	return false, nil
 }
 
@@ -2639,7 +2672,7 @@ func chooseMACAddressProvider(fromString *MACAddressString,
 
 var maskCache = [3][IPv6BitCount + 1]*maskCreator{}
 
-var loopbackCache = newLoopbackCreator(defaultIPAddrParameters, NoZone)
+var loopbackCache = newEmptyAddrCreator(defaultIPAddrParameters, NoZone)
 
 func chooseIPAddressProvider(
 	originator HostIdentifierString,
@@ -2679,13 +2712,13 @@ func chooseIPAddressProvider(
 					} else if version.IsIPv6() {
 						index = 2
 					}
-					res = maskCache[index][prefLen]
-					if res == nil {
-						creator := newMaskCreator(defaultIPAddrParameters, version, networkPrefixLength)
+					creator := (*maskCreator)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&maskCache[index][prefLen]))))
+					if creator == nil {
+						creator = newMaskCreator(defaultIPAddrParameters, version, networkPrefixLength)
 						dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&maskCache[index][prefLen]))
 						atomic.StorePointer(dataLoc, unsafe.Pointer(creator))
-						res = creator
 					}
+					res = creator
 					return
 				}
 				res = newMaskCreator(validationOptions, version, networkPrefixLength)
@@ -2693,7 +2726,10 @@ func chooseIPAddressProvider(
 			} else {
 				emptyOpt := validationOptions.EmptyStrParsedAs()
 				if emptyOpt == addrstrparam.LoopbackOption || emptyOpt == addrstrparam.ZeroAddressOption {
-					res = getLoopbackCreator(validationOptions, qualifier)
+					result := getLoopbackCreator(validationOptions, qualifier)
+					if result != nil {
+						res = result
+					}
 					return
 				}
 				res = emptyProvider
@@ -2741,14 +2777,17 @@ func inferVersion(params addrstrparam.IPAddressStringParams) IPVersion {
 	return IndeterminateIPVersion
 }
 
-func getLoopbackCreator(validationOptions addrstrparam.IPAddressStringParams, qualifier *parsedHostIdentifierStringQualifier) (res ipAddressProvider) {
+func getLoopbackCreator(validationOptions addrstrparam.IPAddressStringParams, qualifier *parsedHostIdentifierStringQualifier) (res *emptyAddrCreator) {
 	zone := qualifier.getZone()
 	defaultParams := defaultIPAddrParameters
 	if validationOptions == defaultParams && zone == NoZone {
 		res = loopbackCache
+		if res == nil {
+			res = newEmptyAddrCreator(defaultIPAddrParameters, NoZone)
+		}
 		return
 	}
-	res = newLoopbackCreator(validationOptions, zone)
+	res = newEmptyAddrCreator(validationOptions, zone)
 	return
 }
 
@@ -3349,38 +3388,44 @@ func parseLong16(s string, start, end int) uint64 {
 	return result
 }
 
-//static {
-//		BigInteger eightyFive = BigInteger.valueOf(IPv6Address.BASE_85_RADIX);
-//		BASE_85_POWERS[0] = BigInteger.ONE;
-//		for(int i = 1; i < BASE_85_POWERS.length; i++) {
-//			BASE_85_POWERS[i] = BASE_85_POWERS[i - 1].multiply(eightyFive);
-//		}
-//	}
-// TODO LATER parse base 85
-//	private static BigInteger parseBase85(CharSequence s, int start, int end) {
-//		int charArray[] = extendedChars;
-//		BigInteger result = BigInteger.ZERO;
-//		boolean last;
-//		do {
-//			int partialEnd, power;
-//			int left = end - start;
-//			if(last = (left <= 9)) {
-//				partialEnd = end;
-//				power = left;
-//			} else {
-//				partialEnd = start + 9;
-//				power = 9;
-//			}
-//			long partialResult = charArray[s.charAt(start)];
-//			while (++start < partialEnd) {
-//				int next = charArray[s.charAt(start)];
-//				partialResult = (partialResult * IPv6Address.BASE_85_RADIX) + next;
-//			}
-//			result = result.multiply(BASE_85_POWERS[power]).add(BigInteger.valueOf(partialResult));
-//			start = partialEnd;
-//		} while(!last);
-//		return result;
-//	}
+var base85Powers = createBase85Powers()
+
+func createBase85Powers() []big.Int {
+	res := make([]big.Int, 10)
+	eightyFive := big.NewInt(85)
+	res[0].SetUint64(1)
+	for i := 1; i < len(res); i++ {
+		res[i].Mul(&res[i-1], eightyFive)
+	}
+	return res
+}
+
+func parse85(s string, start, end int) *big.Int {
+	charArray := extendedChars
+	var result big.Int
+	var last bool
+	for {
+		var partialEnd, power int
+		left := end - start
+		if last = left <= 9; last {
+			partialEnd = end
+			power = left
+		} else {
+			partialEnd = start + 9
+			power = 9
+		}
+		var partialResult = uint64(charArray[s[start]])
+		for start++; start < partialEnd; start++ {
+			next := charArray[s[start]]
+			partialResult = (partialResult * 85) + uint64(next)
+		}
+		result.Mul(&result, &base85Powers[power]).Add(&result, new(big.Int).SetUint64(partialResult))
+		if last {
+			break
+		}
+	}
+	return &result
+}
 
 //according to rfc 1035 or 952, a label must start with a letter, must end with a letter or digit, and must have in the middle a letter or digit or -
 //rfc 1123 relaxed that to allow labels to start with a digit, section 2.1 has a discussion on this.  It states that the highest level component name must be alphabetic - referring to .com or .net or whatever.
@@ -3405,12 +3450,11 @@ func parseLong16(s string, start, end int) uint64 {
 
 var (
 	ipvFutureUppercase = byte(unicode.ToUpper(rune(IPvFuture)))
-	defaultEmptyHost   = &parsedHost{parsedHostCache: &parsedHostCache{}}
+	defaultEmptyHost   = &parsedHost{}
 )
 
-func (strValidator) validateHostName(fromHost *HostName) (psdHost *parsedHost, err addrerr.HostNameError) {
+func (strValidator) validateHostName(fromHost *HostName, validationOptions addrstrparam.HostNameParams) (psdHost *parsedHost, err addrerr.HostNameError) {
 	str := fromHost.str
-	validationOptions := fromHost.GetValidationOptions()
 	addrLen := len(str)
 	if addrLen > maxHostLength {
 		if addrLen > maxHostLength+1 || str[maxHostLength] != LabelSeparator {
@@ -3644,7 +3688,7 @@ func (strValidator) validateHostName(fromHost *HostName) (psdHost *parsedHost, e
 		  isPossiblyIPv6: something like f:: or f:1, the former IPv6 and the latter a host "f" with port 1.  Such strings can be valid addresses or hosts.
 		  If it parses as an address, we do not treat as host.
 	*/
-	psdHost = &parsedHost{originalStr: str, parsedHostCache: &parsedHostCache{}}
+	psdHost = &parsedHost{originalStr: str}
 	addressOptions := validationOptions.GetIPAddressParams()
 	isIPAddress := squareBracketed || tryIPv4 || tryIPv6
 	if !validationOptions.AllowsIPAddress() {
@@ -4025,7 +4069,7 @@ func (strValidator) validateHostName(fromHost *HostName) (psdHost *parsedHost, e
 					normalizedLabels[i] = str[lastSep+1 : index]
 					lastSep = index
 				}
-				psdHost.hostStrings = &hostStrings{
+				psdHost.parsedHostCache = &parsedHostCache{
 					host:             str,
 					normalizedLabels: normalizedLabels,
 				}

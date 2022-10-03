@@ -18,8 +18,6 @@ package ipaddr
 
 import (
 	"strings"
-	"sync/atomic"
-	"unsafe"
 
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrstrparam"
@@ -35,36 +33,33 @@ func NewMACAddressStringParams(str string, params addrstrparam.MACAddressStringP
 	} else {
 		p = addrstrparam.CopyMACAddressStringParams(params)
 	}
-	return &MACAddressString{str: strings.TrimSpace(str), params: p, macAddrStringCache: new(macAddrStringCache)}
+	return parseMACAddressString(str, p)
 }
 
 // NewMACAddressString constructs a MACAddressString that will parse the given string according to the default parameters
 func NewMACAddressString(str string) *MACAddressString {
-	return &MACAddressString{str: strings.TrimSpace(str), params: defaultMACAddrParameters, macAddrStringCache: new(macAddrStringCache)}
+	return parseMACAddressString(str, defaultMACAddrParameters)
 }
 
 func newMACAddressStringFromAddr(str string, addr *MACAddress) *MACAddressString {
 	return &MACAddressString{
-		str:    str,
-		params: defaultMACAddrParameters,
-		macAddrStringCache: &macAddrStringCache{
-			&macAddrData{
-				addressProvider: wrappedMACAddressProvider{addr},
-			},
-		},
+		str:             str,
+		params:          defaultMACAddrParameters,
+		addressProvider: wrappedMACAddressProvider{addr},
 	}
 }
 
+func parseMACAddressString(str string, params addrstrparam.MACAddressStringParams) *MACAddressString {
+	str = strings.TrimSpace(str)
+	res := &MACAddressString{
+		str:    str,
+		params: params,
+	}
+	res.validate(params)
+	return res
+}
+
 var zeroMACAddressString = NewMACAddressString("")
-
-type macAddrData struct {
-	addressProvider   macAddressProvider
-	validateException addrerr.AddressStringError
-}
-
-type macAddrStringCache struct {
-	*macAddrData
-}
 
 // MACAddressString parses the string representation of a MAC address.  Such a string can represent just a single address or a collection of addresses like 1:*:1-3:1-4:5:6
 //
@@ -107,13 +102,14 @@ type macAddrStringCache struct {
 // A MACAddressString object represents a single MAC address representation that cannot be changed after construction.
 // Some of the derived state is created upon demand and cached, such as the derived MACAddress instances.
 type MACAddressString struct {
-	str    string
-	params addrstrparam.MACAddressStringParams // when nil, defaultParameters is used
-	*macAddrStringCache
+	str               string
+	params            addrstrparam.MACAddressStringParams // when nil, defaultParameters is used
+	addressProvider   macAddressProvider
+	validateException addrerr.AddressStringError // TODO rename validateException
 }
 
 func (addrStr *MACAddressString) init() *MACAddressString {
-	if addrStr.macAddrStringCache == nil {
+	if addrStr.addressProvider == nil && addrStr.validateException == nil {
 		return zeroMACAddressString
 	}
 	return addrStr
@@ -232,17 +228,13 @@ func (addrStr *MACAddressString) getAddressProvider() (macAddressProvider, addre
 	return addrStr.addressProvider, err
 }
 
+func (addrStr *MACAddressString) validate(validationOptions addrstrparam.MACAddressStringParams) {
+	addrStr.addressProvider, addrStr.validateException = validator.validateMACAddressStr(addrStr, validationOptions)
+}
+
 // Validate validates that this string is a valid address, and if not, throws an exception with a descriptive message indicating why it is not.
 func (addrStr *MACAddressString) Validate() addrerr.AddressStringError {
-	addrStr = addrStr.init()
-	data := addrStr.macAddrData
-	if data == nil {
-		addressProvider, err := validator.validateMACAddressStr(addrStr)
-		data = &macAddrData{addressProvider, err}
-		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&addrStr.macAddrData))
-		atomic.StorePointer(dataLoc, unsafe.Pointer(data))
-	}
-	return data.validateException
+	return addrStr.init().validateException
 }
 
 // Compare compares this address string with another,

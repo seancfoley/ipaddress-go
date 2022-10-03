@@ -952,13 +952,13 @@ func (addr *IPv4Address) Equal(other AddressType) bool {
 // Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one subnet represents more individual addresses than another.
 //
 // CompareSize returns a positive integer if this address or subnet has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
-func (addr *IPv4Address) CompareSize(other AddressType) int {
+func (addr *IPv4Address) CompareSize(other AddressItem) int {
 	if addr == nil {
-		if other != nil && other.ToAddressBase() != nil {
-			// we have size 0, other has size >= 1
-			return -1
+		if isNilItem(other) {
+			return 0
 		}
-		return 0
+		// we have size 0, other has size >= 1
+		return -1
 	}
 	return addr.init().compareSize(other)
 }

@@ -17,9 +17,9 @@
 package ipaddr
 
 import (
+	"math/big"
 	"strconv"
 	"strings"
-	"sync/atomic"
 	"unsafe"
 
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
@@ -28,7 +28,7 @@ import (
 const (
 	digits = "0123456789abcdefghijklmnopqrstuvwxyz"
 
-	extendedDigits = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!#$%&()*+-';<=>?@^_`{|}~"
+	extendedDigits = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!#$%&()*+-;<=>?@^_`{|}~"
 
 	uppercaseDigits = extendedDigits
 
@@ -43,6 +43,17 @@ const (
 		"80818283848586878889" +
 		"90919293949596979899"
 )
+
+func isExtendedDigits(radix int) bool {
+	return radix > len(digits)
+}
+
+func getDigits(uppercase bool, radix int) string {
+	if uppercase || isExtendedDigits(radix) {
+		return uppercaseDigits
+	}
+	return digits
+}
 
 func toUnsignedString(value uint64, radix int, appendable *strings.Builder) *strings.Builder {
 	return toUnsignedStringCased(value, radix, 0, false, appendable)
@@ -268,7 +279,6 @@ func toUnsignedStringLength(value uint64, radix int) int {
 		}
 	}
 	return toUnsignedStringLengthSlow(value, radix)
-
 }
 
 const maxUint = ^uint(0)
@@ -312,8 +322,7 @@ func toUnsignedStringLengthFast(value uint16, radix int) int {
 			return 4
 		}
 		return 5
-	}
-	if radix == 16 {
+	} else if radix == 16 {
 		//this needs value <= 0xffff (ie 16 bits or less)
 		if value < 0x10 {
 			return 1
@@ -323,8 +332,7 @@ func toUnsignedStringLengthFast(value uint16, radix int) int {
 			return 3
 		}
 		return 4
-	}
-	if radix == 8 {
+	} else if radix == 8 {
 		//this needs value <= 0xffff (ie 16 bits or less)
 		if value < 010 {
 			return 1
@@ -338,8 +346,7 @@ func toUnsignedStringLengthFast(value uint16, radix int) int {
 			return 5
 		}
 		return 6
-	}
-	if radix == 2 {
+	} else if radix == 2 {
 		//count the number of digits
 		//note that we already know value != 0 and that value <= 0xffff
 		//and we use both of those facts
@@ -469,6 +476,111 @@ func toDefaultString(val uint64, radix int) string {
 		return builder.String()
 	}
 	return strconv.FormatUint(val, radix)
+}
+
+func toDefaultBigString(val, radix *BigDivInt, uppercase bool, choppedDigits, maxDigits int) string {
+	if bigIsZero(val) {
+		return "0"
+	} else if bigAbsIsOne(val) {
+		return "1"
+	}
+	dig := getDigits(uppercase, int(radix.Uint64()))
+	var builder strings.Builder
+	if maxDigits > 0 { //maxDigits is 0 or less if the max digits is unknown
+		if maxDigits <= choppedDigits {
+			return ""
+		}
+		toDefaultStringRecursive(val, radix, uppercase, choppedDigits, maxDigits, dig, true, &builder)
+	} else {
+		var quotient big.Int
+		quotient.Set(val)
+		for { //value == quotient * 16 + remainder
+			var remainder big.Int
+			quotient.QuoRem(&quotient, radix, &remainder)
+			if choppedDigits > 0 {
+				choppedDigits--
+				continue
+			}
+			builder.WriteByte(dig[remainder.Uint64()])
+			if bigIsZero(&quotient) {
+				break
+			}
+		}
+		if builder.Len() == 0 {
+			return "" // all digits are chopped
+		}
+		return reverse(builder.String())
+	}
+	return builder.String()
+}
+
+func toDefaultStringRecursive(val *BigDivInt, radix *BigDivInt, uppercase bool, choppedDigits, digitCount int, dig string, highest bool, builder *strings.Builder) {
+	if val.IsUint64() {
+		longVal := val.Uint64()
+		intRadix := int(radix.Int64())
+		if !highest {
+			getLeadingZeros(digitCount-toUnsignedStringLength(longVal, intRadix), builder)
+		}
+		toUnsignedStringCased(longVal, intRadix, choppedDigits, uppercase, builder)
+	} else if digitCount > choppedDigits {
+		halfCount := digitCount >> 1
+		var quotient, remainder big.Int
+		var radixPower = getRadixPower(radix, halfCount)
+		quotient.QuoRem(val, radixPower, &remainder)
+		if highest && bigIsZero(&quotient) {
+			// only do low
+			toDefaultStringRecursive(&remainder, radix, uppercase, choppedDigits, halfCount, dig, true, builder)
+		} else {
+			toDefaultStringRecursive(&quotient, radix, uppercase, max(0, choppedDigits-halfCount), digitCount-halfCount, dig, highest, builder)
+			toDefaultStringRecursive(&remainder, radix, uppercase, choppedDigits, halfCount, dig, false, builder)
+		}
+	}
+}
+
+func getRadixPower(radix *big.Int, power int) *big.Int {
+	if power == 1 {
+		return radix
+	}
+	intRadix := radix.Uint64()
+	key := intRadix<<32 | uint64(power)
+	theMapPtr := (*map[uint64]*big.Int)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&radixPowerMap))))
+	theMap := *theMapPtr
+	if res, ok := theMap[key]; ok {
+		return res
+	}
+	result := new(big.Int)
+	if (power & 1) == 0 {
+		halfPower := getRadixPower(radix, power>>1)
+		result.Mul(halfPower, halfPower)
+	} else {
+		halfPower := getRadixPower(radix, (power-1)>>1)
+		result.Mul(halfPower, halfPower).Mul(result, radix)
+	}
+	//replace the map atomically
+	newRadixMap := createRadixMap()
+	theNewMap := *newRadixMap
+	for k, val := range theMap {
+		theNewMap[k] = val
+	}
+	theNewMap[key] = result
+	dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&radixPowerMap))
+	atomicStorePointer(dataLoc, unsafe.Pointer(newRadixMap))
+	return result
+}
+
+var radixPowerMap = createRadixMap() // we use a pointer so we can overwrite atomically
+
+func createRadixMap() *map[uint64]*big.Int {
+	res := make(map[uint64]*big.Int)
+	return &res
+}
+
+func reverse(s string) string {
+	bts := []byte(s)
+	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
+		bts[i], bts[j] = bts[j], bts[i]
+	}
+	return string(bts)
 }
 
 func getDefaultRangeStringVals(strProvider divStringProvider, val1, val2 uint64, radix int) string {
@@ -700,13 +812,6 @@ func getRangeString(
 		}
 	}
 	return 0
-}
-
-func getDigits(uppercase bool, radix int) string {
-	if uppercase || radix > 36 {
-		return uppercaseDigits
-	}
-	return digits
 }
 
 func toSplitUnsignedString(
@@ -993,11 +1098,17 @@ func appendRangeDigits(
 	return nil
 }
 
-var maxDigitMap = createMap() // we use a pointer so we can overwrite atomically
+var maxDigitMap = createDigitMap() // we use a pointer so we can overwrite atomically
 
-func createMap() *map[uint64]int {
+func createDigitMap() *map[uint64]int {
 	res := make(map[uint64]int)
 	return &res
+}
+
+func getBigMaxDigitCount(radix int, bitCount BitCount, maxValue *BigDivInt) int {
+	return getMaxDigitCountCalc(radix, bitCount, func() int {
+		return getBigDigitCount(maxValue, big.NewInt(int64(radix)))
+	})
 }
 
 func getMaxDigitCount(radix int, bitCount BitCount, maxValue uint64) int {
@@ -1009,18 +1120,20 @@ func getMaxDigitCount(radix int, bitCount BitCount, maxValue uint64) int {
 func getMaxDigitCountCalc(radix int, bitCount BitCount, calc func() int) int {
 	rad64 := uint64(radix)
 	key := (rad64 << 32) | uint64(bitCount)
-	theMap := *maxDigitMap
+	theMapPtr := (*map[uint64]int)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&maxDigitMap))))
+	theMap := *theMapPtr
 	if digs, ok := theMap[key]; ok {
 		return digs
 	}
 	digs := calc()
-	newMaxDigitMap := make(map[uint64]int)
+	newMaxDigitMap := createDigitMap()
+	theNewMap := *newMaxDigitMap
 	for k, val := range theMap {
-		newMaxDigitMap[k] = val
+		theNewMap[k] = val
 	}
-	newMaxDigitMap[key] = digs
+	theNewMap[key] = digs
 	dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&maxDigitMap))
-	atomic.StorePointer(dataLoc, unsafe.Pointer(&newMaxDigitMap))
+	atomicStorePointer(dataLoc, unsafe.Pointer(newMaxDigitMap))
 	return digs
 }
 
@@ -1063,6 +1176,23 @@ func getDigitCount(value uint64, radix int) int {
 			}
 			result++
 		}
+	}
+	return result
+}
+
+func getBigDigitCount(val, radix *BigDivInt) int {
+	if bigIsZero(val) || bigAbsIsOne(val) {
+		return 1
+	}
+	result := 1
+	var v big.Int
+	v.Set(val)
+	for {
+		v.Quo(&v, radix)
+		if bigIsZero(&v) {
+			break
+		}
+		result++
 	}
 	return result
 }

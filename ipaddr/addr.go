@@ -18,11 +18,10 @@ package ipaddr
 
 import (
 	"fmt"
-	"github.com/seancfoley/bintree/tree"
 	"math/big"
-	"sync/atomic"
 	"unsafe"
 
+	"github.com/seancfoley/bintree/tree"
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrstr"
 )
@@ -36,7 +35,7 @@ const (
 	AlternativeRangeSeparator    = '\u00bb'
 	AlternativeRangeSeparatorStr = "\u00bb"
 
-	ExtendedDigitsRangeSeparatorStr = "\u00bb"
+	ExtendedDigitsRangeSeparatorStr = AlternativeRangeSeparatorStr
 
 	SegmentWildcard    = '*'
 	SegmentWildcardStr = "*"
@@ -91,8 +90,6 @@ type addressCache struct {
 	stringCache *stringCache // only used by IPv6 when there is a zone
 
 	identifierStr *IdentifierStr
-
-	canonicalHost *HostName
 }
 
 type addressInternal struct {
@@ -297,13 +294,9 @@ func (addr *addressInternal) GetPrefixLenForSingleBlock() PrefixLen {
 	return section.GetPrefixLenForSingleBlock()
 }
 
-func (addr *addressInternal) compareSize(other AddressType) int {
-	section := addr.section
-	if other == nil || other.ToAddressBase() == nil {
-		// our size is 1 or greater, other 0
-		return 1
-	}
-	return section.CompareSize(other.ToAddressBase().GetSection())
+// In callers, we always need to ensure init is called, otherwise a nil section will be zero-size instead of having size one.
+func (addr *addressInternal) compareSize(other AddressItem) int {
+	return addr.section.compareSize(other)
 }
 
 func (addr *addressInternal) trieCompare(other *Address) int {
@@ -489,12 +482,12 @@ func (addr *addressInternal) getLowestHighestAddrs() (lower, upper *Address) {
 	if cache == nil {
 		return addr.createLowestHighestAddrs()
 	}
-	cached := cache.addrsCache
+	cached := (*addrsCache)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&cache.addrsCache))))
 	if cached == nil {
 		cached = &addrsCache{}
 		cached.lower, cached.upper = addr.createLowestHighestAddrs()
 		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache.addrsCache))
-		atomic.StorePointer(dataLoc, unsafe.Pointer(cached))
+		atomicStorePointer(dataLoc, unsafe.Pointer(cached))
 	}
 	lower, upper = cached.lower, cached.upper
 	return
@@ -816,7 +809,7 @@ func (addr *addressInternal) prefixIterator(isBlockIterator bool) AddressIterato
 	if isBlockIterator {
 		useOriginal = addr.IsSinglePrefixBlock()
 	} else {
-		useOriginal = addr.GetPrefixCount().Cmp(bigOneConst()) == 0
+		useOriginal = bigIsOne(addr.GetPrefixCount())
 	}
 	prefLength := prefLen.bitCount()
 	bitsPerSeg := addr.GetBitsPerSegment()
@@ -1152,18 +1145,18 @@ func (addr *Address) Equal(other AddressType) bool {
 	return addr.init().equals(other)
 }
 
-// CompareSize compares the counts of two subnets or addresses, the number of individual addresses within.
+// CompareSize compares the counts of two subnets or addresses or other address items, the number of individual addresses within.
 //
 // Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one subnet or collection represents more individual addresses than another.
 //
 // CompareSize returns a positive integer if this address or subnet has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
-func (addr *Address) CompareSize(other AddressType) int {
+func (addr *Address) CompareSize(other AddressItem) int {
 	if addr == nil {
-		if other != nil && other.ToAddressBase() != nil {
-			// we have size 0, other has size >= 1
-			return -1
+		if isNilItem(other) {
+			return 0
 		}
-		return 0
+		// we have size 0, other has size >= 1
+		return -1
 	}
 	return addr.init().compareSize(other)
 }

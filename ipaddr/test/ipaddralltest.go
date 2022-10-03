@@ -43,10 +43,10 @@ func (t ipAddressAllTester) run() {
 	t.testMatches(true, "0xabcd0000000000000000000000000000-", "abcd0000000000000000000000000000-ffffffffffffffffffffffffffffffff")
 
 	// these are the same addresses as the above tests in hex, but here in base 85
-	// TODO LATER base85
-	//testMatches(true, ipaddr.AlternativeRangeSeparatorStr+"0000000000=l?k|EPzi+", "00000000000000000000"+ipaddr.AlternativeRangeSeparatorStr+"0000000000=l?k|EPzi+")
-	//testMatches(true, "00000000000000000000"+ipaddr.AlternativeRangeSeparatorStr, "00000000000000000000"+ipaddr.AlternativeRangeSeparatorStr+"=r54lj&NUUO~Hi%c2ym0")
-	//testMatches(true, "oBky9Vh_d)e!eUd#8280"+ipaddr.AlternativeRangeSeparatorStr, "oBky9Vh_d)e!eUd#8280"+ipaddr.AlternativeRangeSeparatorStr+"=r54lj&NUUO~Hi%c2ym0")
+
+	t.testMatches(true, ipaddr.AlternativeRangeSeparatorStr+"0000000000=l?k|EPzi+", "00000000000000000000"+ipaddr.AlternativeRangeSeparatorStr+"0000000000=l?k|EPzi+")
+	t.testMatches(true, "00000000000000000000"+ipaddr.AlternativeRangeSeparatorStr, "00000000000000000000"+ipaddr.AlternativeRangeSeparatorStr+"=r54lj&NUUO~Hi%c2ym0")
+	t.testMatches(true, "oBky9Vh_d)e!eUd#8280"+ipaddr.AlternativeRangeSeparatorStr, "oBky9Vh_d)e!eUd#8280"+ipaddr.AlternativeRangeSeparatorStr+"=r54lj&NUUO~Hi%c2ym0")
 
 	t.testMatches(true, "*.*.*.*", "-4294967295")   // ok on all tests
 	t.testMatches(true, "*.*.*.*", "-0xffffffff")   // ok on all tests
@@ -74,12 +74,11 @@ func (t ipAddressAllTester) run() {
 	t.testMatches(true, "aaaabbbbcccccdddffffffffffffffff-aaaabbbbccccdddd0000000000000000", "aaaa:bbbb:cccc:cddd-dddd:*:*:*:*")
 	t.testMatches(true, "aaaabbbbccccdddd0000000000000000-aaaabbbbcccccdddffffffffffffffff", "aaaa:bbbb:cccc:cddd-dddd:*:*:*:*")
 
-	// TODO LATER base85
-	//t.testMatches(true, "4)+k&C#VzJ4br>0wv%Yp", "1080::8:800:200c:417a")
-	//t.testMatches(true, "=r54lj&NUUO~Hi%c2ym0", "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")
-	//t.testMatches(true, "=r54lj&NUUO~Hi%c2yl0"+ipaddr.AlternativeRangeSeparatorStr+"=r54lj&NUUO~Hi%c2ym0", "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffaa-ffff")
-	//t.testMatches(true, "ef86:1dc3:deba:d48:612d:f19c:de7d:e89c", "********************") // base 85
-	//t.testMatches(true, "--------------------", "f677:73f6:11b4:5073:4a06:76c2:ceae:1474")
+	t.testMatches(true, "4)+k&C#VzJ4br>0wv%Yp", "1080::8:800:200c:417a")
+	t.testMatches(true, "=r54lj&NUUO~Hi%c2ym0", "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")
+	t.testMatches(true, "=r54lj&NUUO~Hi%c2yl0"+ipaddr.AlternativeRangeSeparatorStr+"=r54lj&NUUO~Hi%c2ym0", "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffaa-ffff")
+	t.testMatches(true, "ef86:1dc3:deba:d48:612d:f19c:de7d:e89c", "********************") // base 85
+	t.testMatches(true, "--------------------", "f677:73f6:11b4:5073:4a06:76c2:ceae:1474")
 
 	t.ipv6test(true, "0x00010002000300040000000000000000-0x0001000200030004ffffffffffffffff")
 	t.ipv6test(true, "0x0001000200030004ffffffffffffffff-0x00010002000300040000000000000000")
@@ -89,9 +88,8 @@ func (t ipAddressAllTester) run() {
 	t.ipv6test(true, "0001000200030004ffffffffffffffff-00010002000300040000000000000000")
 	t.ipv6test(true, "00010002000300040000000000000000")
 
-	//TODO LATER base 85
-	//t.ipv6test(true, "00|M>t|ttwH6V6EEzblZ"+ipaddr.AlternativeRangeSeparatorStr+"00|M>t|ttwH6V6EEzkrZ")
-	//t.ipv6test(true, "00|M>t|ttwH6V6EEzkrZ"+ipaddr.AlternativeRangeSeparatorStr+"00|M>t|ttwH6V6EEzblZ")
+	t.ipv6test(true, "00|M>t|ttwH6V6EEzblZ"+ipaddr.AlternativeRangeSeparatorStr+"00|M>t|ttwH6V6EEzkrZ")
+	t.ipv6test(true, "00|M>t|ttwH6V6EEzkrZ"+ipaddr.AlternativeRangeSeparatorStr+"00|M>t|ttwH6V6EEzblZ")
 	t.ipv6test(false, "00|M>t|ttwH6V6EEzkr"+ipaddr.AlternativeRangeSeparatorStr+"00|M>t|ttwH6V6EEzblZ")
 	t.ipv6test(false, "00|M>t|ttwH6V6EEzkrZ"+ipaddr.AlternativeRangeSeparatorStr+"0|M>t|ttwH6V6EEzblZ")
 	t.ipv6test(false, "00|M>t|ttwH6V6EEzkrZx"+ipaddr.AlternativeRangeSeparatorStr+"00|M>t|ttwH6V6EEzblZ")
@@ -99,15 +97,15 @@ func (t ipAddressAllTester) run() {
 
 	t.ipv6test(true, "00000000000000000000000000000000-0001ffffffffffffffffffffffffffff")
 
-	//t.ipv6test(true, "=q{+M|w0(OeO5^F85=Cb")
-	t.ipv6test(false, "=q{+M|w0.OeO5^F85=Cb") // .
-	t.ipv6test(false, "=q{+:|w0(OeO5^F85=Cb") // :
-	t.ipv6test(false, "=q{+M|w0(OeO5^F85=C/") // / in middle
-	t.ipv6test(false, "=q{+M|w0(OeO5^F85=/b") // / in middle
-	//t.ipv6test(true, "=q{+M|w0(OeO5^F85=Cb/127")                                           // ok
-	//t.ipv6test(true, "=q{+-|w0(OeO5^-85=Cb")                                               // two '-'
-	//t.ipv6test(true, "=q{+M|w0(OeO5^F85=Cb"+ipaddr.AlternativeRangeSeparatorStr+"eth0") // ok
-	t.ipv6test(false, "=q{+M|w0(OeO5^F85=C"+ipaddr.AlternativeRangeSeparatorStr+"eth0") // too soon
+	t.ipv6test(true, "=q{+M|w0(OeO5^F85=Cb")
+	t.ipv6test(false, "=q{+M|w0.OeO5^F85=Cb")                                              // .
+	t.ipv6test(false, "=q{+:|w0(OeO5^F85=Cb")                                              // :
+	t.ipv6test(false, "=q{+M|w0(OeO5^F85=C/")                                              // / in middle
+	t.ipv6test(false, "=q{+M|w0(OeO5^F85=/b")                                              // / in middle
+	t.ipv6test(true, "=q{+M|w0(OeO5^F85=Cb/127")                                           // ok
+	t.ipv6test(true, "=q{+-|w0(OeO5^-85=Cb")                                               // two '-'
+	t.ipv6test(true, "=q{+M|w0(OeO5^F85=Cb"+ipaddr.IPv6AlternativeZoneSeparatorStr+"eth0") // ok
+	t.ipv6test(false, "=q{+M|w0(OeO5^F85=C"+ipaddr.IPv6AlternativeZoneSeparatorStr+"eth0") // too soon
 
 	t.testAllContains("*", "1:2:3:4:1:2:3:4", true)
 	t.testAllContains("*", "1.2.3.4.5", false)
@@ -306,7 +304,7 @@ func (t ipAddressAllTester) run() {
 	t.testMaskedRange(0x40100000000, 0x5ffffffffff, 0x1ffffffffff, true, 0x100000000, 0x1ffffffffff)
 	t.testMaskedRange(0x400ffffffff, 0x5ffffffffff, 0x1ffffffffff, true, 0xffffffff, 0x1ffffffffff)
 
-	// TODO LATER extended masking when supporting large divisions
+	// TODO LATER extended masking tests - we can enable these now, we have implemented maskExtendedRange
 	//t.testMaskedRangeExtended(
 	//	1, 0xcafe, // lower
 	//	1, 0xbadcafe, // upper
@@ -533,7 +531,6 @@ func (t ipAddressAllTester) testAllContains(cidr1, cidr2 string, result bool) {
 }
 
 func (t ipAddressAllTester) testStrings() {
-	/* TODO LATER base 85
 	//It is good to have at least one base 85 input test, since we have code that caches base 85 input strings for output
 	t.testIPv6Strings("4)+k&C#VzJ4br>0wv%Yp",
 		"1080:0:0:0:8:800:200c:417a", //normalized
@@ -594,6 +591,4 @@ func (t ipAddressAllTester) testStrings() {
 		"=r54lj&NUUO~Hi%c2ym0",
 		"0xffffffffffffffffffffffffffffffff",
 		"03777777777777777777777777777777777777777777")
-
-	*/
 }

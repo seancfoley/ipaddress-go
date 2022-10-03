@@ -23,7 +23,6 @@ import (
 	"net"
 	"sort"
 	"strings"
-	"sync/atomic"
 	"unsafe"
 )
 
@@ -50,7 +49,7 @@ func (rng *ipAddressSeqRangeInternal) getCount() *big.Int {
 
 func (rng *ipAddressSeqRangeInternal) getCachedCount(copy bool) (res *big.Int) {
 	cache := rng.cache
-	count := cache.cachedCount
+	count := (*big.Int)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&cache.cachedCount))))
 	if count == nil {
 		if !rng.isMultiple() {
 			count = bigOne()
@@ -66,7 +65,7 @@ func (rng *ipAddressSeqRangeInternal) getCachedCount(copy bool) (res *big.Int) {
 			res.Set(count)
 		}
 		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache.cachedCount))
-		atomic.StorePointer(dataLoc, unsafe.Pointer(count))
+		atomicStorePointer(dataLoc, unsafe.Pointer(count))
 	}
 	if res == nil {
 		if copy {
@@ -108,20 +107,8 @@ func (rng *ipAddressSeqRangeInternal) GetPrefixCountLen(prefixLen BitCount) *big
 }
 
 // CompareSize returns whether this range has a larger count than the other
-func (rng *ipAddressSeqRangeInternal) compareSize(other IPAddressSeqRangeType) int {
-	if other == nil || other.ToIP() == nil {
-		// our size is 1 or greater, other 0
-		return 1
-	}
-	if !rng.isMultiple() {
-		if other.IsMultiple() {
-			return -1
-		}
-		return 0
-	} else if !other.IsMultiple() {
-		return 1
-	}
-	return rng.getCachedCount(false).CmpAbs(other.ToIP().getCachedCount(false))
+func (rng *ipAddressSeqRangeInternal) compareSize(other AddressItem) int {
+	return compareCount(rng.toIPSequentialRange(), other)
 }
 
 func (rng *ipAddressSeqRangeInternal) contains(other IPAddressType) bool {
@@ -922,13 +909,13 @@ func (rng *IPAddressSeqRange) Compare(item AddressItem) int {
 // Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one range spans more individual addresses than another.
 //
 // CompareSize returns a positive integer if this range has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
-func (rng *IPAddressSeqRange) CompareSize(other IPAddressSeqRangeType) int {
+func (rng *IPAddressSeqRange) CompareSize(other AddressItem) int {
 	if rng == nil {
-		if other != nil && other.ToIP() != nil {
-			// we have size 0, other has size >= 1
-			return -1
+		if isNilItem(other) {
+			return 0
 		}
-		return 0
+		// we have size 0, other has size >= 1
+		return -1
 	}
 	return rng.compareSize(other)
 }

@@ -25,8 +25,6 @@ Each instance produced by a builders is immutable.
 */
 package addrstr
 
-import "unsafe"
-
 var (
 	falseVal = false
 	trueVal  = true
@@ -35,6 +33,7 @@ var (
 const (
 	ipv6SegmentSeparator     = ':'
 	ipv6ZoneSeparator        = '%'
+	ipv6ZoneSeparatorStr     = "%"
 	ipv4SegmentSeparator     = '.'
 	macColonSegmentSeparator = ':'
 	rangeSeparatorStr        = "-"
@@ -144,10 +143,6 @@ type StringOptions interface {
 	GetSegmentStrPrefix() string
 }
 
-type stringOptionsCache struct {
-	cached unsafe.Pointer
-}
-
 type stringOptions struct {
 	wildcards Wildcards
 
@@ -164,12 +159,6 @@ type stringOptions struct {
 	uppercase bool
 
 	hasSeparator *bool // if not set, the default is false, no separator
-
-	stringOptionsCache
-}
-
-func (opts *stringOptions) GetStringOptionsCache() *unsafe.Pointer {
-	return &opts.stringOptionsCache.cached
 }
 
 // GetWildcards returns the wildcards specified for use in the string.
@@ -237,9 +226,9 @@ func getDefaults(radix int, wildcards Wildcards, separator byte) (int, Wildcards
 	return radix, wildcards, separator
 }
 
-func getIPDefaults(zoneSeparator byte) byte {
-	if zoneSeparator == 0 {
-		zoneSeparator = ipv6ZoneSeparator
+func getIPDefaults(zoneSeparator string) string {
+	if len(zoneSeparator) == 0 {
+		zoneSeparator = ipv6ZoneSeparatorStr
 	}
 	return zoneSeparator
 }
@@ -493,11 +482,9 @@ type IPStringOptions interface {
 
 	// GetWildcardOption returns the WildcardOption to use
 	GetWildcardOption() WildcardOption
-}
 
-type ipStringOptionsCache struct {
-	cachedIPAddr,
-	cachedAddr unsafe.Pointer
+	// GetZoneSeparator indicates the delimiter that separates the zone from the address, the default being '%'
+	GetZoneSeparator() string
 }
 
 type ipStringOptions struct {
@@ -505,17 +492,7 @@ type ipStringOptions struct {
 
 	addrSuffix     string
 	wildcardOption WildcardOption // default is WildcardsNetworkOnly
-	zoneSeparator  byte           // default is IPv6ZoneSeparator
-
-	ipStringOptionsCache
-}
-
-func (opts *ipStringOptions) GetIPStringOptionsIPCache() *unsafe.Pointer {
-	return &opts.ipStringOptionsCache.cachedIPAddr
-}
-
-func (opts *ipStringOptions) GetIPStringOptionsCache() *unsafe.Pointer {
-	return &opts.ipStringOptionsCache.cachedAddr
+	zoneSeparator  string         // default is IPv6ZoneSeparator
 }
 
 // GetAddressSuffix returns a suffix to be appended to the string.
@@ -540,7 +517,7 @@ func (opts *ipStringOptions) GetWildcardOption() WildcardOption {
 }
 
 // GetZoneSeparator returns the delimiter that separates the address from the zone, the default being '%'
-func (opts *ipStringOptions) GetZoneSeparator() byte {
+func (opts *ipStringOptions) GetZoneSeparator() string {
 	return opts.zoneSeparator
 }
 
@@ -581,7 +558,7 @@ func (builder *IPStringOptionsBuilder) SetWildcards(wildcards Wildcards) *IPStri
 
 // SetZoneSeparator dictates the separator to separate the zone from the address, the default being '%'
 // Zones apply to IPv6 addresses only, not IPv4.
-func (builder *IPStringOptionsBuilder) SetZoneSeparator(separator byte) *IPStringOptionsBuilder {
+func (builder *IPStringOptionsBuilder) SetZoneSeparator(separator string) *IPStringOptionsBuilder {
 	builder.ipStringOptions.zoneSeparator = separator
 	return builder
 }
@@ -750,14 +727,6 @@ type IPv6StringOptions interface {
 
 	// IsMixed specifies that the last two segments of the IPv6 address should be printed as an IPv4 address, resulting in a mixed IPv6/v4 string
 	IsMixed() bool // can produce addrerr.IncompatibleAddressError for ranges in the IPv4 part of the series
-
-	// GetZoneSeparator indicates the delimiter that separates the zone from the address, the default being '%'
-	GetZoneSeparator() byte
-}
-
-type ipv6StringOptionsCache struct {
-	cachedIPv6Addr,
-	cachedMixedIPv6Addr unsafe.Pointer
 }
 
 type ipv6StringOptions struct {
@@ -767,17 +736,7 @@ type ipv6StringOptions struct {
 	//can be nil, which means no compression
 	compressOptions CompressOptions
 
-	ipv6StringOptionsCache
-
 	splitDigits bool
-}
-
-func (opts *ipv6StringOptions) GetIPv6StringOptionsCache() *unsafe.Pointer {
-	return &opts.ipv6StringOptionsCache.cachedIPv6Addr
-}
-
-func (opts *ipv6StringOptions) GetIPv6StringOptionsMixedCache() *unsafe.Pointer {
-	return &opts.ipv6StringOptionsCache.cachedMixedIPv6Addr
 }
 
 // IsSplitDigits indicates whether every digit is separated from every other by separators.  If mixed, this option is ignored.
@@ -898,7 +857,7 @@ func (builder *IPv6StringOptionsBuilder) SetSeparator(separator byte) *IPv6Strin
 }
 
 // SetZoneSeparator dictates the separator to separate the zone from the address, the default being '%'
-func (builder *IPv6StringOptionsBuilder) SetZoneSeparator(separator byte) *IPv6StringOptionsBuilder {
+func (builder *IPv6StringOptionsBuilder) SetZoneSeparator(separator string) *IPv6StringOptionsBuilder {
 	builder.IPStringOptionsBuilder.SetZoneSeparator(separator)
 	return builder
 }

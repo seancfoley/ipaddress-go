@@ -21,6 +21,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"sync/atomic"
 
 	"github.com/seancfoley/ipaddress-go/ipaddr"
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrstrparam"
@@ -798,7 +799,7 @@ func (t hostTester) hostTest(pass bool, x string) {
 	t.hostTestDouble(pass, addr, true)
 }
 
-var i int
+var i uint64
 
 func (t hostTester) hostTestDouble(pass bool, addr *ipaddr.HostName, doubleTest bool) {
 	t.hostNameTest(pass, addr)
@@ -809,7 +810,8 @@ func (t hostTester) hostTestDouble(pass bool, addr *ipaddr.HostName, doubleTest 
 		//this is because getHost will use the labels but only if they exist already
 		two := t.createParamsHost(addr.String(), addr.GetValidationOptions())
 		var twoString, oneString string
-		if i%2 == 0 {
+		myI := atomic.LoadUint64(&i)
+		if myI%2 == 0 {
 			two.GetNormalizedLabels()
 			twoString = two.GetHost()
 			oneString = addr.GetHost()
@@ -818,7 +820,8 @@ func (t hostTester) hostTestDouble(pass bool, addr *ipaddr.HostName, doubleTest 
 			two.GetNormalizedLabels()
 			twoString = two.GetHost()
 		}
-		i++
+		myI++
+		atomic.StoreUint64(&i, myI)
 		if oneString != twoString {
 			t.addFailure(newHostFailure(oneString+" "+twoString, addr))
 		}

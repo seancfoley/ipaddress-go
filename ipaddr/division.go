@@ -21,7 +21,6 @@ import (
 	"math/big"
 	"math/bits"
 	"strings"
-	"sync/atomic"
 	"unsafe"
 
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
@@ -38,40 +37,15 @@ type divderiver interface {
 	deriveNew(val, upperVal DivInt, prefLen PrefixLen) divisionValues
 }
 
-type segderiver interface {
-	// deriveNew produces a new segment with the same bit count as the old
-	deriveNewMultiSeg(val, upperVal SegInt, prefLen PrefixLen) divisionValues
-
-	// deriveNew produces a new segment with the same bit count as the old
-	deriveNewSeg(val SegInt, prefLen PrefixLen) divisionValues
-}
-
-type segmentValues interface {
-	// getSegmentValue gets the lower value for a segment
-	getSegmentValue() SegInt
-
-	// getUpperSegmentValue gets the upper value for a segment
-	getUpperSegmentValue() SegInt
-
-	segderiver
-}
-
-// DivisionValues represents divisions with values that are 64 bits or less
-type divisionValues interface {
-	divisionValuesBase
-
+type divIntVals interface {
 	// getDivisionValue gets the lower value for a division
 	getDivisionValue() DivInt
 
 	// getUpperDivisionValue gets the upper value for a division
 	getUpperDivisionValue() DivInt
-
-	divderiver
-
-	segmentValues
 }
 
-func newDivValues(value, upperValue DivInt, prefLen PrefixLen, bitCount BitCount) *divValues {
+func newDivValues(value, upperValue DivInt, prefLen PrefixLen, bitCount BitCount) *divIntValues {
 	if value > upperValue {
 		value, upperValue = upperValue, value
 	}
@@ -84,8 +58,8 @@ func newDivValues(value, upperValue DivInt, prefLen PrefixLen, bitCount BitCount
 	return newDivValuesUnchecked(value, upperValue, prefLen, bitCount)
 }
 
-func newDivValuesUnchecked(value, upperValue DivInt, prefLen PrefixLen, bitCount BitCount) *divValues {
-	return &divValues{
+func newDivValuesUnchecked(value, upperValue DivInt, prefLen PrefixLen, bitCount BitCount) *divIntValues {
+	return &divIntValues{
 		value:      value,
 		upperValue: upperValue,
 		prefLen:    prefLen,
@@ -93,58 +67,65 @@ func newDivValuesUnchecked(value, upperValue DivInt, prefLen PrefixLen, bitCount
 	}
 }
 
-type divValues struct {
+// divIntValues are used by AddressDivision
+type divIntValues struct {
 	bitCount          BitCount
 	value, upperValue DivInt
 	prefLen           PrefixLen
 	cache             divCache
 }
 
-func (div *divValues) getBitCount() BitCount {
+func (div *divIntValues) getBitCount() BitCount {
 	return div.bitCount
 }
 
-func (div *divValues) getByteCount() int {
+func (div *divIntValues) getByteCount() int {
 	return (int(div.getBitCount()) + 7) >> 3
 }
 
-func (div *divValues) getDivisionPrefixLength() PrefixLen {
+func (div *divIntValues) getDivisionPrefixLength() PrefixLen {
 	return div.prefLen
 }
 
-func (div *divValues) getValue() *BigDivInt {
+func (div *divIntValues) getValue() *BigDivInt {
 	return big.NewInt(int64(div.value))
 }
 
-func (div *divValues) getUpperValue() *BigDivInt {
+func (div *divIntValues) getUpperValue() *BigDivInt {
 	return big.NewInt(int64(div.upperValue))
 }
 
-func (div *divValues) includesZero() bool {
+func (div *divIntValues) includesZero() bool {
 	return div.value == 0
 }
 
-func (div *divValues) includesMax() bool {
-	allOnes := ^DivInt(0)
-	return div.upperValue == allOnes & ^(allOnes<<uint(div.getBitCount()))
+func (div *divIntValues) includesMax() bool {
+	return div.upperValue == ^((^DivInt(0)) << uint(div.getBitCount()))
 }
 
-func (div *divValues) isMultiple() bool {
+func (div *divIntValues) isMultiple() bool {
 	return div.value != div.upperValue
 }
 
-func (div *divValues) getCount() *big.Int {
+func (div *divIntValues) getCount() *big.Int {
 	res := new(big.Int)
 	return res.SetUint64(uint64(div.upperValue-div.value)).Add(res, bigOneConst())
 }
 
-func (div *divValues) calcBytesInternal() (bytes, upperBytes []byte) {
+func (div *divIntValues) calcBytesInternal() (bytes, upperBytes []byte) {
 	return calcBytesInternal(div.getByteCount(), div.getDivisionValue(), div.getUpperDivisionValue())
+}
+
+func (div *divIntValues) bytesInternal(upper bool) []byte {
+	if upper {
+		return calcSingleBytes(div.getByteCount(), div.getUpperDivisionValue())
+	}
+	return calcSingleBytes(div.getByteCount(), div.getDivisionValue())
 }
 
 func calcBytesInternal(byteCount int, val, upperVal DivInt) (bytes, upperBytes []byte) {
 	byteIndex := byteCount - 1
-	isMultiple := val != upperVal //seg.isMult()
+	isMultiple := val != upperVal
 	bytes = make([]byte, byteCount)
 	if isMultiple {
 		upperBytes = make([]byte, byteCount)
@@ -165,43 +146,56 @@ func calcBytesInternal(byteCount int, val, upperVal DivInt) (bytes, upperBytes [
 	}
 }
 
-func (div *divValues) getCache() *divCache {
+func calcSingleBytes(byteCount int, val DivInt) (bytes []byte) {
+	byteIndex := byteCount - 1
+	bytes = make([]byte, byteCount)
+	for {
+		bytes[byteIndex] |= byte(val)
+		val >>= 8
+		if byteIndex == 0 {
+			return bytes
+		}
+		byteIndex--
+	}
+}
+
+func (div *divIntValues) getCache() *divCache {
 	return &div.cache
 }
 
-func (div *divValues) getAddrType() addrType {
+func (div *divIntValues) getAddrType() addrType {
 	return zeroType
 }
 
-func (div *divValues) getDivisionValue() DivInt {
+func (div *divIntValues) getDivisionValue() DivInt {
 	return div.value
 }
 
-func (div *divValues) getUpperDivisionValue() DivInt {
+func (div *divIntValues) getUpperDivisionValue() DivInt {
 	return div.upperValue
 }
 
-func (div *divValues) deriveNew(val, upperVal DivInt, prefLen PrefixLen) divisionValues {
+func (div *divIntValues) deriveNew(val, upperVal DivInt, prefLen PrefixLen) divisionValues {
 	return newRangePrefixDivision(val, upperVal, prefLen, div.bitCount)
 }
 
-func (div *divValues) getSegmentValue() SegInt {
+func (div *divIntValues) getSegmentValue() SegInt {
 	return SegInt(div.value)
 }
 
-func (div *divValues) getUpperSegmentValue() SegInt {
+func (div *divIntValues) getUpperSegmentValue() SegInt {
 	return SegInt(div.upperValue)
 }
 
-func (div *divValues) deriveNewMultiSeg(val, upperVal SegInt, prefLen PrefixLen) divisionValues {
+func (div *divIntValues) deriveNewMultiSeg(val, upperVal SegInt, prefLen PrefixLen) divisionValues {
 	return newRangePrefixDivision(DivInt(val), DivInt(upperVal), prefLen, div.bitCount)
 }
 
-func (div *divValues) deriveNewSeg(val SegInt, prefLen PrefixLen) divisionValues {
+func (div *divIntValues) deriveNewSeg(val SegInt, prefLen PrefixLen) divisionValues {
 	return newPrefixDivision(DivInt(val), prefLen, div.bitCount)
 }
 
-var _ divisionValues = &divValues{}
+var _ divisionValues = &divIntValues{}
 
 func createAddressDivision(vals divisionValues) *AddressDivision {
 	return &AddressDivision{
@@ -236,19 +230,7 @@ func (div *addressDivisionInternal) String() string {
 // GetWildcardString() is more appropriate in context with other segments or divisions.  It does not use a string prefix and uses '*' for full-range segments.
 // GetString() is more appropriate in context with prefix lengths, it uses zeros instead of wildcards for prefix block ranges.
 func (div *addressDivisionInternal) toString() string { // this can be moved to addressDivisionBase when we have ContainsPrefixBlock and similar methods implemented for big.Int in the base
-	radix := div.getDefaultTextualRadix()
-	var opts addrstr.IPStringOptions
-	switch radix {
-	case 16:
-		opts = hexParamsDiv
-	case 10:
-		opts = decimalParamsDiv
-	case 8:
-		opts = octalParamsDiv
-	default:
-		opts = new(addrstr.IPStringOptionsBuilder).SetRadix(radix).SetWildcards(rangeWildcard).ToOptions()
-	}
-	return div.toStringOpts(opts)
+	return toString(div.toAddressDivision())
 }
 
 // Format implements fmt.Formatter interface. It accepts the formats
@@ -280,11 +262,7 @@ func (div addressDivisionInternal) Format(state fmt.State, verb rune) {
 }
 
 func (div *addressDivisionInternal) toStringOpts(opts addrstr.StringOptions) string {
-	builder := strings.Builder{}
-	params := toParams(opts)
-	builder.Grow(params.getDivisionStringLength(div.toAddressDivision()))
-	params.appendDivision(&builder, div.toAddressDivision())
-	return builder.String()
+	return toStringOpts(opts, div.toAddressDivision())
 }
 
 func (div *addressDivisionInternal) isPrefixed() bool {
@@ -319,6 +297,7 @@ func (div *addressDivisionInternal) isPrefixBlockVals(divisionValue, upperValue 
 // Returns whether the given range of divisionValue to upperValue is equivalent to the range of segmentValue with the prefix of divisionPrefixLen
 func (div *addressDivisionInternal) isSinglePrefix(divisionValue, upperValue DivInt, divisionPrefixLen BitCount) bool {
 	bitCount := div.GetBitCount()
+	divisionPrefixLen = checkBitCount(divisionPrefixLen, bitCount)
 	shift := uint(bitCount - divisionPrefixLen)
 	return (divisionValue >> shift) == (upperValue >> shift)
 }
@@ -342,7 +321,6 @@ func (div *addressDivisionInternal) isSinglePrefixBlock(divisionValue, upperValu
 
 // ContainsPrefixBlock returns whether the division range includes the block of values for the given prefix length.
 func (div *addressDivisionInternal) ContainsPrefixBlock(prefixLen BitCount) bool {
-	prefixLen = checkDiv(div.toAddressDivision(), prefixLen)
 	return div.isPrefixBlockVals(div.getDivisionValue(), div.getUpperDivisionValue(), prefixLen)
 }
 
@@ -361,17 +339,7 @@ func (div *addressDivisionInternal) ContainsSinglePrefixBlock(prefixLen BitCount
 //
 // If this division represents a single value, this returns the bit count.
 func (div *addressDivisionInternal) GetMinPrefixLenForBlock() BitCount {
-	cache := div.getCache()
-	if cache == nil {
-		return getMinPrefixLenForBlock(div.getDivisionValue(), div.getUpperDivisionValue(), div.GetBitCount())
-	}
-	res := cache.minPrefLenForBlock
-	if res == nil {
-		res = cacheBitCount(getMinPrefixLenForBlock(div.getDivisionValue(), div.getUpperDivisionValue(), div.GetBitCount()))
-		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache.minPrefLenForBlock))
-		atomic.StorePointer(dataLoc, unsafe.Pointer(res))
-	}
-	return res.bitCount()
+	return getMinPrefixLenForBlock(div.getDivisionValue(), div.getUpperDivisionValue(), div.GetBitCount())
 }
 
 // GetPrefixLenForSingleBlock returns a prefix length for which there is only one prefix in this division,
@@ -554,8 +522,6 @@ func (div *addressDivisionInternal) getCount() *big.Int {
 
 // IsSinglePrefix returns true if the division value range spans just a single prefix value for the given prefix length
 func (div *addressDivisionInternal) IsSinglePrefix(divisionPrefixLength BitCount) bool {
-	bitCount := div.GetBitCount()
-	divisionPrefixLength = checkBitCount(divisionPrefixLength, bitCount)
 	return div.isSinglePrefix(div.getDivisionValue(), div.getUpperDivisionValue(), divisionPrefixLength)
 }
 
@@ -810,6 +776,15 @@ func (div *addressDivisionInternal) getMaxDigitCount() int {
 	return div.getMaxDigitCountRadix(div.getDefaultTextualRadix())
 }
 
+// returns the default radix for textual representations of addresses (10 for IPv4, 16 for IPv6, MAC and other)
+func (div *addressDivisionInternal) getDefaultTextualRadix() int {
+	addrType := div.getAddrType()
+	if addrType.isIPv4() {
+		return IPv4DefaultTextualRadix
+	}
+	return 16
+}
+
 // A simple string using just the lower value and the default radix.
 func (div *addressDivisionInternal) getDefaultLowerString() string {
 	return toDefaultString(div.getDivisionValue(), div.getDefaultTextualRadix())
@@ -924,6 +899,10 @@ func (div *addressDivisionInternal) IsFullRange() bool {
 	return div.addressDivisionBase.IsFullRange()
 }
 
+func (div *addressDivisionInternal) compareSize(other AddressItem) int {
+	return compareCount(div.toAddressDivision(), other)
+}
+
 //// end needed for godoc / pkgsite
 
 // NewDivision creates a division of the given bit length, assigning it the given value.
@@ -949,11 +928,7 @@ func NewPrefixDivision(val DivInt, prefixLen PrefixLen, bitCount BitCount) *Addr
 // If a value's bit length exceeds the given bit length, it is truncated.
 // If the prefix length exceeds the bit length, it is adjusted to the bit length.  If the prefix length is negative, it is adjusted to zero.
 func NewRangePrefixDivision(val, upperVal DivInt, prefixLen PrefixLen, bitCount BitCount) *AddressDivision {
-	return &AddressDivision{
-		addressDivisionInternal{
-			addressDivisionBase{newDivValues(val, upperVal, prefixLen, bitCount)},
-		},
-	}
+	return createAddressDivision(newDivValues(val, upperVal, prefixLen, bitCount))
 }
 
 // The following avoid the prefix length checks, value to BitCount checks, and low to high check inside newDivValues
@@ -971,11 +946,7 @@ func newPrefixDivision(val DivInt, prefixLen PrefixLen, bitCount BitCount) *Addr
 }
 
 func newRangePrefixDivision(val, upperVal DivInt, prefixLen PrefixLen, bitCount BitCount) *AddressDivision {
-	return &AddressDivision{
-		addressDivisionInternal{
-			addressDivisionBase{newDivValuesUnchecked(val, upperVal, prefixLen, bitCount)},
-		},
-	}
+	return createAddressDivision(newDivValuesUnchecked(val, upperVal, prefixLen, bitCount))
 }
 
 // AddressDivision represents an arbitrary division in an address or address division grouping.
@@ -1021,6 +992,22 @@ func (div *AddressDivision) GetCount() *big.Int {
 // Any address item is comparable to any other.  All address items use CountComparator to compare.
 func (div *AddressDivision) Compare(item AddressItem) int {
 	return CountComparator.Compare(div, item)
+}
+
+// CompareSize compares the counts of two divisions, the number of individual values within.
+//
+// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one represents more individual values than another.
+//
+// CompareSize returns a positive integer if this division has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
+func (div *AddressDivision) CompareSize(other AddressItem) int {
+	if div == nil {
+		if isNilItem(other) {
+			return 0
+		}
+		// we have size 0, other has size >= 1
+		return -1
+	}
+	return div.compareSize(other)
 }
 
 // Matches returns true if the division range matches the given single value.
@@ -1190,21 +1177,21 @@ func divValSame(oneVal, twoVal DivInt) bool {
 	return oneVal == twoVal
 }
 
-func cacheStrPtr(cachedString **string, str *string) {
-	cachedVal := *cachedString
+func cacheStrPtr(cachedString **string, strPtr *string) {
+	cachedVal := (*string)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(cachedString))))
 	if cachedVal == nil {
 		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(cachedString))
-		atomic.StorePointer(dataLoc, unsafe.Pointer(str))
+		atomicStorePointer(dataLoc, unsafe.Pointer(strPtr))
 	}
 	return
 }
 
 func cacheStr(cachedString **string, stringer func() string) (str string) {
-	cachedVal := *cachedString
+	cachedVal := (*string)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(cachedString))))
 	if cachedVal == nil {
 		str = stringer()
 		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(cachedString))
-		atomic.StorePointer(dataLoc, unsafe.Pointer(&str))
+		atomicStorePointer(dataLoc, unsafe.Pointer(&str))
 	} else {
 		str = *cachedVal
 	}
@@ -1212,12 +1199,12 @@ func cacheStr(cachedString **string, stringer func() string) (str string) {
 }
 
 func cacheStrErr(cachedString **string, stringer func() (string, addrerr.IncompatibleAddressError)) (str string, err addrerr.IncompatibleAddressError) {
-	cachedVal := *cachedString
+	cachedVal := (*string)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(cachedString))))
 	if cachedVal == nil {
 		str, err = stringer()
 		if err == nil {
 			dataLoc := (*unsafe.Pointer)(unsafe.Pointer(cachedString))
-			atomic.StorePointer(dataLoc, unsafe.Pointer(&str))
+			atomicStorePointer(dataLoc, unsafe.Pointer(&str))
 		}
 	} else {
 		str = *cachedVal

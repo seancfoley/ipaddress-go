@@ -24,9 +24,20 @@ import (
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
 )
 
+type bitItem interface {
+	// GetByteCount returns the number of bytes required for each value comprising this address item,
+	// rounding up if the bit count is not a multiple of 8.
+	GetByteCount() int
+
+	// GetBitCount returns the number of bits in each value comprising this address item
+	GetBitCount() BitCount
+}
+
 // AddressItem represents all addresses, division groupings, divisions, and sequential ranges.
 // Any address item can be compared to any other.
 type AddressItem interface {
+	bitItem
+
 	// GetValue returns the lowest individual address item in the address item range as an integer value
 	GetValue() *big.Int
 
@@ -56,13 +67,6 @@ type AddressItem interface {
 
 	// IsMultiple returns whether this item represents multiple values (the count is larger than 1)
 	IsMultiple() bool
-
-	// GetByteCount returns the number of bytes required for each value comprising this address item,
-	// rounding up if the bit count is not a multiple of 8.
-	GetByteCount() int
-
-	// GetBitCount returns the number of bits in each value comprising this address item
-	GetBitCount() BitCount
 
 	// IsFullRange returns whether this address item represents all possible values attainable by an address item of this type.
 	//
@@ -114,57 +118,19 @@ type AddressItem interface {
 
 	// Compare returns a negative integer, zero, or a positive integer if this address item is less than, equal, or greater than the given item.
 	// Any address item is comparable to any other.  All address items use CountComparator to compare.
-	Compare(item AddressItem) int
+	Compare(AddressItem) int
+
+	// CompareSize compares the counts of two address items,
+	// whether addresses in the subnet or address range, whether individual sections in the collection of sections, whether individual segments in the segment's range.
+	// It compares the number of individual elements within each.
+	//
+	// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one item represents more individual addresses than another.
+	//
+	// CompareSize returns a positive integer if this item has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
+	CompareSize(AddressItem) int
 
 	fmt.Stringer
 }
-
-// AddressComponent represents all addresses, address sections, and address segments
-type AddressComponent interface { //AddressSegment and above, AddressSegmentSeries and above
-	// TestBit returns true if the bit in the lower value of the address component at the given index is 1, where index 0 refers to the least significant bit.
-	// In other words, it computes (bits & (1 << n)) != 0), using the lower value of this address component.
-	// TestBit will panic if n < 0, or if it matches or exceeds the bit count of this address component.
-	TestBit(index BitCount) bool
-
-	// IsOneBit returns true if the bit in the lower value of this address component at the given index is 1, where index 0 refers to the most significant bit.
-	// IsOneBit will panic if bitIndex < 0, or if it is larger than the bit count of this address component.
-	IsOneBit(index BitCount) bool
-
-	// ToHexString writes this address component as a single hexadecimal value (possibly two values if a range that is not a prefixed block),
-	// the number of digits according to the bit count, with or without a preceding "0x" prefix.
-	//
-	// If a multiple-valued component cannot be written as a single prefix block or a range of two values, an error is returned.
-	ToHexString(bool) (string, addrerr.IncompatibleAddressError)
-
-	// ToNormalizedString produces a string that is consistent for all address components of the same type and version,
-	ToNormalizedString() string
-}
-
-// StandardDivGroupingType represents any standard division grouping (division groupings or address sections where all divisions are 64 bits or less)
-// including AddressSection, IPAddressSection, IPv4AddressSection, IPv6AddressSection, MACAddressSection, and AddressDivisionGrouping
-type StandardDivGroupingType interface {
-	AddressDivisionSeries
-
-	// IsAdaptiveZero returns true if the division grouping was originally created as an implicitly zero-valued section or grouping (eg IPv4AddressSection{}),
-	// meaning it was not constructed using a constructor function.
-	// Such a grouping, which has no divisions or segments, is convertible to an implicitly zero-valued grouping of any type or version, whether IPv6, IPv4, MAC, etc
-	IsAdaptiveZero() bool
-
-	// CompareSize compares the counts of two division groupings, the number of individual division groupings within.
-	//
-	// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one grouping represents more individual groupings than another.
-	//
-	// CompareSize returns a positive integer if this address division grouping has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
-	CompareSize(StandardDivGroupingType) int
-
-	// ToDivGrouping converts to an AddressDivisionGrouping, a polymorphic type usable with all address sections and division groupings.
-	//
-	// ToDivGrouping implementations can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
-	ToDivGrouping() *AddressDivisionGrouping
-}
-
-var _, _ StandardDivGroupingType = &AddressDivisionGrouping{},
-	&IPv6v4MixedAddressGrouping{}
 
 // AddressDivisionSeries serves as a common interface to all division groupings and addresses
 type AddressDivisionSeries interface {
@@ -204,7 +170,7 @@ type AddressDivisionSeries interface {
 	// IsSinglePrefixBlock returns whether the range of values matches a single subnet block for the prefix length.
 	//
 	// This is different from ContainsSinglePrefixBlock in that this method returns
-	// false if this series has no prefix length or a prefix length that differs from the prefix lengths for which ContainsSinglePrefixBlock returns true.
+	// false if this series has no prefix length or a prefix length that differs from a prefix length for which ContainsSinglePrefixBlock returns true.
 	IsSinglePrefixBlock() bool
 
 	// IsPrefixed returns whether this address has an associated prefix length
@@ -221,6 +187,48 @@ type AddressDivisionSeries interface {
 	// The first division is at index 0.
 	// GetGenericDivision will panic given a negative index or index larger than the division count.
 	GetGenericDivision(index int) DivisionType // useful for comparisons
+}
+
+var _ AddressDivisionSeries = &IPAddressLargeDivisionGrouping{}
+
+// StandardDivGroupingType represents any standard division grouping (division groupings or address sections where all divisions are 64 bits or less)
+// including AddressSection, IPAddressSection, IPv4AddressSection, IPv6AddressSection, MACAddressSection, and AddressDivisionGrouping
+type StandardDivGroupingType interface {
+	AddressDivisionSeries
+
+	// IsAdaptiveZero returns true if the division grouping was originally created as an implicitly zero-valued section or grouping (e.g. IPv4AddressSection{}),
+	// meaning it was not constructed using a constructor function.
+	// Such a grouping, which has no divisions or segments, is convertible to an implicitly zero-valued grouping of any type or version, whether IPv6, IPv4, MAC, etc
+	IsAdaptiveZero() bool
+
+	// ToDivGrouping converts to an AddressDivisionGrouping, a polymorphic type usable with all address sections and division groupings.
+	//
+	// ToDivGrouping implementations can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
+	ToDivGrouping() *AddressDivisionGrouping
+}
+
+var _, _ StandardDivGroupingType = &AddressDivisionGrouping{},
+	&IPv6v4MixedAddressGrouping{}
+
+// AddressComponent represents all addresses, address sections, and address segments
+type AddressComponent interface { //AddressSegment and above, AddressSegmentSeries and above
+	// TestBit returns true if the bit in the lower value of the address component at the given index is 1, where index 0 refers to the least significant bit.
+	// In other words, it computes (bits & (1 << n)) != 0), using the lower value of this address component.
+	// TestBit will panic if n < 0, or if it matches or exceeds the bit count of this address component.
+	TestBit(index BitCount) bool
+
+	// IsOneBit returns true if the bit in the lower value of this address component at the given index is 1, where index 0 refers to the most significant bit.
+	// IsOneBit will panic if bitIndex < 0, or if it is larger than the bit count of this address component.
+	IsOneBit(index BitCount) bool
+
+	// ToHexString writes this address component as a single hexadecimal value (possibly two values if a range that is not a prefixed block),
+	// the number of digits according to the bit count, with or without a preceding "0x" prefix.
+	//
+	// If a multiple-valued component cannot be written as a single prefix block or a range of two values, an error is returned.
+	ToHexString(bool) (string, addrerr.IncompatibleAddressError)
+
+	// ToNormalizedString produces a string that is consistent for all address components of the same type and version,
+	ToNormalizedString() string
 }
 
 // AddressSegmentSeries serves as a common interface to all address sections and addresses
@@ -362,16 +370,16 @@ type IPAddressSegmentSeries interface { // IPAddress and above, IPAddressSection
 	// This method applies only to the lower value of the range if this series represents multiple values.
 	GetBlockMaskPrefixLen(network bool) PrefixLen
 
-	// GetLeadingBitCount returns the number of consecutive leading one or zero bits.
-	// If ones is true, returns the number of consecutive leading one bits.
+	// GetLeadingBitCount returns the number of consecutive leading one or zero-bits.
+	// If ones is true, returns the number of consecutive leading one-bits.
 	// Otherwise, returns the number of consecutive leading zero bits.
 	//
 	// This method applies to the lower value of the range if this series represents multiple values.
 	GetLeadingBitCount(ones bool) BitCount
 
-	// GetTrailingBitCount returns the number of consecutive trailing one or zero bits.
+	// GetTrailingBitCount returns the number of consecutive trailing one or zero-bits.
 	// If ones is true, returns the number of consecutive trailing zero bits.
-	// Otherwise, returns the number of consecutive trailing one bits.
+	// Otherwise, returns the number of consecutive trailing one-bits.
 	//
 	// This method applies to the lower value of the range if this series represents multiple values.
 	GetTrailingBitCount(ones bool) BitCount
@@ -565,7 +573,7 @@ type AddressSectionType interface {
 	// Equal returns whether the given address section is equal to this address section.
 	// Two address sections are equal if they represent the same set of sections.
 	// They must match:
-	//  - type/version (IPv4, IPv6, MAC, etc)
+	//  - type/version (IPv4, IPv6, MAC, etc.)
 	//  - segment counts
 	//  - bits per segment
 	//  - segment value ranges
@@ -618,13 +626,6 @@ type AddressType interface {
 
 	// Contains returns whether this is same type and version as the given address or subnet and whether it contains all addresses in the given address or subnet.
 	Contains(AddressType) bool
-
-	// CompareSize compares the counts of two subnets, the number of individual addresses within.
-	//
-	// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one subnet represents more individual addresses than another.
-	//
-	// CompareSize returns a positive integer if this address has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
-	CompareSize(AddressType) int
 
 	// PrefixEqual determines if the given address matches this address up to the prefix length of this address.
 	// If this address has no prefix length, the entire address is compared.
@@ -738,13 +739,6 @@ type IPAddressSeqRangeType interface {
 	AddressItem
 
 	ipAddressRange
-
-	// CompareSize compares the counts of two subnets, the number of individual addresses within.
-	//
-	// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one subnet represents more individual addresses than another.
-	//
-	// CompareSize returns a positive integer if this address has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
-	CompareSize(IPAddressSeqRangeType) int
 
 	// ContainsRange returns whether all the addresses in the given sequential range are also contained in this sequential range.
 	ContainsRange(IPAddressSeqRangeType) bool

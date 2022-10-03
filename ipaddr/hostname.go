@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"net"
 	"strings"
-	"sync/atomic"
 	"unsafe"
 
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
@@ -34,10 +33,20 @@ const (
 	IPv6EndBracket   = ']'
 )
 
+func parseHostName(str string, params addrstrparam.HostNameParams) *HostName {
+	str = strings.TrimSpace(str)
+	res := &HostName{
+		str:       str,
+		params:    params,
+		hostCache: &hostCache{},
+	}
+	res.validate(params)
+	return res
+}
+
 // NewHostName constructs a HostName that will parse the given string according to the default parameters
 func NewHostName(str string) *HostName {
-	str = strings.TrimSpace(str)
-	return &HostName{str: str, params: defaultHostParameters, hostCache: &hostCache{}}
+	return parseHostName(str, defaultHostParameters)
 }
 
 // NewHostNameParams constructs a HostName that will parse the given string according to the given parameters
@@ -48,8 +57,7 @@ func NewHostNameParams(str string, params addrstrparam.HostNameParams) *HostName
 	} else {
 		prms = addrstrparam.CopyHostNameParams(params)
 	}
-	str = strings.TrimSpace(str)
-	return &HostName{str: str, params: prms, hostCache: &hostCache{}}
+	return parseHostName(str, prms)
 }
 
 // NewHostNameFromAddrPort constructs a HostName from an IP address and a port.
@@ -62,9 +70,10 @@ func NewHostNameFromAddrPort(addr *IPAddress, port int) *HostName {
 		labelsQualifier: parsedHostIdentifierStringQualifier{port: cachePorts(portVal)},
 	}
 	return &HostName{
-		str:       hostStr,
-		params:    defaultHostParameters,
-		hostCache: &hostCache{normalizedString: &hostStr, hostData: &hostData{parsedHost: &parsedHost}},
+		str:        hostStr,
+		params:     defaultHostParameters,
+		hostCache:  &hostCache{normalizedString: &hostStr},
+		parsedHost: &parsedHost,
 	}
 }
 
@@ -80,9 +89,10 @@ func newHostNameFromAddr(hostStr string, addr *IPAddress) *HostName { // same as
 		embeddedAddress: embeddedAddress{addressProvider: addr.getProvider()},
 	}
 	return &HostName{
-		str:       hostStr,
-		params:    defaultHostParameters,
-		hostCache: &hostCache{normalizedString: &hostStr, hostData: &hostData{parsedHost: &parsedHost}},
+		str:        hostStr,
+		params:     defaultHostParameters,
+		hostCache:  &hostCache{normalizedString: &hostStr},
+		parsedHost: &parsedHost,
 	}
 }
 
@@ -113,9 +123,10 @@ func newHostNameFromSocketAddr(ip net.IP, port int, zone string) (hostName *Host
 		labelsQualifier: parsedHostIdentifierStringQualifier{port: cachePorts(portVal)},
 	}
 	hostName = &HostName{
-		str:       hostStr,
-		params:    defaultHostParameters,
-		hostCache: &hostCache{normalizedString: &hostStr, hostData: &hostData{parsedHost: &parsedHost}},
+		str:        hostStr,
+		params:     defaultHostParameters,
+		hostCache:  &hostCache{normalizedString: &hostStr},
+		parsedHost: &parsedHost,
 	}
 	return
 }
@@ -181,22 +192,14 @@ var defaultHostParameters = new(addrstrparam.HostNameParamsBuilder).ToParams()
 
 var zeroHost = NewHostName("")
 
-type hostData struct {
-	parsedHost    *parsedHost
-	validateError addrerr.HostNameError
-}
-
 type resolveData struct {
 	resolvedAddrs []*IPAddress
 	err           error
 }
 
 type hostCache struct {
-	*hostData
-	*resolveData
-	normalizedString,
-	normalizedWildcardString,
-	qualifiedString *string
+	resolveData      *resolveData
+	normalizedString *string
 }
 
 // HostName represents an internet host name.  Can be a fully qualified domain name, a simple host name, or an ip address string.
@@ -213,13 +216,15 @@ type hostCache struct {
 // See rfc 3513, 2181, 952, 1035, 1034, 1123, 5890 or the list of rfcs for IPAddress.  For IPv6 addresses in host, see rfc 2732 specifying [] notation
 // and 3986 and 4038 (combining IPv6 [] with prefix or zone) and SMTP rfc 2821 for alternative uses of [] for both IPv4 and IPv6
 type HostName struct {
-	str    string
-	params addrstrparam.HostNameParams
+	str           string
+	params        addrstrparam.HostNameParams
+	parsedHost    *parsedHost
+	validateError addrerr.HostNameError
 	*hostCache
 }
 
 func (host *HostName) init() *HostName {
-	if host.params == nil { // the only way params can be nil is when str == "" as well
+	if host.parsedHost == nil && host.validateError == nil { // the only way params can be nil is when str == "" as well
 		return zeroHost
 	}
 	return host
@@ -227,20 +232,19 @@ func (host *HostName) init() *HostName {
 
 // GetValidationOptions returns the validation options supplied when constructing the HostName, or the default validation options if none were supplied.
 func (host *HostName) GetValidationOptions() addrstrparam.HostNameParams {
+	// TODO think about dropping the validation options if we do not really need them anymore,
+	// both here and in IPAddressString and MACAddressString
+	// OK I realzie now I might as well get it from the parsed data parsedHost!
 	return host.init().params
 }
 
-// Validate validates that this string is a valid address, and if not, throws an exception with a descriptive message indicating why it is not.
+func (host *HostName) validate(validationOptions addrstrparam.HostNameParams) {
+	host.parsedHost, host.validateError = validator.validateHostName(host, validationOptions)
+}
+
+// Validate validates that this string is a valid address, and if not, returns an error with a descriptive message indicating why it is not.
 func (host *HostName) Validate() addrerr.HostNameError {
-	host = host.init()
-	data := host.hostData
-	if data == nil {
-		parsedHost, err := validator.validateHostName(host)
-		data = &hostData{parsedHost, err}
-		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&host.hostData))
-		atomic.StorePointer(dataLoc, unsafe.Pointer(data))
-	}
-	return data.validateError
+	return host.init().validateError
 }
 
 // String implements the fmt.Stringer interface,
@@ -268,7 +272,7 @@ func (host *HostName) IsAddress() bool {
 	return false
 }
 
-// TODO LATER add to doc below
+// TODO LATER add these comments on IPv6 literals and reverse DNS hosts to the godoc below
 // In cases such as IPv6 literals and reverse DNS hosts, you can check the relevant methods isIpv6Literal or isReverseDNS,
 // in which case this method should return the associated address.  If this method returns nil then an error occurred
 //when producing the associated address, and that error is available from getAddressStringException.
@@ -295,7 +299,9 @@ func (host *HostName) IsAllAddresses() bool {
 // IsEmpty returns true if the host name is empty (zero-length).
 func (host *HostName) IsEmpty() bool {
 	host = host.init()
-	return host.IsValid() && ((host.IsAddressString() && host.parsedHost.getAddressProvider().isProvidingEmpty()) || len(host.GetNormalizedLabels()) == 0)
+	return host.IsValid() &&
+		((host.IsAddressString() &&
+			host.parsedHost.getAddressProvider().isProvidingEmpty()) || len(host.GetNormalizedLabels()) == 0)
 }
 
 // GetAddress attempts to convert this host name to an IP address.
@@ -325,7 +331,7 @@ func (host *HostName) ToAddress() (addr *IPAddress, err addrerr.AddressError) {
 // This method can potentially return a list of resolved addresses and an error as well if some resolved addresses were invalid.
 func (host *HostName) ToAddresses() (addrs []*IPAddress, err addrerr.AddressError) {
 	host = host.init()
-	data := host.resolveData
+	data := (*resolveData)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&host.resolveData))))
 	if data == nil {
 		//note that validation handles empty address resolution
 		err = host.Validate() //addrerr.HostNameError
@@ -452,7 +458,7 @@ func (host *HostName) ToAddresses() (addrs []*IPAddress, err addrerr.AddressErro
 		}
 		data = &resolveData{addrs, err}
 		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&host.resolveData))
-		atomic.StorePointer(dataLoc, unsafe.Pointer(data))
+		atomicStorePointer(dataLoc, unsafe.Pointer(data))
 	}
 	return data.resolvedAddrs, nil
 }
@@ -493,41 +499,20 @@ func (host *HostName) GetService() string {
 
 // ToNormalizedString provides a normalized string which is lowercase for host strings, and which is the normalized string for addresses.
 func (host *HostName) ToNormalizedString() string {
-	host = host.init()
-	str := host.normalizedString
-	if str == nil {
-		newStr := host.toNormalizedString(false, false)
-		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&host.normalizedString))
-		str = &newStr
-		atomic.StorePointer(dataLoc, unsafe.Pointer(str))
+	if str := host.normalizedString; str != nil {
+		return *str
 	}
-	return *str
+	return host.toNormalizedString(false, false)
 }
 
 // ToNormalizedWildcardString provides a normalized string which is lowercase for host strings, and which is a normalized string for addresses.
 func (host *HostName) ToNormalizedWildcardString() string {
-	host = host.init()
-	str := host.normalizedWildcardString
-	if str == nil {
-		newStr := host.toNormalizedString(false, false)
-		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&host.normalizedWildcardString))
-		str = &newStr
-		atomic.StorePointer(dataLoc, unsafe.Pointer(str))
-	}
-	return *str
+	return host.toNormalizedString(false, false)
 }
 
 // ToQualifiedString provides a normalized string which is lowercase for host strings, and which is a normalized string for addresses.
 func (host *HostName) ToQualifiedString() string {
-	host = host.init()
-	str := host.qualifiedString
-	if str == nil {
-		newStr := host.toNormalizedString(false, true)
-		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&host.qualifiedString))
-		str = &newStr
-		atomic.StorePointer(dataLoc, unsafe.Pointer(str))
-	}
-	return *str
+	return host.toNormalizedString(false, true)
 }
 
 func (host *HostName) toNormalizedString(wildcard, addTrailingDot bool) string {
@@ -747,7 +732,7 @@ func (host *HostName) ResolvesToSelf() bool {
 	if host.IsSelf() {
 		return true
 	} else if host.GetAddress() != nil {
-		host.resolvedAddrs[0].IsLoopback()
+		host.resolveData.resolvedAddrs[0].IsLoopback()
 	}
 	return false
 }

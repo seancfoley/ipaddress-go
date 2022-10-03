@@ -33,6 +33,9 @@ import (
 // this is just a test program used for trying out code
 func main() {
 
+	zeroipaddressString := ipaddr.IPAddressString{}
+	fmt.Println(zeroipaddressString.GetAddress())
+
 	fmt.Println(ipaddr.IPv4Address{})
 	seg := ipaddr.IPv4AddressSegment{}
 
@@ -180,6 +183,8 @@ func main() {
 		fmt.Printf("visiting %d seg %s\n", i, seg)
 		return false
 	})
+	base85Str, _ := ipv6Addr.ToBase85String()
+	fmt.Println("Base 85 string is", base85Str, "for", ipv6Addr)
 
 	ipv4Addr, _ = ipaddr.NewIPv4AddressFromBytes([]byte{1, 0, 1, 0})
 	fmt.Println()
@@ -582,6 +587,31 @@ func main() {
 		fmt.Printf("%s\n", addr.AssignMinPrefixForBlock())
 	}
 
+	p4 := ToPrefixLen(4)
+	segp := ipaddr.NewIPv4PrefixedSegment(1, p4)
+	segp2 := ipaddr.NewIPv4Segment(2)
+	p12 := ToPrefixLen(12)
+	newSec := ipaddr.NewIPv4PrefixedSection([]*ipaddr.IPv4AddressSegment{segp, segp2, segp2, segp2}, p12)
+	fmt.Println("the section is", newSec) // should be 1.2.2.2/4
+	sgs := newSec.GetSegments()
+	fmt.Println("the segs are", sgs)
+	sg := sgs[0]
+	fmt.Println("the first seg is", sg, "with prefix", sg.GetSegmentPrefixLen())
+	sg = sgs[1]
+	fmt.Println("the second seg is", sg, "with prefix", sg.GetSegmentPrefixLen())
+	sg = sgs[2]
+	fmt.Println("the third seg is", sg, "with prefix", sg.GetSegmentPrefixLen())
+
+	newSec = ipaddr.NewIPv4PrefixedSection([]*ipaddr.IPv4AddressSegment{segp2, segp2, segp2, segp2}, p12)
+	fmt.Println("the section is", newSec) // should be 1.2.2.2/12
+	sgs = newSec.GetSegments()
+	fmt.Println("the segs are", sgs)
+	sg = sgs[0]
+	fmt.Println("the first seg is", sg, "with prefix", sg.GetSegmentPrefixLen())
+	sg = sgs[1]
+	fmt.Println("the second seg is", sg, "with prefix", sg.GetSegmentPrefixLen())
+	sg = sgs[2]
+	fmt.Println("the third seg is", sg, "with prefix", sg.GetSegmentPrefixLen())
 }
 
 func splitIntoBlocks(one, two string) {

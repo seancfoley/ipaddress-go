@@ -360,14 +360,14 @@ func maskExtendedRange(
 				// lower: xxxxxxx0 00000000
 				// So for that reason, we need to check the full count here and not just extended
 
-				countRequiredForSequential := big.NewInt(1)
+				countRequiredForSequential := bigOne()
 				countRequiredForSequential.Lsh(countRequiredForSequential, 128-uint(highestDifferingBitMasked))
 
 				var upperBig, lowerBig, val big.Int
 				upperBig.SetUint64(extendedUpperValue).Lsh(&upperBig, 64).Or(&upperBig, val.SetUint64(upperValue))
 				lowerBig.SetUint64(extendedValue).Lsh(&lowerBig, 64).Or(&lowerBig, val.SetUint64(value))
-				count := upperBig.Sub(&upperBig, &lowerBig).Add(&upperBig, big.NewInt(1))
-				maskedIsSequential = count.Cmp(countRequiredForSequential) >= 0
+				count := upperBig.Sub(&upperBig, &lowerBig).Add(&upperBig, bigOne())
+				maskedIsSequential = count.CmpAbs(countRequiredForSequential) >= 0
 			}
 			return newExtendedFullRangeMasker(highestDifferingBitMasked, maskedIsSequential)
 		} else if !maskedIsSequential {
@@ -389,11 +389,11 @@ func maskExtendedRange(
 				// check if the bit in the mask is 1
 				if maskBig.Bit(nextBit) != 0 {
 					val.Set(&upperToBeMaskedBig).SetBit(&val, nextBit, 1)
-					if val.Cmp(&upperBig) <= 0 {
+					if val.CmpAbs(&upperBig) <= 0 {
 						upperToBeMaskedBig.Set(&val)
 					}
 					val.Set(&lowerToBeMaskedBig).SetBit(&val, nextBit, 0)
-					if val.Cmp(&lowerBig) >= 0 {
+					if val.CmpAbs(&lowerBig) >= 0 {
 						lowerToBeMaskedBig.Set(&val)
 					}
 				} //else
@@ -442,14 +442,14 @@ func maskExtendedRange(
 
 		//We need to check that the range is larger enough that when chopping off the top it remains sequential
 
-		countRequiredForSequential := big.NewInt(1)
+		countRequiredForSequential := bigOne()
 		countRequiredForSequential.Lsh(countRequiredForSequential, 64-uint(highestDifferingBitMaskedLow))
 
 		var upperBig, lowerBig, val big.Int
 		upperBig.SetUint64(extendedUpperValue).Lsh(&upperBig, 64).Or(&upperBig, val.SetUint64(upperValue))
 		lowerBig.SetUint64(extendedValue).Lsh(&lowerBig, 64).Or(&lowerBig, val.SetUint64(value))
-		count := upperBig.Sub(&upperBig, &lowerBig).Add(&upperBig, big.NewInt(1))
-		maskedIsSequential = count.Cmp(countRequiredForSequential) >= 0
+		count := upperBig.Sub(&upperBig, &lowerBig).Add(&upperBig, bigOne())
+		maskedIsSequential = count.CmpAbs(countRequiredForSequential) >= 0
 	}
 	highestDifferingBitMasked = highestDifferingBitMaskedLow + 64
 	return newExtendedFullRangeMasker(highestDifferingBitMasked, maskedIsSequential)

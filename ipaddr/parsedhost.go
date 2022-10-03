@@ -18,8 +18,6 @@ package ipaddr
 
 import (
 	"strings"
-	"sync/atomic"
-	"unsafe"
 
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
 )
@@ -36,13 +34,9 @@ var (
 	noQualifier = &parsedHostIdentifierStringQualifier{}
 )
 
-type hostStrings struct {
+type parsedHostCache struct {
 	normalizedLabels []string
 	host             string
-}
-
-type parsedHostCache struct {
-	*hostStrings
 }
 
 type parsedHost struct {
@@ -135,26 +129,68 @@ func (host *parsedHost) asGenericAddressString() *IPAddressString {
 }
 
 func (host *parsedHost) getHost() string {
-	return host.buildStrings().host
+	return host.buildHostString()
 }
 
-func (host *parsedHost) buildStrings() *hostStrings {
-	res := host.hostStrings
-	if res == nil {
-		var normalizedLabels []string
+func (host *parsedHost) buildHostString() string {
+	if host.parsedHostCache == nil {
 		var hostStr string
 		if host.hasEmbeddedAddress() {
 			addressProvider := host.getAddressProvider()
 			addr, err := addressProvider.getProviderAddress()
 			if err == nil && addr != nil {
 				section := addr.GetSection()
-				normalizedLabels = section.GetSegmentStrings()
 				//port was stripped out
 				//mask and prefix removed by toNormalizedWildcardString
 				//getSection() removes zone
 				hostStr = section.ToCanonicalWildcardString()
 			} else {
 				hostStr = host.mapString(addressProvider)
+			}
+		} else {
+			var label string
+			normalizedFlags := host.normalizedFlags
+			var hostStrBuilder strings.Builder
+			for i, lastSep := 0, -1; i < len(host.separatorIndices); i++ {
+				index := host.separatorIndices[i]
+				if len(normalizedFlags) > 0 && !normalizedFlags[i] {
+					var normalizedLabelBuilder strings.Builder
+					normalizedLabelBuilder.Grow((index - lastSep) - 1)
+					for j := lastSep + 1; j < index; j++ {
+						c := host.originalStr[j]
+						if c >= 'A' && c <= 'Z' {
+							c = c + ('a' - 'A')
+						}
+						normalizedLabelBuilder.WriteByte(c)
+					}
+					label = normalizedLabelBuilder.String()
+				} else {
+					label = host.originalStr[lastSep+1 : index]
+				}
+				if i > 0 {
+					hostStrBuilder.WriteByte(LabelSeparator)
+				}
+				hostStrBuilder.WriteString(label)
+				lastSep = index
+			}
+			hostStr = hostStrBuilder.String()
+		}
+		return hostStr
+	}
+	return host.parsedHostCache.host
+}
+
+func (host *parsedHost) buildNormalizedLabels() []string {
+	if host.parsedHostCache == nil {
+		var normalizedLabels []string
+		if host.hasEmbeddedAddress() {
+			addressProvider := host.getAddressProvider()
+			addr, err := addressProvider.getProviderAddress()
+			if err == nil && addr != nil {
+				section := addr.GetSection()
+				normalizedLabels = section.GetSegmentStrings()
+			} else {
+				hostStr := host.mapString(addressProvider)
 				if addressProvider.isProvidingEmpty() {
 					normalizedLabels = []string{}
 				} else {
@@ -165,7 +201,6 @@ func (host *parsedHost) buildStrings() *hostStrings {
 			normalizedLabels = make([]string, len(host.separatorIndices))
 			normalizedFlags := host.normalizedFlags
 
-			var hostStrBuilder strings.Builder
 			for i, lastSep := 0, -1; i < len(normalizedLabels); i++ {
 				index := host.separatorIndices[i]
 				if len(normalizedFlags) > 0 && !normalizedFlags[i] {
@@ -182,26 +217,16 @@ func (host *parsedHost) buildStrings() *hostStrings {
 				} else {
 					normalizedLabels[i] = host.originalStr[lastSep+1 : index]
 				}
-				if i > 0 {
-					hostStrBuilder.WriteByte(LabelSeparator)
-				}
-				hostStrBuilder.WriteString(normalizedLabels[i])
 				lastSep = index
 			}
-			hostStr = hostStrBuilder.String()
 		}
-		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&host.hostStrings))
-		res = &hostStrings{
-			normalizedLabels: normalizedLabels,
-			host:             hostStr,
-		}
-		atomic.StorePointer(dataLoc, unsafe.Pointer(res))
+		return normalizedLabels
 	}
-	return res
+	return host.parsedHostCache.normalizedLabels
 }
 
 func (host *parsedHost) getNormalizedLabels() []string {
-	return host.buildStrings().normalizedLabels
+	return host.buildNormalizedLabels()
 }
 
 func (host *parsedHost) isUNCIPv6Literal() bool {

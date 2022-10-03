@@ -213,13 +213,13 @@ func (section *MACAddressSection) Compare(item AddressItem) int {
 // Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one section represents more individual address sections than another.
 //
 // CompareSize returns a positive integer if this address section has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
-func (section *MACAddressSection) CompareSize(other StandardDivGroupingType) int {
+func (section *MACAddressSection) CompareSize(other AddressItem) int {
 	if section == nil {
-		if other != nil && other.ToDivGrouping() != nil {
-			// we have size 0, other has size >= 1
-			return -1
+		if isNilItem(other) {
+			return 0
 		}
-		return 0
+		// we have size 0, other has size >= 1
+		return -1
 	}
 	return section.compareSize(other)
 }
@@ -244,6 +244,17 @@ func (section *MACAddressSection) GetCount() *big.Int {
 		return bigZero()
 	}
 	return section.cacheCount(func() *big.Int {
+		return count(func(index int) uint64 {
+			return section.GetSegment(index).GetValueCount()
+		}, section.GetSegmentCount(), 6, 0x7fffffffffffff)
+	})
+}
+
+func (section *MACAddressSection) getCachedCount() *big.Int {
+	if section == nil {
+		return bigZero()
+	}
+	return section.cachedCount(func() *big.Int {
 		return count(func(index int) uint64 {
 			return section.GetSegment(index).GetValueCount()
 		}, section.GetSegmentCount(), 6, 0x7fffffffffffff)

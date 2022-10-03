@@ -1339,26 +1339,26 @@ func (t ipAddressTester) run() {
 
 	t.testContains("2001:db8::/120", "2001:db8::1", false)
 
-	t.testContains("2001:db8::1/120", "2001:db8::1", !false)
+	t.testContains("2001:db8::1/120", "2001:db8::1", true)
 
 	t.testNotContains("2001:db8::1/120", "2001:db8::")
 
-	t.testContains("2001:db8::/112", "2001:db8::", !true)
-	t.testContains("2001:db8::/111", "2001:db8::", !true)
-	t.testContains("2001:db8::/113", "2001:db8::", !true)
+	t.testContains("2001:db8::/112", "2001:db8::", false)
+	t.testContains("2001:db8::/111", "2001:db8::", false)
+	t.testContains("2001:db8::/113", "2001:db8::", false)
 	t.testNotContains("2001:db80::/113", "2001:db8::")
 	t.testNotContains("2001:db0::/113", "2001:db8::")
 	t.testNotContains("2001:db7::/113", "2001:db8::")
 
-	t.testContains("2001:0db8:85a3:0000:0000:8a2e:0370:7334/120", "2001:0db8:85a3:0000:0000:8a2e:0370:7334/128", !false)
-	t.testContains("2001:0db8:85a3::8a2e:0370:7334/120", "2001:0db8:85a3:0000:0000:8a2e:0370:7334/128", !false)
-	t.testContains("2001:0db8:85a3:0000:0000:8a2e:0370:7334/120", "2001:0db8:85a3::8a2e:0370:7334/128", !false)
-	t.testContains("2001:0db8:85a3::8a2e:0370:7334/120", "2001:0db8:85a3::8a2e:0370:7334/128", !false)
+	t.testContains("2001:0db8:85a3:0000:0000:8a2e:0370:7334/120", "2001:0db8:85a3:0000:0000:8a2e:0370:7334/128", true)
+	t.testContains("2001:0db8:85a3::8a2e:0370:7334/120", "2001:0db8:85a3:0000:0000:8a2e:0370:7334/128", true)
+	t.testContains("2001:0db8:85a3:0000:0000:8a2e:0370:7334/120", "2001:0db8:85a3::8a2e:0370:7334/128", true)
+	t.testContains("2001:0db8:85a3::8a2e:0370:7334/120", "2001:0db8:85a3::8a2e:0370:7334/128", true)
 
-	t.testContains("2001:0db8:85a3:0000:0000:8a2e:0370::/120", "2001:0db8:85a3:0000:0000:8a2e:0370::/128", !true)
-	t.testContains("2001:0db8:85a3:0000:0000:8a2e:0370::/120", "2001:0db8:85a3::8a2e:0370:0/128", !true)
-	t.testContains("2001:0db8:85a3::8a2e:0370:0/120", "2001:0db8:85a3:0000:0000:8a2e:0370::/128", !true)
-	t.testContains("2001:0db8:85a3::8a2e:0370:0/120", "2001:0db8:85a3::8a2e:0370:0/128", !true)
+	t.testContains("2001:0db8:85a3:0000:0000:8a2e:0370::/120", "2001:0db8:85a3:0000:0000:8a2e:0370::/128", false)
+	t.testContains("2001:0db8:85a3:0000:0000:8a2e:0370::/120", "2001:0db8:85a3::8a2e:0370:0/128", false)
+	t.testContains("2001:0db8:85a3::8a2e:0370:0/120", "2001:0db8:85a3:0000:0000:8a2e:0370::/128", false)
+	t.testContains("2001:0db8:85a3::8a2e:0370:0/120", "2001:0db8:85a3::8a2e:0370:0/128", false)
 
 	t.testNotContains("12::/4", "123::")
 	t.testNotContains("12::/4", "1234::")
@@ -1912,12 +1912,12 @@ func (t ipAddressTester) run() {
 	t.testPrefixBlocks("a:b:c:d:e:f:a:b/128", 65, false, false)
 
 	t.testPrefixBlocks("a:b:c:d:e:f:a:b", 128, true, true)
-	t.testPrefixBlocks("a:b:c:d:e:f:a:b/64", 128, true, !false)
-	t.testPrefixBlocks("a:b:c:d::/64", 128, true, !true)
-	t.testPrefixBlocks("a:b:c:d:e::/64", 128, true, !false)
-	t.testPrefixBlocks("a:b:c::/64", 128, true, !true)
-	t.testPrefixBlocks("a:b:c:d:e:f:a:b/0", 128, true, !false)
-	t.testPrefixBlocks("a:b:c:d:e:f:a:b/127", 128, true, !false)
+	t.testPrefixBlocks("a:b:c:d:e:f:a:b/64", 128, true, true)
+	t.testPrefixBlocks("a:b:c:d::/64", 128, true, false)
+	t.testPrefixBlocks("a:b:c:d:e::/64", 128, true, true)
+	t.testPrefixBlocks("a:b:c::/64", 128, true, false)
+	t.testPrefixBlocks("a:b:c:d:e:f:a:b/0", 128, true, true)
+	t.testPrefixBlocks("a:b:c:d:e:f:a:b/127", 128, true, true)
 	t.testPrefixBlocks("a:b:c:d:e:f:a:b/128", 128, true, true)
 
 	t.testSplitBytes("1.2.3.4")
@@ -2000,31 +2000,30 @@ func (t ipAddressTester) run() {
 		{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
 	})
 
-	//TODO LATER when we have large divisions
-	//testLargeDivs(new byte[][] {
-	//	new byte[] {1, 2, 3, 4, 5},
-	//	new byte[] {6, 7, 8, 9, 10, 11, 12},
-	//	new byte[] {13, 14, 15, 16}
-	//});
-	//testLargeDivs(new byte[][] {
-	//	new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
-	//});
-	//testLargeDivs(new byte[][] {
-	//	new byte[] {1, 2, 3, 4, 5},
-	//	//new byte[] {},
-	//	new byte[] {6, 7, 8, 9, 10, 11, 12},
-	//	new byte[] {13, 14, 15, 16}
-	//});
-	//testLargeDivs(new byte[][] {
-	//	new byte[] {1}, new byte[] {2}, new byte[] {3}, new byte[] {4}, new byte[] {5},
-	//	new byte[] {6, 7}, new byte[] {8}, new byte[] {9}, new byte[] {10}, new byte[] {11}, new byte[] {12},
-	//	new byte[] {13}, new byte[] {14}, new byte[] {15}, new byte[] {16}
-	//});
-	//testLargeDivs(new byte[][] {
-	//	new byte[] {1},
-	//	new byte[] {2, 3},
-	//	new byte[] {4}
-	//});
+	t.testLargeDivs([][]byte{
+		{1, 2, 3, 4, 5},
+		{6, 7, 8, 9, 10, 11, 12},
+		{13, 14, 15, 16},
+	})
+	t.testLargeDivs([][]byte{
+		{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
+	})
+	t.testLargeDivs([][]byte{
+		{1, 2, 3, 4, 5},
+		//new byte[] {},
+		{6, 7, 8, 9, 10, 11, 12},
+		{13, 14, 15, 16},
+	})
+	t.testLargeDivs([][]byte{
+		{1}, {2}, {3}, {4}, {5},
+		{6, 7}, {8}, {9}, {10}, {11}, {12},
+		{13}, {14}, {15}, {16},
+	})
+	t.testLargeDivs([][]byte{
+		{1},
+		{2, 3},
+		{4},
+	})
 
 	t.testIncrement("1.2.3.4", 0, "1.2.3.4")
 	t.testIncrement("1.2.3.4", 1, "1.2.3.5")
@@ -2244,6 +2243,53 @@ func one28() *big.Int {
 	sixtyFour := new(big.Int).Set(sixty4)
 	sixty4.Or(sixtyFour.Lsh(sixtyFour, 64), sixty4)
 	return sixty4
+}
+
+func (t ipAddressTester) testLargeDivs(bs [][]byte) {
+	var divList []*ipaddr.IPAddressLargeDivision
+	byteTotal := 0
+	for _, b := range bs {
+		byteTotal += len(b)
+		divList = append(divList, ipaddr.NewLargeIPDivision(b, len(b)<<3, 16))
+	}
+	grouping := ipaddr.NewIPAddressLargeDivGrouping(divList)
+	bytes1 := make([]byte, byteTotal)
+	var bytes2, bytes3, bytes4, bytes5, bytes6, bytes7, bytes8 []byte
+	byteTotal = 0
+	for _, b := range bs {
+		copy(bytes1[byteTotal:], b)
+		byteTotal += len(b)
+	}
+	bytes2 = grouping.Bytes()
+	bytes3 = make([]byte, byteTotal)
+	grouping.CopyBytes(bytes3)
+	bytes4 = grouping.UpperBytes()
+	bytes5 = make([]byte, 0, byteTotal)
+	bytes5 = grouping.CopyUpperBytes(bytes5)
+	grouping2 := ipaddr.NewIPAddressLargeDivGrouping([]*ipaddr.IPAddressLargeDivision{ipaddr.NewLargeIPDivision(bytes5, len(bytes5)<<3, 16)})
+	bytes6 = grouping2.Bytes()
+	bytes7 = grouping.Bytes()
+	bytes8 = grouping2.UpperBytes()
+
+	if bytes.Compare(bytes1, bytes2) != 0 {
+		t.addFailure(newAddressItemFailure(fmt.Sprint("mismatch bytes: ", bytes1, " with ", bytes2), grouping))
+	} else if bytes.Compare(bytes1, bytes3) != 0 {
+		t.addFailure(newAddressItemFailure(fmt.Sprint("mismatch bytes: ", bytes1, " with ", bytes3), grouping))
+	} else if bytes.Compare(bytes1, bytes4) != 0 {
+		t.addFailure(newAddressItemFailure(fmt.Sprint("mismatch bytes: ", bytes1, " with ", bytes4), grouping))
+	} else if bytes.Compare(bytes1, bytes5) != 0 {
+		t.addFailure(newAddressItemFailure(fmt.Sprint("mismatch bytes: ", bytes1, " with ", bytes5), grouping))
+	} else if bytes.Compare(bytes1, bytes6) != 0 {
+		t.addFailure(newAddressItemFailure(fmt.Sprint("mismatch bytes: ", bytes1, " with ", bytes6), grouping))
+	} else if bytes.Compare(bytes1, bytes7) != 0 {
+		t.addFailure(newAddressItemFailure(fmt.Sprint("mismatch bytes: ", bytes1, " with ", bytes7), grouping))
+	} else if bytes.Compare(bytes1, bytes8) != 0 {
+		t.addFailure(newAddressItemFailure(fmt.Sprint("mismatch bytes: ", bytes1, " with ", bytes8), grouping))
+	}
+	if (len(bs) == 1 && grouping.Compare(grouping2) != 0) || (len(bs) != 1 && grouping.Compare(grouping2) == 0) {
+		t.addFailure(newAddressItemFailure(fmt.Sprint("match grouping", grouping, " with ", grouping2), grouping))
+	}
+	t.incrementTestCount()
 }
 
 func (t ipAddressTester) testEquivalentPrefix(host string, prefix ipaddr.BitCount) {

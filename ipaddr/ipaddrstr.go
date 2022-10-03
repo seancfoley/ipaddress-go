@@ -18,8 +18,6 @@ package ipaddr
 
 import (
 	"strings"
-	"sync/atomic"
-	"unsafe"
 
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrstrparam"
@@ -33,24 +31,30 @@ func NewIPAddressStringParams(str string, params addrstrparam.IPAddressStringPar
 	} else {
 		p = addrstrparam.CopyIPAddressStringParams(params)
 	}
-	return &IPAddressString{str: strings.TrimSpace(str), params: p, ipAddrStringCache: new(ipAddrStringCache)}
+	return parseIPAddressString(str, p)
 }
 
 // NewIPAddressString constructs an IPAddressString.
 func NewIPAddressString(str string) *IPAddressString {
-	return &IPAddressString{str: strings.TrimSpace(str), params: defaultIPAddrParameters, ipAddrStringCache: new(ipAddrStringCache)}
+	return parseIPAddressString(str, defaultIPAddrParameters)
 }
 
 func newIPAddressStringFromAddr(str string, addr *IPAddress) *IPAddressString {
 	return &IPAddressString{
-		str:    str,
-		params: defaultIPAddrParameters,
-		ipAddrStringCache: &ipAddrStringCache{
-			&addrData{
-				addressProvider: addr.getProvider(),
-			},
-		},
+		str:             str,
+		params:          defaultIPAddrParameters,
+		addressProvider: addr.getProvider(),
 	}
+}
+
+func parseIPAddressString(str string, params addrstrparam.IPAddressStringParams) *IPAddressString {
+	str = strings.TrimSpace(str)
+	res := &IPAddressString{
+		str:    str,
+		params: params,
+	}
+	res.validate(params)
+	return res
 }
 
 var validator hostIdentifierStringValidator = strValidator{}
@@ -58,15 +62,6 @@ var validator hostIdentifierStringValidator = strValidator{}
 var defaultIPAddrParameters = new(addrstrparam.IPAddressStringParamsBuilder).ToParams()
 
 var zeroIPAddressString = NewIPAddressString("")
-
-type addrData struct {
-	addressProvider   ipAddressProvider
-	validateException addrerr.AddressStringError
-}
-
-type ipAddrStringCache struct {
-	*addrData
-}
 
 //
 // IPAddressString parses the string representation of an IP address.  Such a string can represent just a single address like 1.2.3.4 or 1:2:3:4:6:7:8, or a subnet like 1.2.0.0/16 or 1.*.1-3.1-4 or 1111:222::/64.
@@ -106,6 +101,8 @@ type ipAddrStringCache struct {
 //  • IPv6 compressed addresses like ::1
 //
 //  • A single value of 32 hex digits like 00aa00bb00cc00dd00ee00ff00aa00bb with or without a preceding hex delimiter 0x
+//
+//  • A base 85 address comprising 20 base 85 digits like 4)+k&amp;C#VzJ4br&gt;0wv%Yp as in rfc 1924 https://tools.ietf.org/html/rfc1924
 //
 //  • Binary, preceded by 0b, either with binary segments that comprise all 16 bits like ::0b0000111100001111 or a single segment address of 0b followed by 128 binary bits.
 //
@@ -187,13 +184,14 @@ type ipAddrStringCache struct {
 // PrefixEquals(), IsIPv4(), and IsIPv6().
 // Such methods are provided to make creating the IPAddress instance unnecessary when no such IPAddress instance is needed for other reasons.
 type IPAddressString struct {
-	str    string
-	params addrstrparam.IPAddressStringParams // when nil, default parameters is used, never access this field directly
-	*ipAddrStringCache
+	str             string
+	params          addrstrparam.IPAddressStringParams // when nil, default parameters is used, never access this field directly
+	addressProvider ipAddressProvider
+	validateError   addrerr.AddressStringError
 }
 
 func (addrStr *IPAddressString) init() *IPAddressString {
-	if addrStr.ipAddrStringCache == nil {
+	if addrStr.addressProvider == nil && addrStr.validateError == nil {
 		return zeroIPAddressString
 	}
 	return addrStr
@@ -201,7 +199,7 @@ func (addrStr *IPAddressString) init() *IPAddressString {
 
 // GetValidationOptions returns the validation options supplied when constructing this address string,
 // or the default options if no options were supplied.
-func (addrStr *IPAddressString) GetValidationOptions() addrstrparam.IPAddressStringParams {
+func (addrStr *IPAddressString) GetValidationOptions() addrstrparam.IPAddressStringParams { // TODO get it from the parsed data later
 	return addrStr.init().params
 }
 
@@ -269,14 +267,12 @@ func (addrStr *IPAddressString) IsMixedIPv6() bool {
 	return addrStr.IsIPv6() && addrStr.addressProvider.isProvidingMixedIPv6()
 }
 
-/* TODO LATER IsBase85IPv6
 // IsBase85IPv6 returns whether this address string represents an IPv6 address, returns whether the string was base 85
-	func (addrStr *IPAddressString) IsBase85IPv6() bool {
-		return addrStr.IsIPv6() && addrStr.addressProvider.isProvidingBase85IPv6()
-	}
-*/
+func (addrStr *IPAddressString) IsBase85IPv6() bool {
+	return addrStr.IsIPv6() && addrStr.addressProvider.isProvidingBase85IPv6()
+}
 
-// TODO LATER isMappedIPv4Address using prefixEquals like we added in Java, which requires a few tweals to containsProv method in parsedaddr.go
+// TODO LATER isMappedIPv4Address using prefixEquals like we added in Java, which requires a few tweaks to containsProv method in parsedaddr.go
 
 // GetIPVersion returns the IP address version if this represents a valid IP address, otherwise it returns nil
 func (addrStr *IPAddressString) GetIPVersion() IPVersion {
@@ -346,14 +342,7 @@ func (addrStr *IPAddressString) toNormalizedString(addressProvider ipAddressProv
 // an IPv4 address or subnet, an IPv6 address or subnet, the address representing all addresses of both versions, or an empty string.
 // If this method returns false, and you want more details, call Validate and examine the error.
 func (addrStr *IPAddressString) IsValid() bool {
-	if addrStr.ipAddrStringCache == nil /* zero address is valid */ {
-		return true
-	}
-	provider, err := addrStr.getAddressProvider()
-	if err != nil {
-		return false
-	}
-	return !provider.isInvalid()
+	return addrStr.Validate() == nil
 }
 
 // GetAddress returns the IP address if this IPAddressString is a valid string representing an IP address or subnet.  Otherwise, it returns nil.
@@ -447,6 +436,7 @@ func (addrStr *IPAddressString) ToHostAddress() (*IPAddress, addrerr.AddressErro
 	return provider.getProviderHostAddress()
 }
 
+// TODO isSequential
 //// IsSequential returns whether the addresses returned by this IPAddressString are sequential,
 //// meaning that if any address has a numerical value that lies in between the numerical values of two addresses represented by this IPAddressString,
 //// then that address is also represented by this IPAddressString.  In other words, the range of addresses is sequential.
@@ -508,20 +498,13 @@ func (addrStr *IPAddressString) getAddressProvider() (ipAddressProvider, addrerr
 	return addrStr.addressProvider, err
 }
 
+func (addrStr *IPAddressString) validate(validationOptions addrstrparam.IPAddressStringParams) {
+	addrStr.addressProvider, addrStr.validateError = validator.validateIPAddressStr(addrStr, validationOptions)
+}
+
 // Validate validates that this string is a valid IP address, returning nil, and if not, returns an error with a descriptive message indicating why it is not.
 func (addrStr *IPAddressString) Validate() addrerr.AddressStringError {
-	addrStr = addrStr.init()
-	data := addrStr.addrData
-	if data == nil {
-		addressProvider, err := validator.validateIPAddressStr(addrStr)
-		data = &addrData{addressProvider, err}
-		if err != nil {
-			data.addressProvider = invalidProvider
-		}
-		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&addrStr.addrData))
-		atomic.StorePointer(dataLoc, unsafe.Pointer(data))
-	}
-	return data.validateException
+	return addrStr.init().validateError
 }
 
 // ValidateVersion validates that this string is a valid IP address of the given version.
@@ -538,14 +521,10 @@ func (addrStr *IPAddressString) ValidateVersion(version IPVersion) addrerr.Addre
 		if version.IsIPv4() {
 			if addrVersion.IsIPv6() {
 				return &addressStringError{addressError{str: addrStr.str, key: "ipaddress.error.address.is.ipv6"}}
-			} else if addrStr.validateException != nil {
-				return addrStr.validateException
 			}
 		} else if version.IsIPv6() {
 			if addrVersion.IsIPv4() {
 				return &addressStringError{addressError{str: addrStr.str, key: "ipaddress.error.address.is.ipv4"}}
-			} else if addrStr.validateException != nil {
-				return addrStr.validateException
 			}
 		}
 	}
@@ -576,7 +555,6 @@ func (addrStr *IPAddressString) Compare(other *IPAddressString) int {
 			if res, err := addrStr.addressProvider.providerCompare(other.addressProvider); err == nil {
 				return res
 			}
-
 			// one or the other is nil, either empty or IncompatibleAddressException
 			return strings.Compare(addrStr.String(), other.String())
 		}
@@ -601,18 +579,9 @@ func (addrStr *IPAddressString) PrefixEqual(other *IPAddressString) bool {
 	other = other.init()
 	if other == addrStr {
 		return true
-	}
-	if !addrStr.IsValid() {
+	} else if !addrStr.IsValid() {
 		return false
-	}
-	if other.isUninitialized() { // other not yet validated - if other is validated no need for this quick contains
-		// do the quick check that uses only the String of the other, matching til the end of the prefix length, for performance
-		directResult := addrStr.addressProvider.prefixEquals(other.str)
-		if directResult.isSet {
-			return directResult.val
-		}
-	}
-	if other.IsValid() {
+	} else if other.IsValid() {
 		directResult := addrStr.addressProvider.prefixEqualsProvider(other.addressProvider)
 		if directResult.isSet {
 			return directResult.val
@@ -644,14 +613,7 @@ func (addrStr *IPAddressString) PrefixContains(other *IPAddressString) bool {
 		return true
 	} else if !addrStr.IsValid() {
 		return false
-	} else if other.isUninitialized() { // other not yet validated - if other is validated no need for this quick contains
-		// do the quick check that uses only the String of the other, matching til the end of the prefix length, for performance
-		directResult := addrStr.addressProvider.prefixContains(other.str)
-		if directResult.isSet {
-			return directResult.val
-		}
-	}
-	if other.IsValid() {
+	} else if other.IsValid() {
 		directResult := addrStr.addressProvider.prefixContainsProvider(other.addressProvider)
 		if directResult.isSet {
 			return directResult.val
@@ -668,10 +630,6 @@ func (addrStr *IPAddressString) PrefixContains(other *IPAddressString) bool {
 	return false
 }
 
-func (addrStr *IPAddressString) isUninitialized() bool {
-	return addrStr.init().addrData == nil
-}
-
 // Contains returns whether the address or subnet identified by this address string contains the address or subnet identified by the given string.
 // If this address string or the given address string is invalid then Contains returns false.
 func (addrStr *IPAddressString) Contains(other *IPAddressString) bool {
@@ -680,13 +638,6 @@ func (addrStr *IPAddressString) Contains(other *IPAddressString) bool {
 	if addrStr.IsValid() {
 		if other == addrStr {
 			return true
-		}
-		if other.isUninitialized() { // other not yet validated - if other is validated no need for this quick contains
-			//do the quick check that uses only the string of the other
-			directResult := addrStr.addressProvider.contains(other.str)
-			if directResult.isSet {
-				return directResult.val
-			}
 		}
 		if other.IsValid() {
 			// note the quick result also handles the case of "all addresses"

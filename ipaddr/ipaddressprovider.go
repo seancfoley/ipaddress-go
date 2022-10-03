@@ -17,7 +17,6 @@
 package ipaddr
 
 import (
-	"sync/atomic"
 	"unsafe"
 
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
@@ -88,6 +87,7 @@ type ipAddressProvider interface {
 
 	isProvidingIPv6() bool
 
+	// providing **all** addresses of any IP version, ie "*", not "*.*" or "*:*"
 	isProvidingAllAddresses() bool
 
 	isProvidingEmpty() bool
@@ -110,29 +110,10 @@ type ipAddressProvider interface {
 	// Addresses constructed from canonical or normalized representations with no wildcards will not return null.
 	containsProvider(ipAddressProvider) boolSetting
 
-	// contains is an optimized contains that does not need to fully parse the other address to return an answer.
-	//
-	// Unconventional addresses may require full parsing, in such cases null is returned.
-	//
-	// Addresses constructed from canonical or normalized representations with no wildcards will not return null.
-	contains(string) boolSetting
-
-	// prefixEquals is an optimized prefix comparison that does not need to fully parse the other address to return an answer.
-	//
-	// Unconventional addresses may require full parsing, in such cases null is returned.
-	//
-	// Addresses constructed from canonical or normalized representations with no wildcards will not return null.
-	prefixEquals(string) boolSetting
-
 	// prefixEqualsProvider is an optimized prefix comparison that does not need to create addresses to return an answer.
 	//
 	// Unconventional addresses may require the address objects, in such cases null is returned.
 	prefixEqualsProvider(ipAddressProvider) boolSetting
-
-	// prefixContains is an optimized prefix comparison that does not need to create addresses to return an answer.
-	//
-	// Unconventional addresses may require the address objects, in such cases null is returned.
-	prefixContains(string) boolSetting
 
 	// prefixContainsProvider is an optimized prefix comparison that does not need to create addresses to return an answer.
 	//
@@ -223,19 +204,7 @@ func (p *ipAddrProvider) containsProvider(ipAddressProvider) boolSetting {
 	return boolSetting{}
 }
 
-func (p *ipAddrProvider) contains(string) boolSetting {
-	return boolSetting{}
-}
-
-func (p *ipAddrProvider) prefixEquals(string) boolSetting {
-	return boolSetting{}
-}
-
 func (p *ipAddrProvider) prefixEqualsProvider(ipAddressProvider) boolSetting {
-	return boolSetting{}
-}
-
-func (p *ipAddrProvider) prefixContains(string) boolSetting {
 	return boolSetting{}
 }
 
@@ -331,8 +300,7 @@ func (p *nullProvider) providerEquals(other ipAddressProvider) (bool, addrerr.In
 }
 
 var (
-	invalidProvider = &nullProvider{isInvalidVal: true, ipType: invalidType}
-	emptyProvider   = &nullProvider{isEmpty: true, ipType: emptyType}
+	emptyProvider = &nullProvider{isEmpty: true, ipType: emptyType}
 )
 
 // Wraps an IPAddress for IPAddressString in the cases where no parsing is provided, the address exists already
@@ -393,27 +361,17 @@ func (cached *cachedAddressProvider) isSequential() bool {
 }
 
 func (cached *cachedAddressProvider) getProviderHostAddress() (res *IPAddress, err addrerr.IncompatibleAddressError) {
-	addrs := cached.addresses
-	if addrs == nil {
-		_, res, _, err = cached.getCachedAddresses() // sets cached.addresses
-	} else {
-		res, err = addrs.hostAddress, addrs.hostErr
-	}
+	_, res, _, err = cached.getCachedAddresses()
 	return
 }
 
 func (cached *cachedAddressProvider) getProviderAddress() (res *IPAddress, err addrerr.IncompatibleAddressError) {
-	addrs := cached.addresses
-	if addrs == nil {
-		res, _, err, _ = cached.getCachedAddresses() // sets cached.addresses
-	} else {
-		res, err = addrs.address, addrs.addrErr
-	}
+	res, _, err, _ = cached.getCachedAddresses()
 	return
 }
 
 func (cached *cachedAddressProvider) getCachedAddresses() (address, hostAddress *IPAddress, addrErr, hostErr addrerr.IncompatibleAddressError) {
-	addrs := cached.addresses
+	addrs := (*addressResult)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&cached.addresses))))
 	if addrs == nil {
 		if cached.addressCreator != nil {
 			address, hostAddress, addrErr, hostErr = cached.addressCreator()
@@ -424,7 +382,7 @@ func (cached *cachedAddressProvider) getCachedAddresses() (address, hostAddress 
 				hostErr:     hostErr,
 			}
 			dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cached.addresses))
-			atomic.StorePointer(dataLoc, unsafe.Pointer(addresses))
+			atomicStorePointer(dataLoc, unsafe.Pointer(addresses))
 		}
 	} else {
 		address, hostAddress, addrErr, hostErr = addrs.address, addrs.hostAddress, addrs.addrErr, addrs.hostErr
@@ -502,12 +460,12 @@ func (versioned *versionedAddressCreator) getVersionedAddress(version IPVersion)
 		return
 	}
 	if versioned.versionedAddressCreatorFunc != nil {
-		addr = versioned.versionedValues[index]
+		addr = (*IPAddress)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&versioned.versionedValues[index]))))
 		if addr == nil {
 			addr, err = versioned.versionedAddressCreatorFunc(version)
 			if err == nil {
 				dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&versioned.versionedValues[index]))
-				atomic.StorePointer(dataLoc, unsafe.Pointer(addr))
+				atomicStorePointer(dataLoc, unsafe.Pointer(addr))
 			}
 		}
 	}
@@ -575,8 +533,9 @@ func emptyAddressCreator(emptyStrOption addrstrparam.EmptyStrOption, version IPV
 	return
 }
 
-func newLoopbackCreator(options addrstrparam.IPAddressStringParams, zone Zone) *loopbackCreator {
+func newEmptyAddrCreator(options addrstrparam.IPAddressStringParams, zone Zone) *emptyAddrCreator {
 	var version = IPVersion(options.GetPreferredVersion())
+	// EmptyStrParsedAs chooses whether to produce loopbacks, zero addresses, or nothing for the empty string ""
 	addrCreator, versionedCreator := emptyAddressCreator(options.EmptyStrParsedAs(), version, zone)
 	cached := cachedAddressProvider{
 		addressCreator: func() (address, hostAddress *IPAddress, addrErr, hosterr addrerr.IncompatibleAddressError) {
@@ -601,7 +560,7 @@ func newLoopbackCreator(options addrstrparam.IPAddressStringParams, zone Zone) *
 	versionedAddressCreatorFunc := func(version IPVersion) (*IPAddress, addrerr.IncompatibleAddressError) {
 		return versionedCreatorFunc(version), nil
 	}
-	return &loopbackCreator{
+	return &emptyAddrCreator{
 		versionedAddressCreator: versionedAddressCreator{
 			adjustedVersion:             version,
 			parameters:                  options,
@@ -612,21 +571,21 @@ func newLoopbackCreator(options addrstrparam.IPAddressStringParams, zone Zone) *
 	}
 }
 
-type loopbackCreator struct {
+type emptyAddrCreator struct {
 	versionedAddressCreator
 
 	zone Zone
 }
 
-func (loop *loopbackCreator) providerCompare(other ipAddressProvider) (int, addrerr.IncompatibleAddressError) {
+func (loop *emptyAddrCreator) providerCompare(other ipAddressProvider) (int, addrerr.IncompatibleAddressError) {
 	return providerCompare(loop, other)
 }
 
-func (loop *loopbackCreator) providerEquals(other ipAddressProvider) (bool, addrerr.IncompatibleAddressError) {
+func (loop *emptyAddrCreator) providerEquals(other ipAddressProvider) (bool, addrerr.IncompatibleAddressError) {
 	return providerEquals(loop, other)
 }
 
-func (loop *loopbackCreator) getProviderNetworkPrefixLen() PrefixLen {
+func (loop *emptyAddrCreator) getProviderNetworkPrefixLen() PrefixLen {
 	return nil
 }
 
@@ -739,6 +698,7 @@ func (all *allCreator) providerEquals(other ipAddressProvider) (bool, addrerr.In
 	return providerEquals(all, other)
 }
 
+// providing **all** addresses of any IP version, ie "*", not "*.*" or "*:*"
 func (all *allCreator) isProvidingAllAddresses() bool {
 	return all.adjustedVersion == IndeterminateIPVersion
 }
@@ -752,27 +712,25 @@ func (all *allCreator) getProviderMask() *IPAddress {
 }
 
 func (all *allCreator) createAll() (rng *IPAddressSeqRange, addr *IPAddress, hostAddr *IPAddress, addrErr, hostErr addrerr.IncompatibleAddressError) {
-	rng = all.rng
-	addrs := all.addresses
-	if rng == nil || addrs == nil {
+	addrs := (*addressResult)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&all.addresses))))
+	if addrs == nil {
 		var lower, upper *IPAddress
 		addr, hostAddr, lower, upper, addrErr = createAllAddress(
 			all.adjustedVersion,
 			&all.qualifier,
 			all.originator)
 		rng = lower.SpanWithRange(upper)
-		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&all.rng))
-		atomic.StorePointer(dataLoc, unsafe.Pointer(rng))
+		all.rng = rng
 		addresses := &addressResult{
 			address:     addr,
 			hostAddress: hostAddr,
 			addrErr:     addrErr,
 			hostErr:     hostErr,
 		}
-		dataLoc = (*unsafe.Pointer)(unsafe.Pointer(&all.addresses))
-		atomic.StorePointer(dataLoc, unsafe.Pointer(addresses))
+		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&all.addresses))
+		atomicStorePointer(dataLoc, unsafe.Pointer(addresses))
 	} else {
-		addr, hostAddr, addrErr, hostErr = addrs.address, addrs.hostAddress, addrs.addrErr, addrs.hostErr
+		rng, addr, hostAddr, addrErr, hostErr = all.rng, addrs.address, addrs.hostAddress, addrs.addrErr, addrs.hostErr
 	}
 	return
 }
@@ -804,11 +762,7 @@ func (all *allCreator) getProviderSeqRange() *IPAddressSeqRange {
 	if all.isProvidingAllAddresses() {
 		return nil
 	}
-	rng := all.rng
-	if rng == nil {
-		rng = all.createRange()
-	}
-	return rng
+	return all.createRange()
 }
 
 func (all *allCreator) prefixContainsProvider(otherProvider ipAddressProvider) boolSetting {

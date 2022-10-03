@@ -26,9 +26,27 @@ import (
 )
 
 // SegInt is an integer type for holding generic address segment values.  It is at least as large as all address segment values: IPv6SegInt, IPv4SegInt, MACSegInt
-type SegInt = uint32      // must be at least uint16 to handle IPv6, at least 32 to handle single segment IPv4, and no larger than 64 because we use bits.TrailingZeros64.  IP address segment code uses bits.TrailingZeros32 and bits.LeadingZeros32, so it cannot be larger than 32.
-const SegIntSize = 32     // must match the bit count of SegInt
+type SegInt = uint32 // must be at least uint16 to handle IPv6, at least 32 to handle single segment IPv4, and no larger than 64 because we use bits.TrailingZeros64.  IP address segment code uses bits.TrailingZeros32 and bits.LeadingZeros32, so it cannot be larger than 32.
+
+const SegIntSize = 32 // must match the bit count of SegInt
+
 type SegIntCount = uint64 // must be able to hold: (max value of SegInt) + 1
+
+type segderiver interface {
+	// deriveNew produces a new segment with the same bit count as the old
+	deriveNewMultiSeg(val, upperVal SegInt, prefLen PrefixLen) divisionValues
+
+	// deriveNew produces a new segment with the same bit count as the old
+	deriveNewSeg(val SegInt, prefLen PrefixLen) divisionValues
+}
+
+type segmentValues interface {
+	// getSegmentValue gets the lower value for a segment
+	getSegmentValue() SegInt
+
+	// getUpperSegmentValue gets the upper value for a segment
+	getUpperSegmentValue() SegInt
+}
 
 // CompareSegInt returns a negative number, 0 or a positive number if integer one is less than, equal to, or greater than integer two.
 func CompareSegInt(one, two SegInt) int {
@@ -74,16 +92,16 @@ func (seg *addressSegmentInternal) contains(other AddressSegmentType) bool {
 	return false
 }
 
-func (div *addressDivisionInternal) equal(other AddressSegmentType) bool {
-	if other == nil || other.ToDiv() == nil {
+func (div *addressSegmentInternal) equal(other AddressSegmentType) bool {
+	if other == nil || other.ToSegmentBase() == nil {
 		return false
 	}
 	if div.isMultiple() {
 		if other.IsMultiple() {
 			matches, _ := div.matchesStructure(other)
-			otherDivision := other.ToDiv()
-			return matches && divValsSame(div.getDivisionValue(), otherDivision.GetDivisionValue(),
-				div.getUpperDivisionValue(), otherDivision.GetUpperDivisionValue())
+			otherDivision := other.ToSegmentBase()
+			return matches && segValsSame(div.getSegmentValue(), otherDivision.getSegmentValue(),
+				div.getUpperSegmentValue(), otherDivision.getUpperSegmentValue())
 		} else {
 			return false
 		}
@@ -91,8 +109,8 @@ func (div *addressDivisionInternal) equal(other AddressSegmentType) bool {
 		return false
 	}
 	matches, _ := div.matchesStructure(other)
-	otherDivision := other.ToDiv()
-	return matches && divValSame(div.getDivisionValue(), otherDivision.GetDivisionValue())
+	otherDivision := other.ToSegmentBase()
+	return matches && segValSame(div.GetSegmentValue(), otherDivision.GetSegmentValue())
 }
 
 func (seg *addressSegmentInternal) equalsSegment(other *AddressSegment) bool {
@@ -781,6 +799,22 @@ func (seg *AddressSegment) Compare(item AddressItem) int {
 	return CountComparator.Compare(seg, item)
 }
 
+// CompareSize compares the counts of two segments, the number of individual values within.
+//
+// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one represents more individual values than another.
+//
+// CompareSize returns a positive integer if this segment has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
+func (seg *AddressSegment) CompareSize(other AddressItem) int {
+	if seg == nil {
+		if isNilItem(other) {
+			return 0
+		}
+		// we have size 0, other has size >= 1
+		return -1
+	}
+	return seg.compareSize(other)
+}
+
 // GetLower returns a segment representing just the lowest value in the range, which will be the same segment if it represents a single value.
 func (seg *addressSegmentInternal) GetLower() *AddressSegment {
 	return seg.getLower()
@@ -945,6 +979,10 @@ func segsSame(onePref, twoPref PrefixLen, oneVal, twoVal, oneUpperVal, twoUpperV
 
 func segValsSame(oneVal, twoVal, oneUpperVal, twoUpperVal SegInt) bool {
 	return oneVal == twoVal && oneUpperVal == twoUpperVal
+}
+
+func segValSame(oneVal, twoVal SegInt) bool {
+	return oneVal == twoVal
 }
 
 func getPrefixValueCount(segment *AddressSegment, segmentPrefixLength BitCount) SegIntCount {

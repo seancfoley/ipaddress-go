@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"math/big"
 	"strconv"
-	"sync/atomic"
 	"unsafe"
 
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
@@ -53,6 +52,11 @@ func createSectionMultiple(segments []*AddressDivision, prefixLength PrefixLen, 
 }
 
 func createInitializedSection(segments []*AddressDivision, prefixLength PrefixLen, addrType addrType) *AddressSection {
+	//TODO check where we call this, because we don't seem to be verifying the division prefixes, so I assume it is called internally? I would have thought initMultAndPrefLen called only when not supplying a prefix length
+	// Most places call it with nil prefix length
+	// replace in section.go line 778 seems to be one place it could be wrong, we should be initializing segments properly
+	// Even places where it is called with nil prefix length, we should be setting each segment ot have nil prefix length, like in the "reverse" methods, toAboveOrBelow method
+
 	result := createSection(segments, prefixLength, addrType)
 	result.initMultAndPrefLen() // assigns isMult and checks prefix length
 	return result
@@ -137,45 +141,6 @@ func (section *addressSectionInternal) initMultAndImplicitPrefLen(bitsPerSegment
 	}
 }
 
-// this is used by methods that are used by both mac and ipv4/6, even though the prefix length assignment does not apply to MAC
-func (section *addressSectionInternal) initMultAndPrefLen() {
-	segCount := section.GetSegmentCount()
-	if segCount != 0 {
-		var previousSegmentPrefix PrefixLen
-		isMultiple := false
-		bitsPerSegment := section.GetBitsPerSegment()
-		for i := 0; i < segCount; i++ {
-			segment := section.GetSegment(i)
-			if !isMultiple && segment.isMultiple() {
-				isMultiple = true
-				section.isMult = true
-				if section.prefixLength != nil { // nothing left to do
-					break
-				}
-			}
-
-			//Calculate the segment-level prefix
-			//
-			//Across an address prefixes are:
-			//IPv6: (nil):...:(nil):(1 to 16):(0):...:(0)
-			//or IPv4: ...(nil).(1 to 8).(0)...
-			//For MAC, all segs have nil prefix since prefix is not segment-level
-			segPrefix := segment.getDivisionPrefixLength()
-			if previousSegmentPrefix == nil {
-				if segPrefix != nil {
-					newPref := getNetworkPrefixLen(bitsPerSegment, segPrefix.bitCount(), i)
-					section.prefixLength = newPref
-					if isMultiple { // nothing left to do
-						break
-					}
-				}
-			}
-			previousSegmentPrefix = segPrefix
-		}
-	}
-	return
-}
-
 func createDivisionsFromSegs(
 	segProvider func(index int) *IPAddressSegment,
 	segCount int,
@@ -186,6 +151,7 @@ func createDivisionsFromSegs(
 	zeroSeg, zeroSegZeroPrefix, zeroSegPrefixBlock *IPAddressSegment,
 	assignedPrefLen PrefixLen) (divs []*AddressDivision, newPref PrefixLen, isMultiple bool) {
 	divs = make([]*AddressDivision, segCount)
+
 	var previousSegPrefixed bool
 	prefixedSegment := -1
 	if assignedPrefLen != nil {
@@ -238,9 +204,10 @@ func createDivisionsFromSegs(
 					divs[i] = zeroSeg.toPrefixedNetworkDivision(segPref)
 				}
 			} else {
-				divs[i] = zeroSeg.ToDiv()
+				divs[i] = zeroSeg.ToDiv() // nil segs are just zero
 			}
 		} else {
+			// The final prefix length is the minimum amongst the assigned one and all of the segments' own prefixes
 			segPrefix := segment.getDivisionPrefixLength()
 			segIsPrefixed := segPrefix != nil
 			if previousSegPrefixed {
@@ -249,13 +216,17 @@ func createDivisionsFromSegs(
 						segment.deriveNewMultiSeg(
 							segment.GetSegmentValue(),
 							segment.GetUpperSegmentValue(),
-							cacheBitCount(0)))
+							cacheBitCount(0))) // change seg prefix to 0
 				} else {
-					divs[i] = segment.ToDiv()
+					divs[i] = segment.ToDiv() // seg prefix is already 0
 				}
 			} else {
+				// if a prefix length was supplied, we must check for prefix subnets
+				var segPrefixSwitch bool
+				var assignedSegPref PrefixLen
 				if i == prefixedSegment || (prefixedSegment > 0 && segIsPrefixed) {
-					assignedSegPref := getPrefixedSegmentPrefixLength(bitsPerSegment, assignedPrefLen.bitCount(), prefixedSegment)
+					// there exists an assigned prefix length
+					assignedSegPref = getPrefixedSegmentPrefixLength(bitsPerSegment, assignedPrefLen.bitCount(), i)
 					if segIsPrefixed {
 						if assignedSegPref == nil || segPrefix.bitCount() < assignedSegPref.bitCount() {
 							if segPrefix.bitCount() == 0 && i > 0 {
@@ -271,9 +242,11 @@ func createDivisionsFromSegs(
 							newPref = getNetworkPrefixLen(bitsPerSegment, segPrefix.bitCount(), i)
 						} else {
 							newPref = cachePrefixLen(assignedPrefLen)
+							segPrefixSwitch = assignedSegPref.bitCount() < segPrefix.bitCount()
 						}
 					} else {
 						newPref = cachePrefixLen(assignedPrefLen)
+						segPrefixSwitch = true
 					}
 					if isPrefixSubnet(
 						func(segmentIndex int) SegInt {
@@ -290,7 +263,13 @@ func createDivisionsFromSegs(
 							}
 							return seg.GetUpperSegmentValue()
 						},
-						segCount, bytesPerSegment, bitsPerSegment, maxValuePerSegment, newPref.bitCount(), zerosOnly) {
+						segCount,
+						bytesPerSegment,
+						bitsPerSegment,
+						maxValuePerSegment,
+						newPref.bitCount(),
+						zerosOnly) {
+
 						divs[i] = segment.toPrefixedNetworkDivision(assignedSegPref)
 						i++
 						isMultiple = isMultiple || i < len(divs) || newPref.bitCount() < bitsPerSegment
@@ -314,7 +293,15 @@ func createDivisionsFromSegs(
 					newPref = getNetworkPrefixLen(bitsPerSegment, segPrefix.bitCount(), i)
 					previousSegPrefixed = true
 				}
-				divs[i] = segment.ToDiv()
+				if segPrefixSwitch {
+					divs[i] = createAddressDivision(
+						segment.deriveNewMultiSeg(
+							segment.GetSegmentValue(),
+							segment.GetUpperSegmentValue(),
+							assignedSegPref)) // change seg prefix
+				} else {
+					divs[i] = segment.ToDiv()
+				}
 			}
 			isMultiple = isMultiple || segment.isMultiple()
 		}
@@ -523,12 +510,12 @@ func (section *addressSectionInternal) getLowestHighestSections() (lower, upper 
 	if cache == nil {
 		return section.createLowestHighestSections()
 	}
-	cached := cache.sectionCache
+	cached := (*groupingCache)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&cache.sectionCache))))
 	if cached == nil {
 		cached = &groupingCache{}
 		cached.lower, cached.upper = section.createLowestHighestSections()
 		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache.sectionCache))
-		atomic.StorePointer(dataLoc, unsafe.Pointer(cached))
+		atomicStorePointer(dataLoc, unsafe.Pointer(cached))
 	}
 	lower = cached.lower
 	upper = cached.upper
@@ -834,7 +821,7 @@ func (section *addressSectionInternal) toPrefixBlock() *AddressSection {
 }
 
 func (section *addressSectionInternal) toPrefixBlockLen(prefLen BitCount) *AddressSection {
-	prefLen = checkSubnet(section.toAddressSection(), prefLen)
+	prefLen = checkSubnet(section, prefLen)
 	segCount := section.GetSegmentCount()
 	if segCount == 0 {
 		return section.toAddressSection()
@@ -1608,11 +1595,11 @@ func (section *addressSectionInternal) toLongOctalStringZoned(zone Zone, opts ad
 		upperDivs, _ := section.getUpper().createNewDivisions(3)
 		lowerPart := createInitializedGrouping(lowerDivs, nil)
 		upperPart := createInitializedGrouping(upperDivs, nil)
-		return toNormalizedStringRange(toZonedParams(opts), lowerPart, upperPart, zone), nil
+		return toNormalizedStringRange(toParams(opts), lowerPart, upperPart, zone), nil
 	}
 	divs, _ := section.createNewDivisions(3)
 	part := createInitializedGrouping(divs, nil)
-	return toZonedParams(opts).toZonedString(part, zone), nil
+	return toParams(opts).toZonedString(part, zone), nil
 }
 
 func (section *addressSectionInternal) toBinaryString(with0bPrefix bool) (string, addrerr.IncompatibleAddressError) {
@@ -1644,7 +1631,7 @@ func (section *addressSectionInternal) toLongStringZoned(zone Zone, params addrs
 		return "", err
 	} else if isDual {
 		sect := section.toAddressSection()
-		return toNormalizedStringRange(toZonedParams(params), sect.GetLower(), sect.GetUpper(), zone), nil
+		return toNormalizedStringRange(toParams(params), sect.GetLower(), sect.GetUpper(), zone), nil
 	}
 	return section.toCustomStringZoned(params, zone), nil
 }
@@ -1660,7 +1647,7 @@ func (section *addressSectionInternal) toCustomStringZoned(stringOptions addrstr
 func (section *addressSectionInternal) isDualString() (bool, addrerr.IncompatibleAddressError) {
 	count := section.GetSegmentCount()
 	if section.isMultiple() {
-		//at this point we know we will return true, but we determine now if we must returnaddrerr.IncompatibleAddressError
+		//at this point we know we will return true, but we determine now if we must return addrerr.IncompatibleAddressError
 		for i := 0; i < count; i++ {
 			division := section.GetSegment(i)
 			if division.isMultiple() {
@@ -1965,7 +1952,7 @@ func (section *addressSectionInternal) GetPrefixLen() PrefixLen {
 //
 // Use GetMinPrefixLenForBlock to determine the smallest prefix length for which this method returns true.
 func (section *addressSectionInternal) ContainsPrefixBlock(prefixLen BitCount) bool {
-	prefixLen = checkSubnet(section.toAddressSection(), prefixLen)
+	prefixLen = checkSubnet(section, prefixLen)
 	divCount := section.GetSegmentCount()
 	bitsPerSegment := section.GetBitsPerSegment()
 	i := getHostSegmentIndex(prefixLen, section.GetBytesPerSegment(), bitsPerSegment)
@@ -2181,13 +2168,13 @@ func (section *AddressSection) Compare(item AddressItem) int {
 // Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one section represents more individual address sections than another.
 //
 // CompareSize returns a positive integer if this address section has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
-func (section *AddressSection) CompareSize(other StandardDivGroupingType) int {
+func (section *AddressSection) CompareSize(other AddressItem) int {
 	if section == nil {
-		if other != nil && other.ToDivGrouping() != nil {
-			// we have size 0, other has size >= 1
-			return -1
+		if isNilItem(other) {
+			return 0
 		}
-		return 0
+		// we have size 0, other has size >= 1
+		return -1
 	}
 	return section.compareSize(other)
 }

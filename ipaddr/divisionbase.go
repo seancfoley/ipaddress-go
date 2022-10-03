@@ -18,12 +18,14 @@ package ipaddr
 
 import (
 	"math/big"
-	"sync/atomic"
-	"unsafe"
+	"strings"
+
+	"github.com/seancfoley/ipaddress-go/ipaddr/addrstr"
 )
 
 // divisionValuesBase provides an interface for divisions of any bit-size.
 // It is shared by standard and large divisions.
+// All the methods can be called for any division.
 type divisionValuesBase interface {
 	getBitCount() BitCount
 
@@ -33,10 +35,10 @@ type divisionValuesBase interface {
 	// if is aligned is true and the prefix is non-nil, any divisions that follow in the same grouping have a zero-length prefix
 	getDivisionPrefixLength() PrefixLen
 
-	// getValue gets the lower value for a large division
+	// getValue gets the lower value as a BigDivInt
 	getValue() *BigDivInt
 
-	// getValue gets the upper value for a large division
+	// getValue gets the upper value as a BigDivInt
 	getUpperValue() *BigDivInt
 
 	includesZero() bool
@@ -50,24 +52,36 @@ type divisionValuesBase interface {
 	// convert lower and upper values to byte arrays
 	calcBytesInternal() (bytes, upperBytes []byte)
 
-	// getCache returns a cacheBitCountx for those divisions which cacheBitCountx their values, or nil otherwise
+	bytesInternal(upper bool) (bytes []byte)
+
+	// getCache returns a divCache for those divisions which cache their values, or nil otherwise
 	getCache() *divCache
 
 	getAddrType() addrType
 }
 
-type bytesCache struct {
-	lowerBytes, upperBytes []byte
+// divisionValues provides methods to provide the values from divisions,
+// and to create new divisions from values.
+// Values may be truncated if the stored values in the interface implementation
+// have larger bit-size than the return values.
+// Similarly, values may be truncated if the supplied values have greater bit-size
+// than the returned types.
+type divisionValues interface {
+	divisionValuesBase
+
+	divIntVals
+
+	divderiver
+
+	segderiver
+
+	segmentValues
 }
 
 type divCache struct {
 	cachedString, cachedWildcardString, cached0xHexString, cachedHexString, cachedNormalizedString *string
 
-	cachedBytes *bytesCache
-
 	isSinglePrefBlock *bool
-
-	minPrefLenForBlock PrefixLen
 }
 
 // addressDivisionBase is a division of any bit-size.
@@ -77,7 +91,7 @@ type addressDivisionBase struct {
 	// I've looked into making this divisionValuesBase.
 	// If you do that, then to get access to the methods in divisionValues, you can either do type assertions like divisionValuesBase.(divisionValiues),
 	// or you can add a method getDivisionValues to divisionValuesBase.
-	// But in the end, either way you are assuming you knowe that divisionValuesBase is a divisionValues.  So no point.
+	// But in the end, either way you are assuming you know that divisionValuesBase is a divisionValues.  So no point.
 	// Instead, each division type like IPAddressSegment and LargeDivision will know which value methods apply to that type.
 	divisionValues
 }
@@ -132,8 +146,7 @@ func (div *addressDivisionBase) Bytes() []byte {
 	if div.divisionValues == nil {
 		return emptyBytes
 	}
-	cached := div.getBytes()
-	return cloneBytes(cached)
+	return div.getBytes()
 }
 
 // UpperBytes returns the highest value in the address division range as a byte slice
@@ -141,8 +154,7 @@ func (div *addressDivisionBase) UpperBytes() []byte {
 	if div.divisionValues == nil {
 		return emptyBytes
 	}
-	cached := div.getUpperBytes()
-	return cloneBytes(cached)
+	return div.getUpperBytes()
 }
 
 // CopyBytes copies the lowest value in the address division range into a byte slice.
@@ -176,31 +188,11 @@ func (div *addressDivisionBase) CopyUpperBytes(bytes []byte) []byte {
 }
 
 func (div *addressDivisionBase) getBytes() (bytes []byte) {
-	bytes, _ = div.getBytesInternal()
-	return
+	return div.bytesInternal(false)
 }
 
 func (div *addressDivisionBase) getUpperBytes() (bytes []byte) {
-	_, bytes = div.getBytesInternal()
-	return
-}
-
-func (div *addressDivisionBase) getBytesInternal() (bytes, upperBytes []byte) {
-	cache := div.getCache()
-	if cache == nil {
-		return div.calcBytesInternal()
-	}
-	cached := cache.cachedBytes
-	if cached == nil {
-		bytes, upperBytes = div.calcBytesInternal()
-		cached = &bytesCache{
-			lowerBytes: bytes,
-			upperBytes: upperBytes,
-		}
-		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache.cachedBytes))
-		atomic.StorePointer(dataLoc, unsafe.Pointer(cached))
-	}
-	return cached.lowerBytes, cached.upperBytes
+	return div.bytesInternal(true)
 }
 
 func (div *addressDivisionBase) getCount() *big.Int {
@@ -288,13 +280,32 @@ func (div *addressDivisionBase) matchesStructure(other DivisionType) (res bool, 
 	return
 }
 
-// returns the default radix for textual representations of addresses (10 for IPv4, 16 for IPv6, MAC and other)
-func (div *addressDivisionBase) getDefaultTextualRadix() int {
-	addrType := div.getAddrType()
-	if addrType.isIPv4() {
-		return IPv4DefaultTextualRadix
+// toString produces a string that is useful when a division string is provided with no context.
+// It uses a string prefix for octal or hex (0 or 0x), and does not use the wildcard '*', because division size is variable, so '*' is ambiguous.
+// GetWildcardString() is more appropriate in context with other segments or divisions.  It does not use a string prefix and uses '*' for full-range segments.
+// GetString() is more appropriate in context with prefix lengths, it uses zeros instead of wildcards for prefix block ranges.
+func toString(div DivisionType) string { // this can be moved to addressDivisionBase when we have ContainsPrefixBlock and similar methods implemented for big.Int in the base
+	radix := div.getDefaultTextualRadix()
+	var opts addrstr.IPStringOptions
+	switch radix {
+	case 16:
+		opts = hexParamsDiv
+	case 10:
+		opts = decimalParamsDiv
+	case 8:
+		opts = octalParamsDiv
+	default:
+		opts = new(addrstr.IPStringOptionsBuilder).SetRadix(radix).SetWildcards(rangeWildcard).ToOptions()
 	}
-	return 16
+	return toStringOpts(opts, div)
+}
+
+func toStringOpts(opts addrstr.StringOptions, div DivisionType) string {
+	builder := strings.Builder{}
+	params := toParams(opts)
+	builder.Grow(params.getDivisionStringLength(div))
+	params.appendDivision(&builder, div)
+	return builder.String()
 }
 
 func bigDivsSame(onePref, twoPref PrefixLen, oneVal, twoVal, oneUpperVal, twoUpperVal *BigDivInt) bool {

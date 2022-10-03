@@ -18,7 +18,6 @@ package ipaddr
 
 import (
 	"math/big"
-	"sync/atomic"
 	"unsafe"
 
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
@@ -84,6 +83,7 @@ func createIPSectionFromSegs(isIPv4 bool, orig []*IPAddressSegment, prefLen Pref
 }
 
 func createInitializedIPSection(segments []*AddressDivision, prefixLength PrefixLen, addrType addrType) *IPAddressSection {
+	//TODO check where we call this, because we don't seem to be verifying the division prefixes inside initMultAndPrefLen, so I assume it is called internally?  I would have thought initMultAndPrefLen called only when not supplying a prefix length
 	result := createIPSection(segments, prefixLength, addrType)
 	result.initMultAndPrefLen() // assigns isMult and checks prefix length
 	return result
@@ -96,6 +96,7 @@ func deriveIPAddressSection(from *IPAddressSection, segments []*AddressDivision)
 }
 
 func deriveIPAddressSectionPrefLen(from *IPAddressSection, segments []*AddressDivision, prefixLength PrefixLen) (res *IPAddressSection) {
+	//TODO check where we call this, because we don't seem to be verifying the division prefixes inside initMultAndPrefLen, so I assume it is called internally? I would have thought initMultAndPrefLen called only when not supplying a prefix length
 	res = createIPSection(segments, prefixLength, from.getAddrType())
 	res.initMultAndPrefLen()
 	return
@@ -171,12 +172,12 @@ func (section *ipAddressSectionInternal) GetBlockMaskPrefixLen(network bool) Pre
 	if cache == nil {
 		return nil // no prefix
 	}
-	cachedMaskLens := cache.cachedMaskLens
+	cachedMaskLens := (*maskLenSetting)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&cache.cachedMaskLens))))
 	if cachedMaskLens == nil {
 		networkMaskLen, hostMaskLen := section.checkForPrefixMask()
 		res := &maskLenSetting{networkMaskLen, hostMaskLen}
 		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache.cachedMaskLens))
-		atomic.StorePointer(dataLoc, unsafe.Pointer(res))
+		atomicStorePointer(dataLoc, unsafe.Pointer(res))
 	}
 	if network {
 		return cache.cachedMaskLens.networkMaskLen
@@ -269,7 +270,7 @@ func (section *ipAddressSectionInternal) IncludesZeroHost() bool {
 
 // IncludesZeroHostLen returns whether the address section contains an individual section with a host of zero, a section for which all bits past the given prefix length are zero.
 func (section *ipAddressSectionInternal) IncludesZeroHostLen(networkPrefixLength BitCount) bool {
-	networkPrefixLength = checkSubnet(section.toIPAddressSection(), networkPrefixLength)
+	networkPrefixLength = checkSubnet(section, networkPrefixLength)
 	bitsPerSegment := section.GetBitsPerSegment()
 	bytesPerSegment := section.GetBytesPerSegment()
 	prefixedSegmentIndex := getHostSegmentIndex(networkPrefixLength, bytesPerSegment, bitsPerSegment)
@@ -302,7 +303,7 @@ func (section *ipAddressSectionInternal) IncludesMaxHost() bool {
 
 // IncludesMaxHostLen returns whether the address section contains an individual address section with a host of all one-bits, an address section for which all bits past the given prefix length are all ones.
 func (section *ipAddressSectionInternal) IncludesMaxHostLen(networkPrefixLength BitCount) bool {
-	networkPrefixLength = checkSubnet(section.toIPAddressSection(), networkPrefixLength)
+	networkPrefixLength = checkSubnet(section, networkPrefixLength)
 	bitsPerSegment := section.GetBitsPerSegment()
 	bytesPerSegment := section.GetBytesPerSegment()
 	prefixedSegmentIndex := getHostSegmentIndex(networkPrefixLength, bytesPerSegment, bitsPerSegment)
@@ -752,12 +753,8 @@ func (section *ipAddressSectionInternal) intersect(other *IPAddressSection) (res
 		higher := seg.getUpperSegmentValue()
 		otherLower := otherSeg.GetSegmentValue()
 		otherHigher := otherSeg.getUpperSegmentValue()
-		if otherLower > lower {
-			lower = otherLower
-		}
-		if otherHigher < higher {
-			higher = otherHigher
-		}
+		lower = maxSegInt(lower, otherLower)
+		higher = minSegInt(higher, otherHigher)
 		segs[i] = createAddressDivision(seg.deriveNewMultiSeg(lower, higher, segPref))
 	}
 	res = deriveIPAddressSectionPrefLen(section.toIPAddressSection(), segs, pref)
@@ -1153,7 +1150,7 @@ func (section *ipAddressSectionInternal) insert(index int, other *IPAddressSecti
 }
 
 // Replaces segments starting from startIndex and ending before endIndex with the segments starting at replacementStartIndex and
-//ending before replacementEndIndex from the replacement section
+// ending before replacementEndIndex from the replacement section
 func (section *ipAddressSectionInternal) replaceLen(
 	startIndex, endIndex int, replacement *IPAddressSection, replacementStartIndex, replacementEndIndex int, segmentToBitsShift uint) *IPAddressSection {
 
@@ -1594,13 +1591,13 @@ func (section *IPAddressSection) Compare(item AddressItem) int {
 // Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one section represents more individual address sections than another.
 //
 // CompareSize returns a positive integer if this address section has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
-func (section *IPAddressSection) CompareSize(other StandardDivGroupingType) int {
+func (section *IPAddressSection) CompareSize(other AddressItem) int {
 	if section == nil {
-		if other != nil && other.ToDivGrouping() != nil {
-			// we have size 0, other has size >= 1
-			return -1
+		if isNilItem(other) {
+			return 0
 		}
-		return 0
+		// we have size 0, other has size >= 1
+		return -1
 	}
 	return section.compareSize(other)
 }

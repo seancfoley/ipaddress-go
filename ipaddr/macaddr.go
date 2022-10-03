@@ -20,8 +20,6 @@ import (
 	"fmt"
 	"math/big"
 	"net"
-	"sync/atomic"
-	"unsafe"
 
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrstr"
@@ -635,13 +633,13 @@ func (addr *MACAddress) Equal(other AddressType) bool {
 // Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one address collection represents more individual addresses than another.
 //
 // CompareSize returns a positive integer if this address or address collection has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
-func (addr *MACAddress) CompareSize(other AddressType) int { // this is here to take advantage of the CompareSize in IPAddressSection
+func (addr *MACAddress) CompareSize(other AddressItem) int { // this is here to take advantage of the CompareSize in IPAddressSection
 	if addr == nil {
-		if other != nil && other.ToAddressBase() != nil {
-			// we have size 0, other has size >= 1
-			return -1
+		if isNilItem(other) {
+			return 0
 		}
-		return 0
+		// we have size 0, other has size >= 1
+		return -1
 	}
 	return addr.init().compareSize(other)
 }
@@ -1162,18 +1160,15 @@ func (addr *MACAddress) ToCustomString(stringOptions addrstr.StringOptions) stri
 func (addr *MACAddress) ToAddressString() *MACAddressString {
 	addr = addr.init()
 	cache := addr.cache
-	if cache == nil {
-		return newMACAddressStringFromAddr(addr.toCanonicalString(), addr)
+	if cache != nil {
+		res := addr.cache.identifierStr
+		if res != nil {
+			hostIdStr := res.idStr
+			return hostIdStr.(*MACAddressString)
+		}
 	}
-	res := addr.cache.identifierStr
-	if res == nil {
-		str := newMACAddressStringFromAddr(addr.toCanonicalString(), addr)
-		res = &IdentifierStr{str}
-		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&addr.cache.identifierStr))
-		atomic.StorePointer(dataLoc, unsafe.Pointer(res))
-	}
-	hostIdStr := res.idStr
-	return hostIdStr.(*MACAddressString)
+	return newMACAddressStringFromAddr(addr.toCanonicalString(), addr)
+
 }
 
 // ToAddressBase converts to an Address, a polymorphic type usable with all addresses and subnets.

@@ -120,6 +120,13 @@ func (seg *macSegmentValues) calcBytesInternal() (bytes, upperBytes []byte) {
 	return
 }
 
+func (seg *macSegmentValues) bytesInternal(upper bool) []byte {
+	if upper {
+		return []byte{byte(seg.upperValue)}
+	}
+	return []byte{byte(seg.value)}
+}
+
 func (seg *macSegmentValues) deriveNew(val, upperVal DivInt, _ PrefixLen) divisionValues {
 	return newMACSegmentValues(MACSegInt(val), MACSegInt(upperVal))
 }
@@ -203,6 +210,22 @@ func (seg *MACAddressSegment) PrefixEqual(other AddressSegmentType, prefixLength
 // Any address item is comparable to any other.  All address items use CountComparator to compare.
 func (seg *MACAddressSegment) Compare(item AddressItem) int {
 	return CountComparator.Compare(seg, item)
+}
+
+// CompareSize compares the counts of two segments, the number of individual values within.
+//
+// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one represents more individual values than another.
+//
+// CompareSize returns a positive integer if this segment has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
+func (seg *MACAddressSegment) CompareSize(other AddressItem) int {
+	if seg == nil {
+		if isNilItem(other) {
+			return 0
+		}
+		// we have size 0, other has size >= 1
+		return -1
+	}
+	return seg.init().compareSize(other)
 }
 
 // GetBitCount returns the number of bits in each value comprising this address item, which is 8.
@@ -298,9 +321,8 @@ func (seg *MACAddressSegment) setString(
 	lowerStringEndIndex int,
 	originalLowerValue SegInt) {
 	if cache := seg.getCache(); cache != nil {
-		if cache.cachedString == nil && isStandardString && originalLowerValue == seg.getSegmentValue() {
-			str := addressStr[lowerStringStartIndex:lowerStringEndIndex]
-			cacheStrPtr(&cache.cachedString, &str)
+		if isStandardString && originalLowerValue == seg.getSegmentValue() {
+			cacheStr(&cache.cachedString, func() string { return addressStr[lowerStringStartIndex:lowerStringEndIndex] })
 		}
 	}
 }
@@ -313,13 +335,10 @@ func (seg *MACAddressSegment) setRangeString(
 	rangeLower,
 	rangeUpper SegInt) {
 	if cache := seg.getCache(); cache != nil {
-		if cache.cachedString == nil {
-			if seg.IsFullRange() {
-				cacheStrPtr(&cache.cachedString, &segmentWildcardStr)
-			} else if isStandardRangeString && rangeLower == seg.getSegmentValue() && rangeUpper == seg.getUpperSegmentValue() {
-				str := addressStr[lowerStringStartIndex:upperStringEndIndex]
-				cacheStrPtr(&cache.cachedString, &str)
-			}
+		if seg.IsFullRange() {
+			cacheStrPtr(&cache.cachedString, &segmentWildcardStr)
+		} else if isStandardRangeString && rangeLower == seg.getSegmentValue() && rangeUpper == seg.getUpperSegmentValue() {
+			cacheStr(&cache.cachedString, func() string { return addressStr[lowerStringStartIndex:upperStringEndIndex] })
 		}
 	}
 }

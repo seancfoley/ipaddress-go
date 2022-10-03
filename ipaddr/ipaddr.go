@@ -24,7 +24,6 @@ import (
 	"net"
 	"reflect"
 	"strings"
-	"sync/atomic"
 	"unsafe"
 )
 
@@ -1294,13 +1293,13 @@ func (addr *IPAddress) Equal(other AddressType) bool {
 // Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one subnet represents more individual addresses than another.
 //
 // CompareSize returns a positive integer if this address or subnet has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
-func (addr *IPAddress) CompareSize(other AddressType) int { // this is here to take advantage of the CompareSize in IPAddressSection
+func (addr *IPAddress) CompareSize(other AddressItem) int { // this is here to take advantage of the CompareSize in IPAddressSection
 	if addr == nil {
-		if other != nil && other.ToAddressBase() != nil {
-			// we have size 0, other has size >= 1
-			return -1
+		if isNilItem(other) {
+			return 0
 		}
-		return 0
+		// we have size 0, other has size >= 1
+		return -1
 	}
 	return addr.init().compareSize(other)
 }
@@ -2088,20 +2087,14 @@ func (addr *IPAddress) ToCustomString(stringOptions addrstr.IPStringOptions) str
 func (addr *IPAddress) ToAddressString() *IPAddressString {
 	addr = addr.init()
 	cache := addr.cache
-	if cache == nil {
-		return newIPAddressStringFromAddr(addr.toCanonicalString(), addr)
-	}
-	res := cache.identifierStr
-	if res == nil {
-		str := newIPAddressStringFromAddr(addr.toCanonicalString(), addr)
-		res = &IdentifierStr{str}
-		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&addr.cache.identifierStr))
-		atomic.StorePointer(dataLoc, unsafe.Pointer(res))
-		return str
-	}
-	hostIdStr := res.idStr
-	if str, ok := hostIdStr.(*IPAddressString); ok {
-		return str
+	if cache != nil {
+		res := cache.identifierStr
+		if res != nil {
+			hostIdStr := res.idStr
+			if str, ok := hostIdStr.(*IPAddressString); ok {
+				return str
+			}
+		}
 	}
 	return newIPAddressStringFromAddr(addr.toCanonicalString(), addr)
 }
@@ -2136,25 +2129,10 @@ func (addr *IPAddress) ToHostName() *HostName {
 //
 // This returns an error if this address is a subnet multiple values.
 func (addr *IPAddress) ToCanonicalHostName() (*HostName, error) {
-	addr = addr.init()
-	cache := addr.cache
-	if cache == nil {
-		return addr.lookupAddr()
+	if addr.isMultiple() {
+		return nil, &incompatibleAddressError{addressError{key: "ipaddress.error.unavailable.numeric"}}
 	}
-	res := cache.canonicalHost
-	if res == nil {
-		if addr.isMultiple() {
-			return nil, &incompatibleAddressError{addressError{key: "ipaddress.error.unavailable.numeric"}}
-		}
-		var err error
-		res, err = addr.lookupAddr()
-		if res == nil {
-			return res, err
-		}
-		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache.canonicalHost))
-		atomic.StorePointer(dataLoc, unsafe.Pointer(res))
-	}
-	return res, nil
+	return addr.init().lookupAddr()
 }
 
 func (addr *IPAddress) lookupAddr() (*HostName, error) {

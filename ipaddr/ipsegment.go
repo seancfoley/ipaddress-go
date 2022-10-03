@@ -19,7 +19,6 @@ package ipaddr
 import (
 	"math/big"
 	"strings"
-	"sync/atomic"
 	"unsafe"
 
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
@@ -49,27 +48,16 @@ func (seg *ipAddressSegmentInternal) IsPrefixBlock() bool {
 // It is similar to IsPrefixBlock but returns false when there are multiple prefixes.
 func (seg *ipAddressSegmentInternal) IsSinglePrefixBlock() bool {
 	cache := seg.getCache()
-	if cache == nil {
-		if prefLen := seg.GetSegmentPrefixLen(); prefLen != nil {
-			return seg.isSinglePrefixBlock(seg.getDivisionValue(), seg.getUpperDivisionValue(), prefLen.bitCount())
+	if cache != nil {
+		res := cache.isSinglePrefBlock
+		if res != nil {
+			return *res
 		}
-		return false
 	}
-	res := cache.isSinglePrefBlock
-	if res == nil {
-		var result bool
-		if prefLen := seg.GetSegmentPrefixLen(); prefLen != nil {
-			result = seg.isSinglePrefixBlock(seg.getDivisionValue(), seg.getUpperDivisionValue(), prefLen.bitCount())
-		}
-		if result {
-			res = &trueVal
-		} else {
-			res = &falseVal
-		}
-		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache.isSinglePrefBlock))
-		atomic.StorePointer(dataLoc, unsafe.Pointer(res))
+	if prefLen := seg.GetSegmentPrefixLen(); prefLen != nil {
+		return seg.isSinglePrefixBlock(seg.getDivisionValue(), seg.getUpperDivisionValue(), prefLen.bitCount())
 	}
-	return *res
+	return false
 }
 
 func (seg *ipAddressSegmentInternal) withoutPrefixLen() *IPAddressSegment {
@@ -240,9 +228,8 @@ func (seg *ipAddressSegmentInternal) setStandardString(
 	lowerStringEndIndex int,
 	originalLowerValue SegInt) {
 	if cache := seg.getCache(); cache != nil {
-		if cache.cachedString == nil && isStandardString && originalLowerValue == seg.getSegmentValue() {
-			str := addressStr[lowerStringStartIndex:lowerStringEndIndex]
-			cacheStrPtr(&cache.cachedString, &str)
+		if isStandardString && originalLowerValue == seg.getSegmentValue() {
+			cacheStr(&cache.cachedString, func() string { return addressStr[lowerStringStartIndex:lowerStringEndIndex] })
 		}
 	}
 }
@@ -254,9 +241,10 @@ func (seg *ipAddressSegmentInternal) setWildcardString(
 	lowerStringEndIndex int,
 	lowerValue SegInt) {
 	if cache := seg.getCache(); cache != nil {
-		if cache.cachedWildcardString == nil && isStandardString && lowerValue == seg.getSegmentValue() && lowerValue == seg.getUpperSegmentValue() {
-			str := addressStr[lowerStringStartIndex:lowerStringEndIndex]
-			cacheStrPtr(&cache.cachedWildcardString, &str)
+		if isStandardString &&
+			lowerValue == seg.getSegmentValue() &&
+			lowerValue == seg.getUpperSegmentValue() {
+			cacheStr(&cache.cachedWildcardString, func() string { return addressStr[lowerStringStartIndex:lowerStringEndIndex] })
 		}
 	}
 }
@@ -271,23 +259,19 @@ func (seg *ipAddressSegmentInternal) setRangeStandardString(
 	rangeLower,
 	rangeUpper SegInt) {
 	if cache := seg.getCache(); cache != nil {
-		if cache.cachedString == nil {
-			if seg.IsSinglePrefixBlock() {
-				if isStandardString && rangeLower == seg.getSegmentValue() {
-					str := addressStr[lowerStringStartIndex:lowerStringEndIndex]
-					cacheStrPtr(&cache.cachedString, &str)
-				}
-			} else if seg.IsFullRange() {
-				cacheStrPtr(&cache.cachedString, &segmentWildcardStr)
-			} else if isStandardRangeString && rangeLower == seg.getSegmentValue() {
-				upper := seg.getUpperSegmentValue()
-				if seg.isPrefixed() {
-					upper &= seg.GetSegmentNetworkMask(seg.getDivisionPrefixLength().bitCount())
-				}
-				if rangeUpper == upper {
-					str := addressStr[lowerStringStartIndex:upperStringEndIndex]
-					cacheStrPtr(&cache.cachedString, &str)
-				}
+		if seg.IsSinglePrefixBlock() {
+			if isStandardString && rangeLower == seg.getSegmentValue() {
+				cacheStr(&cache.cachedString, func() string { return addressStr[lowerStringStartIndex:lowerStringEndIndex] })
+			}
+		} else if seg.IsFullRange() {
+			cacheStrPtr(&cache.cachedString, &segmentWildcardStr)
+		} else if isStandardRangeString && rangeLower == seg.getSegmentValue() {
+			upper := seg.getUpperSegmentValue()
+			if seg.isPrefixed() {
+				upper &= seg.GetSegmentNetworkMask(seg.getDivisionPrefixLength().bitCount())
+			}
+			if rangeUpper == upper {
+				cacheStr(&cache.cachedString, func() string { return addressStr[lowerStringStartIndex:upperStringEndIndex] })
 			}
 		}
 	}
@@ -301,13 +285,10 @@ func (seg *ipAddressSegmentInternal) setRangeWildcardString(
 	rangeLower,
 	rangeUpper SegInt) {
 	if cache := seg.getCache(); cache != nil {
-		if cache.cachedWildcardString == nil {
-			if seg.IsFullRange() {
-				cacheStrPtr(&cache.cachedWildcardString, &segmentWildcardStr)
-			} else if isStandardRangeString && rangeLower == seg.getSegmentValue() && rangeUpper == seg.getUpperSegmentValue() {
-				str := addressStr[lowerStringStartIndex:upperStringEndIndex]
-				cacheStrPtr(&cache.cachedWildcardString, &str)
-			}
+		if seg.IsFullRange() {
+			cacheStrPtr(&cache.cachedWildcardString, &segmentWildcardStr)
+		} else if isStandardRangeString && rangeLower == seg.getSegmentValue() && rangeUpper == seg.getUpperSegmentValue() {
+			cacheStr(&cache.cachedString, func() string { return addressStr[lowerStringStartIndex:upperStringEndIndex] })
 		}
 	}
 }
@@ -606,6 +587,22 @@ func (seg *IPAddressSegment) Equal(other AddressSegmentType) bool {
 // Any address item is comparable to any other.  All address items use CountComparator to compare.
 func (seg *IPAddressSegment) Compare(item AddressItem) int {
 	return CountComparator.Compare(seg, item)
+}
+
+// CompareSize compares the counts of two segments, the number of individual values within.
+//
+// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one represents more individual values than another.
+//
+// CompareSize returns a positive integer if this segment has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
+func (seg *IPAddressSegment) CompareSize(other AddressItem) int {
+	if seg == nil {
+		if isNilItem(other) {
+			return 0
+		}
+		// we have size 0, other has size >= 1
+		return -1
+	}
+	return seg.compareSize(other)
 }
 
 // ContainsPrefixBlock returns whether the division range includes the block of values for the given prefix length

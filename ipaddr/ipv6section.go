@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"math/big"
 	"math/bits"
-	"sync/atomic"
 	"unsafe"
 
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
@@ -374,13 +373,13 @@ func (section *IPv6AddressSection) Compare(item AddressItem) int {
 // Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one section represents more individual address sections than another.
 //
 // CompareSize returns a positive integer if this address section has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
-func (section *IPv6AddressSection) CompareSize(other StandardDivGroupingType) int {
+func (section *IPv6AddressSection) CompareSize(other AddressItem) int {
 	if section == nil {
-		if other != nil && other.ToDivGrouping() != nil {
-			// we have size 0, other has size >= 1
-			return -1
+		if isNilItem(other) {
+			return 0
 		}
-		return 0
+		// we have size 0, other has size >= 1
+		return -1
 	}
 	return section.compareSize(other)
 }
@@ -410,6 +409,17 @@ func (section *IPv6AddressSection) GetCount() *big.Int {
 		return bigZero()
 	}
 	return section.cacheCount(func() *big.Int {
+		return count(func(index int) uint64 {
+			return section.GetSegment(index).GetValueCount()
+		}, section.GetSegmentCount(), 2, 0x7fffffffffff)
+	})
+}
+
+func (section *IPv6AddressSection) getCachedCount() *big.Int {
+	if section == nil {
+		return bigZero()
+	}
+	return section.cachedCount(func() *big.Int {
 		return count(func(index int) uint64 {
 			return section.GetSegment(index).GetValueCount()
 		}, section.GetSegmentCount(), 2, 0x7fffffffffff)
@@ -863,47 +873,17 @@ func (section *IPv6AddressSection) SequentialBlockIterator() IPv6SectionIterator
 // Each element in the list will be an segment index and a total segment count for which
 // that count of consecutive segments starting from that index are all zero.
 func (section *IPv6AddressSection) GetZeroSegments() SegmentSequenceList {
-	vals := section.getZeroVals()
-	if vals == nil {
-		return SegmentSequenceList{}
-	}
-	return vals.zeroSegments
+	return section.getZeroSegments(false)
 }
 
 // GetZeroRangeSegments returns the list of consecutive zero and zero prefix block segments.
 // Each element in the list will be an segment index and a total segment count for which
 // that count of consecutive segments starting from that index are all zero or a prefix block segment with lowest segment value zero.
 func (section *IPv6AddressSection) GetZeroRangeSegments() SegmentSequenceList {
-	vals := section.getZeroVals()
-	if vals == nil {
-		return SegmentSequenceList{}
-	}
-	return vals.zeroRangeSegments
-}
-
-func (section *IPv6AddressSection) getZeroVals() *zeroRangeCache {
-	cache := section.cache
-	if cache == nil {
-		return section.calcZeroVals()
-	}
-	zeroVals := cache.zeroVals
-	if zeroVals == nil {
-		zeroVals = section.calcZeroVals()
-		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache.zeroVals))
-		atomic.StorePointer(dataLoc, unsafe.Pointer(zeroVals))
-	}
-	return zeroVals
-}
-
-func (section *IPv6AddressSection) calcZeroVals() *zeroRangeCache {
-	zeroSegs := section.getZeroSegments(false)
-	var zeroRangeSegs SegmentSequenceList
 	if section.IsPrefixed() {
-		zeroRangeSegs = section.getZeroSegments(true)
-	} else {
-		zeroRangeSegs = zeroSegs
+		return section.getZeroSegments(true)
 	}
-	return &zeroRangeCache{zeroSegs, zeroRangeSegs}
+	return section.getZeroSegments(false)
 }
 
 // GetCompressIndexAndCount chooses a single segment to be compressed in an IPv6 string. If no segment could be chosen then count is 0.
@@ -978,36 +958,6 @@ func compressMixedSect(m addrstr.MixedCompressionOptions, addressSection *IPv6Ad
 		return true
 	}
 }
-
-//func (section *IPv6AddressSection) getZeroSegments(includeRanges bool) SegmentSequenceList {
-//	divisionCount := section.GetSegmentCount()
-//	includeRanges = includeRanges && section.IsPrefixBlock() && section.GetPrefixLen().bitCount() < section.GetBitCount()
-//	var currentIndex, currentCount, rangeCount int
-//	var ranges [IPv6SegmentCount >> 1]SegmentSequence
-//	for i := 0; i < divisionCount; i++ {
-//		division := section.GetSegment(i)
-//		isCompressible := division.IsZero() ||
-//			(includeRanges && division.IsPrefixed() && division.isSinglePrefixBlock(0, division.getUpperDivisionValue(), division.getDivisionPrefixLength().bitCount()))
-//		if isCompressible {
-//			currentCount++
-//			if currentCount == 1 {
-//				currentIndex = i
-//			}
-//
-//		} else if currentCount > 0 {
-//			ranges[rangeCount] = SegmentSequence{index: currentIndex, length: currentCount}
-//			rangeCount++
-//			currentCount = 0
-//		}
-//	}
-//	if currentCount > 0 {
-//		ranges[rangeCount] = SegmentSequence{index: currentIndex, length: currentCount}
-//		rangeCount++
-//	} else if rangeCount == 0 {
-//		return SegmentSequenceList{}
-//	}
-//	return SegmentSequenceList{ranges[:rangeCount]}
-//}
 
 func (section *IPv6AddressSection) getZeroSegments(includeRanges bool) SegmentSequenceList {
 	divisionCount := section.GetSegmentCount()
@@ -1349,7 +1299,6 @@ var (
 		new(addrstr.WildcardsBuilder).SetRangeSeparator(IPv6UncRangeSeparatorStr).SetWildcard(SegmentWildcardStr).ToWildcards()).ToOptions()
 	base85Wildcards = new(addrstr.WildcardsBuilder).SetRangeSeparator(AlternativeRangeSeparatorStr).ToWildcards()
 	_               = uncWildcards
-	_               = base85Wildcards
 
 	mixedParams         = new(addrstr.IPv6StringOptionsBuilder).SetMixed(true).SetCompressOptions(compressMixed).ToOptions()
 	ipv6FullParams      = new(addrstr.IPv6StringOptionsBuilder).SetExpandedSegments(true).SetWildcardOptions(wildcardsRangeOnlyNetworkOnly).ToOptions()
@@ -1366,8 +1315,8 @@ var (
 
 	ipv6ReverseDNSParams = new(addrstr.IPv6StringOptionsBuilder).SetReverse(true).SetAddressSuffix(IPv6ReverseDnsSuffix).
 				SetSplitDigits(true).SetExpandedSegments(true).SetSeparator('.').ToOptions()
-	//base85Params = new(addrstr.IPStringOptionsBuilder).SetRadix(85).SetExpandedSegments(true).
-	//		SetWildcards(base85Wildcards).SetZoneSeparator(IPv6AlternativeZoneSeparator).ToOptions()
+	base85Params = new(addrstr.IPStringOptionsBuilder).SetRadix(85).SetExpandedSegments(true).
+			SetWildcards(base85Wildcards).SetZoneSeparator(IPv6AlternativeZoneSeparatorStr).ToOptions()
 	ipv6SegmentedBinaryParams = new(addrstr.IPStringOptionsBuilder).SetRadix(2).SetSeparator(IPv6SegmentSeparator).SetSegmentStrPrefix(BinaryPrefix).
 					SetExpandedSegments(true).ToOptions()
 )
@@ -1411,6 +1360,43 @@ func (section *IPv6AddressSection) ToBinaryString(with0bPrefix bool) (string, ad
 		return nilString(), nil
 	}
 	return section.toBinaryString(with0bPrefix)
+}
+
+// ToBase85String creates the base 85 string, which is described by RFC 1924
+// It may be written as a range of two values if a range that is not a prefixed block.
+//
+// If a multiple-valued section cannot be written as a single prefix block or a range of two values, an error is returned.
+func (section *IPv6AddressSection) ToBase85String() (string, addrerr.IncompatibleAddressError) {
+	if section == nil {
+		return nilString(), nil
+	}
+	cache := section.getStringCache()
+	if cache == nil {
+		return section.toBase85String(NoZone)
+	}
+	cacheField := &cache.base85String
+	return cacheStrErr(cacheField,
+		func() (string, addrerr.IncompatibleAddressError) {
+			return section.toBase85String(NoZone)
+		})
+}
+
+func (section *IPv6AddressSection) toBase85String(zone Zone) (string, addrerr.IncompatibleAddressError) {
+	if isDual, err := section.isDualString(); err != nil {
+		return "", err
+	} else {
+		bytes := section.getBytes()
+		prefLen := section.getNetworkPrefixLen()
+		bitCount := section.GetBitCount()
+		var div *IPAddressLargeDivision
+		if isDual {
+			div = NewLargeIPRangePrefixDivision(bytes, section.getUpperBytes(), prefLen, bitCount, 85)
+		} else {
+			div = NewLargeIPPrefixDivision(bytes, prefLen, bitCount, 85)
+		}
+		largeGrouping := NewIPAddressLargeDivGrouping([]*IPAddressLargeDivision{div})
+		return toNormalizedIPZonedString(base85Params, largeGrouping, zone), nil
+	}
 }
 
 // ToCanonicalString produces a canonical string for the address section.
@@ -1689,75 +1675,10 @@ func (section *IPv6AddressSection) toCustomString(stringOptions addrstr.IPv6Stri
 	return section.toNormalizedZonedString(stringOptions, zone), nil
 }
 
-func (section *IPv6AddressSection) toNormalizedZonedString(options addrstr.IPv6StringOptions, zone Zone) string {
-	var stringParams *ipv6StringParams
-	if isCacheable(options) { // the isCacheable call is key and determines if the IPv6StringParams can be shared
-		opts, hasCache := options.(ipv6CacheAccess)
-		if hasCache {
-			cached := opts.GetIPv6StringOptionsCache()
-			stringParams = (*ipv6StringParams)(*cached)
-		}
-		if stringParams == nil {
-			stringParams = from(options, section)
-			if hasCache {
-				dataLoc := opts.GetIPv6StringOptionsCache()
-				atomic.StorePointer(dataLoc, unsafe.Pointer(stringParams))
-			}
-		}
-	} else {
-		stringParams = from(options, section)
-	}
-	return stringParams.toZonedString(section, zone)
-}
-
-type ipv6CacheAccess interface {
-	GetIPv6StringOptionsCache() *unsafe.Pointer
-
-	GetIPv6StringOptionsMixedCache() *unsafe.Pointer
-}
-
-func (section *IPv6AddressSection) toNormalizedSplitZonedString(options addrstr.IPv6StringOptions, zone Zone) (string, addrerr.IncompatibleAddressError) {
-	var stringParams *ipv6StringParams
-	// all split strings are cacheable since no compression
-	opts, hasCache := options.(ipv6CacheAccess)
-	if hasCache {
-		cached := opts.GetIPv6StringOptionsCache()
-		stringParams = (*ipv6StringParams)(*cached)
-	}
-	if stringParams == nil {
-		stringParams = from(options, section)
-		if hasCache {
-			dataLoc := opts.GetIPv6StringOptionsCache()
-			atomic.StorePointer(dataLoc, unsafe.Pointer(stringParams))
-		}
-	}
-	return stringParams.toZonedSplitString(section, zone)
-}
-
 func (section *IPv6AddressSection) toNormalizedMixedZonedString(options addrstr.IPv6StringOptions, zone Zone) (string, addrerr.IncompatibleAddressError) {
-	var stringParams *ipv6StringParams
-	if isCacheable(options) { // the isCacheable call is key and determines if the IPv6StringParams can be shared (right not it just means not compressed)
-		opts, hasCache := options.(ipv6CacheAccess)
-		var mixedParams *ipv6v4MixedParams
-		if hasCache {
-			cached := opts.GetIPv6StringOptionsMixedCache()
-			mixedParams = (*ipv6v4MixedParams)(*cached)
-		}
-		if mixedParams == nil {
-			stringParams = from(options, section)
-			mixedParams = &ipv6v4MixedParams{
-				ipv6Params: stringParams,
-				ipv4Params: toIPParams(options.GetIPv4Opts()),
-			}
-			dataLoc := opts.GetIPv6StringOptionsMixedCache()
-			atomic.StorePointer(dataLoc, unsafe.Pointer(mixedParams))
-		}
-		return section.toNormalizedMixedString(mixedParams, zone)
-	}
-	//no caching is possible due to the compress options
-	stringParams = from(options, section)
+	stringParams := from(options, section)
 	if stringParams.nextUncompressedIndex <= IPv6MixedOriginalSegmentCount { //the mixed section is not compressed
-		//if stringParams.nextUncompressedIndex <= int(IPv6MixedOriginalSegmentCount-section.addressSegmentIndex) { //the mixed section is not compressed
+		//if stringParams.nextUncompressedIndex <= int(IPv6MixedOriginalSegmentCount-section.addressSegmentIndex) { //the mixed section is not compressed TODO remove
 		mixedParams := &ipv6v4MixedParams{
 			ipv6Params: stringParams,
 			ipv4Params: toIPParams(options.GetIPv4Opts()),
@@ -1768,8 +1689,12 @@ func (section *IPv6AddressSection) toNormalizedMixedZonedString(options addrstr.
 	return stringParams.toZonedString(section, zone), nil
 }
 
-func isCacheable(options addrstr.IPv6StringOptions) bool {
-	return options.GetCompressOptions() == nil
+func (section *IPv6AddressSection) toNormalizedZonedString(options addrstr.IPv6StringOptions, zone Zone) string {
+	return from(options, section).toZonedString(section, zone)
+}
+
+func (section *IPv6AddressSection) toNormalizedSplitZonedString(options addrstr.IPv6StringOptions, zone Zone) (string, addrerr.IncompatibleAddressError) {
+	return from(options, section).toZonedSplitString(section, zone)
 }
 
 func (section *IPv6AddressSection) toNormalizedMixedString(mixedParams *ipv6v4MixedParams, zone Zone) (string, addrerr.IncompatibleAddressError) {
@@ -1777,8 +1702,7 @@ func (section *IPv6AddressSection) toNormalizedMixedString(mixedParams *ipv6v4Mi
 	if err != nil {
 		return "", err
 	}
-	result := mixedParams.toZonedString(mixed, zone)
-	return result, nil
+	return mixedParams.toZonedString(mixed, zone), nil
 }
 
 // GetSegmentStrings returns a slice with the string for each segment being the string that is normalized with wildcards.
@@ -1815,8 +1739,12 @@ func (section *IPv6AddressSection) ToIP() *IPAddressSection {
 func (section *IPv6AddressSection) getMixedAddressGrouping() (*IPv6v4MixedAddressGrouping, addrerr.IncompatibleAddressError) {
 	cache := section.cache
 	var sect *IPv6v4MixedAddressGrouping
-	if cache != nil && cache.mixed != nil {
-		sect = cache.mixed.defaultMixedAddressSection
+	var mCache *mixedCache
+	if cache != nil {
+		mCache = (*mixedCache)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&cache.mixed))))
+		if mCache != nil {
+			sect = mCache.defaultMixedAddressSection
+		}
 	}
 	if sect == nil {
 		mixedSect, err := section.createEmbeddedIPv4AddressSection()
@@ -1827,14 +1755,14 @@ func (section *IPv6AddressSection) getMixedAddressGrouping() (*IPv6v4MixedAddres
 			section.createNonMixedSection(),
 			mixedSect,
 		)
-		if cache != nil && cache.mixed != nil {
+		if cache != nil {
 			mixed := &mixedCache{
 				defaultMixedAddressSection: sect,
 				embeddedIPv6Section:        sect.GetIPv6AddressSection(),
 				embeddedIPv4Section:        sect.GetIPv4AddressSection(),
 			}
 			dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache.mixed))
-			atomic.StorePointer(dataLoc, unsafe.Pointer(mixed))
+			atomicStorePointer(dataLoc, unsafe.Pointer(mixed))
 		}
 	}
 	return sect, nil
@@ -2001,13 +1929,13 @@ func (grouping *IPv6v4MixedAddressGrouping) Compare(item AddressItem) int {
 // Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one grouping represents more individual address groupings than another.
 //
 // CompareSize returns a positive integer if this address division grouping has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
-func (grouping *IPv6v4MixedAddressGrouping) CompareSize(other StandardDivGroupingType) int {
+func (grouping *IPv6v4MixedAddressGrouping) CompareSize(other AddressItem) int {
 	if grouping == nil {
-		if other != nil && other.ToDivGrouping() != nil {
-			// we have size 0, other has size >= 1
-			return -1
+		if isNilItem(other) {
+			return 0
 		}
-		return 0
+		// we have size 0, other has size >= 1
+		return -1
 	}
 	return grouping.compareSize(other)
 }

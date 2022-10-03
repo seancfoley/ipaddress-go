@@ -18,8 +18,6 @@ package ipaddr
 
 import (
 	"math/big"
-	"sync/atomic"
-	"unsafe"
 
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrstr"
@@ -250,13 +248,13 @@ func (section *IPv4AddressSection) Compare(item AddressItem) int {
 // Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one section represents more individual address sections than another.
 //
 // CompareSize returns a positive integer if this address section has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
-func (section *IPv4AddressSection) CompareSize(other StandardDivGroupingType) int {
+func (section *IPv4AddressSection) CompareSize(other AddressItem) int {
 	if section == nil {
-		if other != nil && other.ToDivGrouping() != nil {
-			// we have size 0, other has size >= 1
-			return -1
+		if isNilItem(other) {
+			return 0
 		}
-		return 0
+		// we have size 0, other has size >= 1
+		return -1
 	}
 	return section.compareSize(other)
 }
@@ -301,6 +299,15 @@ func (section *IPv4AddressSection) GetCount() *big.Int {
 	})
 }
 
+func (section *IPv4AddressSection) getCachedCount() *big.Int {
+	if section == nil {
+		return bigZero()
+	}
+	return section.cachedCount(func() *big.Int {
+		return bigZero().SetUint64(section.getIPv4Count())
+	})
+}
+
 // GetIPv4Count returns the count of possible distinct values for this section.
 // It is the same as GetCount but returns the value as a uint64 instead of a big integer.
 // If not representing multiple values, the count is 1,
@@ -311,9 +318,7 @@ func (section *IPv4AddressSection) GetIPv4Count() uint64 {
 	if section == nil {
 		return 0
 	}
-	return section.cacheUint64Count(func() uint64 {
-		return section.getIPv4Count()
-	})
+	return section.getCachedCount().Uint64()
 }
 
 func (section *IPv4AddressSection) getIPv4Count() uint64 {
@@ -648,72 +653,32 @@ func (section *IPv4AddressSection) ToMaxHostLen(prefixLength BitCount) (*IPv4Add
 
 // Uint32Value returns the lowest address in the address section range as a uint32
 func (section *IPv4AddressSection) Uint32Value() uint32 {
-	lower, _ := section.getIntValues()
-	return lower
+	segCount := section.GetSegmentCount()
+	if segCount == 0 {
+		return 0
+	}
+	arr := section.getDivArray()
+	val := uint32(arr[0].getDivisionValue())
+	bitsPerSegment := section.GetBitsPerSegment()
+	for i := 1; i < segCount; i++ {
+		val = (val << uint(bitsPerSegment)) | uint32(arr[i].getDivisionValue())
+	}
+	return val
 }
 
 // UpperUint32Value returns the highest address in the address section range as a uint32
 func (section *IPv4AddressSection) UpperUint32Value() uint32 {
-	_, upper := section.getIntValues()
-	return upper
-}
-
-func (section *IPv4AddressSection) getIntValues() (lower, upper uint32) {
 	segCount := section.GetSegmentCount()
 	if segCount == 0 {
-		return 0, 0
+		return 0
 	}
-	cache := section.cache
-	if cache == nil {
-		return section.calcIntValues()
-	}
-	cached := cache.intsCache
-	if cached == nil {
-		cached = &intsCache{}
-		cached.cachedLowerVal, cached.cachedUpperVal = section.calcIntValues()
-		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache.intsCache))
-		atomic.StorePointer(dataLoc, unsafe.Pointer(cached))
-	}
-	lower = cached.cachedLowerVal
-	upper = cached.cachedUpperVal
-	return
-}
-
-func (section *IPv4AddressSection) calcIntValues() (lower, upper uint32) {
-	segCount := section.GetSegmentCount()
-	isMult := section.isMultiple()
-	if segCount == 4 {
-		lower = (uint32(section.GetSegment(0).GetSegmentValue()) << 24) |
-			(uint32(section.GetSegment(1).GetSegmentValue()) << 16) |
-			(uint32(section.GetSegment(2).GetSegmentValue()) << 8) |
-			uint32(section.GetSegment(3).GetSegmentValue())
-		if isMult {
-			upper = (uint32(section.GetSegment(0).GetUpperSegmentValue()) << 24) |
-				(uint32(section.GetSegment(1).GetUpperSegmentValue()) << 16) |
-				(uint32(section.GetSegment(2).GetUpperSegmentValue()) << 8) |
-				uint32(section.GetSegment(3).GetUpperSegmentValue())
-		} else {
-			upper = lower
-		}
-		return
-	}
-	seg := section.GetSegment(0)
-	lower = uint32(seg.GetSegmentValue())
-	if isMult {
-		upper = uint32(seg.GetUpperSegmentValue())
-	}
+	arr := section.getDivArray()
+	val := uint32(arr[0].getUpperDivisionValue())
 	bitsPerSegment := section.GetBitsPerSegment()
 	for i := 1; i < segCount; i++ {
-		seg = section.GetSegment(i)
-		lower = (lower << uint(bitsPerSegment)) | uint32(seg.GetSegmentValue())
-		if isMult {
-			upper = (upper << uint(bitsPerSegment)) | uint32(seg.GetUpperSegmentValue())
-		}
+		val = (val << uint(bitsPerSegment)) | uint32(arr[i].getUpperDivisionValue())
 	}
-	if !isMult {
-		upper = lower
-	}
-	return
+	return val
 }
 
 // ToPrefixBlock returns the section with the same prefix as this section while the remaining bits span all values.

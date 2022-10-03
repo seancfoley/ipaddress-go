@@ -256,8 +256,37 @@ func bigZero() *big.Int {
 	return new(big.Int)
 }
 
-func checkSubnet(series AddressDivisionSeries, prefixLength BitCount) BitCount {
-	return checkBitCount(prefixLength, series.GetBitCount())
+var zero = bigZero()
+
+func bigZeroConst() *big.Int {
+	return zero
+}
+
+var minusOne = big.NewInt(-1)
+
+func bigMinusOneConst() *big.Int {
+	return minusOne
+}
+
+func bigSixteen() *big.Int {
+	return big.NewInt(16)
+}
+
+func bigIsZero(val *BigDivInt) bool {
+	return len(val.Bits()) == 0 // slightly faster than div.value.BitLen() == 0
+}
+
+func bigIsOne(val *BigDivInt) bool {
+	return bigAbsIsOne(val) && val.Sign() > 0
+}
+
+func bigAbsIsOne(val *BigDivInt) bool {
+	bits := val.Bits()
+	return len(bits) == 1 && bits[0] == 1
+}
+
+func checkSubnet(item bitItem, prefixLength BitCount) BitCount {
+	return checkBitCount(prefixLength, item.GetBitCount())
 }
 
 func checkDiv(div DivisionType, prefixLength BitCount) BitCount {

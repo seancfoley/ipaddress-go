@@ -38,6 +38,8 @@ type DivisionType interface {
 	divStringProvider
 }
 
+var _ DivisionType = &IPAddressLargeDivision{}
+
 // Represents any standard address division, which is a division of size 64 bits or less.  All can be converted to/from AddressDivision
 type StandardDivisionType interface {
 	DivisionType

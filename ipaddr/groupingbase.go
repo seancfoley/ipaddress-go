@@ -19,7 +19,6 @@ package ipaddr
 import (
 	"fmt"
 	"math/big"
-	"sync/atomic"
 	"unsafe"
 )
 
@@ -41,11 +40,73 @@ type addressDivisionGroupingBase struct {
 	cache *valueCache
 }
 
-// TODO LATER for large will need to add methods in java AddressItem (porting those same methods in AddressItem using BigINteger to use big.int should do it):
-// isSinglePrefixBlock, isPrefixBlock, containsPrefixBlock(int), containsSinglePrefixBlock(int), GetMinPrefixLenForBlock() bitcount, GetPrefixLenForSingleBlock() prefixlen
+// this is used by methods that are used by both mac and ipv4/6, even though the prefix length assignment does not apply to MAC.  It is also used by large division groupings.
+func (grouping *addressDivisionGroupingBase) initMultAndPrefLen() {
+	segCount := grouping.GetDivisionCount()
+	bitsSoFar := 0
+	if segCount != 0 {
+		var previousSegmentPrefix PrefixLen
+		isMultiple := false
+		//bitsPerSegment := grouping.getBitsPerSegment()
+		for i := 0; i < segCount; i++ {
+			segment := grouping.getDivision(i)
+			if !isMultiple && segment.isMultiple() {
+				isMultiple = true
+				grouping.isMult = true
+				if grouping.prefixLength != nil { // nothing left to do
+					break
+				}
+			}
+
+			//Calculate the segment-level prefix
+			//
+			//Across an address prefixes are:
+			//IPv6: (nil):...:(nil):(1 to 16):(0):...:(0)
+			//or IPv4: ...(nil).(1 to 8).(0)...
+			//For MAC, all segs have nil prefix since prefix is not segment-level
+			segPrefix := segment.getDivisionPrefixLength()
+			if previousSegmentPrefix == nil {
+				if segPrefix != nil {
+					newPref := bitsSoFar + segPrefix.bitCount()
+					//newPref := getNetworkPrefixLen(bitsPerSegment, segPrefix.bitCount(), i)
+					grouping.prefixLength = cacheBitCount(newPref)
+					if isMultiple { // nothing left to do
+						break
+					}
+				}
+			}
+			previousSegmentPrefix = segPrefix
+			bitsSoFar += segment.GetBitCount()
+		}
+	}
+	return
+}
 
 func (grouping *addressDivisionGroupingBase) getAddrType() addrType {
 	return grouping.addrType
+}
+
+func (grouping *addressDivisionGroupingBase) isPrefixed() bool {
+	return grouping.prefixLength != nil
+}
+
+func (grouping *addressDivisionGroupingBase) getPrefixLen() PrefixLen {
+	return grouping.prefixLength
+}
+
+// GetPrefixLen returns the prefix length, or nil if there is no prefix length.
+//
+// A prefix length indicates the number of bits in the initial part of the address item that comprises the prefix.
+//
+// A prefix is a part of the address item that is not specific to that address but common amongst a group of such items, such as a CIDR prefix block subnet.
+func (grouping *addressDivisionGroupingBase) GetPrefixLen() PrefixLen {
+	return grouping.getPrefixLen().copy()
+}
+
+// isMultiple returns whether this address or grouping represents more than one address or grouping.
+// Such addresses include CIDR/IP addresses (eg 1.2.3.4/11) or wildcard addresses (eg 1.2.*.4) or range addresses (eg 1.2.3-4.5)
+func (grouping *addressDivisionGroupingBase) isMultiple() bool {
+	return grouping.isMult
 }
 
 // hasNoDivisions() returns whether this grouping is the zero grouping,
@@ -247,6 +308,10 @@ func (grouping *addressDivisionGroupingBase) getCount() *big.Int {
 	return grouping.cacheCount(grouping.getCountBig)
 }
 
+func (grouping *addressDivisionGroupingBase) getCachedCount() *big.Int {
+	return grouping.cachedCount(grouping.getCountBig)
+}
+
 // GetPrefixCount returns the number of distinct prefix values in this item.
 //
 // The prefix length is given by GetPrefixLen.
@@ -273,29 +338,28 @@ func (grouping *addressDivisionGroupingBase) cacheCount(counter func() *big.Int)
 	if cache == nil {
 		return grouping.calcCount(counter)
 	}
-	count := cache.cachedCount
+	count := (*big.Int)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&cache.cachedCount))))
 	if count == nil {
 		count = grouping.calcCount(counter)
 		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache.cachedCount))
-		atomic.StorePointer(dataLoc, unsafe.Pointer(count))
+		atomicStorePointer(dataLoc, unsafe.Pointer(count))
 	}
 	return new(big.Int).Set(count)
 }
 
-func (grouping *addressDivisionGroupingBase) cacheUint64Count(counter func() uint64) uint64 {
+// cachedCount returns the cached count value, not a duplicate
+func (grouping *addressDivisionGroupingBase) cachedCount(counter func() *big.Int) *big.Int {
 	cache := grouping.cache
 	if cache == nil {
-		return grouping.calcUint64Count(counter)
+		return grouping.calcCount(counter)
 	}
-	count := cache.cachedCount
+	count := (*big.Int)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&cache.cachedCount))))
 	if count == nil {
-		count64 := grouping.calcUint64Count(counter)
-		count = new(big.Int).SetUint64(count64)
+		count = grouping.calcCount(counter)
 		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache.cachedCount))
-		atomic.StorePointer(dataLoc, unsafe.Pointer(count))
-		return count64
+		atomicStorePointer(dataLoc, unsafe.Pointer(count))
 	}
-	return count.Uint64()
+	return count
 }
 
 func (grouping *addressDivisionGroupingBase) calcCount(counter func() *big.Int) *big.Int {
@@ -317,12 +381,12 @@ func (grouping *addressDivisionGroupingBase) cacheUint64PrefixCount(counter func
 	if cache == nil {
 		return grouping.calcUint64PrefixCount(counter)
 	}
-	count := cache.cachedPrefixCount
+	count := (*big.Int)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&cache.cachedPrefixCount))))
 	if count == nil {
 		count64 := grouping.calcUint64PrefixCount(counter)
 		count = new(big.Int).SetUint64(count64)
 		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache.cachedPrefixCount))
-		atomic.StorePointer(dataLoc, unsafe.Pointer(count))
+		atomicStorePointer(dataLoc, unsafe.Pointer(count))
 		return count64
 	}
 	return count.Uint64()
@@ -333,11 +397,11 @@ func (grouping *addressDivisionGroupingBase) cachePrefixCount(counter func() *bi
 	if cache == nil {
 		return grouping.calcPrefixCount(counter)
 	}
-	count := cache.cachedPrefixCount
+	count := (*big.Int)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&cache.cachedPrefixCount))))
 	if count == nil {
 		count = grouping.calcPrefixCount(counter)
 		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache.cachedPrefixCount))
-		atomic.StorePointer(dataLoc, unsafe.Pointer(count))
+		atomicStorePointer(dataLoc, unsafe.Pointer(count))
 	}
 	return new(big.Int).Set(count)
 }
@@ -367,9 +431,9 @@ func (grouping *addressDivisionGroupingBase) calcUint64PrefixCount(counter func(
 func (grouping *addressDivisionGroupingBase) getCachedBytes(calcBytes func() (bytes, upperBytes []byte)) (bytes, upperBytes []byte) {
 	cache := grouping.cache
 	if cache == nil {
-		return emptyBytes, emptyBytes
+		return calcBytes()
 	}
-	cached := cache.bytesCache
+	cached := (*bytesCache)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&cache.bytesCache))))
 	if cached == nil {
 		bytes, upperBytes = calcBytes()
 		cached = &bytesCache{
@@ -377,17 +441,35 @@ func (grouping *addressDivisionGroupingBase) getCachedBytes(calcBytes func() (by
 			upperBytes: upperBytes,
 		}
 		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache.bytesCache))
-		atomic.StorePointer(dataLoc, unsafe.Pointer(cached))
+		atomicStorePointer(dataLoc, unsafe.Pointer(cached))
 	}
 	bytes = cached.lowerBytes
 	upperBytes = cached.upperBytes
 	return
 }
 
-// isMultiple returns whether this address or grouping represents more than one address or grouping.
-// Such addresses include CIDR/IP addresses (eg 1.2.3.4/11) or wildcard addresses (eg 1.2.*.4) or range addresses (eg 1.2.3-4.5)
-func (grouping *addressDivisionGroupingBase) isMultiple() bool {
-	return grouping.isMult
+// IsSequential returns whether the grouping represents a range of values that are sequential.
+//
+// Generally, this means that any division covering a range of values must be followed by divisions that are full range, covering all values.
+func (grouping *addressDivisionGroupingBase) IsSequential() bool {
+	count := grouping.GetDivisionCount()
+	if count > 1 {
+		for i := 0; i < count; i++ {
+			if grouping.getDivision(i).isMultiple() {
+				for i++; i < count; i++ {
+					if !grouping.getDivision(i).IsFullRange() {
+						return false
+					}
+				}
+				return true
+			}
+		}
+	}
+	return true
+}
+
+type bytesCache struct {
+	lowerBytes, upperBytes []byte
 }
 
 type mixedCache struct {
@@ -402,10 +484,6 @@ type valueCache struct {
 	cachedMaskLens *maskLenSetting
 
 	bytesCache *bytesCache
-
-	intsCache *intsCache
-
-	zeroVals *zeroRangeCache
 
 	stringCache stringCache
 
@@ -479,14 +557,6 @@ type groupingCache struct {
 	lower, upper *AddressSection
 }
 
-type zeroRangeCache struct {
-	zeroSegments, zeroRangeSegments SegmentSequenceList
-}
-
-type intsCache struct {
-	cachedLowerVal, cachedUpperVal uint32
-}
-
 type maskLenSetting struct {
 	networkMaskLen, hostMaskLen PrefixLen
 }
@@ -500,8 +570,6 @@ type divArray interface {
 
 	fmt.Stringer
 }
-
-var _ divArray = standardDivArray{}
 
 var zeroDivs = make([]*AddressDivision, 0)
 var zeroStandardDivArray = standardDivArray(zeroDivs)
@@ -540,5 +608,47 @@ func (grouping standardDivArray) init() standardDivArray {
 }
 
 func (grouping standardDivArray) String() string {
-	return fmt.Sprint(grouping.init())
+	return fmt.Sprint([]*AddressDivision(grouping.init()))
 }
+
+var zeroLargeDivs = make([]*IPAddressLargeDivision, 0)
+var zeroLargeDivArray = largeDivArray(zeroLargeDivs)
+
+type largeDivArray []*IPAddressLargeDivision
+
+func (grouping largeDivArray) getDivisionCount() int {
+	return len(grouping)
+}
+
+func (grouping largeDivArray) getDivision(index int) *addressDivisionBase {
+	return (*addressDivisionBase)(unsafe.Pointer(grouping[index]))
+}
+
+func (grouping largeDivArray) getGenericDivision(index int) DivisionType {
+	return grouping[index]
+}
+
+func (grouping largeDivArray) copyDivisions(divs []*IPAddressLargeDivision) (count int) {
+	return copy(divs, grouping)
+}
+
+func (grouping largeDivArray) copySubDivisions(start, end int, divs []*IPAddressLargeDivision) (count int) {
+	return copy(divs, grouping[start:end])
+}
+
+func (grouping largeDivArray) getSubDivisions(index, endIndex int) (divs []*IPAddressLargeDivision) {
+	return grouping[index:endIndex]
+}
+
+func (grouping largeDivArray) init() largeDivArray {
+	if grouping == nil {
+		return zeroLargeDivArray
+	}
+	return grouping
+}
+
+func (grouping largeDivArray) String() string {
+	return fmt.Sprint([]*IPAddressLargeDivision(grouping.init()))
+}
+
+var _, _ divArray = standardDivArray{}, largeDivArray{}

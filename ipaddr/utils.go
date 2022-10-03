@@ -19,6 +19,8 @@ package ipaddr
 import (
 	"fmt"
 	"math/big"
+	"sync/atomic"
+	"unsafe"
 )
 
 func nilString() string {
@@ -37,6 +39,10 @@ func cloneInts(orig []int) []int {
 
 func cloneDivs(orig []*AddressDivision) []*AddressDivision {
 	return append(make([]*AddressDivision, 0, len(orig)), orig...)
+}
+
+func cloneLargeDivs(orig []*IPAddressLargeDivision) []*IPAddressLargeDivision {
+	return append(make([]*IPAddressLargeDivision, 0, len(orig)), orig...)
 }
 
 func cloneBytes(orig []byte) []byte {
@@ -190,4 +196,51 @@ func flagsFromState(state fmt.State, verb rune) string {
 	}
 	vals = append(vals, verb)
 	return string(vals)
+}
+
+func umin(a, b uint) uint {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func minSegInt(a, b SegInt) SegInt {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func maxSegInt(a, b SegInt) SegInt {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+// TODO generics: replace all uses of atomicStorePointer with atomic.Pointer
+
+// TODO use git diff to check if we missed any godoc
+
+func atomicLoadPointer(dataLoc *unsafe.Pointer) unsafe.Pointer {
+	return atomic.LoadPointer(dataLoc)
+}
+
+func atomicStorePointer(dataLoc *unsafe.Pointer, val unsafe.Pointer) {
+	atomic.StorePointer(dataLoc, val)
 }

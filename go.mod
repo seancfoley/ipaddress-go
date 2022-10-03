@@ -19,4 +19,3 @@ module github.com/seancfoley/ipaddress-go
 go 1.12
 
 require github.com/seancfoley/bintree v1.1.0
-

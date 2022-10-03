@@ -241,13 +241,13 @@ func (rng *IPv6AddressSeqRange) Compare(item AddressItem) int {
 // Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one range spans more individual addresses than another.
 //
 // CompareSize returns a positive integer if this address range has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
-func (rng *IPv6AddressSeqRange) CompareSize(other IPAddressSeqRangeType) int {
+func (rng *IPv6AddressSeqRange) CompareSize(other AddressItem) int {
 	if rng == nil {
-		if other != nil && other.ToIP() != nil {
-			// we have size 0, other has size >= 1
-			return -1
+		if isNilItem(other) {
+			return 0
 		}
-		return 0
+		// we have size 0, other has size >= 1
+		return -1
 	}
 	return rng.compareSize(other)
 }

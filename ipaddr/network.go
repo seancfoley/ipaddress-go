@@ -19,7 +19,6 @@ package ipaddr
 import (
 	"net"
 	"sync"
-	"sync/atomic"
 	"unsafe"
 )
 
@@ -210,11 +209,11 @@ func getMask(version IPVersion, zeroSeg *AddressDivision, networkPrefixLength Bi
 		bits = addressBitLength
 	}
 	cacheIndex := bits
-	subnet := cache[cacheIndex]
+
+	subnet := (*IPAddress)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&cache[cacheIndex]))))
 	if subnet != nil {
 		return subnet
 	}
-
 	maskMutex.Lock()
 	subnet = cache[cacheIndex]
 	if subnet != nil {
@@ -233,14 +232,13 @@ func getMask(version IPVersion, zeroSeg *AddressDivision, networkPrefixLength Bi
 		onesSubnetIndex = 0
 		zerosSubnetIndex = int(addressBitLength)
 	}
-	onesSubnet := cache[onesSubnetIndex]
-	zerosSubnet := cache[zerosSubnetIndex]
 	segmentCount := version.GetSegmentCount()
 	bitsPerSegment := version.GetBitsPerSegment()
 	maxSegmentValue := version.GetMaxSegmentValue()
+
+	onesSubnet := (*IPAddress)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&cache[onesSubnetIndex]))))
 	if onesSubnet == nil {
 		newSegments := createSegmentArray(segmentCount)
-
 		if withPrefixLength {
 			if network {
 				segment := createAddressDivision(zeroSeg.deriveNewSeg(maxSegmentValue, nil))
@@ -260,8 +258,9 @@ func getMask(version IPVersion, zeroSeg *AddressDivision, networkPrefixLength Bi
 			onesSubnet = createIPAddress(createSection(newSegments, nil, version.toType()), NoZone) /* address creation */
 		}
 		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache[onesSubnetIndex]))
-		atomic.StorePointer(dataLoc, unsafe.Pointer(onesSubnet))
+		atomicStorePointer(dataLoc, unsafe.Pointer(onesSubnet))
 	}
+	zerosSubnet := (*IPAddress)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&cache[zerosSubnetIndex]))))
 	if zerosSubnet == nil {
 		newSegments := createSegmentArray(segmentCount)
 		if withPrefixLength {
@@ -283,7 +282,7 @@ func getMask(version IPVersion, zeroSeg *AddressDivision, networkPrefixLength Bi
 			zerosSubnet = createIPAddress(createSection(newSegments, nil, version.toType()), NoZone)
 		}
 		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache[zerosSubnetIndex]))
-		atomic.StorePointer(dataLoc, unsafe.Pointer(zerosSubnet))
+		atomicStorePointer(dataLoc, unsafe.Pointer(zerosSubnet))
 	}
 	prefix := bits
 	onesSegment := onesSubnet.getDivision(0)
@@ -347,10 +346,8 @@ func getMask(version IPVersion, zeroSeg *AddressDivision, networkPrefixLength Bi
 	}
 	subnet = createIPAddress(createSection(newSegments, prefLen, version.toType()), NoZone)
 	dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache[cacheIndex]))
-	atomic.StorePointer(dataLoc, unsafe.Pointer(subnet))
-
+	atomicStorePointer(dataLoc, unsafe.Pointer(subnet))
 	maskMutex.Unlock()
-
 	return subnet
 }
 

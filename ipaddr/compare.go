@@ -49,120 +49,224 @@ type componentComparator interface {
 	compareLargeValues(oneUpper, oneLower, twoUpper, twoLower *big.Int) int
 }
 
-const (
-	ipv6sectype          = 7
-	ipv4sectype          = 6
-	ipsectype            = 5
-	macsectype           = 4
-	sectype              = 3
-	ipv6v4groupingtype   = 2
-	largegroupingtype    = -2
-	standardgroupingtype = -3
-	adaptivezerotype     = -4
-)
+type groupingType int
 
 const (
-	ipv6segtype     = 6
-	ipv4segtype     = 5
-	ipsegtype       = 4
-	macsegtype      = 3
-	segtype         = 1
-	largedivtype    = -2
-	standarddivtype = 0
+	ipv6sectype          groupingType = 7
+	ipv4sectype          groupingType = 6
+	ipsectype            groupingType = 5
+	macsectype           groupingType = 4
+	sectype              groupingType = 3
+	ipv6v4groupingtype   groupingType = 2
+	largegroupingtype    groupingType = -2
+	standardgroupingtype groupingType = -3
+	adaptivezerotype     groupingType = -4
+	unknowntype          groupingType = -5
 )
+
+type divType int
 
 const (
-	ipv6rangetype = 2
-	ipv4rangetype = 1
-	iprangetype   = 0
+	ipv6segtype     divType = 6
+	ipv4segtype     divType = 5
+	ipsegtype       divType = 4
+	macsegtype      divType = 3
+	segtype         divType = 1
+	standarddivtype divType = 0
+	largedivtype    divType = -2
+	unknowndivtype  divType = -3
 )
 
-func mapDivision(genericDiv DivisionType) int {
-	if div, ok := genericDiv.(StandardDivisionType); ok {
-		addrDiv := div.ToDiv()
-		if addrDiv.IsIPv6() {
-			return ipv6segtype
-		} else if addrDiv.IsIPv4() {
-			return ipv4segtype
-		} else if addrDiv.IsMAC() {
-			return macsegtype
-		} else if addrDiv.IsIP() {
-			return ipsegtype
-		} else if addrDiv.IsSegmentBase() {
-			return segtype
+type rangeType int
+
+const (
+	ipv6rangetype    rangeType = 2
+	ipv4rangetype    rangeType = 1
+	iprangetype      rangeType = 0
+	unknownrangetype rangeType = -1
+)
+
+func checkSegmentType(div AddressSegmentType) (isNil bool, divType divType) {
+	if isNil = div == nil; isNil {
+		divType = unknowndivtype
+	} else {
+		seg := div.ToSegmentBase()
+		if isNil = seg == nil; !isNil {
+			if seg.IsIPv6() {
+				divType = ipv6segtype
+			} else if seg.IsIPv4() {
+				divType = ipv4segtype
+			} else if seg.IsMAC() {
+				divType = macsegtype
+			} else if seg.IsIP() {
+				divType = ipsegtype
+			} else {
+				divType = segtype
+			}
+		} else {
+			divType = unknowndivtype
 		}
-		return standarddivtype
 	}
-	//else if(div instanceof IPAddressLargeDivision) { //TODO LATER IPAddressLargeDivisionGrouping
-	//	return -1;
-	//}
-	return standarddivtype
+	return
 }
 
-func mapGrouping(grouping StandardDivGroupingType) int {
-	group := grouping.ToDivGrouping()
-	if group.IsAdaptiveZero() {
-		// The zero grouping can represent a zero-length section of any address type.
-		// This is necessary because sections and groupings have no init() method to ensure zero-sections are always assigned an address type.
-		// We need the zero grouping to be less than everything else or more than everything else for comparison consistency.
-		// Empty sections org groupings that have an address type are not considered equal.  They can represent only one address type.
-		// This is similar to the fact that a MAC section and an IPv4 section can be structurally identical but not equal due to the type.
-		return adaptivezerotype
-	} else if group.IsIPv6() {
-		return ipv6sectype
-	} else if group.IsMixedIPv6v4() {
-		return ipv6v4groupingtype
-	} else if group.IsIPv4() {
-		return ipv4sectype
-	} else if group.IsMAC() {
-		return macsectype
-	} else if group.IsIP() {
-		return ipsectype
-	} else if group.isAddressSection() {
-		return sectype
+func checkDivisionType(genericDiv DivisionType) (isNil, isStandard bool, divType divType, standardDiv StandardDivisionType) {
+	// Note: https://go.dev/play/p/4cHtDqDxpjp shows the behaviour or type-checking
+	if standardDiv, isStandard = genericDiv.(StandardDivisionType); isStandard {
+		div := standardDiv.ToDiv()
+		if isNil = div == nil; !isNil {
+			if div.IsIPv6() {
+				divType = ipv6segtype
+			} else if div.IsIPv4() {
+				divType = ipv4segtype
+			} else if div.IsMAC() {
+				divType = macsegtype
+			} else if div.IsIP() {
+				divType = ipsegtype
+			} else if div.IsSegmentBase() {
+				divType = segtype
+			} else {
+				divType = standarddivtype
+			}
+		} else {
+			divType = unknowndivtype
+		}
+	} else if largeDiv, isLarge := genericDiv.(*IPAddressLargeDivision); isLarge {
+		if isNil = largeDiv.isNil(); !isNil {
+			divType = largedivtype
+		}
+	} else {
+		isNil = genericDiv == nil
+		// it could still have some external type, so not a nil interface but a nil value with that type, but we have no way to know
+		divType = unknowndivtype
 	}
-	return standardgroupingtype
-	//} //} else if(series instanceof IPAddressLargeDivisionGrouping) {
-	//	return -2;
-	//}
-	//return 0
+	return
 }
 
-func mapRange(rng *IPAddressSeqRange) int {
-	//rng := rngType.ToIP()
-	if rng.IsIPv4() {
-		return ipv4rangetype
-	} else if rng.IsIPv6() {
-		return ipv6rangetype
+func checkSectionType(sect AddressSectionType) (isNil bool, groupingType groupingType) {
+	if isNil = sect == nil; isNil {
+		groupingType = unknowntype
+	} else {
+		section := sect.ToSectionBase()
+		if isNil = section == nil; !isNil {
+			if section.IsAdaptiveZero() {
+				// The zero grouping can represent a zero-length section of any address type.
+				// This is necessary because sections and groupings have no init() method to ensure zero-sections are always assigned an address type.
+				// We would need the zero grouping to be less than everything else or more than everything else for comparison consistency.
+				// Empty sections or groupings that have an address type are not considered equal.  They can represent only one address type.
+				// This is similar to the fact that a MAC section and an IPv4 section can be structurally identical but not equal due to the type.
+				//
+				// See IsAdaptiveZero() method for more details.
+				groupingType = adaptivezerotype
+			} else if section.IsIPv6() {
+				groupingType = ipv6sectype
+			} else if section.IsIPv4() {
+				groupingType = ipv4sectype
+			} else if section.IsMAC() {
+				groupingType = macsectype
+			} else if section.IsIP() {
+				groupingType = ipsectype
+			} else {
+				groupingType = sectype
+			}
+		} else {
+			groupingType = unknowntype
+		}
 	}
-	return iprangetype
+	return
+}
+
+func checkGroupingType(series AddressDivisionSeries) (
+	isNil bool, groupingType groupingType) {
+	// Note: https://go.dev/play/p/4cHtDqDxpjp shows the behaviour or type-checking
+	if sgrouping, isStandard := series.(StandardDivGroupingType); isStandard {
+		group := sgrouping.ToDivGrouping()
+		if isNil = group == nil; !isNil {
+			if group.IsAdaptiveZero() {
+				// The zero grouping can represent a zero-length section of any address type.
+				// This is necessary because sections and groupings have no init() method to ensure zero-sections are always assigned an address type.
+				// We would need the zero grouping to be less than everything else or more than everything else for comparison consistency.
+				// Empty sections or groupings that have an address type are not considered equal.  They can represent only one address type.
+				// This is similar to the fact that a MAC section and an IPv4 section can be structurally identical but not equal due to the type.
+				//
+				// See IsAdaptiveZero() method for more details.
+				groupingType = adaptivezerotype
+			} else if group.IsIPv6() {
+				groupingType = ipv6sectype
+			} else if group.IsMixedIPv6v4() {
+				groupingType = ipv6v4groupingtype
+			} else if group.IsIPv4() {
+				groupingType = ipv4sectype
+			} else if group.IsMAC() {
+				groupingType = macsectype
+			} else if group.IsIP() {
+				// Currently the ipsectype result is impossible, because a zero IP section has type adaptivezerotype,
+				// while a non-zero IP section can only be ipv6sectype or ipv4sectype
+				groupingType = ipsectype
+			} else if group.isAddressSection() {
+				// Currently the sectype result is impossible, because a zero section has type adaptivezerotype,
+				// while a non-zero IP section can only be ipv6sectype or ipv4sectype
+				groupingType = sectype
+			} else {
+				groupingType = standardgroupingtype
+			}
+		} else {
+			groupingType = unknowntype
+		}
+	} else if lgrouping, isLarge := series.(*IPAddressLargeDivisionGrouping); isLarge {
+		if isNil = lgrouping.isNil(); !isNil {
+			groupingType = largegroupingtype
+		} else {
+			groupingType = unknowntype
+		}
+	} else {
+		isNil = series == nil
+		// it could still have some external type, so not a nil interface but a nil value with that type, but we have no way to know
+		groupingType = unknowntype
+	}
+	return
+}
+
+func checkRangeType(r IPAddressSeqRangeType) (isNil bool, rngType rangeType, rng *IPAddressSeqRange) {
+	if isNil = r == nil; isNil {
+		rngType = unknownrangetype
+	} else {
+		rng = r.ToIP()
+		if isNil = rng == nil; !isNil {
+			if rng.IsIPv4() {
+				rngType = ipv4rangetype
+			} else if rng.IsIPv6() {
+				rngType = ipv6rangetype
+			} else {
+				rngType = iprangetype
+			}
+		} else {
+			rngType = unknownrangetype
+		}
+	}
+	return
 }
 
 // AddressComparator has methods to compare addresses, or sections, or division series, or segments, or divisions, or sequential ranges.
 // AddressComparator also allows you to compare any two instances of any such address items, using the Compare method.
 // The zero value acts like CountComparator, the default comparator.
 type AddressComparator struct {
-	componentComparator
+	componentComparator componentComparator
 }
 
 // CompareAddresses compares any two addresses (including different versions or address types)
 // It returns a negative integer, zero, or a positive integer if address item one is less than, equal, or greater than address item two.
 func (comp AddressComparator) CompareAddresses(one, two AddressType) int {
-	var oneAddr, twoAddr *Address
-	if one != nil {
-		oneAddr = one.ToAddressBase()
-	}
-	if two != nil {
-		twoAddr = two.ToAddressBase()
-	}
-	if oneAddr == nil {
-		if twoAddr == nil {
+	if one == nil || one.ToAddressBase() == nil {
+		if two == nil || two.ToAddressBase() == nil {
 			return 0
 		}
 		return -1
-	} else if twoAddr == nil {
+	} else if two == nil || two.ToAddressBase() == nil {
 		return 1
 	}
+	oneAddr := one.ToAddressBase()
+	twoAddr := two.ToAddressBase()
 	result := comp.CompareAddressSections(oneAddr.GetSection(), twoAddr.GetSection())
 	if result == 0 {
 		if oneIPv6 := oneAddr.ToIPv6(); oneIPv6 != nil {
@@ -183,29 +287,29 @@ func (comp AddressComparator) CompareAddresses(one, two AddressType) int {
 // CompareAddressSections compares any two address sections (including from different versions or address types)
 // It returns a negative integer, zero, or a positive integer if address item one is less than, equal, or greater than address item two.
 func (comp AddressComparator) CompareAddressSections(one, two AddressSectionType) int {
-	var oneSec, twoSec *AddressSection
-	if one != nil {
-		oneSec = one.ToSectionBase()
-	}
-	if two != nil {
-		twoSec = two.ToSectionBase()
-	}
-	if oneSec == nil {
-		if twoSec == nil {
+	oneIsNil, oneGroupingType := checkSectionType(one)
+	twoIsNil, twoGroupingType := checkSectionType(two)
+	if oneIsNil {
+		if twoIsNil {
 			return 0
 		}
 		return -1
-	} else if twoSec == nil {
+	} else if twoIsNil {
 		return 1
-	}
-	result := mapGrouping(oneSec) - mapGrouping(twoSec)
-	if result != 0 {
+	} else if result := oneGroupingType - twoGroupingType; result != 0 {
+		return int(result)
+	} else if result := int(one.GetBitCount() - two.GetBitCount()); result != 0 {
 		return result
 	}
-	if comp.componentComparator == nil {
-		comp.componentComparator = countComparator{}
+	return comp.getCompComp().compareSectionParts(one.ToSectionBase(), two.ToSectionBase())
+}
+
+func (comp AddressComparator) getCompComp() componentComparator {
+	compComp := comp.componentComparator
+	if compComp == nil {
+		return countComparator{}
 	}
-	return comp.compareSectionParts(oneSec, twoSec)
+	return compComp
 }
 
 func unwrapWrapper(item AddressDivisionSeries) AddressDivisionSeries {
@@ -234,62 +338,51 @@ func (comp AddressComparator) CompareSeries(one, two AddressDivisionSeries) int 
 			return comp.CompareAddressSections(addrSection1, addrSection2)
 		}
 	}
-	// TODO LATER when supporting large divisions, must figure out here whether they are standard div groupings or both are large div groupings - note that if the interface is nil they can be neither
-	// If they were not the same, you'd be done.  If both were standard or both were large, then you would take separate paths.
-	// For now, we can be certain they are both standard.
-	grouping1, _ := one.(StandardDivGroupingType) // the underscore is needed to avoid panic on nil
-	grouping2, _ := two.(StandardDivGroupingType)
-	var oneGrouping, twoGrouping *AddressDivisionGrouping
-	if grouping1 != nil {
-		oneGrouping = grouping1.ToDivGrouping()
-	}
-	if grouping2 != nil {
-		twoGrouping = grouping2.ToDivGrouping()
-	}
-	if oneGrouping == nil {
-		if twoGrouping == nil {
+	oneIsNil, oneGroupingType := checkGroupingType(one)
+	twoIsNil, twoGroupingType := checkGroupingType(two)
+
+	// All nils are equivalent.  We decided that a nil interface should be equivalent to an interface with a nil value (standard or large)
+	// But if nil interface == nil standard, and nil interface == nil large, then nil standard == nil large, by transitive condition.
+	// And in fact, if you attempted to categorize the 3 nil types, it would get quite confusing perhaps.
+	if oneIsNil {
+		if twoIsNil {
 			return 0
 		}
 		return -1
-	} else if twoGrouping == nil {
+	} else if twoIsNil {
 		return 1
-	}
-	result := mapGrouping(oneGrouping) - mapGrouping(twoGrouping)
-	if result != 0 {
+	} else if result := oneGroupingType - twoGroupingType; result != 0 {
+		return int(result)
+	} else if result := int(one.GetBitCount() - two.GetBitCount()); result != 0 {
 		return result
 	}
-	if comp.componentComparator == nil {
-		comp.componentComparator = countComparator{}
-	}
-	return comp.compareParts(oneGrouping, twoGrouping)
+	return comp.getCompComp().compareParts(one, two)
 }
 
 // CompareSegments compares any two address segments (including from different versions or address types)
 // It returns a negative integer, zero, or a positive integer if address item one is less than, equal, or greater than address item two.
 func (comp AddressComparator) CompareSegments(one, two AddressSegmentType) int {
-	var oneSeg, twoSeg *AddressSegment
-	if one != nil {
-		oneSeg = one.ToSegmentBase()
-	}
-	if two != nil {
-		twoSeg = two.ToSegmentBase()
-	}
-	if oneSeg == nil {
-		if twoSeg == nil {
+	oneIsNil, oneDivType := checkSegmentType(one)
+	twoIsNil, twoDivType := checkSegmentType(two)
+	// All nils are equivalent.  We decided that a nil interface should be equivalent to an interface with a nil value (standard or large)
+	// But if nil interface == nil standard, and nil interface == nil large, then nil standard == nil large, by transitive condition.
+	// And in fact, if you attempted to categorize the 3 nil types, it would get quite confusing perhaps.
+	if oneIsNil {
+		if twoIsNil {
 			return 0
 		}
 		return -1
-	} else if twoSeg == nil {
+	} else if twoIsNil {
 		return 1
-	}
-	result := mapDivision(one) - mapDivision(two)
-	if result != 0 {
+	} else if result := oneDivType - twoDivType; result != 0 {
+		return int(result)
+	} else if result := int(one.GetBitCount() - two.GetBitCount()); result != 0 {
 		return result
 	}
-	if comp.componentComparator == nil {
-		comp.componentComparator = countComparator{}
-	}
-	return comp.compareSegValues(oneSeg.GetUpperSegmentValue(), oneSeg.GetSegmentValue(), twoSeg.GetUpperSegmentValue(), twoSeg.GetSegmentValue())
+	oneSeg := one.ToSegmentBase()
+	twoSeg := two.ToSegmentBase()
+	return comp.getCompComp().compareSegValues(oneSeg.GetUpperSegmentValue(), oneSeg.GetSegmentValue(),
+		twoSeg.GetUpperSegmentValue(), twoSeg.GetSegmentValue())
 }
 
 // CompareDivisions compares any two address divisions (including from different versions or address types)
@@ -300,84 +393,57 @@ func (comp AddressComparator) CompareDivisions(one, two DivisionType) int {
 			return comp.CompareSegments(addrSeg1, addrSeg2)
 		}
 	}
-	// TODO LATER when supporting large divisions, must figure out here whether they are standard div groupings or both are large div groupings - note that if the interface is nil they can be neither
-	// If they were not the same, you'd be done.  If both were standard or both were large, then you would take separate paths.
-	// For now, we can be certain they are both standard.
-	// The large div path would use this code after the nil checks:
-	/*
-		result := mapDivision(one) - mapDivision(two)
-		if result != 0 {
-			return result
-		}
-		result = int(one.GetBitCount()) - int(two.GetBitCount())
-		if result != 0 {
-			return result
-		}
-		return comp.compareLargeValues(one.GetUpperValue(), one.GetValue(), two.GetUpperValue(), two.GetValue())
-	*/
-	addrDiv1, _ := one.(StandardDivisionType) // the underscore is needed to avoid panic on nil
-	addrDiv2, _ := two.(StandardDivisionType)
-	var div1, div2 *AddressDivision
-	if addrDiv1 != nil {
-		div1 = addrDiv1.ToDiv()
-	}
-	if addrDiv2 != nil {
-		div2 = addrDiv2.ToDiv()
-	}
-	if div1 == nil {
-		if div2 == nil {
+	oneIsNil, oneIsStandard, oneDivType, oneStandardDiv := checkDivisionType(one)
+	twoIsNil, twoIsStandard, twoDivType, twoStandardDiv := checkDivisionType(two)
+	// All nils are equivalent.  We decided that a nil interface should be equivalent to an interface with a nil value (standard or large)
+	// But if nil interface == nil standard, and nil interface == nil large, then nil standard == nil large, by transitive condition.
+	// And in fact, if you attempted to categorize the 3 nil types, it would get quite confusing perhaps.
+	if oneIsNil {
+		if twoIsNil {
 			return 0
 		}
 		return -1
-	} else if div2 == nil {
+	} else if twoIsNil {
 		return 1
-	}
-	result := mapDivision(one) - mapDivision(two)
-	if result != 0 {
+	} else if result := oneDivType - twoDivType; result != 0 {
+		return int(result)
+	} else if result := int(one.GetBitCount() - two.GetBitCount()); result != 0 {
 		return result
 	}
-	result = int(one.GetBitCount() - two.GetBitCount())
-	if result != 0 {
-		return result
+	compComp := comp.getCompComp()
+	if oneIsStandard {
+		if twoIsStandard {
+			div1, div2 := oneStandardDiv.ToDiv(), twoStandardDiv.ToDiv()
+			return compComp.compareValues(div1.GetUpperDivisionValue(), div1.GetDivisionValue(), div2.GetUpperDivisionValue(), div2.GetDivisionValue())
+		}
 	}
-	if comp.componentComparator == nil {
-		comp.componentComparator = countComparator{}
-	}
-	return comp.compareValues(div1.GetUpperDivisionValue(), div1.GetDivisionValue(), div2.GetUpperDivisionValue(), div2.GetDivisionValue())
+	return compComp.compareLargeValues(one.GetUpperValue(), one.GetValue(), two.GetUpperValue(), two.GetValue())
 }
 
 // CompareRanges compares any two IP address sequential ranges (including from different IP versions).
 // It returns a negative integer, zero, or a positive integer if address item one is less than, equal, or greater than address item two.
 func (comp AddressComparator) CompareRanges(one, two IPAddressSeqRangeType) int {
-	var r1, r2 *IPAddressSeqRange
-	if one != nil {
-		r1 = one.ToIP()
-	}
-	if two != nil {
-		r2 = two.ToIP()
-	}
-	if r1 == nil {
-		if r2 == nil {
+	oneIsNil, r1Type, r1 := checkRangeType(one)
+	twoIsNil, r2Type, r2 := checkRangeType(two)
+	if oneIsNil {
+		if twoIsNil {
 			return 0
 		}
 		return -1
-	} else if r2 == nil {
+	} else if twoIsNil {
 		return 1
 	}
-	r1Type := mapRange(r1)
-	result := r1Type - mapRange(r2)
+	result := r1Type - r2Type
 	if result != 0 {
-		return result
+		return int(result)
 	}
-	if comp.componentComparator == nil {
-		comp.componentComparator = countComparator{}
-	}
+	compComp := comp.getCompComp()
 	if r1Type == ipv4rangetype { // avoid using the large values
 		r1ipv4 := r1.ToIPv4()
 		r2ipv4 := r2.ToIPv4()
-		return comp.compareValues(uint64(r1ipv4.GetUpper().Uint32Value()), uint64(r1ipv4.GetLower().Uint32Value()), uint64(r2ipv4.GetUpper().Uint32Value()), uint64(r2ipv4.GetLower().Uint32Value()))
+		return compComp.compareValues(uint64(r1ipv4.GetUpper().Uint32Value()), uint64(r1ipv4.GetLower().Uint32Value()), uint64(r2ipv4.GetUpper().Uint32Value()), uint64(r2ipv4.GetLower().Uint32Value()))
 	}
-	return comp.compareLargeValues(r1.GetUpperValue(), r1.GetValue(), r2.GetUpperValue(), r2.GetValue())
+	return compComp.compareLargeValues(r1.GetUpperValue(), r1.GetValue(), r2.GetUpperValue(), r2.GetValue())
 }
 
 // Compare returns a negative integer, zero, or a positive integer if address item one is less than, equal, or greater than address item two.
@@ -412,7 +478,7 @@ func (comp AddressComparator) Compare(one, two AddressItem) int {
 		}
 		return 1
 	}
-	// we've covered all known address items for one, so check two
+	// we've covered all known address items for 'one', so check 'two'
 	if _, ok := two.(AddressDivisionSeries); ok {
 		return -1
 	} else if _, ok := two.(DivisionType); ok {
@@ -421,7 +487,11 @@ func (comp AddressComparator) Compare(one, two AddressItem) int {
 		return -1
 	}
 	// neither are a known AddressItem type
-	return int(one.GetBitCount() - two.GetBitCount())
+	res := int(one.GetBitCount() - two.GetBitCount())
+	if res == 0 {
+		return res
+	}
+	return comp.getCompComp().compareLargeValues(one.GetUpperValue(), one.GetValue(), two.GetUpperValue(), two.GetValue())
 }
 
 type valueComparator struct {
@@ -429,10 +499,6 @@ type valueComparator struct {
 }
 
 func (comp valueComparator) compareSectionParts(one, two *AddressSection) int {
-	sizeResult := one.GetByteCount() - two.GetByteCount()
-	if sizeResult != 0 {
-		return sizeResult
-	}
 	compareHigh := comp.compareHighValue
 	for {
 		segCount := one.GetSegmentCount()
@@ -725,13 +791,14 @@ func (comp valueComparator) compareLargeValues(oneUpper, oneLower, twoUpper, two
 type countComparator struct{}
 
 func (comp countComparator) compareSectionParts(one, two *AddressSection) int {
-	result := int(one.GetBitCount() - two.GetBitCount())
+	//result := int(one.GetBitCount() - two.GetBitCount())
+	//if result == 0 {
+	//result := compareSectionCount(one, two)
+	result := compareCount(one, two)
 	if result == 0 {
-		result = compareSectionCount(one, two)
-		if result == 0 {
-			result = comp.compareEqualSizedSections(one, two)
-		}
+		result = comp.compareEqualSizedSections(one, two)
 	}
+	//}
 	return result
 }
 
@@ -827,8 +894,8 @@ func (comp countComparator) compareDivisionGroupings(oneSeries, twoSeries Addres
 						upperByte := oneUpperBytes[oneByteIndex]
 						lowerByte := oneLowerBytes[oneByteIndex]
 						oneByteIndex++
-						oneUpper = (oneUpper << 1) | uint64(upperByte)
-						oneLower = (oneLower << 1) | uint64(lowerByte)
+						oneUpper = (oneUpper << 8) | uint64(upperByte)
+						oneLower = (oneLower << 8) | uint64(lowerByte)
 					}
 				} else {
 					shortCount := oneByteCount - 1
@@ -971,10 +1038,10 @@ func (countComparator) compareValues(oneUpper, oneLower, twoUpper, twoLower uint
 func (countComparator) compareLargeValues(oneUpper, oneLower, twoUpper, twoLower *big.Int) (result int) {
 	oneUpper.Sub(oneUpper, oneLower)
 	twoUpper.Sub(twoUpper, twoLower)
-	result = oneUpper.Cmp(twoUpper)
+	result = oneUpper.CmpAbs(twoUpper)
 	if result == 0 {
 		//the size of the range is the same, so just compare either upper or lower values
-		result = oneLower.Cmp(twoLower)
+		result = oneLower.CmpAbs(twoLower)
 	}
 	return
 }
@@ -995,19 +1062,104 @@ func compareDivBitCounts(oneSeries, twoSeries AddressDivisionSeries) int {
 	return result
 }
 
-func compareSectionCount(one, two *AddressSection) int {
-	return one.CompareSize(two)
+func isNilItem(item AddressItem) bool {
+	if divSeries, ok := item.(AddressDivisionSeries); ok {
+		if addr, ok := divSeries.(AddressType); ok {
+			return addr.ToAddressBase() == nil
+		} else if grouping, ok := divSeries.(StandardDivGroupingType); ok {
+			return grouping.ToDivGrouping() == nil
+		} else if largeGrouping, ok := divSeries.(*IPAddressLargeDivisionGrouping); ok {
+			return largeGrouping.isNil()
+		} // else a type external to this library, which we cannot test for nil
+	} else if rng, ok := item.(IPAddressSeqRangeType); ok {
+		return rng.ToIP() == nil
+	} else if div, ok := item.(DivisionType); ok {
+		if sdiv, ok := div.(StandardDivisionType); ok {
+			return sdiv.ToDiv() == nil
+		} else if ldiv, ok := div.(*IPAddressLargeDivision); ok {
+			return ldiv.isNil()
+		} // else a type external to this library, which we cannot test for nil
+	}
+	return item == nil
 }
 
-func compareCount(one, two AddressDivisionSeries) int {
-	if addrSeries1, ok := one.(AddressType); ok {
-		if addrSeries2, ok := two.(AddressType); ok {
-			return addrSeries1.CompareSize(addrSeries2)
+// Note: never called with an address instance, never called with an instance of AddressType
+func compareCount(one, two AddressItem) int {
+	if !one.IsMultiple() {
+		if two.IsMultiple() {
+			return -1
 		}
-	} else if grouping1, ok := one.(StandardDivGroupingType); ok {
-		if grouping2, ok := two.(StandardDivGroupingType); ok {
-			return grouping1.CompareSize(grouping2)
-		}
+		return 0
+	} else if !two.IsMultiple() {
+		return 1
 	}
-	return one.GetCount().Cmp(two.GetCount())
+	b1, u1 := getCount(one)
+	b2, u2 := getCount(two)
+	if b1 == nil {
+		if b2 != nil {
+			if b2.IsUint64() {
+				u2 = b2.Uint64()
+			} else {
+				return -1
+			}
+		}
+		if u1 < u2 {
+			return -1
+		} else if u1 == u2 {
+			return 0
+		}
+		return 1
+	} else if b2 == nil {
+		if b1.IsUint64() {
+			u1 = b1.Uint64()
+			if u1 < u2 {
+				return -1
+			} else if u1 == u2 {
+				return 0
+			}
+		}
+		return 1
+	}
+	return b1.CmpAbs(b2)
+}
+
+// Note: never called with an address instance, never called with an instance of AddressType
+func getCount(item AddressItem) (b *big.Int, u uint64) {
+	if sect, ok := item.(StandardDivGroupingType); ok {
+		grouping := sect.ToDivGrouping()
+		if grouping != nil {
+			b = grouping.getCachedCount()
+		}
+	} else if rng, ok := item.(IPAddressSeqRangeType); ok {
+		ipRange := rng.ToIP()
+		if ipRange != nil {
+			b = ipRange.getCachedCount(false)
+		}
+	} else if div, ok := item.(StandardDivisionType); ok {
+		base := div.ToDiv()
+		if base != nil {
+			if segBase := base.ToSegmentBase(); segBase != nil {
+				u = uint64((segBase.getUpperSegmentValue() - base.getSegmentValue()) + 1)
+			} else {
+				r := (base.getUpperDivisionValue() - base.getDivisionValue())
+				if r == 0xffffffffffffffff {
+					b = bigZero().SetUint64(0xffffffffffffffff)
+					b.Add(b, bigOneConst())
+					return
+				}
+				u = r + 1
+			}
+		}
+	} else if lgrouping, ok := item.(*IPAddressLargeDivisionGrouping); ok {
+		if lgrouping != nil {
+			b = lgrouping.getCachedCount()
+		}
+	} else if ldiv, ok := item.(*IPAddressLargeDivision); ok {
+		if ldiv != nil {
+			b = ldiv.getCount()
+		}
+	} else {
+		b = item.GetCount()
+	}
+	return
 }
