@@ -855,11 +855,19 @@ func setVals(valueBytes []byte, upperBytes []byte, bitCount BitCount) (assignedV
 		}
 		if len(valueBytes) >= maxLen {
 			valueBytes = valueBytes[len(valueBytes)-maxLen:]
-			valueBytes[0] &= mask
+			b := valueBytes[0]
+			if b&mask != b {
+				valueBytes = cloneBytes(valueBytes)
+				valueBytes[0] &= mask
+			}
 		}
 		if len(upperBytes) >= maxLen {
 			upperBytes = upperBytes[len(upperBytes)-maxLen:]
-			upperBytes[0] &= mask
+			b := upperBytes[0]
+			if b&mask != b {
+				upperBytes = cloneBytes(upperBytes)
+				upperBytes[0] &= mask
+			}
 		}
 	}
 	assignedValue = new(big.Int).SetBytes(valueBytes)
