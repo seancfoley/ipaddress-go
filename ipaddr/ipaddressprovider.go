@@ -48,7 +48,6 @@ func (t ipType) isUnknown() bool {
 
 const (
 	uninitializedType ipType = iota
-	invalidType
 	emptyType
 	ipv4AddrType
 	ipv6AddrType
@@ -313,6 +312,9 @@ type addressResult struct {
 
 	// addrErr applies to address, hostErr to hostAddress
 	addrErr, hostErr addrerr.IncompatibleAddressError
+
+	// only used when no address can be obtained
+	rng *IPAddressSeqRange
 }
 
 type cachedAddressProvider struct {
@@ -468,6 +470,7 @@ func (versioned *versionedAddressCreator) getVersionedAddress(version IPVersion)
 				atomicStorePointer(dataLoc, unsafe.Pointer(addr))
 			}
 		}
+		return
 	}
 	addr = versioned.versionedValues[index]
 	return
@@ -679,8 +682,6 @@ type allCreator struct {
 
 	originator HostIdentifierString
 	qualifier  parsedHostIdentifierStringQualifier
-
-	rng *IPAddressSeqRange
 }
 
 func (all *allCreator) getType() ipType {
@@ -711,28 +712,35 @@ func (all *allCreator) getProviderMask() *IPAddress {
 	return all.qualifier.getMaskLower()
 }
 
-func (all *allCreator) createAll() (rng *IPAddressSeqRange, addr *IPAddress, hostAddr *IPAddress, addrErr, hostErr addrerr.IncompatibleAddressError) {
-	addrs := (*addressResult)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&all.addresses))))
-	if addrs == nil {
-		var lower, upper *IPAddress
-		addr, hostAddr, lower, upper, addrErr = createAllAddress(
-			all.adjustedVersion,
-			&all.qualifier,
-			all.originator)
-		rng = lower.SpanWithRange(upper)
-		all.rng = rng
-		addresses := &addressResult{
-			address:     addr,
-			hostAddress: hostAddr,
-			addrErr:     addrErr,
-			hostErr:     hostErr,
-		}
-		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&all.addresses))
-		atomicStorePointer(dataLoc, unsafe.Pointer(addresses))
-	} else {
-		rng, addr, hostAddr, addrErr, hostErr = all.rng, addrs.address, addrs.hostAddress, addrs.addrErr, addrs.hostErr
+func (all *allCreator) isSequential() bool {
+	addr, _ := all.getProviderAddress()
+	if addr != nil {
+		return addr.IsSequential()
 	}
+	return false
+}
+
+func (all *allCreator) getProviderHostAddress() (res *IPAddress, err addrerr.IncompatibleAddressError) {
+	if !all.isProvidingIPAddress() {
+		return nil, nil
+	}
+	_, res, _, err = all.createAddrs()
 	return
+}
+
+func (all *allCreator) getProviderAddress() (res *IPAddress, err addrerr.IncompatibleAddressError) {
+	if !all.isProvidingIPAddress() {
+		return
+	}
+	res, _, err, _ = all.createAddrs()
+	return
+}
+
+func (all *allCreator) getProviderSeqRange() *IPAddressSeqRange {
+	if all.isProvidingAllAddresses() {
+		return nil
+	}
+	return all.createRange()
 }
 
 func (all *allCreator) createRange() (rng *IPAddressSeqRange) {
@@ -742,6 +750,29 @@ func (all *allCreator) createRange() (rng *IPAddressSeqRange) {
 
 func (all *allCreator) createAddrs() (addr *IPAddress, hostAddr *IPAddress, addrErr, hostErr addrerr.IncompatibleAddressError) {
 	_, addr, hostAddr, addrErr, hostErr = all.createAll()
+	return
+}
+
+func (all *allCreator) createAll() (rng *IPAddressSeqRange, addr *IPAddress, hostAddr *IPAddress, addrErr, hostErr addrerr.IncompatibleAddressError) {
+	addrs := (*addressResult)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&all.addresses))))
+	if addrs == nil {
+		var lower, upper *IPAddress
+		addr, hostAddr, lower, upper, addrErr = createAllAddress(
+			all.adjustedVersion,
+			&all.qualifier,
+			all.originator)
+		rng = lower.SpanWithRange(upper)
+		addresses := &addressResult{
+			address:     addr,
+			hostAddress: hostAddr,
+			addrErr:     addrErr,
+			rng:         rng,
+		}
+		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&all.addresses))
+		atomicStorePointer(dataLoc, unsafe.Pointer(addresses))
+	} else {
+		rng, addr, hostAddr, addrErr, hostErr = addrs.rng, addrs.address, addrs.hostAddress, addrs.addrErr, addrs.hostErr
+	}
 	return
 }
 
@@ -756,13 +787,6 @@ func (all *allCreator) versionedCreate(version IPVersion) (addr *IPAddress, addr
 		&all.qualifier,
 		all.originator)
 	return
-}
-
-func (all *allCreator) getProviderSeqRange() *IPAddressSeqRange {
-	if all.isProvidingAllAddresses() {
-		return nil
-	}
-	return all.createRange()
 }
 
 func (all *allCreator) prefixContainsProvider(otherProvider ipAddressProvider) boolSetting {
