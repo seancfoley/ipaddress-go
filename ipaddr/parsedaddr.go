@@ -87,7 +87,7 @@ type parsedIPAddress struct {
 	options               addrstrparam.IPAddressStringParams
 	originator            HostIdentifierString
 	vals                  translatedResult
-	skipCntains           boolSetting
+	skipCntains           *bool
 	maskers, mixedMaskers []Masker
 
 	creationLock sync.Mutex
@@ -352,31 +352,22 @@ func (parseData *parsedIPAddress) getProviderNetworkPrefixLen() PrefixLen {
 // so this is not a case of unusual string formatting, because this is not for comparing strings,
 // but more a case of whether the parsing data structures are easy to use or not
 func (parseData *parsedIPAddress) skipContains() bool {
-	result := parseData.skipCntains
-	if result.isSet {
-		return result.val
-	}
-	pd := parseData.getAddressParseData()
-	segmentCount := pd.getSegmentCount()
+	segmentCount := parseData.getAddressParseData().getSegmentCount()
 	// first we must excluded cases where the segments line up differently than standard, although we do not exclude ipv6 compressed
 	if parseData.isProvidingIPv4() {
 		if segmentCount != IPv4SegmentCount { // accounts for is_inet_aton_joined, singleSegment and wildcard segments
-			parseData.skipCntains = boolSetting{true, true}
 			return true
 		}
 	} else {
 		if parseData.isProvidingMixedIPv6() || (segmentCount != IPv6SegmentCount && !parseData.isCompressed()) { // accounts for single segment and wildcard segments
-			parseData.skipCntains = boolSetting{true, true}
 			return true
 		}
 	}
 	// exclude non-standard masks which will modify segment values from their parsed values
 	mask := parseData.getProviderMask()
 	if mask != nil && mask.GetBlockMaskPrefixLen(true) == nil { // handles non-standard masks
-		parseData.skipCntains = boolSetting{true, true}
 		return true
 	}
-	parseData.skipCntains = boolSetting{true, false}
 	return false
 }
 
@@ -481,8 +472,7 @@ func (parseData *parsedIPAddress) containsProv(other *parsedIPAddress, networkOn
 	otherSegmentData := otherParseData.getSegmentData() //grab this field for thread safety, other threads can make it disappear
 	if segmentData == nil || otherSegmentData == nil {
 		return
-	}
-	if parseData.skipContains() || other.skipContains() { // this excludes mixed addresses, amongst others
+	} else if parseData.skipContains() || other.skipContains() { // this excludes mixed addresses, amongst others
 		return
 	}
 	ipVersion := parseData.getProviderIPVersion()
