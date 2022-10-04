@@ -25,20 +25,40 @@ import (
 
 type macAddressProvider interface {
 	getAddress() (*MACAddress, addrerr.IncompatibleAddressError)
+
+	// If the address was created by parsing, this provides the parameters used when creating the address,
+	// otherwise nil
+	getParameters() addrstrparam.MACAddressStringParams
 }
 
-type macAddressEmptyProvider struct{}
+type macAddressNullProvider struct {
+	validationOptions addrstrparam.MACAddressStringParams
+}
 
-func (provider macAddressEmptyProvider) getAddress() (*MACAddress, addrerr.IncompatibleAddressError) {
+var invalidMACProvider = macAddressEmptyProvider{macAddressNullProvider{defaultMACAddrParameters}}
+
+func (provider macAddressNullProvider) getParameters() addrstrparam.MACAddressStringParams {
+	return provider.validationOptions
+}
+
+func (provider macAddressNullProvider) getAddress() (*MACAddress, addrerr.IncompatibleAddressError) {
 	return nil, nil
 }
 
-var defaultMACAddressEmptyProvider = macAddressEmptyProvider{}
+type macAddressEmptyProvider struct {
+	macAddressNullProvider
+}
+
+var defaultMACAddressEmptyProvider = macAddressEmptyProvider{macAddressNullProvider{defaultMACAddrParameters}}
 
 type macAddressAllProvider struct {
 	validationOptions addrstrparam.MACAddressStringParams
 	address           *MACAddress
-	creationLock      sync.Mutex
+	creationLock      *sync.Mutex
+}
+
+func (provider *macAddressAllProvider) getParameters() addrstrparam.MACAddressStringParams {
+	return provider.validationOptions
 }
 
 func (provider *macAddressAllProvider) getAddress() (*MACAddress, addrerr.IncompatibleAddressError) {
@@ -69,10 +89,14 @@ func (provider *macAddressAllProvider) getAddress() (*MACAddress, addrerr.Incomp
 	return addr, nil
 }
 
-var macAddressDefaultAllProvider = &macAddressAllProvider{validationOptions: defaultMACAddrParameters}
+var macAddressDefaultAllProvider = &macAddressAllProvider{validationOptions: defaultMACAddrParameters, creationLock: &sync.Mutex{}}
 
 type wrappedMACAddressProvider struct {
 	address *MACAddress
+}
+
+func (provider wrappedMACAddressProvider) getParameters() addrstrparam.MACAddressStringParams {
+	return nil
 }
 
 func (provider wrappedMACAddressProvider) getAddress() (*MACAddress, addrerr.IncompatibleAddressError) {
@@ -80,7 +104,7 @@ func (provider wrappedMACAddressProvider) getAddress() (*MACAddress, addrerr.Inc
 }
 
 var (
-	_, _, _ macAddressProvider = &macAddressEmptyProvider{},
+	_, _, _ macAddressProvider = macAddressEmptyProvider{},
 		&macAddressAllProvider{},
 		&wrappedMACAddressProvider{}
 )

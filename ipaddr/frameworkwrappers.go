@@ -510,7 +510,7 @@ func (addr WrappedAddress) ReverseSegments() ExtendedSegmentSeries {
 	return wrapAddress(addr.Address.ReverseSegments())
 }
 
-// WrappedAddress is the implementation of ExtendedSegmentSeries for address sections
+// WrappedAddressSection is the implementation of ExtendedSegmentSeries for address sections
 type WrappedAddressSection struct {
 	*AddressSection
 }

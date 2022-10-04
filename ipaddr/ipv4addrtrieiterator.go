@@ -27,9 +27,9 @@ type IPv4TrieNodeIteratorRem interface {
 	Remove() *IPv4AddressTrieNode
 }
 
-// IPv4TrieNodeIteratorRem iterates through an IPv4 address trie, until both Next returns nil and HasNext returns false
+// IPv4TrieNodeIterator iterates through an IPv4 address trie, until both Next returns nil and HasNext returns false
 type IPv4TrieNodeIterator interface {
-	HasNext
+	hasNext
 
 	Next() *IPv4AddressTrieNode
 }
@@ -84,9 +84,9 @@ type IPv4AssociativeTrieNodeIteratorRem interface {
 	Remove() *IPv4AddressAssociativeTrieNode
 }
 
-// IPv4AssociativeTrieNodeIteratorRem iterates through an IPv4 associative address trie, until both Next returns nil and HasNext returns false
+// IPv4AssociativeTrieNodeIterator iterates through an IPv4 associative address trie, until both Next returns nil and HasNext returns false
 type IPv4AssociativeTrieNodeIterator interface {
-	HasNext
+	hasNext
 
 	Next() *IPv4AddressAssociativeTrieNode
 }

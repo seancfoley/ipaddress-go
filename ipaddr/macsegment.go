@@ -309,7 +309,7 @@ func (seg *MACAddressSegment) GetPrefixValueCountLen(segmentPrefixLength BitCoun
 	return seg.init().addressSegmentInternal.GetPrefixValueCountLen(segmentPrefixLength)
 }
 
-// Returns true if the bit in the lower value of this segment at the given index is 1, where index 0 is the most significant bit.
+// IsOneBit returns true if the bit in the lower value of this segment at the given index is 1, where index 0 is the most significant bit.
 func (seg *MACAddressSegment) IsOneBit(segmentBitIndex BitCount) bool {
 	return seg.init().addressSegmentInternal.IsOneBit(segmentBitIndex)
 }

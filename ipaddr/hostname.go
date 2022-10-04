@@ -37,7 +37,6 @@ func parseHostName(str string, params addrstrparam.HostNameParams) *HostName {
 	str = strings.TrimSpace(str)
 	res := &HostName{
 		str:       str,
-		params:    params,
 		hostCache: &hostCache{},
 	}
 	res.validate(params)
@@ -71,7 +70,6 @@ func NewHostNameFromAddrPort(addr *IPAddress, port int) *HostName {
 	}
 	return &HostName{
 		str:        hostStr,
-		params:     defaultHostParameters,
 		hostCache:  &hostCache{normalizedString: &hostStr},
 		parsedHost: &parsedHost,
 	}
@@ -90,7 +88,6 @@ func newHostNameFromAddr(hostStr string, addr *IPAddress) *HostName { // same as
 	}
 	return &HostName{
 		str:        hostStr,
-		params:     defaultHostParameters,
 		hostCache:  &hostCache{normalizedString: &hostStr},
 		parsedHost: &parsedHost,
 	}
@@ -124,7 +121,6 @@ func newHostNameFromSocketAddr(ip net.IP, port int, zone string) (hostName *Host
 	}
 	hostName = &HostName{
 		str:        hostStr,
-		params:     defaultHostParameters,
 		hostCache:  &hostCache{normalizedString: &hostStr},
 		parsedHost: &parsedHost,
 	}
@@ -217,7 +213,6 @@ type hostCache struct {
 // and 3986 and 4038 (combining IPv6 [] with prefix or zone) and SMTP rfc 2821 for alternative uses of [] for both IPv4 and IPv6
 type HostName struct {
 	str           string
-	params        addrstrparam.HostNameParams
 	parsedHost    *parsedHost
 	validateError addrerr.HostNameError
 	*hostCache
@@ -231,15 +226,17 @@ func (host *HostName) init() *HostName {
 }
 
 // GetValidationOptions returns the validation options supplied when constructing the HostName, or the default validation options if none were supplied.
+//  It returns nil if no options were used to construct.
 func (host *HostName) GetValidationOptions() addrstrparam.HostNameParams {
-	// TODO think about dropping the validation options if we do not really need them anymore,
-	// both here and in IPAddressString and MACAddressString
-	// OK I realzie now I might as well get it from the parsed data parsedHost!
-	return host.init().params
+	return host.init().parsedHost.params
 }
 
 func (host *HostName) validate(validationOptions addrstrparam.HostNameParams) {
-	host.parsedHost, host.validateError = validator.validateHostName(host, validationOptions)
+	parsed, validateError := validator.validateHostName(host, validationOptions)
+	if validateError != nil && parsed == nil {
+		parsed = &parsedHost{originalStr: host.str, params: validationOptions}
+	}
+	host.parsedHost, host.validateError = parsed, validateError
 }
 
 // Validate validates that this string is a valid address, and if not, returns an error with a descriptive message indicating why it is not.

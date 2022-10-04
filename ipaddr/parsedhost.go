@@ -17,6 +17,7 @@
 package ipaddr
 
 import (
+	"github.com/seancfoley/ipaddress-go/ipaddr/addrstrparam"
 	"strings"
 
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
@@ -50,6 +51,8 @@ type parsedHost struct {
 	originalStr string
 
 	*parsedHostCache
+
+	params addrstrparam.HostNameParams
 }
 
 func (host *parsedHost) getQualifier() *parsedHostIdentifierStringQualifier {

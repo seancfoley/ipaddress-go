@@ -203,7 +203,8 @@ func (t ipAddressTester) run() {
 		"ffff:ffff:1:ffff:ffff:ffff:ffff:fffe/127",
 		"ffff:ffff:1:ffff:ffff:ffff:ffff:fffe/127")
 
-	var bcneg1, bc0, bc1, bc8, bc16, bc32 ipaddr.BitCount = -1, 0, 1, 8, 16, 32
+	var bcneg1, bc0, bc1, bc8, bc16, bc32 ipaddr.BitCount
+	bcneg1, bc0, bc1, bc8, bc16, bc32 = -1, 0, 1, 8, 16, 32
 
 	t.testBitwiseOr("1.2.0.0", nil, "0.0.3.4", "1.2.3.4")
 	t.testBitwiseOr("1.2.0.0", nil, "0.0.0.0", "1.2.0.0")
@@ -1596,9 +1597,9 @@ func (t ipAddressTester) run() {
 	t.testSplit("ffff:b:c:d:e:f:a:b", 4, "f000-ffff", "f000", "f000/4", 1*USE_UPPERCASE, "fff:b:c:d:e:f:a:b", 6*USE_UPPERCASE)
 	t.testSplit("ffff:b:c:d:e:f:a:b", 2, "c000-ffff", "c000", "c000/2", 1*USE_UPPERCASE, "3fff:b:c:d:e:f:a:b", 6*USE_UPPERCASE)
 
-	t.testURL("http://1.2.3.4")
-	t.testURL("http://[a:a:a:a:b:b:b:b]")
-	t.testURL("http://a:a:a:a:b:b:b:b")
+	t.testURL("https://1.2.3.4")
+	t.testURL("https://[a:a:a:a:b:b:b:b]")
+	t.testURL("https://a:a:a:a:b:b:b:b")
 
 	//TODO LATER maybe - testSections works with getStartsWithSQLClause
 	//testSections("9.129.237.26", 0, 1)
@@ -2250,7 +2251,7 @@ func (t ipAddressTester) testLargeDivs(bs [][]byte) {
 	byteTotal := 0
 	for _, b := range bs {
 		byteTotal += len(b)
-		divList = append(divList, ipaddr.NewLargeIPDivision(b, len(b)<<3, 16))
+		divList = append(divList, ipaddr.NewIPAddressLargeDivision(b, len(b)<<3, 16))
 	}
 	grouping := ipaddr.NewIPAddressLargeDivGrouping(divList)
 	bytes1 := make([]byte, byteTotal)
@@ -2266,7 +2267,7 @@ func (t ipAddressTester) testLargeDivs(bs [][]byte) {
 	bytes4 = grouping.UpperBytes()
 	bytes5 = make([]byte, 0, byteTotal)
 	bytes5 = grouping.CopyUpperBytes(bytes5)
-	grouping2 := ipaddr.NewIPAddressLargeDivGrouping([]*ipaddr.IPAddressLargeDivision{ipaddr.NewLargeIPDivision(bytes5, len(bytes5)<<3, 16)})
+	grouping2 := ipaddr.NewIPAddressLargeDivGrouping([]*ipaddr.IPAddressLargeDivision{ipaddr.NewIPAddressLargeDivision(bytes5, len(bytes5)<<3, 16)})
 	bytes6 = grouping2.Bytes()
 	bytes7 = grouping.Bytes()
 	bytes8 = grouping2.UpperBytes()

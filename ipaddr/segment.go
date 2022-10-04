@@ -92,25 +92,25 @@ func (seg *addressSegmentInternal) contains(other AddressSegmentType) bool {
 	return false
 }
 
-func (div *addressSegmentInternal) equal(other AddressSegmentType) bool {
+func (seg *addressSegmentInternal) equal(other AddressSegmentType) bool {
 	if other == nil || other.ToSegmentBase() == nil {
 		return false
 	}
-	if div.isMultiple() {
+	if seg.isMultiple() {
 		if other.IsMultiple() {
-			matches, _ := div.matchesStructure(other)
+			matches, _ := seg.matchesStructure(other)
 			otherDivision := other.ToSegmentBase()
-			return matches && segValsSame(div.getSegmentValue(), otherDivision.getSegmentValue(),
-				div.getUpperSegmentValue(), otherDivision.getUpperSegmentValue())
+			return matches && segValsSame(seg.getSegmentValue(), otherDivision.getSegmentValue(),
+				seg.getUpperSegmentValue(), otherDivision.getUpperSegmentValue())
 		} else {
 			return false
 		}
 	} else if other.IsMultiple() {
 		return false
 	}
-	matches, _ := div.matchesStructure(other)
+	matches, _ := seg.matchesStructure(other)
 	otherDivision := other.ToSegmentBase()
-	return matches && segValSame(div.GetSegmentValue(), otherDivision.GetSegmentValue())
+	return matches && segValSame(seg.GetSegmentValue(), otherDivision.GetSegmentValue())
 }
 
 func (seg *addressSegmentInternal) equalsSegment(other *AddressSegment) bool {

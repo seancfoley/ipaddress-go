@@ -44,17 +44,13 @@ func NewMACAddressString(str string) *MACAddressString {
 func newMACAddressStringFromAddr(str string, addr *MACAddress) *MACAddressString {
 	return &MACAddressString{
 		str:             str,
-		params:          defaultMACAddrParameters,
 		addressProvider: wrappedMACAddressProvider{addr},
 	}
 }
 
 func parseMACAddressString(str string, params addrstrparam.MACAddressStringParams) *MACAddressString {
 	str = strings.TrimSpace(str)
-	res := &MACAddressString{
-		str:    str,
-		params: params,
-	}
+	res := &MACAddressString{str: str}
 	res.validate(params)
 	return res
 }
@@ -102,23 +98,26 @@ var zeroMACAddressString = NewMACAddressString("")
 // A MACAddressString object represents a single MAC address representation that cannot be changed after construction.
 // Some of the derived state is created upon demand and cached, such as the derived MACAddress instances.
 type MACAddressString struct {
-	str               string
-	params            addrstrparam.MACAddressStringParams // when nil, defaultParameters is used
-	addressProvider   macAddressProvider
-	validateException addrerr.AddressStringError // TODO rename validateException
+	str             string
+	addressProvider macAddressProvider
+	validateError   addrerr.AddressStringError
 }
 
 func (addrStr *MACAddressString) init() *MACAddressString {
-	if addrStr.addressProvider == nil && addrStr.validateException == nil {
+	if addrStr.addressProvider == nil && addrStr.validateError == nil {
 		return zeroMACAddressString
 	}
 	return addrStr
 }
 
 // GetValidationOptions returns the validation options supplied when constructing this address string,
-// or the default options if no options were supplied.
+// or the default options if no options were supplied.  It returns nil if no parameters were used to construct the address.
 func (addrStr *MACAddressString) GetValidationOptions() addrstrparam.MACAddressStringParams {
-	return addrStr.init().params
+	provider, _ := addrStr.getAddressProvider()
+	if provider != nil {
+		return provider.getParameters()
+	}
+	return nil
 }
 
 // String implements the fmt.Stringer interface,
@@ -149,11 +148,7 @@ func (addrStr *MACAddressString) ToNormalizedString() string {
 //
 // Use ToAddress for an equivalent method that returns an error when the format is invalid.
 func (addrStr *MACAddressString) GetAddress() *MACAddress {
-	provider, err := addrStr.getAddressProvider()
-	if err != nil {
-		return nil
-	}
-	addr, _ := provider.getAddress()
+	addr, _ := addrStr.ToAddress()
 	return addr
 }
 
@@ -196,13 +191,13 @@ func (addrStr *MACAddressString) getPrefixLen() PrefixLen {
 	return nil
 }
 
-// IsFullRange returns whether the address represents the set all all valid MAC addresses for its address length
+// IsFullRange returns whether the address represents the set of all valid MAC addresses for its address length
 func (addrStr *MACAddressString) IsFullRange() bool {
 	addr := addrStr.GetAddress()
 	return addr != nil && addr.IsFullRange()
 }
 
-//IsEmpty returns true if the address is empty (zero-length).
+// IsEmpty returns true if the address is empty (zero-length).
 func (addrStr *MACAddressString) IsEmpty() bool {
 	addr, err := addrStr.ToAddress()
 	return err == nil && addr == nil
@@ -229,12 +224,12 @@ func (addrStr *MACAddressString) getAddressProvider() (macAddressProvider, addre
 }
 
 func (addrStr *MACAddressString) validate(validationOptions addrstrparam.MACAddressStringParams) {
-	addrStr.addressProvider, addrStr.validateException = validator.validateMACAddressStr(addrStr, validationOptions)
+	addrStr.addressProvider, addrStr.validateError = validator.validateMACAddressStr(addrStr, validationOptions)
 }
 
 // Validate validates that this string is a valid address, and if not, throws an exception with a descriptive message indicating why it is not.
 func (addrStr *MACAddressString) Validate() addrerr.AddressStringError {
-	return addrStr.init().validateException
+	return addrStr.init().validateError
 }
 
 // Compare compares this address string with another,
@@ -296,7 +291,7 @@ func (addrStr *MACAddressString) Equal(other *MACAddressString) bool {
 	// Also note that we do not call equals() on the validation options, this is intended as an optimization,
 	// and probably better to avoid going through all the validation objects here
 	stringsMatch := addrStr.String() == other.String()
-	if stringsMatch && addrStr.params == other.params {
+	if stringsMatch && addrStr.GetValidationOptions() == other.GetValidationOptions() {
 		return true
 	}
 	if addrStr.IsValid() {

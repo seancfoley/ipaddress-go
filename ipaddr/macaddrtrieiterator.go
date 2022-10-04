@@ -29,7 +29,7 @@ type MACTrieNodeIteratorRem interface {
 
 // MACTrieNodeIterator iterates through a MAC address trie, until both Next returns nil and HasNext returns false
 type MACTrieNodeIterator interface {
-	HasNext
+	hasNext
 
 	Next() *MACAddressTrieNode
 }
@@ -85,7 +85,7 @@ type MACAssociativeTrieNodeIteratorRem interface {
 
 // MACAssociativeTrieNodeIterator iterates through a MAC associative address trie, until both Next returns nil and HasNext returns false
 type MACAssociativeTrieNodeIterator interface {
-	HasNext
+	hasNext
 
 	Next() *MACAddressAssociativeTrieNode
 }

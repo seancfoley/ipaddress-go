@@ -138,7 +138,8 @@ func (t ipAddressRangeTester) run() {
 		"ffff::*:*:*:*/16",
 		"ffff::/16")
 
-	var bc0, bc7, bc8, bc15, bc16, bc32 ipaddr.BitCount = 0, 7, 8, 15, 16, 32
+	var bc0, bc7, bc8, bc15, bc16, bc32 ipaddr.BitCount
+	bc0, bc7, bc8, bc15, bc16, bc32 = 0, 7, 8, 15, 16, 32
 
 	t.testBitwiseOr("1.2.0.0/16", &bc8, "0.0.3.248", "1.2.3.248-255")
 	t.testBitwiseOr("1.2.0.0/16", &bc7, "0.0.2.0", "1.2.2-3.*")
@@ -4766,7 +4767,7 @@ func (t ipAddressRangeTester) testFmtStringsIP(
 	result7 := fmt.Sprint(slice3)
 	result8 := fmt.Sprint(slice4)
 	result9 := fmt.Sprint(slice5)
-	if result1 != expectedString {
+	if result1 != expectedString { //   x  "" ``          x vs x  "" ``          0x
 		t.addFailure(newIPAddrFailure("failed expected: "+expectedString+" actual: "+result1, ipAddress))
 	} else if result2 != expectedString {
 		t.addFailure(newIPAddrFailure("failed expected: "+expectedString+" actual: "+result2, ipAddress))

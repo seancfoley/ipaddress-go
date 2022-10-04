@@ -64,7 +64,7 @@ type MACAddressStringParams interface {
 	// AllowsDotted allows addresses like aaa.bbb.ccc.ddd
 	AllowsDotted() bool
 
-	// Allows addresses like aa bb cc dd ee ff
+	// AllowsSpaceDelimited allows addresses like aa bb cc dd ee ff
 	AllowsSpaceDelimited() bool
 
 	// GetFormatParams returns the parameters that apply to formatting of the address segments
@@ -219,7 +219,7 @@ func (builder *MACAddressStringParamsBuilder) AllowColonDelimited(allow bool) *M
 	return builder
 }
 
-// AllowSpaceDelimited dictates whether to allow addresses like aaa.bbb.ccc.ddd
+// AllowDotted dictates whether to allow addresses like aaa.bbb.ccc.ddd
 func (builder *MACAddressStringParamsBuilder) AllowDotted(allow bool) *MACAddressStringParamsBuilder {
 	builder.params.noAllowDotted = !allow
 	return builder

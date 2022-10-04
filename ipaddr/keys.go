@@ -226,9 +226,11 @@ func (key *MACAddressKey) String() string {
 
 const MaxSegmentCount = IPv6SegmentCount
 
+// AddressScheme is an indentifier for an address version or type of address, used to differentiate otherwise similar AddressKey instances.
 type AddressScheme string
 
 const (
+	AnyScheme  AddressScheme = ""
 	IPv4Scheme               = AddressScheme(IPv4)
 	IPv6Scheme               = AddressScheme(IPv6)
 	EUIScheme  AddressScheme = "EUI"

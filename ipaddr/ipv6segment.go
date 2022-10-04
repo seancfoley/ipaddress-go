@@ -235,13 +235,6 @@ func (seg *IPv6AddressSegment) CompareSize(other AddressItem) int {
 		// we have size 0, other has size >= 1
 		return -1
 	}
-	//if addr == nil { TODO remove
-	//	if other != nil && other.ToAddressBase() != nil {
-	//		// we have size 0, other has size >= 1
-	//		return -1
-	//	}
-	//	return 0
-	//}
 	return seg.init().compareSize(other)
 }
 

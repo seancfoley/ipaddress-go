@@ -210,7 +210,7 @@ func (div *addressDivisionBase) isMultiple() bool {
 	return vals.isMultiple()
 }
 
-// The count of the number of distinct values within the prefix part of the address item, the bits that appear within the prefix length.
+// GetPrefixCountLen returns the count of the number of distinct values within the prefix part of the address item, the bits that appear within the prefix length.
 func (div *addressDivisionBase) GetPrefixCountLen(prefixLength BitCount) *big.Int {
 	if prefixLength < 0 {
 		return bigOne()

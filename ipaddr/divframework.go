@@ -31,7 +31,7 @@ type DivisionType interface {
 	// GetWildcardString produces a string that uses wildcards and avoids prefix length
 	GetWildcardString() string
 
-	// Determines if the division has a single prefix for the given prefix length.  You can call GetPrefixCountLen to get the count of prefixes.
+	// IsSinglePrefix determines if the division has a single prefix for the given prefix length.  You can call GetPrefixCountLen to get the count of prefixes.
 	IsSinglePrefix(BitCount) bool
 
 	// methods for string generation used by the string params and string writer
@@ -40,7 +40,7 @@ type DivisionType interface {
 
 var _ DivisionType = &IPAddressLargeDivision{}
 
-// Represents any standard address division, which is a division of size 64 bits or less.  All can be converted to/from AddressDivision
+// StandardDivisionType represents any standard address division, which is a division of size 64 bits or less.  All can be converted to/from AddressDivision
 type StandardDivisionType interface {
 	DivisionType
 
@@ -52,7 +52,7 @@ type StandardDivisionType interface {
 
 var _ StandardDivisionType = &AddressDivision{}
 
-// AddressSegment serves as a common interface to all segments
+// AddressSegmentType serves as a common interface to all segments
 type AddressSegmentType interface {
 	AddressComponent
 

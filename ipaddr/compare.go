@@ -1141,7 +1141,7 @@ func getCount(item AddressItem) (b *big.Int, u uint64) {
 			if segBase := base.ToSegmentBase(); segBase != nil {
 				u = uint64((segBase.getUpperSegmentValue() - base.getSegmentValue()) + 1)
 			} else {
-				r := (base.getUpperDivisionValue() - base.getDivisionValue())
+				r := base.getUpperDivisionValue() - base.getDivisionValue()
 				if r == 0xffffffffffffffff {
 					b = bigZero().SetUint64(0xffffffffffffffff)
 					b.Add(b, bigOneConst())

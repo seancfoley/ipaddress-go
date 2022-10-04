@@ -49,7 +49,7 @@ func (p IPv6Partition) Iterator() IPv6AddressIterator {
 	return ipv6IPAddressIterator{p.p.Iterator()}
 }
 
-// PredicateForEach applies the operation to each element of the partition,
+// PredicateForEach applies the supplied predicate operation argument to each element of the partition,
 // returning true if they all return true, false otherwise
 func (p IPv6Partition) PredicateForEach(predicate func(*IPv6Address) bool) bool {
 	return p.p.PredicateForEach(func(address *IPAddress) bool {
@@ -57,7 +57,7 @@ func (p IPv6Partition) PredicateForEach(predicate func(*IPv6Address) bool) bool 
 	})
 }
 
-// PredicateForEachEarly applies the operation to each element of the partition,
+// PredicateForEachEarly applies the supplied predicate operation argument to each element of the partition,
 // returning false if the given predicate returns false for any of the elements.
 //
 // The method returns when one application of the predicate returns false (determining the overall result)
@@ -77,7 +77,7 @@ func (p IPv6Partition) PredicateForAnyEarly(predicate func(*IPv6Address) bool) b
 	})
 }
 
-// PredicateForAny applies the operation to each element of the partition,
+// PredicateForAny applies the supplied predicate operation argument to each element of the partition,
 // returning true if the given predicate returns true for any of the elements.
 func (p IPv6Partition) PredicateForAny(predicate func(*IPv6Address) bool) bool {
 	return p.p.PredicateForAny(func(address *IPAddress) bool {
@@ -102,7 +102,7 @@ func (p IPv4Partition) Iterator() IPv4AddressIterator {
 	return ipv4IPAddressIterator{p.p.Iterator()}
 }
 
-// PredicateForEach applies the operation to each element of the partition,
+// PredicateForEach applies the supplied predicate operation argument to each element of the partition,
 // returning true if they all return true, false otherwise
 func (p IPv4Partition) PredicateForEach(predicate func(*IPv4Address) bool) bool {
 	return p.p.PredicateForEach(func(address *IPAddress) bool {
@@ -110,7 +110,7 @@ func (p IPv4Partition) PredicateForEach(predicate func(*IPv4Address) bool) bool 
 	})
 }
 
-// PredicateForEachEarly applies the operation to each element of the partition,
+// PredicateForEachEarly applies the supplied predicate operation argument to each element of the partition,
 // returning false if the given predicate returns false for any of the elements.
 //
 // The method returns when one application of the predicate returns false (determining the overall result)
@@ -120,7 +120,7 @@ func (p IPv4Partition) PredicateForEachEarly(predicate func(*IPv4Address) bool) 
 	})
 }
 
-// PredicateForAnyEarly applies the operation to each element of the partition,
+// PredicateForAnyEarly applies the supplied predicate operation argument to each element of the partition,
 // returning true if the given predicate returns true for any of the elements.
 //
 // The method returns when one application of the predicate returns true (determining the overall result)
@@ -130,7 +130,7 @@ func (p IPv4Partition) PredicateForAnyEarly(predicate func(*IPv4Address) bool) b
 	})
 }
 
-// PredicateForAny applies the operation to each element of the partition,
+// PredicateForAny applies the supplied predicate operation argument to each element of the partition,
 // returning true if the given predicate returns true for any of the elements.
 func (p IPv4Partition) PredicateForAny(predicate func(*IPv4Address) bool) bool {
 	return p.p.PredicateForAny(func(address *IPAddress) bool {
@@ -154,7 +154,7 @@ func (p IPv4Partition) PredicateForAny(predicate func(*IPv4Address) bool) bool {
 //		return results;
 //	}
 
-// ForEach calls the action with each partition element.
+// ForEach calls the given action on each partition element.
 func (p *Partition) ForEach(action func(*IPAddress)) {
 	if p.iterator == nil {
 		item := p.single
@@ -187,7 +187,7 @@ func (p *Partition) Iterator() IPAddressIterator {
 	return res
 }
 
-// PredicateForEach applies the operation to each element of the partition,
+// PredicateForEach applies the supplied predicate operation to each element of the partition,
 // returning true if they all return true, false otherwise
 //
 // Use IPAddressPredicateAdapter to pass in a function that takes *Address as argument instead.
@@ -195,7 +195,7 @@ func (p *Partition) PredicateForEach(predicate func(*IPAddress) bool) bool {
 	return p.predicateForEach(predicate, false)
 }
 
-// PredicateForEachEarly applies the operation to each element of the partition,
+// PredicateForEachEarly applies the supplied predicate operation to each element of the partition,
 // returning false if the given predicate returns false for any of the elements.
 //
 // The method returns when one application of the predicate returns false (determining the overall result)
@@ -222,7 +222,7 @@ func (p *Partition) predicateForEach(predicate func(*IPAddress) bool, returnEarl
 	return result
 }
 
-// Applies the operation to each element of the partition,
+// PredicateForAnyEarly applies the supplied predicate operation to each element of the partition,
 // returning true if the given predicate returns true for any of the elements.
 //
 // The method returns when one application of the predicate returns true (determining the overall result)
@@ -230,7 +230,7 @@ func (p *Partition) PredicateForAnyEarly(predicate func(*IPAddress) bool) bool {
 	return p.predicateForAny(predicate, true)
 }
 
-// Applies the operation to each element of the partition,
+// PredicateForAny applies the supplied predicate operation to each element of the partition,
 // returning true if the given predicate returns true for any of the elements.
 func (p *Partition) PredicateForAny(predicate func(*IPAddress) bool) bool {
 	return p.predicateForAny(predicate, false)
@@ -242,21 +242,21 @@ func (p *Partition) predicateForAny(predicate func(address *IPAddress) bool, ret
 	}, returnEarly)
 }
 
-// PartitionWithSpanningBlocks partitions the address series into prefix blocks and single addresses.
+// PartitionIpv6WithSpanningBlocks partitions the address series into prefix blocks and single addresses.
 //
 // This method iterates through a list of prefix blocks of different sizes that span the entire subnet.
 func PartitionIpv6WithSpanningBlocks(newAddr *IPv6Address) IPv6Partition {
 	return IPv6Partition{PartitionIPWithSpanningBlocks(newAddr.ToIP())}
 }
 
-// PartitionWithSpanningBlocks partitions the address series into prefix blocks and single addresses.
+// PartitionIpv4WithSpanningBlocks partitions the address series into prefix blocks and single addresses.
 //
 // This method iterates through a list of prefix blocks of different sizes that span the entire subnet.
 func PartitionIpv4WithSpanningBlocks(newAddr *IPv4Address) IPv4Partition {
 	return IPv4Partition{PartitionIPWithSpanningBlocks(newAddr.ToIP())}
 }
 
-// PartitionWithSpanningBlocks partitions the address series into prefix blocks and single addresses.
+// PartitionIPWithSpanningBlocks partitions the address series into prefix blocks and single addresses.
 //
 // This method iterates through a list of prefix blocks of different sizes that span the entire subnet.
 func PartitionIPWithSpanningBlocks(newAddr *IPAddress) *Partition {
@@ -304,7 +304,7 @@ func PartitionIPv4WithSingleBlockSize(newAddr *IPv4Address) IPv4Partition {
 	return IPv4Partition{PartitionIPWithSingleBlockSize(newAddr.ToIP())}
 }
 
-// PartitionWithSingleBlockSize partitions the address series into prefix blocks and single addresses.
+// PartitionIPWithSingleBlockSize partitions the address series into prefix blocks and single addresses.
 //
 // This method chooses the maximum block size for a list of prefix blocks contained by the address or subnet,
 // and then iterates to produce blocks of that size.
@@ -348,43 +348,3 @@ func PartitionIPWithSingleBlockSize(newAddr *IPAddress) *Partition {
 }
 
 //TODO LATER partition ranges (not just addresses) with spanning blocks
-
-// IPAddressPredicateAdapter has methods to supply IP, IPv4, and IPv6 addresses to a wrapped predicate function that takes Address arguments
-type IPAddressPredicateAdapter struct {
-	Adapted func(*Address) bool
-}
-
-// IPPredicate calls the wrapped predicate function with the given IP address as the argument
-func (a IPAddressPredicateAdapter) IPPredicate(addr *IPAddress) bool {
-	return a.Adapted(addr.ToAddressBase())
-}
-
-// IPv4Predicate calls the wrapped predicate function with the given IPv4 address as the argument
-func (a IPAddressPredicateAdapter) IPv4Predicate(addr *IPv4Address) bool {
-	return a.Adapted(addr.ToAddressBase())
-}
-
-// IPv6Predicate calls the wrapped predicate function with the given IPv6 address as the argument
-func (a IPAddressPredicateAdapter) IPv6Predicate(addr *IPv6Address) bool {
-	return a.Adapted(addr.ToAddressBase())
-}
-
-// IPAddressActionAdapter has methods to supply IP, IPv4, and IPv6 addresses to a wrapped consumer function that takes Address arguments
-type IPAddressActionAdapter struct {
-	Adapted func(*Address)
-}
-
-// IPAction calls the wrapped consumer function with the given IP address as the argument
-func (a IPAddressActionAdapter) IPAction(addr *IPAddress) {
-	a.Adapted(addr.ToAddressBase())
-}
-
-// IPv4Action calls the wrapped consumer function with the given IPv4 address as the argument
-func (a IPAddressActionAdapter) IPv4Action(addr *IPv4Address) {
-	a.Adapted(addr.ToAddressBase())
-}
-
-// IPv6Action calls the wrapped consumer function with the given IPv6 address as the argument
-func (a IPAddressActionAdapter) IPv6Action(addr *IPv6Address) {
-	a.Adapted(addr.ToAddressBase())
-}

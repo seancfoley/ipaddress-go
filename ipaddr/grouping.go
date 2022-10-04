@@ -52,7 +52,7 @@ func createInitializedGrouping(divs []*AddressDivision, prefixLength PrefixLen) 
 }
 
 var (
-	emptyBytes = []byte{}
+	emptyBytes = make([]byte, 0, 0)
 )
 
 type addressDivisionGroupingInternal struct {

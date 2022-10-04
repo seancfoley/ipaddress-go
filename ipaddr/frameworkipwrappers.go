@@ -345,7 +345,7 @@ type ExtendedIPSegmentSeries interface {
 	ToCustomString(stringOptions addrstr.IPStringOptions) string
 }
 
-// WrappedAddress is the implementation of ExtendedIPSegmentSeries for IP addresses
+// WrappedIPAddress is the implementation of ExtendedIPSegmentSeries for IP addresses
 type WrappedIPAddress struct {
 	*IPAddress
 }
@@ -694,7 +694,7 @@ func (addr WrappedIPAddress) ReverseSegments() ExtendedIPSegmentSeries {
 	return wrapIPAddress(addr.IPAddress.ReverseSegments())
 }
 
-// WrappedAddress is the implementation of ExtendedIPSegmentSeries for IP address sections
+// WrappedIPAddressSection is the implementation of ExtendedIPSegmentSeries for IP address sections
 type WrappedIPAddressSection struct {
 	*IPAddressSection
 }

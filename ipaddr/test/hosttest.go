@@ -117,9 +117,9 @@ func (t hostTester) run() {
 	t.testNormalizedHost(true, "WWW.ABC.COM", "www.abc.com")
 	t.testNormalizedHost(true, "WWW.AB-C.COM", "www.ab-c.com")
 
-	t.testURL("http://1.2.3.4")
-	t.testURL("http://[a:a:a:a:b:b:b:b]")
-	t.testURL("http://a:a:a:a:b:b:b:b")
+	t.testURL("https://1.2.3.4")
+	t.testURL("https://[a:a:a:a:b:b:b:b]")
+	t.testURL("https://a:a:a:a:b:b:b:b")
 
 	t.hostLabelsTest("one.two.three.four.five.six.seven.EIGHT", []string{"one", "two", "three", "four", "five", "six", "seven", "eight"})
 	t.hostLabelsTest("one.two.three.four.fIVE.sIX.seven", []string{"one", "two", "three", "four", "five", "six", "seven"})

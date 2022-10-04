@@ -18,7 +18,7 @@ package ipaddr
 
 // IPAddressSeqRangeIterator iterates through IP address sequential ranges
 type IPAddressSeqRangeIterator interface {
-	HasNext
+	hasNext
 
 	// Next returns the next sequential address range, or nil if there is none left.
 	Next() *IPAddressSeqRange
@@ -83,7 +83,7 @@ func (it *rangeIterator) Next() (res *IPAddressSeqRange) {
 
 // IPv4AddressSeqRangeIterator iterates through IPv4 address sequential ranges
 type IPv4AddressSeqRangeIterator interface {
-	HasNext
+	hasNext
 
 	// Next returns the next sequential address range, or nil if there is none left.
 	Next() *IPv4AddressSeqRange
@@ -99,7 +99,7 @@ func (iter ipv4RangeIterator) Next() *IPv4AddressSeqRange {
 
 // IPv6AddressSeqRangeIterator iterates through IPv6 address sequential ranges
 type IPv6AddressSeqRangeIterator interface {
-	HasNext
+	hasNext
 
 	// Next returns the next sequential address range, or nil if there is none left.
 	Next() *IPv6AddressSeqRange

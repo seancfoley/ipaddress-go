@@ -40,7 +40,7 @@ func (iter addressKeyIterator) Remove() *Address {
 
 // AddressTrieNodeIterator iterates through an address trie, until both Next returns nil and HasNext returns false
 type AddressTrieNodeIterator interface {
-	HasNext
+	hasNext
 
 	Next() *AddressTrieNode
 }
@@ -107,7 +107,7 @@ type AssociativeAddressTrieNodeIteratorRem interface {
 
 // AssociativeAddressTrieNodeIterator iterates through an associative address trie, until both Next returns nil and HasNext returns false
 type AssociativeAddressTrieNodeIterator interface {
-	HasNext
+	hasNext
 
 	Next() *AssociativeAddressTrieNode
 }

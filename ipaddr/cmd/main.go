@@ -444,7 +444,7 @@ func main() {
 	// iterate on nil - just checking what happens.  it panics, not surprisingly.
 	//var niladdr *ipaddr.IPAddress
 	//itr := niladdr.Iterator()
-	//for itr.HasNext() {
+	//for itr.hasNext() {
 	//	fmt.Printf("%v ", itr.Next())
 	//}
 
@@ -522,7 +522,6 @@ func main() {
 	trie.Add(pAddr.ToIPv4())
 	addrStr = ipaddr.NewIPAddressString("1.2.3.4")
 	pAddr = addrStr.GetAddress()
-	pAddr = addrStr.GetAddress()
 	fmt.Printf("no pref len is pref block: %t\n", pAddr.IsPrefixBlock())
 	trie.Add(pAddr.ToIPv4())
 	str = trie.String()
@@ -554,7 +553,7 @@ func main() {
 	//	trie,
 	//	trie.Size(),
 	//	trie.NodeSize(),
-	//	trie.BlockSizeAllNodeIterator(true).HasNext(),
+	//	trie.BlockSizeAllNodeIterator(true).hasNext(),
 	//	trie.BlockSizeAllNodeIterator(true).Next())
 	fmt.Printf("%v %d %d %v %v",
 		trie,
@@ -612,6 +611,11 @@ func main() {
 	fmt.Println("the second seg is", sg, "with prefix", sg.GetSegmentPrefixLen())
 	sg = sgs[2]
 	fmt.Println("the third seg is", sg, "with prefix", sg.GetSegmentPrefixLen())
+
+	fmt.Printf("decimal IPv4 address: %d\n", pAddr)
+	fmt.Printf("decimal IPv4 address: %d\n", ipaddr.NewIPAddressString("255.255.255.255").GetAddress())
+	fmt.Printf("decimal IPv6 address: %d\n", ipv6Addr)
+	fmt.Printf("decimal IPv6 address: %d\n", ipaddr.NewIPAddressString("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff").GetAddress())
 }
 
 func splitIntoBlocks(one, two string) {

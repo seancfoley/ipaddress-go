@@ -34,10 +34,10 @@ type IPAddressConverter interface {
 
 	IPv6AddressConverter
 
-	// returns whether the address is IPv4 or can be converted to IPv4.  If true, ToIPv4(IPAddress) returns non-nil.
+	// IsIPv4Convertible returns whether the address is IPv4 or can be converted to IPv4.  If true, ToIPv4 returns non-nil.
 	IsIPv4Convertible(address *IPAddress) bool
 
-	// returns whether the address is IPv6 or can be converted to IPv6.  If true, ToIPv6(IPAddress) returns non-nil.
+	// IsIPv6Convertible returns whether the address is IPv6 or can be converted to IPv6.  If true, ToIPv6 returns non-nil.
 	IsIPv6Convertible(address *IPAddress) bool
 }
 

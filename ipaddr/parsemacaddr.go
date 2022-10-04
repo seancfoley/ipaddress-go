@@ -17,29 +17,31 @@
 package ipaddr
 
 import (
+	"github.com/seancfoley/ipaddress-go/ipaddr/addrstrparam"
 	"sync"
 	"unsafe"
 
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
 )
 
-type ParsedMACAddress struct {
-	//TODO make ParsedMACAddress non-public and go thru the list to make any others non-public
-	// https://pkg.go.dev/github.com/seancfoley/ipaddress-go@v1.2.1/ipaddr
-	// like HasNext? AddressScheme? IPAddressActionAdapter?
-
+type parsedMACAddress struct {
 	macAddressParseData
 
 	originator   *MACAddressString
 	address      *MACAddress
-	creationLock sync.Mutex
+	params       addrstrparam.MACAddressStringParams
+	creationLock *sync.Mutex
 }
 
-func (parseData *ParsedMACAddress) getMACAddressParseData() *macAddressParseData {
+func (provider *parsedMACAddress) getParameters() addrstrparam.MACAddressStringParams {
+	return provider.params
+}
+
+func (parseData *parsedMACAddress) getMACAddressParseData() *macAddressParseData {
 	return &parseData.macAddressParseData
 }
 
-func (parseData *ParsedMACAddress) getAddress() (*MACAddress, addrerr.IncompatibleAddressError) {
+func (parseData *parsedMACAddress) getAddress() (*MACAddress, addrerr.IncompatibleAddressError) {
 	var err addrerr.IncompatibleAddressError
 	addr := (*MACAddress)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&parseData.address))))
 	if addr == nil {
@@ -58,7 +60,7 @@ func (parseData *ParsedMACAddress) getAddress() (*MACAddress, addrerr.Incompatib
 	return addr, err
 }
 
-func (parseData *ParsedMACAddress) createAddress() (*MACAddress, addrerr.IncompatibleAddressError) {
+func (parseData *parsedMACAddress) createAddress() (*MACAddress, addrerr.IncompatibleAddressError) {
 	creator := macType.getNetwork().getAddressCreator()
 	sect, err := parseData.createSection()
 	if err != nil {
@@ -67,7 +69,7 @@ func (parseData *ParsedMACAddress) createAddress() (*MACAddress, addrerr.Incompa
 	return creator.createAddressInternal(sect.ToSectionBase(), parseData.originator).ToMAC(), nil
 }
 
-func (parseData *ParsedMACAddress) createSection() (*MACAddressSection, addrerr.IncompatibleAddressError) {
+func (parseData *parsedMACAddress) createSection() (*MACAddressSection, addrerr.IncompatibleAddressError) {
 	addressString := parseData.str
 	addressParseData := parseData.getAddressParseData()
 	actualInitialSegmentCount := addressParseData.getSegmentCount()

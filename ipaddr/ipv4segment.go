@@ -290,7 +290,7 @@ func (seg *IPv4AddressSegment) GetPrefixValueCountLen(segmentPrefixLength BitCou
 	return seg.init().ipAddressSegmentInternal.GetPrefixValueCountLen(segmentPrefixLength)
 }
 
-// Returns true if the bit in the lower value of this segment at the given index is 1, where index 0 is the most significant bit.
+// IsOneBit returns true if the bit in the lower value of this segment at the given index is 1, where index 0 is the most significant bit.
 func (seg *IPv4AddressSegment) IsOneBit(segmentBitIndex BitCount) bool {
 	return seg.init().ipAddressSegmentInternal.IsOneBit(segmentBitIndex)
 }
@@ -483,7 +483,7 @@ func (seg *IPv4AddressSegment) isJoinableTo(low *IPv4AddressSegment) bool {
 	return !seg.isMultiple() || low.IsFullRange()
 }
 
-// join joins with another IPv4 segment to produce a IPv6 segment.
+// Join joins this segment with another IPv4 segment to produce an IPv6 segment.
 func (seg *IPv4AddressSegment) Join(low *IPv4AddressSegment) (*IPv6AddressSegment, addrerr.IncompatibleAddressError) {
 	prefixLength := seg.getJoinedSegmentPrefixLen(low.GetSegmentPrefixLen())
 	if !seg.isJoinableTo(low) {

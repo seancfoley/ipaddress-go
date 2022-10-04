@@ -285,7 +285,7 @@ func (div addressLargeDivInternal) Format(state fmt.State, verb rune) {
 		return
 	}
 	// we try to filter through the flags provided to the DivInt values, as if the fmt string were applied to the int(s) directly
-	formatStr := flagsFromState(state, verb) //TODO check if we support x, d, and the other flags above
+	formatStr := flagsFromState(state, verb)
 	if div.isMultiple() {
 		formatStr = fmt.Sprintf("%s%c%s", formatStr, RangeSeparator, formatStr)
 		_, _ = state.Write([]byte(fmt.Sprintf(formatStr, div.getValue(), div.getUpperValue())))
@@ -294,31 +294,29 @@ func (div addressLargeDivInternal) Format(state fmt.State, verb rune) {
 	}
 }
 
-//TODO rename, I think you've veered from the usual NewIPAddressLargeDivision
-
-// NewLargeIPDivision creates a division of the given bit length, assigning it the given value.
+// NewIPAddressLargeDivision creates a division of the given arbitrary bit-length, assigning it the given value.
 // If the value's bit length exceeds the given bit length, it is truncated.
-func NewLargeIPDivision(val []byte, bitCount BitCount, defaultRadix int) *IPAddressLargeDivision {
+func NewIPAddressLargeDivision(val []byte, bitCount BitCount, defaultRadix int) *IPAddressLargeDivision {
 	return createLargeAddressDiv(newLargeDivValue(val, bitCount), defaultRadix)
 }
 
-// NewLargeIPRangeDivision creates a division of the given bit length, assigning it the given value range.
+// NewIPAddressLargeRangeDivision creates a division of the given arbitrary bit-length, assigning it the given value range.
 // If a value's bit length exceeds the given bit length, it is truncated.
-func NewLargeIPRangeDivision(val, upperVal []byte, bitCount BitCount, defaultRadix int) *IPAddressLargeDivision {
+func NewIPAddressLargeRangeDivision(val, upperVal []byte, bitCount BitCount, defaultRadix int) *IPAddressLargeDivision {
 	return createLargeAddressDiv(newLargeDivValues(val, upperVal, bitCount), defaultRadix)
 }
 
-// NewLargeIPPrefixDivision creates a division of the given bit length, assigning it the given value and prefix length.
+// NewIPAddressLargePrefixDivision creates a division of the given arbitrary bit-length, assigning it the given value and prefix length.
 // If the value's bit length exceeds the given bit length, it is truncated.
 // If the prefix length exceeds the bit length, it is adjusted to the bit length.  If the prefix length is negative, it is adjusted to zero.
-func NewLargeIPPrefixDivision(val []byte, prefixLen PrefixLen, bitCount BitCount, defaultRadix int) *IPAddressLargeDivision {
+func NewIPAddressLargePrefixDivision(val []byte, prefixLen PrefixLen, bitCount BitCount, defaultRadix int) *IPAddressLargeDivision {
 	return createLargeAddressDiv(newLargeDivPrefixedValue(val, prefixLen, bitCount), defaultRadix)
 }
 
-// NewLargeIPRangePrefixDivision creates a division of the given bit length, assigning it the given value range and prefix length.
+// NewIPAddressLargeRangePrefixDivision creates a division of the given arbitrary bit-length, assigning it the given value range and prefix length.
 // If a value's bit length exceeds the given bit length, it is truncated.
 // If the prefix length exceeds the bit length, it is adjusted to the bit length.  If the prefix length is negative, it is adjusted to zero.
-func NewLargeIPRangePrefixDivision(val, upperVal []byte, prefixLen PrefixLen, bitCount BitCount, defaultRadix int) *IPAddressLargeDivision {
+func NewIPAddressLargeRangePrefixDivision(val, upperVal []byte, prefixLen PrefixLen, bitCount BitCount, defaultRadix int) *IPAddressLargeDivision {
 	return createLargeAddressDiv(newLargeDivPrefixedValues(val, upperVal, prefixLen, bitCount), defaultRadix)
 }
 

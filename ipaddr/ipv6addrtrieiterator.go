@@ -29,7 +29,7 @@ type IPv6TrieNodeIteratorRem interface {
 
 // IPv6TrieNodeIterator iterates through an IPv6 address trie, until both Next returns nil and HasNext returns false
 type IPv6TrieNodeIterator interface {
-	HasNext
+	hasNext
 
 	Next() *IPv6AddressTrieNode
 }
@@ -86,7 +86,7 @@ type IPv6AssociativeTrieNodeIteratorRem interface {
 
 // IPv6AssociativeTrieNodeIterator iterates through an IPv6 associative address trie, until both Next returns nil and HasNext returns false
 type IPv6AssociativeTrieNodeIterator interface {
-	HasNext
+	hasNext
 
 	Next() *IPv6AddressAssociativeTrieNode
 }

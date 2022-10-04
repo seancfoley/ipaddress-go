@@ -42,7 +42,6 @@ func NewIPAddressString(str string) *IPAddressString {
 func newIPAddressStringFromAddr(str string, addr *IPAddress) *IPAddressString {
 	return &IPAddressString{
 		str:             str,
-		params:          defaultIPAddrParameters,
 		addressProvider: addr.getProvider(),
 	}
 }
@@ -50,8 +49,7 @@ func newIPAddressStringFromAddr(str string, addr *IPAddress) *IPAddressString {
 func parseIPAddressString(str string, params addrstrparam.IPAddressStringParams) *IPAddressString {
 	str = strings.TrimSpace(str)
 	res := &IPAddressString{
-		str:    str,
-		params: params,
+		str: str,
 	}
 	res.validate(params)
 	return res
@@ -185,7 +183,6 @@ var zeroIPAddressString = NewIPAddressString("")
 // Such methods are provided to make creating the IPAddress instance unnecessary when no such IPAddress instance is needed for other reasons.
 type IPAddressString struct {
 	str             string
-	params          addrstrparam.IPAddressStringParams // when nil, default parameters is used, never access this field directly
 	addressProvider ipAddressProvider
 	validateError   addrerr.AddressStringError
 }
@@ -198,9 +195,13 @@ func (addrStr *IPAddressString) init() *IPAddressString {
 }
 
 // GetValidationOptions returns the validation options supplied when constructing this address string,
-// or the default options if no options were supplied.
-func (addrStr *IPAddressString) GetValidationOptions() addrstrparam.IPAddressStringParams { // TODO get it from the parsed data later
-	return addrStr.init().params
+// or the default options if no options were supplied.  It returns nil if no options were used to construct.
+func (addrStr *IPAddressString) GetValidationOptions() addrstrparam.IPAddressStringParams {
+	provider, _ := addrStr.getAddressProvider()
+	if provider != nil {
+		return provider.getParameters()
+	}
+	return nil
 }
 
 // IsPrefixed returns whether this address string has an associated prefix length.
@@ -670,7 +671,7 @@ func (addrStr *IPAddressString) Equal(other *IPAddressString) bool {
 	// Also note that we do not call equals() on the validation options, this is intended as an optimization,
 	// and probably better to avoid going through all the validation objects here
 	stringsMatch := addrStr.String() == other.String()
-	if stringsMatch && addrStr.params == other.params {
+	if stringsMatch && addrStr.GetValidationOptions() == other.GetValidationOptions() {
 		return true
 	}
 	if addrStr.IsValid() {

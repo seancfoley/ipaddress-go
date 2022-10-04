@@ -137,24 +137,27 @@ func (t trieTester) run() {
 		t.testRemoveMAC(treeAddrs)
 	}
 
-	doMegaTree := atomic.CompareAndSwapInt32(&didOneMegaTree, 0, 1)
-	if doMegaTree {
-		cached := t.getAllCached() //TODO figure out why this gives nothing, when not "limited", should be using the caching I think
+	doMegaTreeInt := atomic.LoadInt32(&didOneMegaTree)
+	if doMegaTreeInt == 0 {
+		cached := t.getAllCached()
 		if len(cached) > 0 {
-			fmt.Println("doing the mega")
-			ipv6Tree1 := ipaddr.NewIPv6AddressTrie()
-			t.createIPv6SampleTreeAddrs(ipv6Tree1, cached)
-			//fmt.Println(ipv6Tree1)
-			//fmt.Printf("ipv6 mega tree has %v elements", ipv6Tree1.Size())
-			t.testIterate(ipv6Tree1.ToBase())
-			t.testContains(ipv6Tree1.ToBase())
+			doMegaTree := atomic.CompareAndSwapInt32(&didOneMegaTree, 0, 1)
+			if doMegaTree {
+				//fmt.Println("doing the mega")
+				ipv6Tree1 := ipaddr.NewIPv6AddressTrie()
+				t.createIPv6SampleTreeAddrs(ipv6Tree1, cached)
+				//fmt.Println(ipv6Tree1)
+				//fmt.Printf("ipv6 mega tree has %v elements", ipv6Tree1.Size())
+				t.testIterate(ipv6Tree1.ToBase())
+				t.testContains(ipv6Tree1.ToBase())
 
-			ipv4Tree1 := ipaddr.NewIPv4AddressTrie()
-			t.createIPv4SampleTreeAddrs(ipv4Tree1, cached)
-			//fmt.Println(ipv4Tree1)
-			//fmt.Printf("ipv4 mega tree has %v elements", ipv4Tree1.Size())
-			t.testIterate(ipv4Tree1.ToBase())
-			t.testContains(ipv4Tree1.ToBase())
+				ipv4Tree1 := ipaddr.NewIPv4AddressTrie()
+				t.createIPv4SampleTreeAddrs(ipv4Tree1, cached)
+				//fmt.Println(ipv4Tree1)
+				//fmt.Printf("ipv4 mega tree has %v elements", ipv4Tree1.Size())
+				t.testIterate(ipv4Tree1.ToBase())
+				t.testContains(ipv4Tree1.ToBase())
+			}
 		}
 	}
 
@@ -425,7 +428,10 @@ func (t trieTester) partitionTest() {
 }
 
 func (t trieTester) partitionForTrie(trie *ipaddr.AddressTrie, subnet *ipaddr.IPAddress) {
-	ipaddr.PartitionIPWithSingleBlockSize(subnet).PredicateForEach(ipaddr.IPAddressPredicateAdapter{trie.Add}.IPPredicate)
+	//ipaddr.PartitionIPWithSingleBlockSize(subnet).PredicateForEach(func(ipaddr *ipaddr.IPAddress) bool {
+	//	return trie.Add(ipaddr.ToAddressBase())
+	//})
+	ipaddr.PartitionIPWithSingleBlockSize(subnet).PredicateForEach(IPAddressPredicateAdapter{trie.Add}.IPPredicate)
 	if trie.Size() != 15 {
 		t.addFailure(newTrieFailure("partition size unexpected "+strconv.Itoa(trie.Size())+", expected 15", trie.Clone()))
 	}
@@ -445,18 +451,18 @@ func (t trieTester) partitionForTrie(trie *ipaddr.AddressTrie, subnet *ipaddr.IP
 	//	t.addFailure("maps not equal " + all + " and " + all2, trie);
 	//}
 	trie.Clear()
-	ipaddr.PartitionIPWithSpanningBlocks(subnet).PredicateForEach(ipaddr.IPAddressPredicateAdapter{trie.Add}.IPPredicate)
+	ipaddr.PartitionIPWithSpanningBlocks(subnet).PredicateForEach(IPAddressPredicateAdapter{trie.Add}.IPPredicate)
 	if trie.Size() != 4 {
 		t.addFailure(newTrieFailure("partition size unexpected "+strconv.Itoa(trie.Size())+", expected 4", trie.Clone()))
 	}
 	trie.Clear()
-	ipaddr.PartitionIPWithSingleBlockSize(subnet).PredicateForEach(ipaddr.IPAddressPredicateAdapter{trie.Add}.IPPredicate)
-	ipaddr.PartitionIPWithSpanningBlocks(subnet).PredicateForEach(ipaddr.IPAddressPredicateAdapter{trie.Add}.IPPredicate)
+	ipaddr.PartitionIPWithSingleBlockSize(subnet).PredicateForEach(IPAddressPredicateAdapter{trie.Add}.IPPredicate)
+	ipaddr.PartitionIPWithSpanningBlocks(subnet).PredicateForEach(IPAddressPredicateAdapter{trie.Add}.IPPredicate)
 	if trie.Size() != 18 {
 		t.addFailure(newTrieFailure("partition size unexpected "+strconv.Itoa(trie.Size())+", expected 18", trie.Clone()))
 	}
-	allAreThere := ipaddr.PartitionIPWithSingleBlockSize(subnet).PredicateForEach(ipaddr.IPAddressPredicateAdapter{trie.Contains}.IPPredicate)
-	allAreThere2 := ipaddr.PartitionIPWithSpanningBlocks(subnet).PredicateForEach(ipaddr.IPAddressPredicateAdapter{trie.Contains}.IPPredicate)
+	allAreThere := ipaddr.PartitionIPWithSingleBlockSize(subnet).PredicateForEach(IPAddressPredicateAdapter{trie.Contains}.IPPredicate)
+	allAreThere2 := ipaddr.PartitionIPWithSpanningBlocks(subnet).PredicateForEach(IPAddressPredicateAdapter{trie.Contains}.IPPredicate)
 	if !(allAreThere && allAreThere2) {
 		t.addFailure(newTrieFailure("partition contains check failing", trie))
 	}
@@ -1659,4 +1665,44 @@ var testMACTries = [][]string{{
 }, {
 	"*:*:*:*:*:*",
 },
+}
+
+// IPAddressPredicateAdapter has methods to supply IP, IPv4, and IPv6 addresses to a wrapped predicate function that takes Address arguments
+type IPAddressPredicateAdapter struct {
+	Adapted func(*ipaddr.Address) bool
+}
+
+// IPPredicate calls the wrapped predicate function with the given IP address as the argument
+func (a IPAddressPredicateAdapter) IPPredicate(addr *ipaddr.IPAddress) bool {
+	return a.Adapted(addr.ToAddressBase())
+}
+
+// IPv4Predicate calls the wrapped predicate function with the given IPv4 address as the argument
+func (a IPAddressPredicateAdapter) IPv4Predicate(addr *ipaddr.IPv4Address) bool {
+	return a.Adapted(addr.ToAddressBase())
+}
+
+// IPv6Predicate calls the wrapped predicate function with the given IPv6 address as the argument
+func (a IPAddressPredicateAdapter) IPv6Predicate(addr *ipaddr.IPv6Address) bool {
+	return a.Adapted(addr.ToAddressBase())
+}
+
+// IPAddressActionAdapter has methods to supply IP, IPv4, and IPv6 addresses to a wrapped consumer function that takes Address arguments
+type IPAddressActionAdapter struct {
+	Adapted func(*ipaddr.Address)
+}
+
+// IPAction calls the wrapped consumer function with the given IP address as the argument
+func (a IPAddressActionAdapter) IPAction(addr *ipaddr.IPAddress) {
+	a.Adapted(addr.ToAddressBase())
+}
+
+// IPv4Action calls the wrapped consumer function with the given IPv4 address as the argument
+func (a IPAddressActionAdapter) IPv4Action(addr *ipaddr.IPv4Address) {
+	a.Adapted(addr.ToAddressBase())
+}
+
+// IPv6Action calls the wrapped consumer function with the given IPv6 address as the argument
+func (a IPAddressActionAdapter) IPv6Action(addr *ipaddr.IPv6Address) {
+	a.Adapted(addr.ToAddressBase())
 }

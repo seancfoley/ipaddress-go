@@ -18,7 +18,7 @@ package ipaddr
 
 // AddressIterator iterates through addresses, subnets and address ranges
 type AddressIterator interface {
-	HasNext
+	hasNext
 
 	// Next returns the next address, or nil if there is none left.
 	Next() *Address
@@ -115,7 +115,7 @@ func rangeAddrIterator(
 
 // IPAddressIterator iterates through IP subnets and ranges
 type IPAddressIterator interface {
-	HasNext
+	hasNext
 
 	// Next returns the next IP address, or nil if there is none left.
 	Next() *IPAddress
@@ -147,7 +147,7 @@ func (iter *ipAddrSliceIterator) Next() (res *IPAddress) {
 
 // IPv4AddressIterator iterates through IPv4 subnets and ranges
 type IPv4AddressIterator interface {
-	HasNext
+	hasNext
 
 	// Next returns the next IPv4 address, or nil if there is none left.
 	Next() *IPv4Address
@@ -171,7 +171,7 @@ func (iter ipv4IPAddressIterator) Next() *IPv4Address {
 
 // IPv6AddressIterator iterates through IPv6 subnets and ranges
 type IPv6AddressIterator interface {
-	HasNext
+	hasNext
 
 	// Next returns the next IPv6 address, or nil if there is none left.
 	Next() *IPv6Address
@@ -195,7 +195,7 @@ func (iter ipv6IPAddressIterator) Next() *IPv6Address {
 
 // MACAddressIterator iterates through MAC address collections
 type MACAddressIterator interface {
-	HasNext
+	hasNext
 
 	// Next returns the next MAC address, or nil if there is none left.
 	Next() *MACAddress
@@ -211,7 +211,7 @@ func (iter macAddressIterator) Next() *MACAddress {
 
 // ExtendedSegmentSeriesIterator iterates through either addresses or address sections
 type ExtendedSegmentSeriesIterator interface {
-	HasNext
+	hasNext
 
 	// Next returns the next section or address, or nil if there is none left
 	Next() ExtendedSegmentSeries
@@ -219,7 +219,7 @@ type ExtendedSegmentSeriesIterator interface {
 
 // ExtendedIPSegmentSeriesIterator iterates through either IP addresses or IP address sections
 type ExtendedIPSegmentSeriesIterator interface {
-	HasNext
+	hasNext
 
 	// Next returns the next IP section or IP address, or nil if there is none left
 	Next() ExtendedIPSegmentSeries

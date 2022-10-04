@@ -124,7 +124,7 @@ func (grouping *addressDivisionGroupingBase) GetBitCount() (res BitCount) {
 	return
 }
 
-// GetBitCount returns the total number of bytes across all divisions (rounded up)
+// GetByteCount returns the total number of bytes across all divisions (rounded up)
 func (grouping *addressDivisionGroupingBase) GetByteCount() int {
 	return (int(grouping.GetBitCount()) + 7) >> 3
 }

@@ -1385,16 +1385,21 @@ func (section *IPv6AddressSection) toBase85String(zone Zone) (string, addrerr.In
 	if isDual, err := section.isDualString(); err != nil {
 		return "", err
 	} else {
-		bytes := section.getBytes()
-		prefLen := section.getNetworkPrefixLen()
-		bitCount := section.GetBitCount()
-		var div *IPAddressLargeDivision
-		if isDual {
-			div = NewLargeIPRangePrefixDivision(bytes, section.getUpperBytes(), prefLen, bitCount, 85)
+		var largeGrouping *IPAddressLargeDivisionGrouping
+		if section.hasNoDivisions() {
+			largeGrouping = NewIPAddressLargeDivGrouping(nil)
 		} else {
-			div = NewLargeIPPrefixDivision(bytes, prefLen, bitCount, 85)
+			bytes := section.getBytes()
+			prefLen := section.getNetworkPrefixLen()
+			bitCount := section.GetBitCount()
+			var div *IPAddressLargeDivision
+			if isDual {
+				div = NewIPAddressLargeRangePrefixDivision(bytes, section.getUpperBytes(), prefLen, bitCount, 85)
+			} else {
+				div = NewIPAddressLargePrefixDivision(bytes, prefLen, bitCount, 85)
+			}
+			largeGrouping = NewIPAddressLargeDivGrouping([]*IPAddressLargeDivision{div})
 		}
-		largeGrouping := NewIPAddressLargeDivGrouping([]*IPAddressLargeDivision{div})
 		return toNormalizedIPZonedString(base85Params, largeGrouping, zone), nil
 	}
 }
@@ -1678,7 +1683,6 @@ func (section *IPv6AddressSection) toCustomString(stringOptions addrstr.IPv6Stri
 func (section *IPv6AddressSection) toNormalizedMixedZonedString(options addrstr.IPv6StringOptions, zone Zone) (string, addrerr.IncompatibleAddressError) {
 	stringParams := from(options, section)
 	if stringParams.nextUncompressedIndex <= IPv6MixedOriginalSegmentCount { //the mixed section is not compressed
-		//if stringParams.nextUncompressedIndex <= int(IPv6MixedOriginalSegmentCount-section.addressSegmentIndex) { //the mixed section is not compressed TODO remove
 		mixedParams := &ipv6v4MixedParams{
 			ipv6Params: stringParams,
 			ipv4Params: toIPParams(options.GetIPv4Opts()),

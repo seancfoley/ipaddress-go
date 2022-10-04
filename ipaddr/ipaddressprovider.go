@@ -48,6 +48,7 @@ func (t ipType) isUnknown() bool {
 
 const (
 	uninitializedType ipType = iota
+	invalidType
 	emptyType
 	ipv4AddrType
 	ipv6AddrType
@@ -276,6 +277,7 @@ type nullProvider struct {
 
 	ipType                ipType
 	isInvalidVal, isEmpty bool
+	params                addrstrparam.IPAddressStringParams
 }
 
 func (p *nullProvider) isInvalid() bool {
@@ -299,7 +301,8 @@ func (p *nullProvider) providerEquals(other ipAddressProvider) (bool, addrerr.In
 }
 
 var (
-	emptyProvider = &nullProvider{isEmpty: true, ipType: emptyType}
+	invalidProvider = &nullProvider{isInvalidVal: true, ipType: invalidType}
+	emptyProvider   = &nullProvider{isEmpty: true, ipType: emptyType}
 )
 
 // Wraps an IPAddress for IPAddressString in the cases where no parsing is provided, the address exists already

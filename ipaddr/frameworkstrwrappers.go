@@ -92,7 +92,7 @@ func (w WrappedMACAddressString) GetAddress() AddressType {
 	return nil
 }
 
-// WrappedIPAddressString wraps a HostName to get an ExtendedIdentifierString
+// WrappedHostName wraps a HostName to get an ExtendedIdentifierString
 type WrappedHostName struct {
 	*HostName
 }

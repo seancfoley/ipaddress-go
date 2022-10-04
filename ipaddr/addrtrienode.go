@@ -242,7 +242,7 @@ type ContainmentPathNode struct {
 	pathNode tree.PathNode
 }
 
-// Previous gets the node contained by this node
+// Next gets the node contained by this node
 func (node *ContainmentPathNode) Next() *ContainmentPathNode {
 	return toContainmentPathNode(node.pathNode.Next())
 }

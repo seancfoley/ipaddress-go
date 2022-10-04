@@ -16,15 +16,15 @@
 
 package ipaddr
 
-// HasNext is a component of all interfaces, defining the HasNext interface method
-type HasNext interface {
+// hasNext is a component of all interfaces, defining the hasNext interface method
+type hasNext interface {
 	// HasNext returns true if there is another address to iterate, false otherwise
 	HasNext() bool
 }
 
 // SegmentIterator iterates through address segments
 type SegmentIterator interface {
-	HasNext
+	hasNext
 
 	// Next returns the next address segment, or nil if there is none left.
 	Next() *AddressSegment
@@ -204,7 +204,7 @@ func segIterator(
 
 // IPSegmentIterator iterates through IP address segments
 type IPSegmentIterator interface {
-	HasNext
+	hasNext
 
 	// Next returns the next IP address segment, or nil if there is none left.
 	Next() *IPAddressSegment
@@ -229,7 +229,7 @@ func (iter WrappedIPSegmentIterator) Next() *AddressSegment {
 
 // IPv4SegmentIterator iterates through IPv4 address segments
 type IPv4SegmentIterator interface {
-	HasNext
+	hasNext
 
 	// Next returns the next IPv6 address segment, or nil if there is none left.
 	Next() *IPv4AddressSegment
@@ -245,7 +245,7 @@ func (iter ipv4SegmentIterator) Next() *IPv4AddressSegment {
 
 // IPv6SegmentIterator iterates through IPv6 address segments
 type IPv6SegmentIterator interface {
-	HasNext
+	hasNext
 
 	// Next returns the next IPv6 address segment, or nil if there is none left.
 	Next() *IPv6AddressSegment
@@ -261,7 +261,7 @@ func (iter ipv6SegmentIterator) Next() *IPv6AddressSegment {
 
 // MACSegmentIterator iterates through MAC address segments
 type MACSegmentIterator interface {
-	HasNext
+	hasNext
 
 	// Next returns the next MAC address segment, or nil if there is none left.
 	Next() *MACAddressSegment

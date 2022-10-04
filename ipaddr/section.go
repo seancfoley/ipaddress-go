@@ -1228,6 +1228,7 @@ var (
 	octal0oPrefixedParams      = new(addrstr.StringOptionsBuilder).SetRadix(8).SetHasSeparator(false).SetExpandedSegments(true).SetAddressLabel(otherOctalPrefix).ToOptions()
 	binaryParams               = new(addrstr.StringOptionsBuilder).SetRadix(2).SetHasSeparator(false).SetExpandedSegments(true).ToOptions()
 	binaryPrefixedParams       = new(addrstr.StringOptionsBuilder).SetRadix(2).SetHasSeparator(false).SetExpandedSegments(true).SetAddressLabel(BinaryPrefix).ToOptions()
+	decimalParams              = new(addrstr.StringOptionsBuilder).SetRadix(10).SetHasSeparator(false).SetExpandedSegments(true).ToOptions()
 )
 
 // Format is intentionally the only method with non-pointer receivers.  It is not intended to be called directly, it is intended for use by the fmt package.
@@ -1290,6 +1291,7 @@ func (section *addressSectionInternal) format(state fmt.State, verb rune, zone Z
 		if useDefaultStr && state.Flag('#') {
 			str, err = section.toLongStringZoned(NoZone, hexPrefixedUppercaseParams)
 		} else {
+
 			str, err = section.toLongStringZoned(NoZone, hexUppercaseParams)
 		}
 	case 'b':
@@ -1306,36 +1308,8 @@ func (section *addressSectionInternal) format(state fmt.State, verb rune, zone Z
 			str, err = section.toLongOctalStringZoned(NoZone, octalParams)
 		}
 	case 'd':
-		// TODO LATER decimal strings to replace the less efficient code below, we need large divisions for that because we must go single segment since base not a power of 2, but once we can group into a single large division, we should be good
-		if !section.hasNoDivisions() {
-			bitCount := section.GetBitCount()
-			maxDigits := getMaxDigitCountCalc(10, bitCount, func() int {
-				maxVal := bigOne()
-				maxVal.Lsh(maxVal, uint(bitCount)+1)
-				maxVal.Sub(maxVal, bigOneConst())
-				return len(maxVal.Text(10))
-			})
-			addLeadingZeros := func(str string) string {
-				if len(str) < maxDigits {
-					zeroCount := maxDigits - len(str)
-					var zeros []byte
-					for ; zeroCount > 0; zeroCount-- {
-						zeros = append(zeros, '0')
-					}
-					return string(zeros) + str
-				}
-				return str
-			}
-			val := section.GetValue()
-			valStr := addLeadingZeros(val.Text(10))
-			if section.isMultiple() {
-				upperVal := section.GetUpperValue()
-				upperValStr := addLeadingZeros(upperVal.Text(10))
-				str = valStr + RangeSeparatorStr + upperValStr
-			} else {
-				str = valStr
-			}
-		}
+		useDefaultStr = useDefaultStr && zone == NoZone
+		str, err = section.toDecimalStringZoned(NoZone)
 	default:
 		// format not supported
 		_, _ = fmt.Fprintf(state, "%%!%c(address=%s)", verb, section.toString())
@@ -1534,6 +1508,29 @@ func (section *addressSectionInternal) toCompressedString() string {
 		return sect.ToCompressedString()
 	}
 	return nilSection()
+}
+
+func (section *addressSectionInternal) toDecimalStringZoned(zone Zone) (string, addrerr.IncompatibleAddressError) {
+	if isDual, err := section.isDualString(); err != nil {
+		return "", err
+	} else {
+		var largeGrouping *IPAddressLargeDivisionGrouping
+		if section.hasNoDivisions() {
+			largeGrouping = NewIPAddressLargeDivGrouping(nil)
+		} else {
+			bytes := section.getBytes()
+			prefLen := section.getPrefixLen()
+			bitCount := section.GetBitCount()
+			var div *IPAddressLargeDivision
+			if isDual {
+				div = NewIPAddressLargeRangePrefixDivision(bytes, section.getUpperBytes(), prefLen, bitCount, 10)
+			} else {
+				div = NewIPAddressLargePrefixDivision(bytes, prefLen, bitCount, 10)
+			}
+			largeGrouping = NewIPAddressLargeDivGrouping([]*IPAddressLargeDivision{div})
+		}
+		return toNormalizedZonedString(decimalParams, largeGrouping, zone), nil
+	}
 }
 
 func (section *addressSectionInternal) toHexString(with0xPrefix bool) (string, addrerr.IncompatibleAddressError) {

@@ -20,6 +20,7 @@ import (
 	"math"
 	"math/big"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"unicode"
 	"unsafe"
@@ -145,29 +146,47 @@ func (strValidator) validateIPAddressStr(fromString *IPAddressString, validation
 		options:            validationOptions,
 		ipAddressParseData: ipAddressParseData{addressParseData: addressParseData{str: str}},
 	}
-	err = validateIPAddress(validationOptions, str, 0, len(str), pa.getIPAddressParseData(), false)
-	if err != nil {
-		return
+	if err = validateIPAddress(validationOptions, str, 0, len(str), pa.getIPAddressParseData(), false); err == nil {
+		if err = parseAddressQualifier(str, validationOptions, nil, pa.getIPAddressParseData(), len(str)); err == nil {
+			prov, err = chooseIPAddressProvider(fromString, str, validationOptions, &pa)
+		}
 	}
-	err = parseAddressQualifier(str, validationOptions, nil, pa.getIPAddressParseData(), len(str))
-	if err != nil {
-		return
+	if err != nil && prov == nil {
+		prov = getInvalidProvider(validationOptions)
 	}
-	return chooseIPAddressProvider(fromString, str, validationOptions, &pa)
+	return
+}
+
+func getInvalidProvider(validationOptions addrstrparam.IPAddressStringParams) ipAddressProvider {
+	if validationOptions == defaultIPAddrParameters {
+		return invalidProvider
+	}
+	return &nullProvider{isInvalidVal: true, ipType: invalidType, params: validationOptions}
 }
 
 func (strValidator) validateMACAddressStr(fromString *MACAddressString, validationOptions addrstrparam.MACAddressStringParams) (prov macAddressProvider, err addrerr.AddressStringError) {
 	str := fromString.str
-	pa := ParsedMACAddress{
+	pa := parsedMACAddress{
 		originator:          fromString,
 		macAddressParseData: macAddressParseData{addressParseData: addressParseData{str: str}},
+		params:              validationOptions,
+		creationLock:        &sync.Mutex{},
 	}
-	err = validateMACAddress(validationOptions, str, 0, len(str), pa.getMACAddressParseData())
-	if err != nil {
-		return
+	if err = validateMACAddress(validationOptions, str, 0, len(str), pa.getMACAddressParseData()); err == nil {
+		addressParseData := pa.getAddressParseData()
+		prov, err = chooseMACAddressProvider(fromString, validationOptions, &pa, addressParseData)
 	}
-	addressParseData := pa.getAddressParseData()
-	return chooseMACAddressProvider(fromString, validationOptions, &pa, addressParseData)
+	if err != nil && prov == nil {
+		prov = getInvalidMACProvider(validationOptions)
+	}
+	return
+}
+
+func getInvalidMACProvider(validationOptions addrstrparam.MACAddressStringParams) macAddressProvider {
+	if validationOptions == defaultMACAddrParameters {
+		return invalidMACProvider
+	}
+	return macAddressNullProvider{validationOptions}
 }
 
 func validateIPAddress(
@@ -2188,7 +2207,7 @@ func parseHostNameQualifier(
 	return
 }
 
-// ValidateZone returns an error if the zone is invalid
+// ValidateZoneStr returns an error if the given zone is invalid
 func ValidateZoneStr(zoneStr string) (zone Zone, err addrerr.AddressStringError) {
 	for i := 0; i < len(zoneStr); i++ {
 		c := zone[i]
@@ -2650,20 +2669,24 @@ func parseBase85(
 }
 
 func chooseMACAddressProvider(fromString *MACAddressString,
-	validationOptions addrstrparam.MACAddressStringParams, pa *ParsedMACAddress,
+	validationOptions addrstrparam.MACAddressStringParams, pa *parsedMACAddress,
 	addressParseData *addressParseData) (res macAddressProvider, err addrerr.AddressStringError) {
 	if addressParseData.isProvidingEmpty() {
-		res = defaultMACAddressEmptyProvider
+		if validationOptions == defaultMACAddrParameters {
+			res = defaultMACAddressEmptyProvider
+		} else {
+			res = macAddressEmptyProvider{macAddressNullProvider{validationOptions}}
+		}
 	} else if addressParseData.isAll() {
 		if validationOptions == defaultMACAddrParameters {
 			res = macAddressDefaultAllProvider
 		} else {
-			res = &macAddressAllProvider{validationOptions: validationOptions}
+			res = &macAddressAllProvider{validationOptions: validationOptions, creationLock: &sync.Mutex{}}
 		}
 	} else {
 		err = checkMACSegments(
 			fromString.str,
-			fromString.params,
+			validationOptions,
 			pa)
 		res = pa
 	}
@@ -2732,7 +2755,11 @@ func chooseIPAddressProvider(
 					}
 					return
 				}
-				res = emptyProvider
+
+				if validationOptions == defaultIPAddrParameters {
+					res = emptyProvider
+				}
+				res = &nullProvider{isEmpty: true, ipType: emptyType, params: validationOptions}
 				return
 			}
 		} else { //isAll
@@ -2839,7 +2866,7 @@ func checkSegmentMaxValues(
 func checkMACSegments(
 	fullAddr string,
 	validationOptions addrstrparam.MACAddressStringParams,
-	parseData *ParsedMACAddress) addrerr.AddressStringError {
+	parseData *parsedMACAddress) addrerr.AddressStringError {
 	var err addrerr.AddressStringError
 	format := parseData.getFormat()
 	if format != unknownFormat {
@@ -3688,7 +3715,7 @@ func (strValidator) validateHostName(fromHost *HostName, validationOptions addrs
 		  isPossiblyIPv6: something like f:: or f:1, the former IPv6 and the latter a host "f" with port 1.  Such strings can be valid addresses or hosts.
 		  If it parses as an address, we do not treat as host.
 	*/
-	psdHost = &parsedHost{originalStr: str}
+	psdHost = &parsedHost{originalStr: str, params: validationOptions}
 	addressOptions := validationOptions.GetIPAddressParams()
 	isIPAddress := squareBracketed || tryIPv4 || tryIPv6
 	if !validationOptions.AllowsIPAddress() {
