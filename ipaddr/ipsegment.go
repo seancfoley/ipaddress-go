@@ -32,7 +32,7 @@ func (seg *ipAddressSegmentInternal) isPrefixed() bool {
 	return seg.GetSegmentPrefixLen() != nil
 }
 
-// IsPrefixBlock returns whether the division has a prefix length and the division range includes the block of values for that prefix length.
+// IsPrefixBlock returns whether the segment has a prefix length and the segment range includes the block of values for that prefix length.
 // If the prefix length matches the bit count, this returns true.
 func (seg *ipAddressSegmentInternal) IsPrefixBlock() bool {
 	return seg.isPrefixBlock()
@@ -589,11 +589,11 @@ func (seg *IPAddressSegment) Compare(item AddressItem) int {
 	return CountComparator.Compare(seg, item)
 }
 
-// CompareSize compares the counts of two segments, the number of individual values within.
+// CompareSize compares the counts of two items, the number of individual values within.
 //
-// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one represents more individual values than another.
+// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether this represents more individual values than another.
 //
-// CompareSize returns a positive integer if this segment has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
+// CompareSize returns a positive integer if this segment has a larger count than the item given, 0 if they are the same, or a negative integer if the other has a larger count.
 func (seg *IPAddressSegment) CompareSize(other AddressItem) int {
 	if seg == nil {
 		if isNilItem(other) {

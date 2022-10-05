@@ -799,11 +799,11 @@ func (seg *AddressSegment) Compare(item AddressItem) int {
 	return CountComparator.Compare(seg, item)
 }
 
-// CompareSize compares the counts of two segments, the number of individual values within.
+// CompareSize compares the counts of two items, the number of individual values within.
 //
 // Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one represents more individual values than another.
 //
-// CompareSize returns a positive integer if this segment has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
+// CompareSize returns a positive integer if this segment has a larger count than the item given, 0 if they are the same, or a negative integer if the other has a larger count.
 func (seg *AddressSegment) CompareSize(other AddressItem) int {
 	if seg == nil {
 		if isNilItem(other) {

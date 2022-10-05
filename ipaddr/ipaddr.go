@@ -1288,7 +1288,7 @@ func (addr *IPAddress) Equal(other AddressType) bool {
 	return addr.init().equals(other)
 }
 
-// CompareSize compares the counts of two subnets or addresses, the number of individual addresses within.
+// CompareSize compares the counts of two subnets or addresses or other items, the number of individual items within.
 //
 // Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one subnet represents more individual addresses than another.
 //

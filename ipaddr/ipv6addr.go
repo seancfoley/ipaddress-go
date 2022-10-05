@@ -1176,9 +1176,9 @@ func (addr *IPv6Address) Equal(other AddressType) bool {
 		addr.isSameZone(other.ToAddressBase())
 }
 
-// CompareSize compares the counts of two subnets or addresses, the number of individual addresses within.
+// CompareSize compares the counts of two subnets or addresses or items, the number of individual addresses or items within.
 //
-// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one subnet represents more individual addresses than another.
+// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether this subnet represents more individual addresses or items than another.
 //
 // CompareSize returns a positive integer if this address or subnet has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
 func (addr *IPv6Address) CompareSize(other AddressItem) int {
@@ -1998,7 +1998,9 @@ func (addr *IPv6Address) ToBinaryString(with0bPrefix bool) (string, addrerr.Inco
 	return addr.init().toBinaryString(with0bPrefix)
 }
 
-// ToBase85String creates the base 85 string, which is described by RFC 1924
+// ToBase85String creates the base 85 string, which is described by RFC 1924, "A Compact Representation of IPv6 Addresses".
+// See https://www.rfc-editor.org/rfc/rfc1924.html
+//
 // It may be written as a range of two values if a range that is not a prefixed block.
 //
 // If a subnet cannot be written as a single prefix block or a range of two values, an error is returned.

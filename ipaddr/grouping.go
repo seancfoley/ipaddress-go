@@ -461,7 +461,7 @@ func (grouping *addressDivisionGroupingInternal) ContainsSinglePrefixBlock(prefi
 	return true
 }
 
-// IsPrefixBlock returns whether this address segment series has a prefix length and includes the block associated with its prefix length.
+// IsPrefixBlock returns whether this address division series has a prefix length and includes the block associated with its prefix length.
 // If the prefix length matches the bit count, this returns true.
 //
 // This is different from ContainsPrefixBlock in that this method returns
@@ -651,7 +651,7 @@ func (grouping *addressDivisionGroupingInternal) UpperBytes() []byte {
 	return cloneBytes(grouping.getUpperBytes())
 }
 
-// CopyBytes copies the value of the lowest division grouping in the range into a byte slice
+// CopyBytes copies the value of the lowest division grouping in the range into a byte slice.
 //
 // If the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
 // Otherwise, a new slice is created and returned with the value.
@@ -667,7 +667,7 @@ func (grouping *addressDivisionGroupingInternal) CopyBytes(bytes []byte) []byte 
 	return getBytesCopy(bytes, grouping.getBytes())
 }
 
-// CopyUpperBytes copies the value of the highest division grouping in the range into a byte slice
+// CopyUpperBytes copies the value of the highest division grouping in the range into a byte slice.
 //
 // If the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
 // Otherwise, a new slice is created and returned with the value.
@@ -1001,11 +1001,11 @@ func (grouping *AddressDivisionGrouping) Compare(item AddressItem) int {
 	return CountComparator.Compare(grouping, item)
 }
 
-// CompareSize compares the counts of two address division groupings, the number of individual groupings represented.
+// CompareSize compares the counts of two items, the number of individual items represented in each.
 //
-// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one grouping represents more individual address groupings than another.
+// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether this grouping represents more individual items than another.
 //
-// CompareSize returns a positive integer if this address division grouping has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
+// CompareSize returns a positive integer if this address division grouping has a larger count than the item given, 0 if they are the same, or a negative integer if the other has a larger count.
 func (grouping *AddressDivisionGrouping) CompareSize(other AddressItem) int {
 	if grouping == nil {
 		if isNilItem(other) {
@@ -1017,7 +1017,7 @@ func (grouping *AddressDivisionGrouping) CompareSize(other AddressItem) int {
 	return grouping.compareSize(other)
 }
 
-// GetCount returns the count of possible distinct values for this item.
+// GetCount returns the count of possible distinct values for this division grouping.
 // If not representing multiple values, the count is 1,
 // unless this is a division grouping with no divisions, or an address section with no segments, in which case it is 0.
 //
@@ -1029,7 +1029,7 @@ func (grouping *AddressDivisionGrouping) GetCount() *big.Int {
 	return grouping.getCount()
 }
 
-// IsMultiple returns whether this grouping represents multiple values
+// IsMultiple returns whether this grouping represents multiple values rather than a single value
 func (grouping *AddressDivisionGrouping) IsMultiple() bool {
 	return grouping != nil && grouping.isMultiple()
 }

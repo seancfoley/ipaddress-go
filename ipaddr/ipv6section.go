@@ -368,11 +368,11 @@ func (section *IPv6AddressSection) Compare(item AddressItem) int {
 	return CountComparator.Compare(section, item)
 }
 
-// CompareSize compares the counts of two address sections, the number of individual sections represented.
+// CompareSize compares the counts of two items, the number of individual sections represented.
 //
-// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one section represents more individual address sections than another.
+// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one item represents more individual items than another.
 //
-// CompareSize returns a positive integer if this address section has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
+// CompareSize returns a positive integer if this address section has a larger count than the item given, 0 if they are the same, or a negative integer if the other has a larger count.
 func (section *IPv6AddressSection) CompareSize(other AddressItem) int {
 	if section == nil {
 		if isNilItem(other) {
@@ -1362,7 +1362,8 @@ func (section *IPv6AddressSection) ToBinaryString(with0bPrefix bool) (string, ad
 	return section.toBinaryString(with0bPrefix)
 }
 
-// ToBase85String creates the base 85 string, which is described by RFC 1924
+// ToBase85String creates the base 85 string, which is described by RFC 1924, "A Compact Representation of IPv6 Addresses".
+// See https://www.rfc-editor.org/rfc/rfc1924.html
 // It may be written as a range of two values if a range that is not a prefixed block.
 //
 // If a multiple-valued section cannot be written as a single prefix block or a range of two values, an error is returned.
@@ -1928,11 +1929,11 @@ func (grouping *IPv6v4MixedAddressGrouping) Compare(item AddressItem) int {
 	return CountComparator.Compare(grouping, item)
 }
 
-// CompareSize compares the counts of two address division groupings, the number of individual groupings represented.
+// CompareSize compares the counts of two items, the number of individual items represented in each.
 //
-// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one grouping represents more individual address groupings than another.
+// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether this grouping represents more individual address groupings than another item.
 //
-// CompareSize returns a positive integer if this address division grouping has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
+// CompareSize returns a positive integer if this address division grouping has a larger count than the item given, 0 if they are the same, or a negative integer if the other has a larger count.
 func (grouping *IPv6v4MixedAddressGrouping) CompareSize(other AddressItem) int {
 	if grouping == nil {
 		if isNilItem(other) {

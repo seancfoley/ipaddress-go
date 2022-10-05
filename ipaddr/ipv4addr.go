@@ -947,9 +947,9 @@ func (addr *IPv4Address) Equal(other AddressType) bool {
 	return other.ToAddressBase().getAddrType() == ipv4Type && addr.init().section.sameCountTypeEquals(other.ToAddressBase().GetSection())
 }
 
-// CompareSize compares the counts of two subnets or addresses, the number of individual addresses within.
+// CompareSize compares the counts of two subnets or addresses or other items, the number of individual addresses or items within.
 //
-// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one subnet represents more individual addresses than another.
+// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether this subnet represents more individual addresses than another item.
 //
 // CompareSize returns a positive integer if this address or subnet has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
 func (addr *IPv4Address) CompareSize(other AddressItem) int {

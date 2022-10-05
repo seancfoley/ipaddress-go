@@ -164,8 +164,12 @@ func (grouping *largeDivisionGroupingInternal) calcBytes() (bytes, upperBytes []
 	return
 }
 
-//TODO godocs
-
+// CopyBytes copies the value of the lowest division grouping in the range into a byte slice.
+//
+// If the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// Otherwise, a new slice is created and returned with the value.
+//
+// You can use GetByteCount to determine the required array length for the bytes.
 func (grouping *largeDivisionGroupingInternal) CopyBytes(bytes []byte) []byte {
 	if grouping.hasNoDivisions() {
 		if bytes != nil {
@@ -176,6 +180,12 @@ func (grouping *largeDivisionGroupingInternal) CopyBytes(bytes []byte) []byte {
 	return getBytesCopy(bytes, grouping.getBytes())
 }
 
+// CopyUpperBytes copies the value of the highest division grouping in the range into a byte slice.
+//
+// If the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
+// Otherwise, a new slice is created and returned with the value.
+//
+// You can use GetByteCount to determine the required array length for the bytes.
 func (grouping *largeDivisionGroupingInternal) CopyUpperBytes(bytes []byte) []byte {
 	if grouping.hasNoDivisions() {
 		if bytes != nil {
@@ -202,6 +212,7 @@ func (grouping *largeDivisionGroupingInternal) UpperBytes() []byte {
 	return cloneBytes(grouping.getUpperBytes())
 }
 
+// GetValue returns the lowest individual address division grouping in this address division grouping as an integer value
 func (grouping *largeDivisionGroupingInternal) GetValue() *big.Int {
 	res := big.Int{}
 	if grouping.hasNoDivisions() {
@@ -210,6 +221,7 @@ func (grouping *largeDivisionGroupingInternal) GetValue() *big.Int {
 	return res.SetBytes(grouping.getBytes())
 }
 
+// GetUpperValue returns the highest individual address division grouping in this address division grouping as an integer value
 func (grouping *largeDivisionGroupingInternal) GetUpperValue() *big.Int {
 	res := big.Int{}
 	if grouping.hasNoDivisions() {
@@ -281,11 +293,23 @@ func (grouping *largeDivisionGroupingInternal) GetMinPrefixLenForBlock() BitCoun
 	return cacheMinPrefix(grouping.cache, calc)
 }
 
+// IsPrefixBlock returns whether this division grouping has a prefix length and includes the block associated with its prefix length.
+// If the prefix length matches the bit count, this returns true.
+//
+// This is different from ContainsPrefixBlock in that this method returns
+// false if the series has no prefix length or a prefix length that differs from prefix lengths for which ContainsPrefixBlock returns true.
 func (grouping *largeDivisionGroupingInternal) IsPrefixBlock() bool {
 	prefLen := grouping.getPrefixLen()
 	return prefLen != nil && grouping.ContainsPrefixBlock(prefLen.bitCount())
 }
 
+// IsSinglePrefixBlock returns whether the range of values matches a single subnet block for the prefix length.
+//
+// What distinguishes this method with ContainsSinglePrefixBlock is that this method returns
+// false if the series does not have a prefix length assigned to it,
+// or a prefix length that differs from the prefix length for which ContainsSinglePrefixBlock returns true.
+//
+// It is similar to IsPrefixBlock but returns false when there are multiple prefixes.
 func (grouping *largeDivisionGroupingInternal) IsSinglePrefixBlock() bool {
 	calc := func() bool {
 		prefLen := grouping.getPrefixLen()
@@ -390,7 +414,7 @@ type IPAddressLargeDivisionGrouping struct {
 	largeDivisionGroupingInternal
 }
 
-// GetCount returns the count of possible distinct values for this item.
+// GetCount returns the count of possible distinct values for this division grouping.
 // If not representing multiple values, the count is 1,
 // unless this is a division grouping with no divisions, or an address section with no segments, in which case it is 0.
 //
@@ -402,15 +426,22 @@ func (grouping *IPAddressLargeDivisionGrouping) GetCount() *big.Int {
 	return grouping.addressDivisionGroupingBase.getCount()
 }
 
-// IsMultiple returns whether this grouping represents multiple values
+// IsMultiple returns whether this grouping represents multiple values rather than a single value
 func (grouping *IPAddressLargeDivisionGrouping) IsMultiple() bool {
 	return grouping != nil && grouping.isMultiple()
 }
 
+// Compare returns a negative integer, zero, or a positive integer if this address division grouping is less than, equal, or greater than the given item.
+// Any address item is comparable to any other.  All address items use CountComparator to compare.
 func (grouping *IPAddressLargeDivisionGrouping) Compare(item AddressItem) int {
 	return CountComparator.Compare(grouping, item)
 }
 
+// CompareSize compares the counts of two items, the number of individual values within.
+//
+// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one represents more individual values than another.
+//
+// CompareSize returns a positive integer if this division has a larger count than the item given, 0 if they are the same, or a negative integer if the other has a larger count.
 func (grouping *IPAddressLargeDivisionGrouping) CompareSize(other AddressItem) int {
 	if grouping == nil {
 		if isNilItem(other) {
@@ -434,6 +465,8 @@ func (grouping *IPAddressLargeDivisionGrouping) String() string {
 	return grouping.toString()
 }
 
+// IsPrefixed returns whether this division grouping has an associated prefix length.
+// If so, the prefix length is given by GetPrefixLen
 func (grouping *IPAddressLargeDivisionGrouping) IsPrefixed() bool {
 	if grouping == nil {
 		return false

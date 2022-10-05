@@ -628,7 +628,7 @@ func (addr *MACAddress) Equal(other AddressType) bool {
 	return addr.init().equals(other)
 }
 
-// CompareSize compares the counts of two addresses or address collections, the number of individual addresses within.
+// CompareSize compares the counts of two addresses or address collections or address items, the number of individual addresses or items within.
 //
 // Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one address collection represents more individual addresses than another.
 //

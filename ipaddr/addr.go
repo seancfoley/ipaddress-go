@@ -1145,11 +1145,11 @@ func (addr *Address) Equal(other AddressType) bool {
 	return addr.init().equals(other)
 }
 
-// CompareSize compares the counts of two subnets or addresses or other address items, the number of individual addresses within.
+// CompareSize compares the counts of two subnets or addresses or other address items, the number of individual items within.
 //
-// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one subnet or collection represents more individual addresses than another.
+// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one subnet or collection represents more individual items than another.
 //
-// CompareSize returns a positive integer if this address or subnet has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
+// CompareSize returns a positive integer if this address or subnet has a larger count than the item given, 0 if they are the same, or a negative integer if the other has a larger count.
 func (addr *Address) CompareSize(other AddressItem) int {
 	if addr == nil {
 		if isNilItem(other) {

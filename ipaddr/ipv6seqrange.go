@@ -236,9 +236,9 @@ func (rng *IPv6AddressSeqRange) Compare(item AddressItem) int {
 	return CountComparator.Compare(rng, item)
 }
 
-// CompareSize compares the counts of two address ranges, the number of individual addresses within.
+// CompareSize compares the counts of two address ranges or address items, the number of individual addresses or items within.
 //
-// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one range spans more individual addresses than another.
+// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one range spans more individual addresses or items than another.
 //
 // CompareSize returns a positive integer if this address range has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
 func (rng *IPv6AddressSeqRange) CompareSize(other AddressItem) int {

@@ -358,8 +358,12 @@ func (div *IPAddressLargeDivision) GetDivisionPrefixLen() PrefixLen {
 	return div.getDivisionPrefixLength()
 }
 
-//TODO godocs
-
+// GetCount returns the count of possible distinct values for this division.
+// If not representing multiple values, the count is 1.
+//
+// For instance, a division with the value range of 3-7 has count 5.
+//
+// Use IsMultiple if you simply want to know if the count is greater than 1.
 func (div *IPAddressLargeDivision) GetCount() *big.Int {
 	if div == nil {
 		return bigZero()
@@ -367,6 +371,7 @@ func (div *IPAddressLargeDivision) GetCount() *big.Int {
 	return div.getCount()
 }
 
+// IsMultiple returns  whether this division represents a sequential range of values, vs a single value
 func (div *IPAddressLargeDivision) IsMultiple() bool {
 	return div != nil && div.isMultiple()
 }
@@ -384,6 +389,7 @@ func testBigRange(lowerValue, upperValue, finalUpperValue *BigDivInt, bitCount, 
 	return testBigRangeMasks(lowerValue, upperValue, finalUpperValue, &networkMask, &hostMask)
 }
 
+// ContainsPrefixBlock returns whether the division range includes the block of values for the given prefix length.
 func (div *IPAddressLargeDivision) ContainsPrefixBlock(prefixLen BitCount) bool {
 	bitCount := div.GetBitCount()
 	if prefixLen <= 0 {
@@ -395,6 +401,7 @@ func (div *IPAddressLargeDivision) ContainsPrefixBlock(prefixLen BitCount) bool 
 	return testBigRange(lower, upper, upper, bitCount, prefixLen)
 }
 
+// ContainsSinglePrefixBlock returns whether the division range matches exactly the block of values for the given prefix length and has just a single prefix for that prefix length.
 func (div *IPAddressLargeDivision) ContainsSinglePrefixBlock(prefixLen BitCount) bool {
 	bitCount := div.GetBitCount()
 	prefixLen = checkBitCount(prefixLen, bitCount)
@@ -405,6 +412,14 @@ func (div *IPAddressLargeDivision) ContainsSinglePrefixBlock(prefixLen BitCount)
 	return testBigRange(lower, lower, upper, bitCount, prefixLen)
 }
 
+// GetPrefixLenForSingleBlock returns a prefix length for which there is only one prefix in this division,
+// and the range of values in this division matches the block of all values for that prefix.
+//
+// If the range of division values can be described this way, then this method returns the same value as GetMinPrefixLenForBlock.
+//
+// If no such prefix length exists, returns nil.
+//
+// If this division represents a single value, this returns the bit count of the segment.
 func (div *IPAddressLargeDivision) GetPrefixLenForSingleBlock() PrefixLen {
 	prefLen := div.GetMinPrefixLenForBlock()
 	bitCount := div.GetBitCount()
@@ -425,6 +440,14 @@ func (div *IPAddressLargeDivision) GetPrefixLenForSingleBlock() PrefixLen {
 	return nil
 }
 
+// GetMinPrefixLenForBlock returns the smallest prefix length such that this division includes the block of all values for that prefix length.
+//
+// If the entire range can be described this way, then this method returns the same value as GetPrefixLenForSingleBlock.
+//
+// There may be a single prefix, or multiple possible prefix values in this item for the returned prefix length.
+// Use GetPrefixLenForSingleBlock to avoid the case of multiple prefix values.
+//
+// If this division represents a single value, this returns the bit count.
 func (div *IPAddressLargeDivision) GetMinPrefixLenForBlock() BitCount {
 	result := div.GetBitCount()
 	if div.IsMultiple() {
@@ -442,15 +465,17 @@ func (div *IPAddressLargeDivision) GetMinPrefixLenForBlock() BitCount {
 	return result
 }
 
+// Compare returns a negative integer, zero, or a positive integer if this address division is less than, equal, or greater than the given item.
+// Any address item is comparable to any other.  All address items use CountComparator to compare.
 func (div *IPAddressLargeDivision) Compare(item AddressItem) int {
 	return CountComparator.Compare(div, item)
 }
 
-// CompareSize compares the counts of two divisions, the number of individual values within.
+// CompareSize compares the counts of two items, the number of individual values within.
 //
 // Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one represents more individual values than another.
 //
-// CompareSize returns a positive integer if this division has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
+// CompareSize returns a positive integer if this division has a larger count than the item given, 0 if they are the same, or a negative integer if the other has a larger count.
 func (div *IPAddressLargeDivision) CompareSize(other AddressItem) int {
 	if div == nil {
 		if isNilItem(other) {
@@ -483,6 +508,14 @@ func (div *IPAddressLargeDivision) getStringAsLower() string {
 	return stringer()
 }
 
+// GetString produces a normalized string to represent the segment.
+// If the segment is an IP segment string with CIDR network prefix block for its prefix length, then the string contains only the lower value of the block range.
+// Otherwise, the explicit range will be printed.
+// If the segment is not an IP segment, then the string is the same as that produced by GetWildcardString.
+//
+// The string returned is useful in the context of creating strings for address sections or full addresses,
+// in which case the radix and bit-length can be deduced from the context.
+// The String method produces strings more appropriate when no context is provided.
 func (div *IPAddressLargeDivision) GetString() string {
 	stringer := func() string {
 		if div.IsSinglePrefixBlock() || !div.isMultiple() { //covers the case of single addresses, when there is no prefix or the prefix is the bit count
@@ -502,6 +535,12 @@ func (div *IPAddressLargeDivision) GetString() string {
 	return stringer()
 }
 
+// GetWildcardString produces a normalized string to represent the segment, favouring wildcards and range characters regardless of any network prefix length.
+// The explicit range of a range-valued segment will be printed.
+//
+// The string returned is useful in the context of creating strings for address sections or full addresses,
+// in which case the radix and the bit-length can be deduced from the context.
+// The String method produces strings more appropriate when no context is provided.
 func (div *IPAddressLargeDivision) GetWildcardString() string {
 	stringer := func() string {
 		if !div.IsPrefixed() || !div.isMultiple() {
@@ -517,6 +556,7 @@ func (div *IPAddressLargeDivision) GetWildcardString() string {
 	return stringer()
 }
 
+// IsSinglePrefix returns true if the division value range spans just a single prefix value for the given prefix length.
 func (div *IPAddressLargeDivision) IsSinglePrefix(divisionPrefixLen BitCount) bool {
 	lower, upper := div.getValue(), div.getUpperValue()
 	bitCount := div.GetBitCount()
@@ -787,6 +827,8 @@ func (div *IPAddressLargeDivision) getDefaultRangeSeparatorString() string {
 	return RangeSeparatorStr
 }
 
+// IsPrefixBlock returns whether the division has a prefix length and the division range includes the block of values for that prefix length.
+// If the prefix length matches the bit count, this returns true.
 func (div *IPAddressLargeDivision) IsPrefixBlock() bool {
 	return div.getLargeDivValues().isPrefixBlock
 }
@@ -796,6 +838,8 @@ func (div *IPAddressLargeDivision) IsSinglePrefixBlock() bool {
 	return *div.getLargeDivValues().cache.isSinglePrefBlock
 }
 
+// IsPrefixed returns whether this division has an associated prefix length.
+// If so, the prefix length is given by GetDivisionPrefixLen()
 func (div *IPAddressLargeDivision) IsPrefixed() bool {
 	return div.GetDivisionPrefixLen() != nil
 }
@@ -817,12 +861,12 @@ func (div *IPAddressLargeDivision) IsPrefixed() bool {
 // The prefix applied across the address is nil ... nil ... (1 to segment bit length) ... 0 ... 0
 //
 // If the segment has no prefix then nil is returned.
-func (seg *IPAddressLargeDivision) GetPrefixLen() PrefixLen {
-	return seg.getDivisionPrefixLength()
+func (div *IPAddressLargeDivision) GetPrefixLen() PrefixLen {
+	return div.getDivisionPrefixLength()
 }
 
-func (seg *IPAddressLargeDivision) isNil() bool {
-	return seg == nil
+func (div *IPAddressLargeDivision) isNil() bool {
+	return div == nil
 }
 
 func setVal(valueBytes []byte, bitCount BitCount) (assignedValue *BigDivInt, assignedBitCount BitCount, maxVal *BigDivInt) {

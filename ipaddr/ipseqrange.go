@@ -904,11 +904,11 @@ func (rng *IPAddressSeqRange) Compare(item AddressItem) int {
 	return CountComparator.Compare(rng, item)
 }
 
-// CompareSize compares the counts of two address ranges, the number of individual addresses within.
+// CompareSize compares the counts of two address ranges or items, the number of individual addresses or items within each.
 //
-// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one range spans more individual addresses than another.
+// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether this range spans more individual addresses than another item.
 //
-// CompareSize returns a positive integer if this range has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
+// CompareSize returns a positive integer if this range has a larger count than the item given, 0 if they are the same, or a negative integer if the other has a larger count.
 func (rng *IPAddressSeqRange) CompareSize(other AddressItem) int {
 	if rng == nil {
 		if isNilItem(other) {

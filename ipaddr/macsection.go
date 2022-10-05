@@ -208,9 +208,9 @@ func (section *MACAddressSection) Compare(item AddressItem) int {
 	return CountComparator.Compare(section, item)
 }
 
-// CompareSize compares the counts of two address sections, the number of individual sections represented.
+// CompareSize compares the counts of two items, the number of individual items represented.
 //
-// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one section represents more individual address sections than another.
+// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether this section represents more individual address sections than another.
 //
 // CompareSize returns a positive integer if this address section has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
 func (section *MACAddressSection) CompareSize(other AddressItem) int {

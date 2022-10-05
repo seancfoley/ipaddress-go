@@ -222,7 +222,7 @@ func (seg *IPv6AddressSegment) Compare(item AddressItem) int {
 	return CountComparator.Compare(seg, item)
 }
 
-// CompareSize compares the counts of two segments, the number of individual values within.
+// CompareSize compares the counts of two items, the number of individual values within.
 //
 // Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one represents more individual values than another.
 //

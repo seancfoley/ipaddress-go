@@ -970,12 +970,12 @@ func (div *AddressDivision) GetUpperDivisionValue() DivInt {
 	return div.getUpperDivisionValue()
 }
 
-// IsMultiple returns  whether this division represents a sequential range of values
+// IsMultiple returns  whether this division represents a sequential range of values, vs a single value
 func (div *AddressDivision) IsMultiple() bool {
 	return div != nil && div.isMultiple()
 }
 
-// GetCount returns the count of possible distinct values for this item.
+// GetCount returns the count of possible distinct values for this division.
 // If not representing multiple values, the count is 1.
 //
 // For instance, a division with the value range of 3-7 has count 5.
@@ -994,7 +994,7 @@ func (div *AddressDivision) Compare(item AddressItem) int {
 	return CountComparator.Compare(div, item)
 }
 
-// CompareSize compares the counts of two divisions, the number of individual values within.
+// CompareSize compares the counts of two items, the number of individual values within.
 //
 // Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one represents more individual values than another.
 //
