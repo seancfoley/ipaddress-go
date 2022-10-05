@@ -45,27 +45,28 @@ func createSection(segments []*AddressDivision, prefixLength PrefixLen, addrType
 	return sect
 }
 
+// callers to this function supply segments with prefix length consistent with the supplied prefix length
 func createSectionMultiple(segments []*AddressDivision, prefixLength PrefixLen, addrType addrType, isMultiple bool) *AddressSection {
 	result := createSection(segments, prefixLength, addrType)
 	result.isMult = isMultiple
 	return result
 }
 
+// callers to this function supply segments with prefix length consistent with the supplied prefix length
 func createInitializedSection(segments []*AddressDivision, prefixLength PrefixLen, addrType addrType) *AddressSection {
-	//TODO check where we call this, because we don't seem to be verifying the division prefixes, so I assume it is called internally? I would have thought initMultAndPrefLen called only when not supplying a prefix length
-	// Most places call it with nil prefix length
-	// replace in section.go line 778 seems to be one place it could be wrong, we should be initializing segments properly
-	// Even places where it is called with nil prefix length, we should be setting each segment ot have nil prefix length, like in the "reverse" methods, toAboveOrBelow method
-
 	result := createSection(segments, prefixLength, addrType)
-	result.initMultAndPrefLen() // assigns isMult and checks prefix length
+	result.initMultiple() // assigns isMult
 	return result
 }
 
+// callers to this function supply segments with prefix length consistent with the supplied prefix length
 func deriveAddressSectionPrefLen(from *AddressSection, segments []*AddressDivision, prefixLength PrefixLen) *AddressSection {
-	return createInitializedSection(segments, prefixLength, from.getAddrType())
+	result := createSection(segments, prefixLength, from.getAddrType())
+	result.initMultiple() // assigns isMult
+	return result
 }
 
+// callers to this function supply segments with prefix length consistent with the prefix length of this section
 func deriveAddressSection(from *AddressSection, segments []*AddressDivision) (res *AddressSection) {
 	return deriveAddressSectionPrefLen(from, segments, from.prefixLength)
 }
@@ -497,7 +498,8 @@ func (section *addressSectionInternal) getSubSection(index, endIndex int) *Addre
 	if !section.isMultiple() {
 		return createSection(segs, newPrefLen, addrType)
 	}
-	return createInitializedSection(segs, newPrefLen, addrType)
+	return deriveAddressSectionPrefLen(section.toAddressSection(), segs, newPrefLen)
+	//return createInitializedSection(segs, newPrefLen, addrType) TODO remove
 }
 
 func (section *addressSectionInternal) getLowestHighestSections() (lower, upper *AddressSection) {
@@ -545,13 +547,13 @@ func (section *addressSectionInternal) createLowestHighestSections() (lower, upp
 	return
 }
 
-// Returns an address for which this address is converted to an address with a 0 as the first bit following the prefix, followed by all ones to the end, and with the prefix length then removed
-// Returns the same address if it has no prefix length
+// Returns the address created by converting this address to an address with a 0 as the first bit following the prefix, followed by all ones to the end, and with the prefix length then removed
+// Returns the same address if it has no prefix length.
 func (section *addressSectionInternal) toMaxLower() *AddressSection {
 	return section.toAboveOrBelow(false)
 }
 
-// Returns an address for which this address is converted to an address with a 1 as the first bit following the prefix, followed by all zeros to the end, and with the prefix length then removed
+// Returns the address created by converting this address to an address with a 1 as the first bit following the prefix, followed by all zeros to the end, and with the prefix length then removed
 // Returns the same address if it has no prefix length
 func (section *addressSectionInternal) toMinUpper() *AddressSection {
 	return section.toAboveOrBelow(true)
@@ -712,6 +714,7 @@ func (section *addressSectionInternal) reverseBytes(perSegment bool) (res *Addre
 	)
 }
 
+// callers to replace have ensures the component sections have consistent prefix lengths for the replacement
 func (section *addressSectionInternal) replace(
 	index,
 	endIndex int,
@@ -719,6 +722,7 @@ func (section *addressSectionInternal) replace(
 	replacementStartIndex,
 	replacementEndIndex int,
 	prefixLen PrefixLen) *AddressSection {
+
 	otherSegmentCount := replacementEndIndex - replacementStartIndex
 	segmentCount := section.GetSegmentCount()
 	totalSegmentCount := segmentCount + otherSegmentCount - (endIndex - index)

@@ -39,12 +39,14 @@ func createGrouping(divs []*AddressDivision, prefixLength PrefixLen, addrType ad
 	return grouping
 }
 
+// callers to this function have segments/divisions with prefix length consistent with the supplied prefix length
 func createGroupingMultiple(divs []*AddressDivision, prefixLength PrefixLen, isMultiple bool) *AddressDivisionGrouping {
 	result := createGrouping(divs, prefixLength, zeroType)
 	result.isMult = isMultiple
 	return result
 }
 
+// callers to this function have segments/divisions with prefix length consistent with the supplied prefix length
 func createInitializedGrouping(divs []*AddressDivision, prefixLength PrefixLen) *AddressDivisionGrouping {
 	result := createGrouping(divs, prefixLength, zeroType)
 	result.initMultiple() // assigns isMult

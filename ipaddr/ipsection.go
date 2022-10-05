@@ -82,23 +82,19 @@ func createIPSectionFromSegs(isIPv4 bool, orig []*IPAddressSegment, prefLen Pref
 	return result
 }
 
-func createInitializedIPSection(segments []*AddressDivision, prefixLength PrefixLen, addrType addrType) *IPAddressSection {
-	//TODO check where we call this, because we don't seem to be verifying the division prefixes inside initMultAndPrefLen, so I assume it is called internally?  I would have thought initMultAndPrefLen called only when not supplying a prefix length
-	result := createIPSection(segments, prefixLength, addrType)
-	result.initMultAndPrefLen() // assigns isMult and checks prefix length
-	return result
-}
-
+// Callers to this function have already initialized the segments to have consistent prefix lengths,
+// but in here we need to determine what that prefix length might be.
 func deriveIPAddressSection(from *IPAddressSection, segments []*AddressDivision) (res *IPAddressSection) {
 	res = createIPSection(segments, nil, from.getAddrType())
 	res.initMultAndPrefLen()
 	return
 }
 
+// Callers to this function have already initialized the segments to have prefix lengths corresponding to the supplied argument prefixLength
+// So we need only check if multiple and assign the prefix length.
 func deriveIPAddressSectionPrefLen(from *IPAddressSection, segments []*AddressDivision, prefixLength PrefixLen) (res *IPAddressSection) {
-	//TODO check where we call this, because we don't seem to be verifying the division prefixes inside initMultAndPrefLen, so I assume it is called internally? I would have thought initMultAndPrefLen called only when not supplying a prefix length
 	res = createIPSection(segments, prefixLength, from.getAddrType())
-	res.initMultAndPrefLen()
+	res.initMultiple()
 	return
 }
 
@@ -706,6 +702,7 @@ func (section *ipAddressSectionInternal) intersect(other *IPAddressSection) (res
 			return
 		}
 	} else if !section.isMultiple() {
+		// no intersection, for single valued section, any intersection would have to be containment
 		return
 	}
 	if section.contains(other) {
@@ -714,6 +711,7 @@ func (section *ipAddressSectionInternal) intersect(other *IPAddressSection) (res
 			return
 		}
 	} else if !other.isMultiple() {
+		// no intersection, for single valued section, any intersection would have to be containment
 		return
 	}
 
@@ -801,6 +799,10 @@ func (section *ipAddressSectionInternal) subtract(other *IPAddressSection) (res 
 		}
 	}
 
+	// As we create each section, the initial segments created by us will have no prefix,
+	// the trailing segments come from the original section, so the resulting section will have prefix-consistent segments.
+	// We do not care what that prefix length is, because at the end of this method we assign a new prefix.
+	// We just need to be sure that we create a valid section, one with prefix-consistent segments.
 	intersections := createSegmentArray(segCount)
 	sections := make([]*IPAddressSection, 0, segCount<<1)
 	for i := 0; i < segCount; i++ {
@@ -975,10 +977,8 @@ func (section *ipAddressSectionInternal) getNetworkSectionLen(networkPrefixLengt
 			return section.toIPAddressSection()
 		}
 		newSegments = createSegmentArray(networkSegmentCount)
-		//if networkSegmentCount > 0 {
 		section.copySubDivisions(0, prefixedSegmentIndex, newSegments)
 		newSegments[prefixedSegmentIndex] = createAddressDivision(lastSeg.deriveNewMultiSeg(lower, upper, segPrefLength))
-		//}
 	} else {
 		newSegments = createSegmentArray(0)
 	}
@@ -1000,7 +1000,8 @@ func (section *ipAddressSectionInternal) getHostSectionLen(networkPrefixLength B
 	}
 	networkPrefixLength = checkBitCount(networkPrefixLength, section.GetBitCount())
 	bitsPerSegment := section.GetBitsPerSegment()
-	prefixedSegmentIndex := getHostSegmentIndex(networkPrefixLength, section.GetBytesPerSegment(), bitsPerSegment)
+	bytesPerSegment := section.GetBytesPerSegment()
+	prefixedSegmentIndex := getHostSegmentIndex(networkPrefixLength, bytesPerSegment, bitsPerSegment)
 	var prefLen PrefixLen
 	var newSegments []*AddressDivision
 	if prefixedSegmentIndex < segmentCount {
@@ -1023,17 +1024,29 @@ func (section *ipAddressSectionInternal) getHostSectionLen(networkPrefixLength B
 		}
 		hostSegmentCount := segmentCount - prefixedSegmentIndex
 		newSegments = createSegmentArray(hostSegmentCount)
-		section.copySubDivisions(prefixedSegmentIndex+1, prefixedSegmentIndex+hostSegmentCount, newSegments[1:])
 		newSegments[0] = createAddressDivision(firstSeg.deriveNewMultiSeg(segLower, segUpper, segPrefLength))
+
+		// the remaining segments each must have zero segment prefix length
+		var zeroPrefixIndex int
+		if section.isPrefixed() {
+			zeroPrefixIndex = getNetworkSegmentIndex(section.GetPrefixLen().bitCount(), bytesPerSegment, bitsPerSegment) + 1
+		} else {
+			zeroPrefixIndex = segmentCount
+		}
+		zeroPrefixIndex -= prefixedSegmentIndex
+		zeroPrefixIndex = max(zeroPrefixIndex, 1)
+		for i := 1; i < zeroPrefixIndex; i++ {
+			seg := section.GetSegment(prefixedSegmentIndex + i)
+			newSegments[i] = createAddressDivision(seg.deriveNewMultiSeg(
+				seg.getSegmentValue(), seg.getUpperSegmentValue(), cacheBitCount(0)))
+		}
+		// the rest already have zero segment prefix length, just copy them
+		section.copySubDivisions(prefixedSegmentIndex+zeroPrefixIndex, prefixedSegmentIndex+hostSegmentCount, newSegments[zeroPrefixIndex:])
 	} else {
 		prefLen = cacheBitCount(0)
 		newSegments = createSegmentArray(0)
 	}
-	addrType := section.getAddrType()
-	if !section.isMultiple() {
-		return createIPSection(newSegments, prefLen, addrType)
-	}
-	return createInitializedIPSection(newSegments, prefLen, addrType)
+	return deriveIPAddressSectionPrefLen(section.toIPAddressSection(), newSegments, prefLen)
 }
 
 func (section *ipAddressSectionInternal) getSubnetSegments( // called by methods to adjust/remove/set prefix length, masking methods, zero host and zero network methods
@@ -1196,7 +1209,7 @@ func (section *ipAddressSectionInternal) replaceLen(
 					// and we also remove the prefix length from this
 					additionalSegs := segmentCount - endIndex
 					thizz = section.getSubSection(0, startIndex)
-					//return section.ReplaceLen(index, index, other, 0, other.GetSegmentCount())
+					//return section.ReplaceLen(index, index, other, 0, other.GetSegmentCount()) TODO remove
 
 					replacement = replacement.insert(
 						replacementEndIndex, section.getSubSection(endIndex, segmentCount).ToIP(), segmentToBitsShift)
@@ -1760,6 +1773,7 @@ func (section *IPAddressSection) GetHostSection() *IPAddressSection {
 
 // GetHostSectionLen returns a subsection containing the segments with the host of the address section, the bits beyond the given CIDR network prefix length.
 // The returned section will have only as many segments as needed to contain the host.
+// The returned section will have an assigned prefix length indicating the beginning of the host.
 func (section *IPAddressSection) GetHostSectionLen(prefLen BitCount) *IPAddressSection {
 	return section.getHostSectionLen(prefLen)
 }

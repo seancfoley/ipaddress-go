@@ -466,6 +466,7 @@ func (section *IPv4AddressSection) GetHostSection() *IPv4AddressSection {
 
 // GetHostSectionLen returns a subsection containing the segments with the host of the address section, the bits beyond the given CIDR network prefix length.
 // The returned section will have only as many segments as needed to contain the host.
+// The returned section will have an assigned prefix length indicating the beginning of the host.
 func (section *IPv4AddressSection) GetHostSectionLen(prefLen BitCount) *IPv4AddressSection {
 	return section.getHostSectionLen(prefLen).ToIPv4()
 }

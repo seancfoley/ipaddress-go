@@ -235,8 +235,6 @@ func maxSegInt(a, b SegInt) SegInt {
 
 // TODO generics: replace all uses of atomicStorePointer with atomic.Pointer
 
-// TODO use git diff to check if we missed any godoc
-
 func atomicLoadPointer(dataLoc *unsafe.Pointer) unsafe.Pointer {
 	return atomic.LoadPointer(dataLoc)
 }
