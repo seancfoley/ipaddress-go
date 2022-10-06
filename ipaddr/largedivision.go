@@ -98,9 +98,30 @@ func newLargeDivValuesDivIntUnchecked(value, upperValue DivInt, prefLen PrefixLe
 	if value == upperValue {
 		result.value, result.upperValue = val, val
 	} else {
+		result.isMult = true
 		result.value, result.upperValue = val, new(big.Int).SetUint64(uint64(upperValue))
 	}
 	result.maxValue = setMax(result.upperValue, bitCount)
+	var isSinglePrefBlock bool
+	result.isPrefixBlock, isSinglePrefBlock, result.upperValueMasked =
+		setCachedPrefixValues(result.value, result.upperValue, result.maxValue, prefLen, bitCount)
+	if isSinglePrefBlock {
+		result.cache.isSinglePrefBlock = &trueVal
+	} else {
+		result.cache.isSinglePrefBlock = &falseVal
+	}
+	return result
+}
+
+func newLargeDivValuesUnchecked(value, upperValue, maxValue *BigDivInt, isMult bool, prefLen PrefixLen, bitCount BitCount) *largeDivValues {
+	result := &largeDivValues{
+		prefLen:    prefLen,
+		bitCount:   bitCount,
+		value:      value,
+		upperValue: upperValue,
+		maxValue:   maxValue,
+		isMult:     isMult,
+	}
 	var isSinglePrefBlock bool
 	result.isPrefixBlock, isSinglePrefBlock, result.upperValueMasked =
 		setCachedPrefixValues(result.value, result.upperValue, result.maxValue, prefLen, bitCount)
@@ -207,6 +228,10 @@ func (div *largeDivValues) deriveNew(val, upperVal DivInt, prefLen PrefixLen) di
 	return newLargeDivValuesDivIntUnchecked(val, upperVal, prefLen, div.bitCount)
 }
 
+func (div *largeDivValues) derivePrefixed(prefLen PrefixLen) divisionValues {
+	return newLargeDivValuesUnchecked(div.value, div.upperValue, div.maxValue, div.isMult, prefLen, div.bitCount)
+}
+
 func (div *largeDivValues) deriveNewMultiSeg(val, upperVal SegInt, prefLen PrefixLen) divisionValues {
 	return newLargeDivValuesDivIntUnchecked(DivInt(val), DivInt(upperVal), prefLen, div.bitCount)
 }
@@ -217,7 +242,7 @@ func (div *largeDivValues) deriveNewSeg(val SegInt, prefLen PrefixLen) divisionV
 
 var _ divisionValues = &largeDivValues{}
 
-func createLargeAddressDiv(vals *largeDivValues, defaultRadix int) *IPAddressLargeDivision {
+func createLargeAddressDiv(vals divisionValues, defaultRadix int) *IPAddressLargeDivision {
 	res := &IPAddressLargeDivision{
 		addressLargeDivInternal{
 			addressDivisionBase: addressDivisionBase{vals},
@@ -232,6 +257,10 @@ func createLargeAddressDiv(vals *largeDivValues, defaultRadix int) *IPAddressLar
 type addressLargeDivInternal struct {
 	addressDivisionBase
 	defaultRadix *BigDivInt
+}
+
+func (div *addressLargeDivInternal) getDefaultRadix() int {
+	return int(div.defaultRadix.Int64())
 }
 
 func (div *addressLargeDivInternal) toLargeAddressDivision() *IPAddressLargeDivision {

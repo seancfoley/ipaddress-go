@@ -62,8 +62,7 @@ func (seg *ipAddressSegmentInternal) IsSinglePrefixBlock() bool {
 
 func (seg *ipAddressSegmentInternal) withoutPrefixLen() *IPAddressSegment {
 	if seg.isPrefixed() {
-		vals := seg.deriveNewMultiSeg(seg.GetSegmentValue(), seg.GetUpperSegmentValue(), nil)
-		return createAddressDivision(vals).ToIP()
+		return createAddressDivision(seg.derivePrefixed(nil)).ToIP()
 	}
 	return seg.toIPAddressSegment()
 }

@@ -136,6 +136,10 @@ func (seg *ipv6SegmentValues) deriveNew(val, upperVal DivInt, prefLen PrefixLen)
 	return newIPv6SegmentPrefixedValues(IPv6SegInt(val), IPv6SegInt(upperVal), prefLen)
 }
 
+func (seg *ipv6SegmentValues) derivePrefixed(prefLen PrefixLen) divisionValues {
+	return newIPv6SegmentPrefixedValues(seg.value, seg.upperValue, prefLen)
+}
+
 func (seg *ipv6SegmentValues) deriveNewSeg(val SegInt, prefLen PrefixLen) divisionValues {
 	return newIPv6SegmentPrefixedVal(IPv6SegInt(val), prefLen)
 }

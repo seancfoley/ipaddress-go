@@ -3973,6 +3973,7 @@ func (t ipAddressTester) testZeroHost(addrString, zeroHostString string) {
 	//	seg := addr.GetSegment(i)
 	//	for j := 0; j < 2; j++ {
 	//TODO LATER consider re-adding toZeroHost on segments, and then if you do, put back the old tests here using it
+	// currently the section toZeroHost uses getSubnetSegments with masks
 	//IPAddressSegment newSeg = seg.toZeroHost();
 	//if(seg.isPrefixed()) {
 	//	Integer segPrefix = seg.getSegmentPrefixLength();

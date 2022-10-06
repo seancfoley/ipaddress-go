@@ -20,11 +20,11 @@ func createLargeGrouping(divs []*IPAddressLargeDivision) *IPAddressLargeDivision
 	return grouping
 }
 
-func createInitializedLargeGrouping(divs []*IPAddressLargeDivision) *IPAddressLargeDivisionGrouping {
-	result := createLargeGrouping(divs)
-	result.initMultAndPrefLen()
-	return result
-}
+//func createInitializedLargeGrouping(divs []*IPAddressLargeDivision) *IPAddressLargeDivisionGrouping {
+//	result := createLargeGrouping(divs)
+//	result.initMultAndPrefLen()
+//	return result
+//}
 
 type largeDivisionGroupingInternal struct {
 	addressDivisionGroupingBase
@@ -407,7 +407,54 @@ func (grouping *largeDivisionGroupingInternal) copyDivisions(divs []*IPAddressLa
 // To create address sections or addresses, use the constructors that are specific to the address version or type.
 // The IPAddressLargeDivision instances can be created with the NewLargeIPDivision, NewLargeIPRangeDivision, NewLargeIPPrefixDivision, NewLargeIPRangePrefixDivision functions.
 func NewIPAddressLargeDivGrouping(divs []*IPAddressLargeDivision) *IPAddressLargeDivisionGrouping {
-	return createInitializedLargeGrouping(cloneLargeDivs(divs))
+	// We do not check for prefix subnet because an explicit prefix length must be supplied for that
+	newDivs, newPref, isMult := normalizeLargeDivisions(divs)
+	result := createLargeGrouping(newDivs)
+	result.isMult = isMult
+	result.prefixLength = newPref
+	return result
+}
+
+func normalizeLargeDivisions(divs []*IPAddressLargeDivision) (newDivs []*IPAddressLargeDivision, newPref PrefixLen, isMultiple bool) {
+	divCount := len(divs)
+	newDivs = make([]*IPAddressLargeDivision, 0, divCount)
+	var previousDivPrefixed bool
+	var bits BitCount
+	for _, div := range divs {
+		if div == nil || div.GetBitCount() == 0 {
+			// nil divisions are divisions with zero bit-length, which we ignore
+			continue
+		}
+		var newDiv *IPAddressLargeDivision
+		// The final prefix length is the minimum amongst the divisions' own prefixes
+		divPrefix := div.getDivisionPrefixLength()
+		divIsPrefixed := divPrefix != nil
+		if previousDivPrefixed {
+			if !divIsPrefixed || divPrefix.bitCount() != 0 {
+				newDiv = createLargeAddressDiv(div.derivePrefixed(cacheBitCount(0)), div.getDefaultRadix()) // change prefix to 0
+			} else {
+				newDiv = div // div prefix is already 0
+			}
+		} else {
+			if divIsPrefixed {
+				if divPrefix.bitCount() == 0 && len(newDivs) > 0 {
+					// normalize boundaries by looking back
+					lastDiv := newDivs[len(newDivs)-1]
+					if !lastDiv.IsPrefixed() {
+						newDivs[len(newDivs)-1] = createLargeAddressDiv(
+							lastDiv.derivePrefixed(cacheBitCount(lastDiv.GetBitCount())), div.getDefaultRadix())
+					}
+				}
+				newPref = cacheBitCount(bits + divPrefix.bitCount())
+				previousDivPrefixed = true
+			}
+			newDiv = div
+		}
+		newDivs = append(newDivs, newDiv)
+		bits += newDiv.GetBitCount()
+		isMultiple = isMultiple || newDiv.isMultiple()
+	}
+	return
 }
 
 type IPAddressLargeDivisionGrouping struct {

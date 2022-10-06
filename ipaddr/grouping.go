@@ -973,17 +973,60 @@ func (grouping *addressDivisionGroupingInternal) GetBlockCount(divisionCount int
 	return grouping.addressDivisionGroupingBase.GetBlockCount(divisionCount)
 }
 
+//// end needed for godoc / pkgsite
+
 // NewDivisionGrouping creates an arbitrary grouping of divisions.
 // To create address sections or addresses, use the constructors that are specific to the address version or type.
 // The AddressDivision instances can be created with the NewDivision, NewRangeDivision, NewPrefixDivision or NewRangePrefixDivision functions.
 func NewDivisionGrouping(divs []*AddressDivision) *AddressDivisionGrouping {
-	//TODO we need to verify the prefix length order in the segments -
-	// which, regardless of whether these are IP dvisions, need to follow the proper order,
-	// assuming they even store a prefix length
-	return createInitializedGrouping(cloneDivs(divs), nil)
+	newDivs, newPref, isMult := normalizeDivisions(divs)
+	result := createGrouping(newDivs, newPref, zeroType)
+	result.isMult = isMult
+	return result
 }
 
-//// end needed for godoc / pkgsite
+func normalizeDivisions(divs []*AddressDivision) (newDivs []*AddressDivision, newPref PrefixLen, isMultiple bool) {
+	divCount := len(divs)
+	newDivs = make([]*AddressDivision, 0, divCount)
+	var previousDivPrefixed bool
+	var bits BitCount
+	for _, div := range divs {
+		if div == nil || div.GetBitCount() == 0 {
+			// nil divisions are divisions with zero bit-length, which we ignore
+			continue
+		}
+		var newDiv *AddressDivision
+		// The final prefix length is the minimum amongst the divisions' own prefixes
+		divPrefix := div.getDivisionPrefixLength()
+		divIsPrefixed := divPrefix != nil
+		if previousDivPrefixed {
+			if !divIsPrefixed || divPrefix.bitCount() != 0 {
+				newDiv = createAddressDivision(
+					div.derivePrefixed(cacheBitCount(0))) // change prefix to 0
+			} else {
+				newDiv = div // div prefix is already 0
+			}
+		} else {
+			if divIsPrefixed {
+				if divPrefix.bitCount() == 0 && len(newDivs) > 0 {
+					// normalize boundaries by looking back
+					lastDiv := newDivs[len(newDivs)-1]
+					if !lastDiv.isPrefixed() {
+						newDivs[len(newDivs)-1] = createAddressDivision(
+							lastDiv.derivePrefixed(cacheBitCount(lastDiv.GetBitCount())))
+					}
+				}
+				newPref = cacheBitCount(bits + divPrefix.bitCount())
+				previousDivPrefixed = true
+			}
+			newDiv = div
+		}
+		newDivs = append(newDivs, newDiv)
+		bits += newDiv.GetBitCount()
+		isMultiple = isMultiple || newDiv.isMultiple()
+	}
+	return
+}
 
 // AddressDivisionGrouping objects consist of a series of AddressDivision objects, each division containing a sequential range of values.
 //

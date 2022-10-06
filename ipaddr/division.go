@@ -33,8 +33,13 @@ type DivInt = uint64
 const DivIntSize = 64
 
 type divderiver interface {
-	// deriveNew produces a new division with the same bit count as the old
+	// deriveNew produces a new division with the same bit count as the old,
+	// but with the new values and prefix length
 	deriveNew(val, upperVal DivInt, prefLen PrefixLen) divisionValues
+
+	// derivePrefixed produces a new division with the same bit count and values as the old,
+	// but with the new prefix length
+	derivePrefixed(prefLen PrefixLen) divisionValues
 }
 
 type divIntVals interface {
@@ -49,7 +54,10 @@ func newDivValues(value, upperValue DivInt, prefLen PrefixLen, bitCount BitCount
 	if value > upperValue {
 		value, upperValue = upperValue, value
 	}
-	if (1 << uint(bitCount)) <= upperValue {
+	if bitCount <= 0 {
+		value = 0
+		upperValue = 0
+	} else if (1 << uint(bitCount)) <= upperValue { // upperValue too big
 		max := ^(^DivInt(0) << uint(bitCount))
 		value &= max
 		upperValue &= max
@@ -175,10 +183,6 @@ func (div *divIntValues) getUpperDivisionValue() DivInt {
 	return div.upperValue
 }
 
-func (div *divIntValues) deriveNew(val, upperVal DivInt, prefLen PrefixLen) divisionValues {
-	return newRangePrefixDivision(val, upperVal, prefLen, div.bitCount)
-}
-
 func (div *divIntValues) getSegmentValue() SegInt {
 	return SegInt(div.value)
 }
@@ -187,12 +191,21 @@ func (div *divIntValues) getUpperSegmentValue() SegInt {
 	return SegInt(div.upperValue)
 }
 
+func (div *divIntValues) deriveNew(val, upperVal DivInt, prefLen PrefixLen) divisionValues {
+	return newDivValuesUnchecked(val, upperVal, prefLen, div.bitCount)
+}
+
+func (div *divIntValues) derivePrefixed(prefLen PrefixLen) divisionValues {
+	return newDivValuesUnchecked(div.value, div.upperValue, prefLen, div.bitCount)
+}
+
 func (div *divIntValues) deriveNewMultiSeg(val, upperVal SegInt, prefLen PrefixLen) divisionValues {
-	return newRangePrefixDivision(DivInt(val), DivInt(upperVal), prefLen, div.bitCount)
+	return newDivValuesUnchecked(DivInt(val), DivInt(upperVal), prefLen, div.bitCount)
 }
 
 func (div *divIntValues) deriveNewSeg(val SegInt, prefLen PrefixLen) divisionValues {
-	return newPrefixDivision(DivInt(val), prefLen, div.bitCount)
+	value := DivInt(val)
+	return newDivValuesUnchecked(value, value, prefLen, div.bitCount)
 }
 
 var _ divisionValues = &divIntValues{}

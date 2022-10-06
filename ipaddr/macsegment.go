@@ -131,6 +131,10 @@ func (seg *macSegmentValues) deriveNew(val, upperVal DivInt, _ PrefixLen) divisi
 	return newMACSegmentValues(MACSegInt(val), MACSegInt(upperVal))
 }
 
+func (seg *macSegmentValues) derivePrefixed(_ PrefixLen) divisionValues {
+	return seg
+}
+
 func (seg *macSegmentValues) deriveNewSeg(val SegInt, _ PrefixLen) divisionValues {
 	return newMACSegmentVal(MACSegInt(val))
 }

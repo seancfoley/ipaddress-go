@@ -108,6 +108,10 @@ func (seg *ipv4SegmentValues) deriveNew(val, upperVal DivInt, prefLen PrefixLen)
 	return newIPv4SegmentPrefixedValues(IPv4SegInt(val), IPv4SegInt(upperVal), prefLen)
 }
 
+func (seg *ipv4SegmentValues) derivePrefixed(prefLen PrefixLen) divisionValues {
+	return newIPv4SegmentPrefixedValues(seg.value, seg.upperValue, prefLen)
+}
+
 func (seg *ipv4SegmentValues) deriveNewSeg(val SegInt, prefLen PrefixLen) divisionValues {
 	return newIPv4SegmentPrefixedVal(IPv4SegInt(val), prefLen)
 }
@@ -762,7 +766,6 @@ func newIPv4SegmentPrefixedValues(value, upperValue IPv4SegInt, prefLen PrefixLe
 				cache := prefixBlocksCacheIPv4
 				prefixIndex := segmentPrefixLength
 				block := (*ipv4DivsBlock)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&cache[prefixIndex]))))
-				//block := cache[prefixIndex]
 				var result *ipv4SegmentValues
 				if block == nil {
 					block = &ipv4DivsBlock{make([]ipv4SegmentValues, 1<<uint(segmentPrefixLength))}

@@ -345,7 +345,6 @@ func (section *ipAddressSectionInternal) toZeroHost(boundariesOnly bool) (res *I
 		return
 	}
 	return section.createZeroHost(prefLen, boundariesOnly)
-	//return sect.ToIP(), err
 }
 
 // boundariesOnly: whether we care if the masking works for all values in a range.
@@ -382,7 +381,7 @@ func (section *ipAddressSectionInternal) toZeroHostLen(prefixLength BitCount) (*
 	mask := section.addrType.getIPNetwork().GetNetworkMask(prefixLength)
 	return section.getSubnetSegments(
 		minIndex,
-		nil,
+		nil, // intentionally no prefix length
 		true,
 		section.getDivision,
 		func(i int) SegInt { return mask.GetSegment(i).GetSegmentValue() })
@@ -1037,8 +1036,7 @@ func (section *ipAddressSectionInternal) getHostSectionLen(networkPrefixLength B
 		zeroPrefixIndex = max(zeroPrefixIndex, 1)
 		for i := 1; i < zeroPrefixIndex; i++ {
 			seg := section.GetSegment(prefixedSegmentIndex + i)
-			newSegments[i] = createAddressDivision(seg.deriveNewMultiSeg(
-				seg.getSegmentValue(), seg.getUpperSegmentValue(), cacheBitCount(0)))
+			newSegments[i] = createAddressDivision(seg.derivePrefixed(cacheBitCount(0)))
 		}
 		// the rest already have zero segment prefix length, just copy them
 		section.copySubDivisions(prefixedSegmentIndex+zeroPrefixIndex, prefixedSegmentIndex+hostSegmentCount, newSegments[zeroPrefixIndex:])
@@ -1209,8 +1207,6 @@ func (section *ipAddressSectionInternal) replaceLen(
 					// and we also remove the prefix length from this
 					additionalSegs := segmentCount - endIndex
 					thizz = section.getSubSection(0, startIndex)
-					//return section.ReplaceLen(index, index, other, 0, other.GetSegmentCount()) TODO remove
-
 					replacement = replacement.insert(
 						replacementEndIndex, section.getSubSection(endIndex, segmentCount).ToIP(), segmentToBitsShift)
 					replacementEndIndex += additionalSegs
@@ -2409,6 +2405,7 @@ func applyPrefixToSegments(
 	}
 }
 
+// called prior to check for prefix subnet.  The segments must be created first before that can happen.
 func createSegmentsUint64(
 	segLen int,
 	highBytes,
@@ -2447,6 +2444,7 @@ func createSegmentsUint64(
 	return newSegs
 }
 
+// called prior to check for prefix subnet.  The segments must be created first before that can happen.
 func createSegments(
 	lowerValueProvider,
 	upperValueProvider SegmentValueProvider,

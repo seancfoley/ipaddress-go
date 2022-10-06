@@ -4112,7 +4112,7 @@ func (strValidator) validateHostName(fromHost *HostName, validationOptions addrs
 }
 
 func checkSpecialHosts(str string, addrLen int, hostQualifier *parsedHostIdentifierStringQualifier) (emb embeddedAddress) {
-	// TODO LATER special hosts
+	// TODO NOW LATER special hosts
 	//		try {
 	//			String suffix = IPv6Address.UNC_SUFFIX;
 	//			//note that by using addrLen we are omitting any terminating prefix

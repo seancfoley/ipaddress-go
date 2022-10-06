@@ -259,8 +259,7 @@ func (seg *addressSegmentInternal) getUpper() *AddressSegment {
 
 func (seg *addressSegmentInternal) withoutPrefixLen() *AddressSegment {
 	if seg.isPrefixed() {
-		vals := seg.deriveNewMultiSeg(seg.GetSegmentValue(), seg.GetUpperSegmentValue(), nil)
-		return createAddressDivision(vals).ToSegmentBase()
+		return createAddressDivision(seg.derivePrefixed(nil)).ToSegmentBase()
 	}
 	return seg.toAddressSegment()
 }
@@ -421,11 +420,7 @@ func (seg *addressSegmentInternal) ToHexString(with0xPrefix bool) (string, addre
 func (seg *addressSegmentInternal) reverseMultiValSeg(perByte bool) (res *AddressSegment, err addrerr.IncompatibleAddressError) {
 	if isReversible := seg.isReversibleRange(perByte); isReversible {
 		// all reversible multi-valued segs reverse to the same segment
-		if seg.isPrefixed() {
-			res = createAddressSegment(seg.deriveNewMultiSeg(seg.GetSegmentValue(), seg.GetUpperSegmentValue(), nil))
-			return
-		}
-		res = seg.toAddressSegment()
+		res = seg.withoutPrefixLen()
 		return
 	}
 	err = &incompatibleAddressError{addressError{key: "ipaddress.error.reverseRange"}}

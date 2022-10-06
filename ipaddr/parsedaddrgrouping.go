@@ -320,7 +320,7 @@ func isPrefixSubnet(
 	segmentMaxValue SegInt,
 	prefLen BitCount,
 	subnetOption subnetOption) bool {
-	//zero := BitCount(0)
+
 	if prefLen < 0 {
 		prefLen = 0
 	} else {
