@@ -1729,8 +1729,6 @@ func (addr *IPAddress) IsMulticast() bool {
 	return false
 }
 
-// ToUNCHostName //TODO LATER ToUNCHostName since we are not yet parsing this
-
 func versionsMatch(one, two *IPAddress) bool {
 	return one.getAddrType() == two.getAddrType()
 }

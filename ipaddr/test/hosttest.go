@@ -445,6 +445,7 @@ func (t hostTester) run() {
 	portNum1 := ipaddr.PortInt(1)
 	portNum3 := ipaddr.PortInt(3)
 	portNum33 := ipaddr.PortInt(33)
+	portNum35 := ipaddr.PortInt(35)
 	portNum45 := ipaddr.PortInt(45)
 	portNum80 := ipaddr.PortInt(80)
 	portNum123 := ipaddr.PortInt(123)
@@ -453,28 +454,27 @@ func (t hostTester) run() {
 	port1 := ToPort(portNum1)
 	port3 := ToPort(portNum3)
 	port33 := ToPort(portNum33)
+	port35 := ToPort(portNum35)
 	port45 := ToPort(portNum45)
 	port80 := ToPort(portNum80)
 	port123 := ToPort(portNum123)
 	port48888 := ToPort(portNum48888)
 
-	//TODO LATER ipv6 literal addresses from hosts
-	//t.testHostAddressPortZone("aa-bb-cc-dd-ee-ff-aaaa-bbbb.ipv6-literal.net", "aa:bb:cc:dd:ee:ff:aaaa:bbbb", nil, "")
-	//t.testHostAddress("aa-bb-cc-dd-ee-ff-aaaa-bbbbseth0.ipv6-literal.net", "aa:bb:cc:dd:ee:ff:aaaa:bbbb", "aa:bb:cc:dd:ee:ff:aaaa:bbbb%eth0", nil, "eth0")
+	t.testHostAddressPortZone("aa-bb-cc-dd-ee-ff-aaaa-bbbb.ipv6-literal.net", "aa:bb:cc:dd:ee:ff:aaaa:bbbb", nil, "")
+	t.testHostAddress("aa-bb-cc-dd-ee-ff-aaaa-bbbbseth0.ipv6-literal.net", "aa:bb:cc:dd:ee:ff:aaaa:bbbb", "aa:bb:cc:dd:ee:ff:aaaa:bbbb%eth0", nil, "eth0")
 	t.testHostPortZone("aa-bb-cc-dd-ee-ff.ipv6-literal.net", "aa-bb-cc-dd-ee-ff.ipv6-literal.net", nil, "") //not a valid address, too few segments, but a valid host
 	t.testHostPortZone("aa-Bb-cc-dd-ee-FF.ipv6-literal.net", "aa-bb-cc-dd-ee-ff.ipv6-literal.net", nil, "") //not a valid address, too few segments, but a valid host
-	//TODO LATER ipv6 literal addresses from hosts
-	//t.testHostAddressPortZone("aa-bb-cc-dd-ee-ff-aaaa-bbb.ipv6-literal.net", "aa:bb:cc:dd:ee:ff:aaaa:bbb", nil, "")
-	//t.testHostAddressPortZone("aa-Bb-cc-dd-ee-FF-aaaa-bbb.ipv6-literal.net", "aa:bb:cc:dd:ee:ff:aaaa:bbb", nil, "")
-	//t.testHostAddressPortZone("f.f.f.f.e.e.0.0.d.d.d.d.c.c.c.c.b.b.b.b.a.a.a.a.b.b.b.b.c.c.c.c.ip6.arpa", "cccc:bbbb:aaaa:bbbb:cccc:dddd:ee:ffff", nil, "")
-	//t.testHostAddressPortZone("f.f.f.f.e.e.0.0.d.d.d.d.c.c.c.c.b.b.b.b.a.a.a.a.b.b.b.b.c.c.c.c.ip6.int", "cccc:bbbb:aaaa:bbbb:cccc:dddd:ee:ffff", nil, "")
-	//t.testHostAddressPortZone("f.f.f.f.e.e.0.0.d.d.d.d.c.c.c.c.b.b.b.b.a.a.a.a.b.b.b.b.c.c.c.c.ip6.int:45", "cccc:bbbb:aaaa:bbbb:cccc:dddd:ee:ffff", port45, "")
-	//t.testHostAddressPortZone("F.f.f.F.e.e.0.0.d.D.d.d.c.c.c.c.b.b.b.b.a.a.a.a.b.b.b.b.c.c.c.C.ip6.int:45", "cccc:bbbb:aaaa:bbbb:cccc:dddd:ee:ffff", port45, "")
+	t.testHostAddressPortZone("aa-bb-cc-dd-ee-ff-aaaa-bbb.ipv6-literal.net", "aa:bb:cc:dd:ee:ff:aaaa:bbb", nil, "")
+	t.testHostAddressPortZone("aa-Bb-cc-dd-ee-FF-aaaa-bbb.ipv6-literal.net", "aa:bb:cc:dd:ee:ff:aaaa:bbb", nil, "")
+	t.testHostAddressPortZone("f.f.f.f.e.e.0.0.d.d.d.d.c.c.c.c.b.b.b.b.a.a.a.a.b.b.b.b.c.c.c.c.ip6.arpa", "cccc:bbbb:aaaa:bbbb:cccc:dddd:ee:ffff", nil, "")
+	t.testHostAddressPortZone("f.f.f.f.e.e.0.0.d.d.d.d.c.c.c.c.b.b.b.b.a.a.a.a.b.b.b.b.c.c.c.c.ip6.int", "cccc:bbbb:aaaa:bbbb:cccc:dddd:ee:ffff", nil, "")
+	t.testHostAddressPortZone("f.f.f.f.e.e.0.0.d.d.d.d.c.c.c.c.b.b.b.b.a.a.a.a.b.b.b.b.c.c.c.c.ip6.int:45", "cccc:bbbb:aaaa:bbbb:cccc:dddd:ee:ffff", port45, "")
+	t.testHostAddressPortZone("F.f.f.F.e.e.0.0.d.D.d.d.c.c.c.c.b.b.b.b.a.a.a.a.b.b.b.b.c.c.c.C.ip6.int:45", "cccc:bbbb:aaaa:bbbb:cccc:dddd:ee:ffff", port45, "")
 	t.testHostPortZone("f.F.f.f.F.e.e.0.0.d.D.d.d.c.c.c.c.b.b.b.b.a.a.a.a.b.b.b.b.c.c.c.C.ip6.int:45", "f.f.f.f.f.e.e.0.0.d.d.d.d.c.c.c.c.b.b.b.b.a.a.a.a.b.b.b.b.c.c.c.c.ip6.int", port45, "") //not a valid address, but a valid host
-	//TODO LATER ipv6 literal addresses from hosts
-	//t.testHostAddressPortZone("255.22.2.111.in-addr.arpa", "111.2.22.255", nil, "")
-	//t.testHostAddressPortZone("255.22.2.111.in-addr.arpa:35", "111.2.22.255", port35, "")
-	//t.testHostPortZone("255.22.2.111.3.in-addr.arpa:35", "255.22.2.111.3.in-addr.arpa", port35, "")
+
+	t.testHostAddressPortZone("255.22.2.111.in-addr.arpa", "111.2.22.255", nil, "")
+	t.testHostAddressPortZone("255.22.2.111.in-addr.arpa:35", "111.2.22.255", port35, "")
+	t.testHostPortZone("255.22.2.111.3.in-addr.arpa:35", "255.22.2.111.3.in-addr.arpa", port35, "")
 	t.testHostAddressPortZone("1.2.2.1:33", "1.2.2.1", port33, "")
 	t.testHostAddressPortZone("[::1]:33", "::1", port33, "")
 	t.testHostAddressPortZone("::1:33", "::1:33", nil, "")

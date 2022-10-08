@@ -1186,13 +1186,15 @@ func (t testBase) testStrings(w *ipaddr.IPAddressString,
 	t.confirmAddrStrings(ipAddr, c, canonical, s, cidr, n, nw, caw, cw, binary)
 	if ipAddr.IsIPv6() {
 		t.confirmAddrStrings(ipAddr, full)
-		//TODO LATER reinstate //t.confirmHostStrings(ipAddr, true, rDNS);//these two are valid hosts with embedded addresses
+		t.confirmHostStrings(ipAddr, true, rDNS) //these two are valid hosts with embedded addresses
+		//TODO LATER reinstate
 		//t.confirmHostStrings(ipAddr, false, unc);//these two are valid hosts with embedded addresses
 	} else {
 		params := new(addrstrparam.IPAddressStringParamsBuilder).Allow_inet_aton(false).ToParams()
 		fullAddrString := ipaddr.NewIPAddressStringParams(full, params)
 		t.confirmIPAddrStrings(ipAddr, fullAddrString)
-		//TODO LATER reinstate //t.confirmHostStrings(ipAddr, false, rDNS, unc);//these two are valid hosts with embedded addresses
+		//TODO LATER reinstate
+		//t.confirmHostStrings(ipAddr, false, rDNS, unc) //these two are valid hosts with embedded addresses
 	}
 	t.confirmHostStrings(ipAddr, false, c, canonical, s, cidr, n, nw, caw, cw)
 	if ipAddr.IsIPv6() {

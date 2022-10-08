@@ -149,9 +149,10 @@ func (strValidator) validateIPAddressStr(fromString *IPAddressString, validation
 	if err = validateIPAddress(validationOptions, str, 0, len(str), pa.getIPAddressParseData(), false); err == nil {
 		if err = parseAddressQualifier(str, validationOptions, nil, pa.getIPAddressParseData(), len(str)); err == nil {
 			prov, err = chooseIPAddressProvider(fromString, str, validationOptions, &pa)
+		} else {
+			prov = getInvalidProvider(validationOptions)
 		}
-	}
-	if err != nil && prov == nil {
+	} else {
 		prov = getInvalidProvider(validationOptions)
 	}
 	return
@@ -175,6 +176,8 @@ func (strValidator) validateMACAddressStr(fromString *MACAddressString, validati
 	if err = validateMACAddress(validationOptions, str, 0, len(str), pa.getMACAddressParseData()); err == nil {
 		addressParseData := pa.getAddressParseData()
 		prov, err = chooseMACAddressProvider(fromString, validationOptions, &pa, addressParseData)
+	} else {
+		prov = getInvalidMACProvider(validationOptions)
 	}
 	if err != nil && prov == nil {
 		prov = getInvalidMACProvider(validationOptions)
@@ -2684,11 +2687,9 @@ func chooseMACAddressProvider(fromString *MACAddressString,
 			res = &macAddressAllProvider{validationOptions: validationOptions, creationLock: &sync.Mutex{}}
 		}
 	} else {
-		err = checkMACSegments(
-			fromString.str,
-			validationOptions,
-			pa)
-		res = pa
+		if err = checkMACSegments(fromString.str, validationOptions, pa); err == nil {
+			res = pa
+		}
 	}
 	return
 }
@@ -2787,8 +2788,9 @@ func chooseIPAddressProvider(
 			err = &addressStringError{addressError{str: fullAddr, key: "ipaddress.error.only.ipv6.has.zone"}}
 			return
 		}
-		err = checkSegments(fullAddr, validationOptions, parseData.getIPAddressParseData())
-		res = parseData
+		if err = checkSegments(fullAddr, validationOptions, parseData.getIPAddressParseData()); err == nil {
+			res = parseData
+		}
 	}
 	return
 }
@@ -4111,194 +4113,247 @@ func (strValidator) validateHostName(fromHost *HostName, validationOptions addrs
 	return
 }
 
+var defaultUncOpts = new(addrstrparam.IPAddressStringParamsBuilder).
+	AllowIPv4(false).AllowEmpty(false).AllowMask(false).AllowPrefix(false).ToParams()
+
+var reverseDNSIPv4Opts = new(addrstrparam.IPAddressStringParamsBuilder).
+	AllowIPv6(false).AllowEmpty(false).AllowMask(false).AllowPrefix(false).
+	GetIPv4AddressParamsBuilder().Allow_inet_aton(false).GetParentBuilder().ToParams()
+
+var reverseDNSIPv6Opts = new(addrstrparam.IPAddressStringParamsBuilder).
+	AllowIPv4(false).AllowEmpty(false).AllowMask(false).AllowPrefix(false).
+	GetIPv6AddressParamsBuilder().AllowMixed(false).AllowZone(false).GetParentBuilder().ToParams()
+
 func checkSpecialHosts(str string, addrLen int, hostQualifier *parsedHostIdentifierStringQualifier) (emb embeddedAddress) {
-	// TODO NOW LATER special hosts
-	//		try {
-	//			String suffix = IPv6Address.UNC_SUFFIX;
-	//			//note that by using addrLen we are omitting any terminating prefix
-	//			int suffixStartIndex;
-	//			if(addrLen > suffix.length() && //get the address for the UNC IPv6 host
+	suffix := IPv6UncSuffix
+	//note that by using addrLen we are omitting any terminating prefix
+	if addrLen > len(suffix) {
+		suffixStartIndex := addrLen - len(suffix)
+		//get the address for the UNC IPv6 host
+		if strings.EqualFold(str[suffixStartIndex:suffixStartIndex+len(suffix)], suffix) {
+			var builder strings.Builder
+			beginStr := str[:suffixStartIndex]
+			for i := 0; i < len(beginStr); i++ {
+				c := beginStr[i]
+				if c == IPv6UncSegmentSeparator {
+					c = IPv6SegmentSeparator
+				} else if c == IPv6UncRangeSeparator {
+					c = RangeSeparator
+				} else if c == IPv6UncZoneSeparator {
+					c = IPv6ZoneSeparator
+				}
+				builder.WriteByte(c)
+			}
+			emb = embeddedAddress{
+				isUNCIPv6Literal: true,
+			}
+			pa := parsedIPAddress{
+				options:            defaultUncOpts,
+				ipAddressParseData: ipAddressParseData{addressParseData: addressParseData{str: str}},
+			}
+			var err addrerr.AddressStringError
+			if err = validateIPAddress(defaultUncOpts, builder.String(), 0, builder.Len(), pa.getIPAddressParseData(), false); err == nil {
+				if err = parseAddressQualifier(str, defaultUncOpts, nil, pa.getIPAddressParseData(), builder.Len()); err == nil {
+					if *pa.getQualifier() == *noQualifier {
+						*pa.getQualifier() = *hostQualifier
+					} else if *hostQualifier != *noQualifier {
+						_ = pa.getQualifier().merge(hostQualifier)
+					}
+					emb.addressProvider, err = chooseIPAddressProvider(nil, str, defaultUncOpts, &pa)
+				}
+			}
+			emb.addressStringError = err
+			return
+		}
+	}
+
+	//Note: could support bitstring labels and support subnets in them, however they appear to be generally unused in the real world
+	//rfc 2673
+	//arpa: https://www.ibm.com/support/knowledgecenter/SSLTBW_1.13.0/com.ibm.zos.r13.halz002/f1a1b3b1220.htm
+	//Also, support partial dns lookups and map then to the associated subnet with prefix length, which I think we may
+	//already do for ipv4 but not for ipv6, ipv4 uses the prefix notation d.c.b.a/x but ipv6 uses fewer nibbles
+	//on the ipv6 side, would just need to add the proper number of zeros and the prefix length
+	suffix3 := IPv6ReverseDnsSuffixDeprecated
+	if addrLen > len(suffix3) {
+		suffix = IPv4ReverseDnsSuffix
+		suffix2 := IPv6ReverseDnsSuffix
+		var isIpv4, isMatch bool
+		suffixStartIndex := addrLen - len(suffix)
+		if isMatch = suffixStartIndex > 0 && strings.EqualFold(str[suffixStartIndex:suffixStartIndex+len(suffix)], suffix); !isMatch {
+			suffixStartIndex = addrLen - len(suffix2)
+			if isMatch = suffixStartIndex > 0 && strings.EqualFold(str[suffixStartIndex:suffixStartIndex+len(suffix2)], suffix2); !isMatch {
+				suffixStartIndex = addrLen - len(suffix3)
+				isMatch = suffixStartIndex > 0 && strings.EqualFold(str[suffixStartIndex:suffixStartIndex+len(suffix3)], suffix3)
+			}
+		} else {
+			isIpv4 = true
+		}
+		if isMatch {
+			emb = embeddedAddress{
+				isReverseDNS: true,
+			}
+			var err addrerr.AddressStringError
+			var sequence string
+			var params addrstrparam.IPAddressStringParams
+			if isIpv4 {
+				sequence, err = convertReverseDNSIPv4(str, suffixStartIndex)
+				params = reverseDNSIPv4Opts
+			} else {
+				sequence, err = convertReverseDNSIPv6(str, suffixStartIndex)
+				params = reverseDNSIPv6Opts
+			}
+			if err == nil {
+				pa := parsedIPAddress{
+					options:            params,
+					ipAddressParseData: ipAddressParseData{addressParseData: addressParseData{str: sequence}},
+				}
+				if err = validateIPAddress(params, sequence, 0, len(sequence), pa.getIPAddressParseData(), false); err == nil {
+					if err = parseAddressQualifier(str, params, nil, pa.getIPAddressParseData(), len(str)); err == nil {
+						pa.qualifier = *hostQualifier
+						emb.addressProvider, err = chooseIPAddressProvider(nil, sequence, params, &pa)
+					}
+				}
+			}
+			emb.addressStringError = err
+		}
+	}
+	//			//handle TLD host https://tools.ietf.org/html/draft-osamu-v6ops-ipv4-literal-in-url-02
+	//			//https://www.ietf.org/proceedings/87/slides/slides-87-v6ops-6.pdf
+	//			suffix = ".v4";
+	//			if(addrLen > suffix.length() &&
 	//					str.regionMatches(true, suffixStartIndex = addrLen - suffix.length(), suffix, 0, suffix.length())) {
-	//				StringBuilder builder = new StringBuilder(str.substring(0, suffixStartIndex));
-	//				for(int i = 0; i < builder.length(); i++) {
-	//					char c = builder.charAt(i);
-	//					if(c == IPv6Address.UNC_SEGMENT_SEPARATOR) {
-	//						builder.setCharAt(i, IPv6Address.SEGMENT_SEPARATOR);
-	//					} else if(c == IPv6Address.UNC_RANGE_SEPARATOR) {
-	//						builder.setCharAt(i, IPv6Address.RANGE_SEPARATOR);
-	//					}  else if(c == IPv6Address.UNC_ZONE_SEPARATOR) {
-	//						builder.setCharAt(i, IPv6Address.ZONE_SEPARATOR);
-	//					}
-	//				}
-	//				emb = new embeddedAddress();
-	//				emb.isUNCIPv6Literal = true;
-	//				IPAddressStringParams params = DEFAULT_UNC_OPTS;
-	//				parsedIPAddress pa = new parsedIPAddress(null, str, params);
-	//				validateIPAddress(params, builder, 0, builder.length(), pa, false);
-	//				parsedHostIdentifierStringQualifier qual;
-	//				parsedHostIdentifierStringQualifier addrQualifier = parseAddressQualifier(builder, DEFAULT_UNC_OPTS, null, pa, builder.length());
-	//				if(addrQualifier == parsedHost.noQualifier) {
-	//					qual = hostQualifier;
-	//				} else if(hostQualifier == parsedHost.noQualifier) {
-	//					qual = addrQualifier;
-	//				} else {
-	//					//only prefix qualifiers and the noQualifier are cached, so merging is OK
-	//					//in the case we can have only a zone qualifier
-	//					addrQualifier.overridePrefix(hostQualifier);
-	//					qual = addrQualifier;
-	//				}
-	//				ipAddressProvider provider = chooseIPAddressProvider(null, builder, params, pa, qual);
-	//				emb.addressProvider = provider;
+	//				//not an rfc, so let's leave it
 	//			}
-	//			//Note: could support bitstring labels and support subnets in them, however they appear to be generally unused in the real world
-	//			//rfc 2673
-	//			//arpa: https://www.ibm.com/support/knowledgecenter/SSLTBW_1.13.0/com.ibm.zos.r13.halz002/f1a1b3b1220.htm
-	//			//Also, support partial dns lookups and map then to the associated subnet with prefix length, which I think we may
-	//			//already do for ipv4 but not for ipv6, ipv4 uses the prefix notation d.c.b.a/x but ipv6 uses fewer nibbles
-	//			//on the ipv6 side, would just need to add the proper number of zeros and the prefix length
-	//			String suffix3 = IPv6Address.REVERSE_DNS_SUFFIX_DEPRECATED;
-	//			if(addrLen > suffix3.length()) {
-	//				suffix = IPv4Address.REVERSE_DNS_SUFFIX;
-	//				String suffix2 = IPv6Address.REVERSE_DNS_SUFFIX;
-	//				boolean IsIPv4;
-	//				if(	(IsIPv4 = str.regionMatches(true, suffixStartIndex = addrLen - suffix.length(), suffix, 0, suffix.length())) ||
-	//					(	(addrLen > suffix2.length() && str.regionMatches(true, suffixStartIndex = addrLen - suffix2.length(), suffix2, 0, suffix2.length())) ||
-	//						(addrLen > suffix3.length() && str.regionMatches(true, suffixStartIndex = addrLen - suffix3.length(), suffix3, 0, suffix3.length()))
-	//					)) {
-	//					emb = new embeddedAddress();
-	//					emb.isReverseDNS = true;
-	//					CharSequence sequence;
-	//					IPAddressStringParams params;
-	//					if(IsIPv4) {
-	//						sequence = convertReverseDNSIPv4(str, suffixStartIndex);
-	//						params = REVERSE_DNS_IPV4_OPTS;
-	//					} else {
-	//						sequence = convertReverseDNSIPv6(str, suffixStartIndex);
-	//						params = REVERSE_DNS_IPV6_OPTS;
-	//					}
-	//					parsedIPAddress pa = new parsedIPAddress(null, sequence, params);
-	//					validateIPAddress(params, sequence, 0, sequence.length(), pa, false);
-	//					ipAddressProvider provider = chooseIPAddressProvider(null, sequence, params, pa, hostQualifier != null ? hostQualifier : parsedHost.noQualifier);
-	//					emb.addressProvider = provider;
-	//				}
-	//			}
-	////			//handle TLD host https://tools.ietf.org/html/draft-osamu-v6ops-ipv4-literal-in-url-02
-	////			//https://www.ietf.org/proceedings/87/slides/slides-87-v6ops-6.pdf
-	////			suffix = ".v4";
-	////			if(addrLen > suffix.length() &&
-	////					str.regionMatches(true, suffixStartIndex = addrLen - suffix.length(), suffix, 0, suffix.length())) {
-	////				//not an rfc, so let's leave it
-	////			}
-	//		} catch (addrerr.AddressStringError e) {
-	//			emb.addressStringError = e;
-	//		}
 	return
 }
 
-//	//123.2.3.4 is 4.3.2.123.in-addr.arpa.
-//
-//	private static CharSequence convertReverseDNSIPv4(String str, int suffixStartIndex) throws addrerr.AddressStringError {
-//		StringBuilder builder = new StringBuilder(suffixStartIndex);
-//		int segCount = 0;
-//		int j = suffixStartIndex;
-//		for(int i = suffixStartIndex - 1; i > 0; i--) {
-//			char c1 = str.charAt(i);
-//			if(c1 == IPv4Address.SEGMENT_SEPARATOR) {
-//				if(j - i <= 1) {
-//					throw new addrerr.AddressStringError(str, i);
-//				}
-//				for(int k = i + 1; k < j; k++) {
-//					builder.append(str.charAt(k));
-//				}
-//				builder.append(c1);
-//				j = i;
-//				segCount++;
-//			}
-//		}
-//		for(int k = 0; k < j; k++) {
-//			builder.append(str.charAt(k));
-//		}
-//		if(segCount + 1 != IPv4Address.SEGMENT_COUNT) {
-//			throw new addrerr.AddressStringError(str, 0);
-//		}
-//		return builder;
-//	}
-//
-//	//4321:0:1:2:3:4:567:89ab would be b.a.9.8.7.6.5.0.4.0.0.0.3.0.0.0.2.0.0.0.1.0.0.0.0.0.0.0.1.2.3.4.IP6.ARPA
-//
-//	private static CharSequence convertReverseDNSIPv6(String str, int suffixStartIndex) throws addrerr.AddressStringError {
-//		StringBuilder builder = new StringBuilder(suffixStartIndex);
-//		StringBuilder low = new StringBuilder();
-//		StringBuilder high = new StringBuilder();
-//		int segCount = 0;
-//		for(int i = suffixStartIndex - 1; i >= 0; ) {
-//			boolean isRange = false;
-//			for(int j = 0; j < 4; j++) {
-//				char c1 = str.charAt(i--);
-//				if(i >= 0) {
-//					char c2 = str.charAt(i--);
-//					if(c2 == IPv4Address.SEGMENT_SEPARATOR) {
-//						if(c1 == IPAddress.SEGMENT_WILDCARD) {
-//							isRange = true;
-//							low.append('0');
-//							high.append('f');
-//						} else {
-//							if(isRange) {
-//								throw new addrerr.AddressStringError(str, i + 1);
-//							}
-//							low.append(c1);
-//							high.append(c1);
-//						}
-//					} else if(c2 == IPAddress.RANGE_SEPARATOR) {
-//						high.append(c1);
-//						if(i >= 1) {
-//							c2 = str.charAt(i--);
-//							low.append(c2);
-//							boolean isFullRange = (c2 == '0' && c1 == 'f');
-//							if(isRange && !isFullRange) {
-//								throw new addrerr.AddressStringError(str, i + 1);
-//							}
-//							c2 = str.charAt(i--);
-//							if(c2 != IPv4Address.SEGMENT_SEPARATOR) {
-//								throw new addrerr.AddressStringError(str, i + 1);
-//							}
-//						} else {
-//							throw new addrerr.AddressStringError(str, i);
-//						}
-//						isRange = true;
-//					} else {
-//						throw new addrerr.AddressStringError(str, i + 1);
-//					}
-//				} else if(j < 3) {
-//					throw new addrerr.AddressStringError(str, i + 1);
-//				} else {
-//					if(c1 == IPAddress.SEGMENT_WILDCARD) {
-//						isRange = true;
-//						low.append('0');
-//						high.append('f');
-//					} else {
-//						if(isRange) {
-//							throw new addrerr.AddressStringError(str, 0);
-//						}
-//						low.append(c1);
-//						high.append(c1);
-//					}
-//				}
-//			}
-//			segCount++;
-//			if(builder.length() > 0) {
-//				builder.append(IPv6Address.SEGMENT_SEPARATOR);
-//			}
-//			builder.append(low);
-//			if(isRange) {
-//				builder.append(IPAddress.RANGE_SEPARATOR).append(high);
-//			}
-//			low.setLength(0);
-//			high.setLength(0);
-//		}
-//		if(segCount != IPv6Address.SEGMENT_COUNT) {
-//			throw new addrerr.AddressStringError(str, 0);
-//		}
-//		return builder;
-//	}
-//}
+//123.2.3.4 is 4.3.2.123.in-addr.arpa.
+
+func convertReverseDNSIPv4(str string, suffixStartIndex int) (string, addrerr.AddressStringError) {
+	var builder strings.Builder
+	builder.Grow(suffixStartIndex)
+	segCount := 0
+	j := suffixStartIndex
+	for i := suffixStartIndex - 1; i > 0; i-- {
+		c1 := str[i]
+		if c1 == IPv4SegmentSeparator {
+			if j-i <= 1 {
+				return "", &addressStringIndexError{
+					addressStringError{addressError{str: str, key: "ipaddress.error.invalid.character.at.index"}},
+					i}
+			}
+			for k := i + 1; k < j; k++ {
+				builder.WriteByte(str[k])
+			}
+			builder.WriteByte(c1)
+			j = i
+			segCount++
+		}
+	}
+	for k := 0; k < j; k++ {
+		builder.WriteByte(str[k])
+	}
+	if segCount+1 != IPv4SegmentCount {
+		return "", &addressStringIndexError{
+			addressStringError{addressError{str: str, key: "ipaddress.error.invalid.character.at.index"}},
+			0}
+	}
+	return builder.String(), nil
+}
+
+//4321:0:1:2:3:4:567:89ab would be b.a.9.8.7.6.5.0.4.0.0.0.3.0.0.0.2.0.0.0.1.0.0.0.0.0.0.0.1.2.3.4.IP6.ARPA
+
+func convertReverseDNSIPv6(str string, suffixStartIndex int) (string, addrerr.AddressStringError) {
+	var builder strings.Builder
+	builder.Grow(suffixStartIndex)
+	segCount := 0
+	for i := suffixStartIndex - 1; i >= 0; {
+		var low, high strings.Builder
+		isRange := false
+		for j := 0; j < 4; j++ {
+			c1 := str[i]
+			i--
+			if i >= 0 {
+				c2 := str[i]
+				i--
+				if c2 == IPv4SegmentSeparator {
+					if c1 == SegmentWildcard {
+						isRange = true
+						low.WriteByte('0')
+						high.WriteByte('f')
+					} else {
+						if isRange {
+							return "", &addressStringIndexError{
+								addressStringError{addressError{str: str, key: "ipaddress.error.invalid.character.at.index"}},
+								i + 1}
+						}
+						low.WriteByte(c1)
+						high.WriteByte(c1)
+					}
+				} else if c2 == RangeSeparator {
+					high.WriteByte(c1)
+					if i >= 1 {
+						c2 = str[i]
+						i--
+						low.WriteByte(c2)
+						isFullRange := (c2 == '0' && c1 == 'f')
+						if isRange && !isFullRange {
+							return "", &addressStringIndexError{
+								addressStringError{addressError{str: str, key: "ipaddress.error.invalid.character.at.index"}},
+								i + 1}
+						}
+						c2 = str[i]
+						i--
+						if c2 != IPv4SegmentSeparator {
+							return "", &addressStringIndexError{
+								addressStringError{addressError{str: str, key: "ipaddress.error.invalid.character.at.index"}},
+								i + 1}
+						}
+					} else {
+						return "", &addressStringIndexError{
+							addressStringError{addressError{str: str, key: "ipaddress.error.invalid.character.at.index"}},
+							i}
+					}
+					isRange = true
+				} else {
+					return "", &addressStringIndexError{
+						addressStringError{addressError{str: str, key: "ipaddress.error.invalid.character.at.index"}},
+						i + 1}
+				}
+			} else if j < 3 {
+				return "", &addressStringIndexError{
+					addressStringError{addressError{str: str, key: "ipaddress.error.invalid.character.at.index"}},
+					i + 1}
+			} else {
+				if c1 == SegmentWildcard {
+					isRange = true
+					low.WriteByte('0')
+					high.WriteByte('f')
+				} else {
+					if isRange {
+						return "", &addressStringIndexError{
+							addressStringError{addressError{str: str, key: "ipaddress.error.invalid.character.at.index"}},
+							0}
+					}
+					low.WriteByte(c1)
+					high.WriteByte(c1)
+				}
+			}
+		}
+		segCount++
+		if builder.Len() > 0 {
+			builder.WriteByte(IPv6SegmentSeparator)
+		}
+		builder.WriteString(low.String())
+		if isRange {
+			builder.WriteByte(RangeSeparator)
+			builder.WriteString(high.String())
+		}
+	}
+	if segCount != IPv6SegmentCount {
+		return "", &addressStringIndexError{
+			addressStringError{addressError{str: str, key: "ipaddress.error.invalid.character.at.index"}},
+			0}
+	}
+	return builder.String(), nil
+}
