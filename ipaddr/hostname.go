@@ -269,16 +269,14 @@ func (host *HostName) IsAddress() bool {
 	return false
 }
 
-// TODO LATER add these comments on IPv6 literals and reverse DNS hosts to the godoc below
-// In cases such as IPv6 literals and reverse DNS hosts, you can check the relevant methods isIpv6Literal or isReverseDNS,
-// in which case this method should return the associated address.  If this method returns nil then an error occurred
-//when producing the associated address, and that error is available from getAddressStringException.
-
 // AsAddress returns the address if this host name represents an ip address.  Otherwise, this returns nil.
 // Note that the translation includes prefix lengths and IPv6 zones.
 //
 // This does not resolve addresses or return resolved addresses.
 // Call ToAddress or GetAddress to get the resolved address.
+//
+// In cases such as IPv6 literals and reverse DNS hosts, you can check the relevant methods isIpv6Literal or isReverseDNS,
+// in which case this method should return the associated address.
 func (host *HostName) AsAddress() *IPAddress {
 	if host.IsAddress() {
 		addr, _ := host.parsedHost.asAddress()
@@ -674,26 +672,17 @@ func (host *HostName) GetHost() string {
 	return ""
 }
 
-/*
-TODO LATER isUNCIPv6Literal and isReverseDNS
-*/
-///**
-// * Returns whether this host name is an Uniform Naming Convention IPv6 literal host name.
-// *
-// * @return
-// */
-//public boolean isUNCIPv6Literal() {
-//	return isValid() && parsedHost.isUNCIPv6Literal();
-//}
-//
-///**
-// * Returns whether this host name is a reverse DNS string host name.
-// *
-// * @return
-// */
-//public boolean isReverseDNS() {
-//	return isValid() && parsedHost.isReverseDNS();
-//}
+// IsUncIPv6Literal returns whether this host name is an Uniform Naming Convention IPv6 literal host name.
+func (host *HostName) IsUncIPv6Literal() bool {
+	host = host.init()
+	return host.IsValid() && host.parsedHost.isUNCIPv6Literal()
+}
+
+// IsReverseDNS returns whether this host name is a reverse DNS string host name.
+func (host *HostName) IsReverseDNS() bool {
+	host = host.init()
+	return host.IsValid() && host.parsedHost.isReverseDNS()
+}
 
 // GetNetworkPrefixLen returns the prefix length, if a prefix length was supplied,
 // either as part of an address or as part of a domain (in which case the prefix applies to any resolved address).

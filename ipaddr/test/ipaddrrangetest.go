@@ -4459,10 +4459,30 @@ func (t ipAddressRangeTester) testStrings() {
 		"1:2:3:4::%x%x%",
 		"1:2:3:4::%x%x%",
 		"0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.4.0.0.0.3.0.0.0.2.0.0.0.1.0.0.0.ip6.arpa",
-		"1-2-3-4-0-0-0-0sxsxs.ipv6-literal.net",
+		"1-2-3-4-0-0-0-0sx%x%.ipv6-literal.net", //the first % is converted to s, the rest is not, resul
 		"008JQWOV7Skb)C|ve)jA"+ipaddr.IPv6AlternativeZoneSeparatorStr+"x%x%",
 		"0x00010002000300040000000000000000%x%x%",
 		"00000020000200001400010000000000000000000000%x%x%") //mixed
+
+	t.testIPv6Strings("1:2:3:4::%seth0", //Note: % is the zone character (not sql wildcard), so this is handled as 1:2:3:4:: with zone x%x%
+		"1:2:3:4:0:0:0:0%seth0", //normalized
+		"1:2:3:4:0:0:0:0%seth0", //normalizedWildcards
+		"1:2:3:4::%seth0",       //canonicalWildcards
+		"1:2:3:4:0:0:0:0%seth0", //sql
+		"0001:0002:0003:0004:0000:0000:0000:0000%seth0",
+		"1:2:3:4::%seth0",        //compressed
+		"1:2:3:4::%seth0",        //canonical
+		"1:2:3:4::%seth0",        //subnet
+		"1:2:3:4::%seth0",        //compressed wildcard
+		"1:2:3:4::0.0.0.0%seth0", //mixed no compress
+		"1:2:3:4::%seth0",        //mixedNoCompressHost
+		"1:2:3:4::%seth0",
+		"1:2:3:4::%seth0",
+		"0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.4.0.0.0.3.0.0.0.2.0.0.0.1.0.0.0.ip6.arpa",
+		"1-2-3-4-0-0-0-0sseth0.ipv6-literal.net",
+		"008JQWOV7Skb)C|ve)jA"+ipaddr.IPv6AlternativeZoneSeparatorStr+"seth0",
+		"0x00010002000300040000000000000000%seth0",
+		"00000020000200001400010000000000000000000000%seth0") //mixed
 
 	t.testIPv6Strings("1:2:3:4:5:6:7:8%a/64", //Note: % is the zone character (not sql wildcard), so this is handled as 1:2:3:4:: with zone :%:%
 		"1:2:3:4:5:6:7:8%a/64", //normalized

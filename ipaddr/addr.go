@@ -33,7 +33,7 @@ const (
 	RangeSeparator               = '-'
 	RangeSeparatorStr            = "-"
 	AlternativeRangeSeparator    = '\u00bb'
-	AlternativeRangeSeparatorStr = "\u00bb"
+	AlternativeRangeSeparatorStr = "\u00bb" // '»'
 
 	ExtendedDigitsRangeSeparatorStr = AlternativeRangeSeparatorStr
 

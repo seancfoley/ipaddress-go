@@ -520,7 +520,8 @@ type ipv6StringCache struct {
 	compressedWildcardString,
 	canonicalWildcardString,
 	networkPrefixLengthString,
-	base85String *string
+	base85String,
+	uncString *string
 }
 
 type macStringCache struct {

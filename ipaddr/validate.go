@@ -3502,7 +3502,7 @@ func (strValidator) validateHostName(fromHost *HostName, validationOptions addrs
 	var normalizedFlags []bool
 
 	sep0, sep1, sep2, sep3, sep4, sep5 := -1, -1, -1, -1, -1, -1
-	var upper0, upper1, upper2, upper3, upper4, upper5 bool
+	var isUpper0, isUpper1, isUpper2, isUpper3, isUpper4, isUpper5 bool
 
 	var currentChar byte
 	for index++; index <= addrLen; index++ {
@@ -3579,24 +3579,24 @@ func (strValidator) validateHostName(fromHost *HostName, validationOptions addrs
 					if labelCount < 3 {
 						if labelCount == 0 {
 							sep0 = index
-							upper0 = segmentUppercase
+							isUpper0 = segmentUppercase
 						} else if labelCount == 1 {
 							sep1 = index
-							upper1 = segmentUppercase
+							isUpper1 = segmentUppercase
 						} else {
 							sep2 = index
-							upper2 = segmentUppercase
+							isUpper2 = segmentUppercase
 						}
 					} else {
 						if labelCount == 3 {
 							sep3 = index
-							upper3 = segmentUppercase
+							isUpper3 = segmentUppercase
 						} else if labelCount == 4 {
 							sep4 = index
-							upper4 = segmentUppercase
+							isUpper4 = segmentUppercase
 						} else {
 							sep5 = index
-							upper5 = segmentUppercase
+							isUpper5 = segmentUppercase
 						}
 					}
 					labelCount++
@@ -3661,12 +3661,14 @@ func (strValidator) validateHostName(fromHost *HostName, validationOptions addrs
 					err = &hostNameIndexError{hostNameError{addressError{str: str, key: "ipaddress.host.error.invalid.character.at.index"}}, index}
 					return
 				} else {
-					if isPossiblyIPv4 && addressOptions.GetIPv4Params().GetRangeParams().AllowsWildcard() {
-						if isSpecialOnlyIndex < 0 {
-							isSpecialOnlyIndex = index
+					if isPossiblyIPv4 {
+						if addressOptions.GetIPv4Params().GetRangeParams().AllowsWildcard() {
+							if isSpecialOnlyIndex < 0 {
+								isSpecialOnlyIndex = index
+							}
+						} else {
+							isPossiblyIPv4 = false
 						}
-					} else {
-						isPossiblyIPv4 = false
 					}
 					if isPossiblyIPv6 && addressOptions.GetIPv6Params().GetRangeParams().AllowsWildcard() {
 						if isSpecialOnlyIndex < 0 {
@@ -3698,8 +3700,25 @@ func (strValidator) validateHostName(fromHost *HostName, validationOptions addrs
 					err = &hostNameIndexError{hostNameError{addressError{str: str, key: "ipaddress.host.error.invalid.character.at.index"}}, index}
 					return
 				}
-			} else if currentChar == AlternativeRangeSeparator {
-				isAllDigits = false
+			} else if currentChar == AlternativeRangeSeparatorStr[0] {
+				//} else if currentChar == AlternativeRangeSeparator {
+				if index+1 == addrLen {
+					err = &hostNameIndexError{hostNameError{addressError{str: str, key: "ipaddress.host.error.invalid.character.at.index"}}, index}
+					return
+				}
+				currentChar = str[index+1]
+				if currentChar == AlternativeRangeSeparatorStr[1] {
+					isAllDigits = false
+					isPossiblyIPv4 = false
+					isPossiblyIPv6 = false
+					if isSpecialOnlyIndex < 0 {
+						isSpecialOnlyIndex = index
+					}
+					index++
+				} else {
+					err = &hostNameIndexError{hostNameError{addressError{str: str, key: "ipaddress.host.error.invalid.character.at.index"}}, index}
+					return
+				}
 			} else {
 				err = &hostNameIndexError{hostNameError{addressError{str: str, key: "ipaddress.host.error.invalid.character.at.index"}}, index}
 				return
@@ -4030,25 +4049,25 @@ func (strValidator) validateHostName(fromHost *HostName, validationOptions addrs
 			if i < 2 {
 				if i == 0 {
 					nextSep = sep0
-					isUpper = upper0
+					isUpper = isUpper0
 				} else {
 					nextSep = sep1
-					isUpper = upper1
+					isUpper = isUpper1
 				}
 			} else if i < 4 {
 				if i == 2 {
 					nextSep = sep2
-					isUpper = upper2
+					isUpper = isUpper2
 				} else {
 					nextSep = sep3
-					isUpper = upper3
+					isUpper = isUpper3
 				}
 			} else if i == 4 {
 				nextSep = sep4
-				isUpper = upper4
+				isUpper = isUpper4
 			} else {
 				nextSep = sep5
-				isUpper = upper5
+				isUpper = isUpper5
 			}
 			separatorIndices[i] = nextSep
 			if normalizedFlags != nil {
@@ -4133,13 +4152,21 @@ func checkSpecialHosts(str string, addrLen int, hostQualifier *parsedHostIdentif
 		if strings.EqualFold(str[suffixStartIndex:suffixStartIndex+len(suffix)], suffix) {
 			var builder strings.Builder
 			beginStr := str[:suffixStartIndex]
+			foundZone := false
 			for i := 0; i < len(beginStr); i++ {
 				c := beginStr[i]
 				if c == IPv6UncSegmentSeparator {
 					c = IPv6SegmentSeparator
-				} else if c == IPv6UncRangeSeparator {
-					c = RangeSeparator
-				} else if c == IPv6UncZoneSeparator {
+				} else if c == IPv6UncRangeSeparatorStr[0] {
+					if i+1 < len(beginStr) {
+						c = beginStr[i+1]
+						if c == IPv6UncRangeSeparatorStr[1] {
+							c = RangeSeparator
+							i++
+						}
+					}
+				} else if c == IPv6UncZoneSeparator && !foundZone {
+					foundZone = true
 					c = IPv6ZoneSeparator
 				}
 				builder.WriteByte(c)
@@ -4152,8 +4179,11 @@ func checkSpecialHosts(str string, addrLen int, hostQualifier *parsedHostIdentif
 				ipAddressParseData: ipAddressParseData{addressParseData: addressParseData{str: str}},
 			}
 			var err addrerr.AddressStringError
-			if err = validateIPAddress(defaultUncOpts, builder.String(), 0, builder.Len(), pa.getIPAddressParseData(), false); err == nil {
-				if err = parseAddressQualifier(str, defaultUncOpts, nil, pa.getIPAddressParseData(), builder.Len()); err == nil {
+			addrStr := builder.String()
+			addrStrLen := len(addrStr)
+			if err = validateIPAddress(defaultUncOpts, addrStr, 0, addrStrLen, pa.getIPAddressParseData(), false); err == nil {
+				if err = parseAddressQualifier(addrStr, defaultUncOpts, nil, pa.getIPAddressParseData(), addrStrLen); err == nil {
+					//if err = parseAddressQualifier(str, defaultUncOpts, nil, pa.getIPAddressParseData(), addrStrLen); err == nil {
 					if *pa.getQualifier() == *noQualifier {
 						*pa.getQualifier() = *hostQualifier
 					} else if *hostQualifier != *noQualifier {

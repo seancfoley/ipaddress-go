@@ -1667,6 +1667,13 @@ func (addr *IPv4Address) ToBinaryString(with0bPrefix bool) (string, addrerr.Inco
 	return addr.init().toBinaryString(with0bPrefix)
 }
 
+// ToUNCHostName Generates the Microsoft UNC path component for this address.
+//
+// For IPv4 it is the canonical string.
+func (addr *IPv4Address) ToUNCHostName() string {
+	return addr.ToCanonicalString()
+}
+
 // ToInetAtonString returns a string with a format that is styled from the inet_aton routine.
 // The string can have an octal or hexadecimal radix rather than decimal.
 // When using octal, the octal segments each have a leading zero prefix of "0", and when using hex, a prefix of "0x".
@@ -1698,7 +1705,7 @@ func (addr *IPv4Address) ToCustomString(stringOptions addrstr.IPStringOptions) s
 	if addr == nil {
 		return nilString()
 	}
-	return addr.GetSection().toCustomZonedString(stringOptions, addr.zone)
+	return addr.GetSection().toCustomString(stringOptions)
 }
 
 // ToAddressBase converts to an Address, a polymorphic type usable with all addresses and subnets.

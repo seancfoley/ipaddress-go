@@ -829,6 +829,7 @@ func (t testBase) testIPv6OnlyStrings(w *ipaddr.IPAddressString, ipAddr *ipaddr.
 	mixedNoCompressMixed, _ := ipAddr.ToCustomString(mixedParams)
 
 	t.confirmAddrStrings(ipAddr.ToIP(), m, mixedCompressCoveredHost, mixedNoCompressHost, mixedNoCompressMixed, base85)
+	t.confirmHostStrings(ipAddr.ToIP(), false, m, mixedCompressCoveredHost, mixedNoCompressHost, mixedNoCompressMixed)
 
 	nMatch := m == (mixedString)
 	if !nMatch {
@@ -1093,7 +1094,7 @@ func (t testBase) testStrings(w *ipaddr.IPAddressString,
 	sql := ipAddr.ToSQLWildcardString()
 	full := ipAddr.ToFullString()
 	rDNS, _ := ipAddr.ToReverseDNSString()
-	//unc := ipAddr.ToUNCHostName(); //TODO LATER reinstate
+	unc := ipAddr.ToUNCHostName()
 
 	var hex, hexNoPrefix, octal string
 	var err error
@@ -1186,15 +1187,23 @@ func (t testBase) testStrings(w *ipaddr.IPAddressString,
 	t.confirmAddrStrings(ipAddr, c, canonical, s, cidr, n, nw, caw, cw, binary)
 	if ipAddr.IsIPv6() {
 		t.confirmAddrStrings(ipAddr, full)
-		t.confirmHostStrings(ipAddr, true, rDNS) //these two are valid hosts with embedded addresses
-		//TODO LATER reinstate
-		//t.confirmHostStrings(ipAddr, false, unc);//these two are valid hosts with embedded addresses
+		t.confirmHostStrings(ipAddr, true, rDNS) // reverse DNS are valid hosts with embedded addresses
+		skipUncParse := false
+		zone := strings.IndexByte(unc, 's')
+		if zone >= 0 {
+			badChar := strings.IndexAny(unc[zone+1:], "%")
+			if badChar >= 0 {
+				skipUncParse = true
+			}
+		}
+		if !skipUncParse {
+			t.confirmHostStrings(ipAddr, false, unc) // UNCs are usually (as long as no abnormal zone) valid hosts with embedded addresses
+		}
 	} else {
 		params := new(addrstrparam.IPAddressStringParamsBuilder).Allow_inet_aton(false).ToParams()
 		fullAddrString := ipaddr.NewIPAddressStringParams(full, params)
 		t.confirmIPAddrStrings(ipAddr, fullAddrString)
-		//TODO LATER reinstate
-		//t.confirmHostStrings(ipAddr, false, rDNS, unc) //these two are valid hosts with embedded addresses
+		t.confirmHostStrings(ipAddr, false, rDNS, unc) //these two are valid hosts with embedded addresses
 	}
 	t.confirmHostStrings(ipAddr, false, c, canonical, s, cidr, n, nw, caw, cw)
 	if ipAddr.IsIPv6() {
@@ -1249,11 +1258,10 @@ func (t testBase) testStrings(w *ipaddr.IPAddressString,
 											if !rdnsMatch {
 												t.addFailure(newFailure("failed expected: "+reverseDNSString+" actual: "+rDNS, w))
 											} else {
-												// TODO LATER reinstate
-												//	 uncMatch := uncHostString==unc
-												//	if(!uncMatch) {
-												//		t.addFailure(newFailure("failed expected: " + uncHostString + " actual: " + unc, w));
-												//	}
+												uncMatch := uncHostString == unc
+												if !uncMatch {
+													t.addFailure(newFailure("failed expected: "+uncHostString+" actual: "+unc, w))
+												}
 											}
 										}
 									}

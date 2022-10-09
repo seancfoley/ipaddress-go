@@ -1283,7 +1283,8 @@ func (section *IPv6AddressSection) ReplaceLen(startIndex, endIndex int, replacem
 // IsAdaptiveZero returns true if the section was originally created as an implicitly zero-valued section or grouping (eg IPv4AddressSection{}),
 // meaning it was not constructed using a constructor function.
 // Such a grouping, which has no divisions or segments, is convertible to an implicitly zero-valued grouping of any type or version, whether IPv6, IPv4, MAC, etc
-// It is not considered equal to constructions of specific zero length sections or groupings like NewIPv4Section(nil) which can only represent a zero-length section of a single address type.
+// It is not considered equal to constructions of specific zero length sections or groupings like NewIPv4Section(nil)
+// which can only represent a zero-length section of a single address type.
 func (section *IPv6AddressSection) IsAdaptiveZero() bool {
 	return section != nil && section.matchesZeroGrouping()
 }
@@ -1299,13 +1300,12 @@ var (
 	uncWildcards = new(addrstr.WildcardOptionsBuilder).SetWildcardOptions(addrstr.WildcardsNetworkOnly).SetWildcards(
 		new(addrstr.WildcardsBuilder).SetRangeSeparator(IPv6UncRangeSeparatorStr).SetWildcard(SegmentWildcardStr).ToWildcards()).ToOptions()
 	base85Wildcards = new(addrstr.WildcardsBuilder).SetRangeSeparator(AlternativeRangeSeparatorStr).ToWildcards()
-	_               = uncWildcards
 
 	mixedParams         = new(addrstr.IPv6StringOptionsBuilder).SetMixed(true).SetCompressOptions(compressMixed).ToOptions()
 	ipv6FullParams      = new(addrstr.IPv6StringOptionsBuilder).SetExpandedSegments(true).SetWildcardOptions(wildcardsRangeOnlyNetworkOnly).ToOptions()
 	ipv6CanonicalParams = new(addrstr.IPv6StringOptionsBuilder).SetCompressOptions(compressAllNoSingles).ToOptions()
-	//uncParams           = new(addrstr.IPv6StringOptionsBuilder).SetSeparator(IPv6UncSegmentSeparator).SetZoneSeparator(IPv6UncZoneSeparator).
-	//			SetAddressSuffix(IPv6UncSuffix).SetWildcardOptions(uncWildcards).ToOptions()
+	uncParams           = new(addrstr.IPv6StringOptionsBuilder).SetSeparator(IPv6UncSegmentSeparator).SetZoneSeparator(IPv6UncZoneSeparatorStr).
+				SetAddressSuffix(IPv6UncSuffix).SetWildcardOptions(uncWildcards).ToOptions()
 	ipv6CompressedParams         = new(addrstr.IPv6StringOptionsBuilder).SetCompressOptions(compressAll).ToOptions()
 	ipv6normalizedParams         = new(addrstr.IPv6StringOptionsBuilder).ToOptions()
 	canonicalWildcardParams      = new(addrstr.IPv6StringOptionsBuilder).SetWildcardOptions(allWildcards).SetCompressOptions(compressZerosNoSingles).ToOptions()

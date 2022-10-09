@@ -18,19 +18,19 @@ package ipaddr
 
 import (
 	"fmt"
-	"math/big"
-	"net"
-
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrstr"
+	"math/big"
+	"net"
 )
 
 const (
 	IPv6SegmentSeparator            = ':'
+	IPv6SegmentSeparatorStr         = ":"
 	IPv6ZoneSeparator               = '%'
 	IPv6ZoneSeparatorStr            = "%"
 	IPv6AlternativeZoneSeparator    = '\u00a7'
-	IPv6AlternativeZoneSeparatorStr = "\u00a7"
+	IPv6AlternativeZoneSeparatorStr = "\u00a7" //'§'
 	IPv6BitsPerSegment              = 16
 	IPv6BytesPerSegment             = 2
 	IPv6SegmentCount                = 8
@@ -44,11 +44,13 @@ const (
 	IPv6ReverseDnsSuffix            = ".ip6.arpa"
 	IPv6ReverseDnsSuffixDeprecated  = ".ip6.int"
 
-	IPv6UncSegmentSeparator  = '-'
-	IPv6UncZoneSeparator     = 's'
-	IPv6UncRangeSeparator    = AlternativeRangeSeparator
-	IPv6UncRangeSeparatorStr = AlternativeRangeSeparatorStr
-	IPv6UncSuffix            = ".ipv6-literal.net"
+	IPv6UncSegmentSeparator    = '-'
+	IPv6UncSegmentSeparatorStr = "-"
+	IPv6UncZoneSeparator       = 's'
+	IPv6UncZoneSeparatorStr    = "s"
+	IPv6UncRangeSeparator      = AlternativeRangeSeparator
+	IPv6UncRangeSeparatorStr   = AlternativeRangeSeparatorStr
+	IPv6UncSuffix              = ".ipv6-literal.net"
 
 	IPv6SegmentMaxChars = 4
 
@@ -1996,6 +1998,27 @@ func (addr *IPv6Address) ToBinaryString(with0bPrefix bool) (string, addrerr.Inco
 		return nilString(), nil
 	}
 	return addr.init().toBinaryString(with0bPrefix)
+}
+
+// ToUNCHostName Generates the Microsoft UNC path component for this address.  For examples see https://ipv6-literal.com/
+//
+// For IPv6, it is the canonical string but with colons replaced by dashes, percent signs with the letter “s”, and then appended with the root domain .ipv6-literal.net
+func (addr *IPv6Address) ToUNCHostName() string {
+	if addr == nil {
+		return nilString()
+	}
+	cache := addr.getStringCache()
+	if cache == nil {
+		res, _ := addr.GetSection().toCustomString(uncParams, addr.zone)
+		return res
+	}
+	var cacheField **string
+	cacheField = &cache.uncString
+	return cacheStr(cacheField,
+		func() string {
+			res, _ := addr.GetSection().toCustomString(uncParams, addr.zone)
+			return res
+		})
 }
 
 // ToBase85String creates the base 85 string, which is described by RFC 1924, "A Compact Representation of IPv6 Addresses".

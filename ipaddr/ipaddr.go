@@ -2066,6 +2066,21 @@ func (addr *IPAddress) ToBinaryString(with0bPrefix bool) (string, addrerr.Incomp
 	return addr.init().toBinaryString(with0bPrefix)
 }
 
+// ToUNCHostName Generates the Microsoft UNC path component for this address.  See https://ipv6-literal.com/
+//
+// For IPv4 it is the canonical string.
+// For IPv6, it is the canonical string but with colons replaced by dashes, percent signs with the letter “s”, and then appended with the root domain .ipv6-literal.net
+func (addr *IPAddress) ToUNCHostName() string {
+	if addr == nil {
+		return nilString()
+	} else if thisAddr := addr.ToIPv4(); thisAddr != nil {
+		return thisAddr.ToUNCHostName()
+	} else if thisAddr := addr.ToIPv6(); thisAddr != nil {
+		return thisAddr.ToUNCHostName()
+	}
+	return addr.ToCanonicalString()
+}
+
 // ToCustomString creates a customized string from this address or subnet according to the given string option parameters
 func (addr *IPAddress) ToCustomString(stringOptions addrstr.IPStringOptions) string {
 	if addr == nil {
