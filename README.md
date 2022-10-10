@@ -12,9 +12,9 @@ IP address and network manipulation, CIDR, operations, iterations, containment c
 
 | Version | Notes         |
 | ------- | ------------- |
-| [1.2.0](https://github.com/seancfoley/ipaddress-go/releases/tag/v1.2.0) | Requires Go 1.12 or higher |
+| [1.3.0](https://github.com/seancfoley/ipaddress-go/releases/tag/v1.3.0) | Requires Go 1.12 or higher |
 
-go get github.com/seancfoley/ipaddress-go@v1.2.0
+go get github.com/seancfoley/ipaddress-go@v1.3.0
 
 Also available as a [Java](https://www.oracle.com/java/) library from the [IPAddress repository](https://github.com/seancfoley/IPAddress)
 
