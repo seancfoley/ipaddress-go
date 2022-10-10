@@ -304,50 +304,49 @@ func (t ipAddressAllTester) run() {
 	t.testMaskedRange(0x40100000000, 0x5ffffffffff, 0x1ffffffffff, true, 0x100000000, 0x1ffffffffff)
 	t.testMaskedRange(0x400ffffffff, 0x5ffffffffff, 0x1ffffffffff, true, 0xffffffff, 0x1ffffffffff)
 
-	// TODO LATER extended masking tests - we can enable these now, we have implemented maskExtendedRange
-	//t.testMaskedRangeExtended(
-	//	1, 0xcafe, // lower
-	//	1, 0xbadcafe, // upper
-	//	0x1ff, 0x10000000, // mask
-	//	-1, 0x10000000000 - 1, // max
-	//	true, //sequential
-	//	0, 0, // lower result
-	//	0x1ff, 0); // upper result
-	//t.testMaskedRangeExtended(1, 0xcafe,
-	//	1, 0xbadcafe,
-	//	0x1fe, 0x10000000,  // mask
-	//	-1, 0x10000000000 - 1,
-	//	false,
-	//	0, 0,
-	//	0x1fe, 0);
-	//t.testMaskedRangeExtended(1, 0xcafe,
-	//	1, 0xbadcafe,
-	//	-1, 0x10000000,  // mask
-	//	-1, 0x10000000000 - 1,
-	//	true,
-	//	0, 0,
-	//	-1, 0);
-	//t.testMaskedRangeExtended(1, 0xcafe,
-	//	1, 0xbadcafe,
-	//	-1 >>> 1, 0x10000000,  // mask
-	//	-1, 0x10000000000 - 1,
-	//	true,
-	//	0, 0,
-	//	-1 >>> 1, 0);
-	//t.testMaskedRangeExtended(1, 0xcafe,
-	//	1, 0xbadcafe,
-	//	1, 0x10000000,  // mask
-	//	-1, 0x10000000000 - 1,
-	//	true,
-	//	0, 0,
-	//	1, 0);
-	//t.testMaskedRangeExtended(1, 0xcafe,
-	//	1, 0xbadcafe,
-	//	0, 0x10000000,
-	//	-1, 0x10000000000 - 1,
-	//	true,
-	//	0, 0,
-	//	0, 0);
+	t.testMaskedRangeExtended(
+		1, 0xcafe, // lower
+		1, 0xbadcafe, // upper
+		0x1ff, 0x10000000, // mask
+		math.MaxUint64, 0x10000000000-1, // max
+		true, //sequential
+		0, 0, // lower result
+		0x1ff, 0) // upper result
+	t.testMaskedRangeExtended(1, 0xcafe,
+		1, 0xbadcafe,
+		0x1fe, 0x10000000, // mask
+		math.MaxUint64, 0x10000000000-1,
+		false,
+		0, 0,
+		0x1fe, 0)
+	t.testMaskedRangeExtended(1, 0xcafe,
+		1, 0xbadcafe,
+		math.MaxUint64, 0x10000000, // mask
+		math.MaxUint64, 0x10000000000-1,
+		true,
+		0, 0,
+		math.MaxUint64, 0)
+	t.testMaskedRangeExtended(1, 0xcafe,
+		1, 0xbadcafe,
+		math.MaxUint64>>1, 0x10000000, // mask
+		math.MaxUint64, 0x10000000000-1,
+		true,
+		0, 0,
+		math.MaxUint64>>1, 0)
+	t.testMaskedRangeExtended(1, 0xcafe,
+		1, 0xbadcafe,
+		1, 0x10000000, // mask
+		math.MaxUint64, 0x10000000000-1,
+		true,
+		0, 0,
+		1, 0)
+	t.testMaskedRangeExtended(1, 0xcafe,
+		1, 0xbadcafe,
+		0, 0x10000000,
+		math.MaxUint64, 0x10000000000-1,
+		true,
+		0, 0,
+		0, 0)
 
 	t.testStrings()
 
@@ -466,60 +465,47 @@ func (t ipAddressAllTester) testMaskedRange(value, upperValue, maskValue uint64,
 			strconv.FormatBool(expectedIsSequential), nil))
 	}
 	t.incrementTestCount()
-	//testMaskedRangeExtended(value, 0, upperValue, 0, maskValue, 0, -1L, -1L,
-	//		expectedIsSequential, expectedLower, 0, expectedUpper, 0);
-	//testMaskedRangeExtended(0, value, -1L, upperValue, -1L, maskValue, -1L, -1L,
-	//		expectedIsSequential, 0, expectedLower, -1L, expectedUpper);
+	t.testMaskedRangeExtended(value, 0, upperValue, 0, maskValue, 0, math.MaxUint64, math.MaxUint64,
+		expectedIsSequential, expectedLower, 0, expectedUpper, 0)
+	t.testMaskedRangeExtended(0, value, math.MaxUint64, upperValue, math.MaxUint64, maskValue, math.MaxUint64, math.MaxUint64,
+		expectedIsSequential, 0, expectedLower, math.MaxUint64, expectedUpper)
 }
 
-//func (t ipAddressAllTester) testMaskedRangeExtended(long value, long extendedValue,
-//			long upperValue, long extendedUpperValue,
-//			long maskValue, long extendedMaskValue,
-//			long maxValue, long extendedMaxValue,
-//			boolean expectedIsSequential,
-//			long expectedLower, long expectedExtendedLower,
-//			long expectedUpper, long expectedExtendedUpper) {
-//		ExtendedMasker masker = ParsedIPAddress.maskExtendedRange(
-//				value, extendedValue,
-//				upperValue, extendedUpperValue,
-//				maskValue, extendedMaskValue,
-//				maxValue, extendedMaxValue);
-//		long lowerResult = masker.getMaskedLower(value, maskValue);
-//		long upperResult = masker.getMaskedUpper(upperValue, maskValue);
-//		long extendedLowerResult = masker.getExtendedMaskedLower(extendedValue, extendedMaskValue);
-//		long extendedUpperResult = masker.getExtendedMaskedUpper(extendedUpperValue, extendedMaskValue);
-//		boolean isSequential = masker.isSequential();
-//		if(masker.isSequential() != expectedIsSequential ||
-//				lowerResult != expectedLower || upperResult != expectedUpper ||
-//				extendedLowerResult != expectedExtendedLower || extendedUpperResult != expectedExtendedUpper) {
-//			String reason = "";
-//			if(lowerResult != expectedLower || extendedLowerResult != expectedExtendedLower) {
-//				reason += "lower mismatch " +
-//						toBigInteger(lowerResult, extendedLowerResult) + '(' + toBinaryString(lowerResult, extendedLowerResult) + ')' + " with expected " +
-//						toBigInteger(expectedLower, expectedExtendedLower) + '(' + toBinaryString(expectedLower, expectedExtendedLower) + ") ";
-//			}
-//			if(upperResult != expectedUpper || extendedUpperResult != expectedExtendedUpper) {
-//				reason += "upper mismatch " +
-//						toBigInteger(upperResult, extendedUpperResult) + '(' + toBinaryString(upperResult, extendedUpperResult) + ')' + " with expected " +
-//						toBigInteger(expectedUpper, expectedExtendedUpper) + '(' + toBinaryString(expectedUpper, expectedExtendedUpper) + ") ";
-//			}
-//			if(masker.isSequential() != expectedIsSequential) {
-//				reason += "sequential mismatch ";
-//			}
-//			addFailure(new Failure("invalid masking, " + reason +
-//						toBigInteger(value, extendedValue) + '(' + toBinaryString(value, extendedValue) + ')' + " to " +
-//						toBigInteger(upperValue, extendedUpperValue) + '(' + toBinaryString(upperValue, extendedUpperValue) + ')' + " masked with " +
-//						toBigInteger(maskValue, extendedMaskValue) + '(' + toBinaryString(maskValue, extendedMaskValue) + ')' + " results in " +
-//						toBigInteger(lowerResult, extendedLowerResult) + '(' + toBinaryString(lowerResult, extendedLowerResult) + ')' + " lower and " +
-//						toBigInteger(upperResult, extendedUpperResult) + '(' + toBinaryString(upperResult, extendedUpperResult) + ')' + " and sequential " +
-//						isSequential + " instead of expected " +
-//						toBigInteger(expectedLower, expectedExtendedLower) + '(' + toBinaryString(expectedLower, expectedExtendedLower) + ')' + " lower and " +
-//						toBigInteger(expectedUpper, expectedExtendedUpper) + '(' + toBinaryString(expectedUpper, expectedExtendedUpper) + ')' + "and sequential " +
-//						expectedIsSequential
-//					));
-//		}
-//		incrementTestCount();
-//	}
+func (t ipAddressAllTester) testMaskedRangeExtended(value, extendedValue,
+	upperValue, extendedUpperValue,
+	maskValue, extendedMaskValue,
+	maxValue, extendedMaxValue uint64,
+	expectedIsSequential bool,
+	expectedLower, expectedExtendedLower,
+	expectedUpper, expectedExtendedUpper uint64) {
+	masker := ipaddr.MaskExtendedRange(
+		value, extendedValue,
+		upperValue, extendedUpperValue,
+		maskValue, extendedMaskValue,
+		maxValue, extendedMaxValue)
+	lowerResult := masker.GetMaskedLower(value, maskValue)
+	upperResult := masker.GetMaskedUpper(upperValue, maskValue)
+	extendedLowerResult := masker.GetExtendedMaskedLower(extendedValue, extendedMaskValue)
+	extendedUpperResult := masker.GetExtendedMaskedUpper(extendedUpperValue, extendedMaskValue)
+	isSequential := masker.IsSequential()
+	if masker.IsSequential() != expectedIsSequential ||
+		lowerResult != expectedLower || upperResult != expectedUpper ||
+		extendedLowerResult != expectedExtendedLower || extendedUpperResult != expectedExtendedUpper {
+		reason := ""
+		if lowerResult != expectedLower || extendedLowerResult != expectedExtendedLower {
+			reason += "lower mismatch "
+		}
+		if upperResult != expectedUpper || extendedUpperResult != expectedExtendedUpper {
+			reason += "upper mismatch "
+		}
+		if isSequential != expectedIsSequential {
+			reason += "sequential mismatch "
+		}
+		t.addFailure(newFailure("invalid masking, "+reason, nil))
+
+	}
+	t.incrementTestCount()
+}
 
 func (t ipAddressAllTester) testAllContains(cidr1, cidr2 string, result bool) {
 	wstr := t.createAddress(cidr1)

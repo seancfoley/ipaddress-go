@@ -313,7 +313,7 @@ func (masker specificValueBitwiseOrer) GetOredUpper(upperValue, maskValue uint64
 //
 //
 //
-func maskExtendedRange(
+func MaskExtendedRange(
 	value, extendedValue,
 	upperValue, extendedUpperValue,
 	maskValue, extendedMaskValue,

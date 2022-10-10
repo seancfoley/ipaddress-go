@@ -1104,7 +1104,7 @@ func (parseData *parsedIPAddress) createIPv6Sections(doSections, doRangeBoundari
 							if cachedMasker == nil {
 								// shift must be 6 bits at most for this shift to work per the java spec (so it must be less than 2^6 = 64)
 								extendedMaxValue := ^(^DivInt(0) << uint(bits-DivIntSize))
-								cachedMasker = maskExtendedRange(
+								cachedMasker = MaskExtendedRange(
 									lower, lowerHighBytes,
 									upper, upperHighBytes,
 									maskVal, extendedMaskVal,

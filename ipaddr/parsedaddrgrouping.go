@@ -122,7 +122,7 @@ func getSegmentsBitCount(bitsPerSegment BitCount, segmentCount int) BitCount {
 	return BitCount(segmentCount) * bitsPerSegment
 }
 
-// TODO LATER This extended prefix subnet, follow the latest Java code which has been updated.
+// TODO LATER getDivisionGrouping: This extended prefix subnet: follow the latest Java code which has been updated.
 //
 //public static boolean isPrefixSubnet(
 //		DivisionValueProvider lowerValueProvider,
