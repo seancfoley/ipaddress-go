@@ -35,6 +35,17 @@ type ipAddressTester struct {
 }
 
 func (t ipAddressTester) run() {
+
+	t.testIPv4Mapped("::ffff:c0a8:0a14", true)
+	t.testIPv4Mapped("0:0:0:0:0:ffff:c0a8:0a14", true)
+	t.testIPv4Mapped("::ffff:1.2.3.4", true)
+	t.testIPv4Mapped("0:0:0:0:0:ffff:1.2.3.4", true)
+
+	t.testIPv4Mapped("::1:ffff:c0a8:0a14", false)
+	t.testIPv4Mapped("0:0:0:0:1:ffff:c0a8:0a14", false)
+	t.testIPv4Mapped("::1:ffff:1.2.3.4", false)
+	t.testIPv4Mapped("0:0:0:0:1:ffff:1.2.3.4", false)
+
 	t.testEquivalentPrefix("1.2.3.4", 32)
 
 	t.testEquivalentPrefix("0.0.0.0/1", 1)
@@ -4699,6 +4710,16 @@ func (t ipAddressTester) testAddressStringRange1(address string, divisions inter
 
 func (t ipAddressTester) testAddressStringRange(address string, divisions interface{}, prefixLength ipaddr.PrefixLen) {
 	t.testAddressStringRangeP(address, false, false, address, address, divisions, prefixLength, &trueVal)
+}
+
+func (t ipAddressTester) testIPv4Mapped(str string, expected bool) {
+	addrStr := t.createAddress(str)
+	if addrStr.IsIPv4Mapped() != expected {
+		t.addFailure(newFailure(fmt.Sprint("invalid IPv4-mapped result: ", !expected), addrStr))
+	} else if addrStr.GetAddress().ToIPv6().IsIPv4Mapped() != expected {
+		t.addFailure(newFailure(fmt.Sprint("invalid IPv4-mapped result: ", !expected), addrStr))
+	}
+	t.incrementTestCount()
 }
 
 var trueVal = true

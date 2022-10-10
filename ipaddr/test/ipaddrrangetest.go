@@ -34,6 +34,12 @@ type ipAddressRangeTester struct {
 }
 
 func (t ipAddressRangeTester) run() {
+
+	t.testIPv4Mapped("::0-1:ffff:c0a8:0a14", false)
+	t.testIPv4Mapped("0:0:0:0:0-1:ffff:c0a8:0a14", false)
+	t.testIPv4Mapped("::0-1:ffff:1.2.3.4", false)
+	t.testIPv4Mapped("0:0:0:0:0-1:ffff:1.2.3.4", false)
+
 	t.testEquivalentPrefix("*.*.*.*", 0)
 	t.testEquivalentPrefix("0-127.*.*.*", 1)
 	t.testEquivalentPrefix("128-255.*.*.*", 1)

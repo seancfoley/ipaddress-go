@@ -4387,3 +4387,10 @@ func convertReverseDNSIPv6(str string, suffixStartIndex int) (string, addrerr.Ad
 	}
 	return builder.String(), nil
 }
+
+//
+// we need to initialize parsing package variables first before using them, so we put these at the bottom of this file
+
+var zeroIPAddressString = NewIPAddressString("")
+
+var ipv4MappedPrefix = NewIPAddressString("::ffff:0:0/96")

@@ -59,8 +59,6 @@ var validator hostIdentifierStringValidator = strValidator{}
 
 var defaultIPAddrParameters = new(addrstrparam.IPAddressStringParamsBuilder).ToParams()
 
-var zeroIPAddressString = NewIPAddressString("")
-
 //
 // IPAddressString parses the string representation of an IP address.  Such a string can represent just a single address like 1.2.3.4 or 1:2:3:4:6:7:8, or a subnet like 1.2.0.0/16 or 1.*.1-3.1-4 or 1111:222::/64.
 //
@@ -273,7 +271,10 @@ func (addrStr *IPAddressString) IsBase85IPv6() bool {
 	return addrStr.IsIPv6() && addrStr.addressProvider.isProvidingBase85IPv6()
 }
 
-// TODO LATER isMappedIPv4Address using prefixEquals like we added in Java, which requires a few tweaks to containsProv method in parsedaddr.go
+// IsIPv4Mapped returns true if the address is an IPv6 IPv4-mapped address.
+func (addrStr *IPAddressString) IsIPv4Mapped() bool {
+	return addrStr.IsIPv6() && ipv4MappedPrefix.PrefixEqual(addrStr)
+}
 
 // GetIPVersion returns the IP address version if this represents a valid IP address, otherwise it returns nil
 func (addrStr *IPAddressString) GetIPVersion() IPVersion {
@@ -425,7 +426,7 @@ func (addrStr *IPAddressString) ToHostAddress() (*IPAddress, addrerr.AddressErro
 	return provider.getProviderHostAddress()
 }
 
-// TODO isSequential
+// TODO getDivisionGrouping: allows for isSequential
 //// IsSequential returns whether the addresses returned by this IPAddressString are sequential,
 //// meaning that if any address has a numerical value that lies in between the numerical values of two addresses represented by this IPAddressString,
 //// then that address is also represented by this IPAddressString.  In other words, the range of addresses is sequential.
