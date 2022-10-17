@@ -1126,6 +1126,10 @@ func newSeqRange(first, other *IPAddress) *IPAddressSeqRange {
 	return newSeqRangeUnchecked(lower, upper, isMult)
 }
 
+func NewIPSeqRange(lower, upper *IPAddress) *IPAddressSeqRange {
+	return lower.SpanWithRange(upper)
+}
+
 func join(ranges []*IPAddressSeqRange) []*IPAddressSeqRange {
 	// nil entries are automatic joins
 	joinedCount := 0

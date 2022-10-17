@@ -77,6 +77,7 @@ func NewIPv4AddressFromSegs(segments []*IPv4AddressSegment) (*IPv4Address, addre
 
 // NewIPv4AddressFromPrefixedSegs constructs an IPv4 address or subnet from the given segments and prefix length.
 // If the given slice does not have 4 segments, an error is returned.
+// If the address has a zero host for its prefix length, the returned address will be the prefix block.
 func NewIPv4AddressFromPrefixedSegs(segments []*IPv4AddressSegment, prefixLength PrefixLen) (*IPv4Address, addrerr.AddressValueError) {
 	segCount := len(segments)
 	if segCount != IPv4SegmentCount {
@@ -106,6 +107,7 @@ func NewIPv4AddressFromBytes(bytes []byte) (addr *IPv4Address, err addrerr.Addre
 // NewIPv4AddressFromPrefixedBytes constructs an IPv4 address or prefix block from the given byte slice and prefix length.
 // An error is returned when the byte slice has too many bytes to match the IPv4 segment count of 4.
 // There should be 4 bytes or less, although extra leading zeros are tolerated.
+// If the address has a zero host for the given prefix length, the returned address will be the prefix block.
 func NewIPv4AddressFromPrefixedBytes(bytes []byte, prefixLength PrefixLen) (addr *IPv4Address, err addrerr.AddressValueError) {
 	if ipv4 := net.IP(bytes).To4(); ipv4 != nil {
 		bytes = ipv4
@@ -124,6 +126,7 @@ func NewIPv4AddressFromUint32(val uint32) *IPv4Address {
 }
 
 // NewIPv4AddressFromPrefixedUint32 constructs an IPv4 address or prefix block from the given value and prefix length.
+// If the address has a zero host for the given prefix length, the returned address will be the prefix block.
 func NewIPv4AddressFromPrefixedUint32(val uint32, prefixLength PrefixLen) *IPv4Address {
 	section := NewIPv4SectionFromPrefixedUint32(val, IPv4SegmentCount, prefixLength)
 	return createAddress(section.ToSectionBase(), NoZone).ToIPv4()
@@ -136,6 +139,7 @@ func NewIPv4AddressFromVals(vals IPv4SegmentValueProvider) *IPv4Address {
 }
 
 // NewIPv4AddressFromPrefixedVals constructs an IPv4 address or prefix block from the given values and prefix length.
+// If the address has a zero host for the given prefix length, the returned address will be the prefix block.
 func NewIPv4AddressFromPrefixedVals(vals IPv4SegmentValueProvider, prefixLength PrefixLen) *IPv4Address {
 	section := NewIPv4SectionFromPrefixedVals(vals, IPv4SegmentCount, prefixLength)
 	return newIPv4Address(section)
@@ -148,6 +152,7 @@ func NewIPv4AddressFromRange(vals, upperVals IPv4SegmentValueProvider) *IPv4Addr
 }
 
 // NewIPv4AddressFromPrefixedRange constructs an IPv4 subnet from the given values and prefix length.
+// If the address has a zero host for the given prefix length, the returned address will be the prefix block.
 func NewIPv4AddressFromPrefixedRange(vals, upperVals IPv4SegmentValueProvider, prefixLength PrefixLen) *IPv4Address {
 	section := NewIPv4SectionFromPrefixedRange(vals, upperVals, IPv4SegmentCount, prefixLength)
 	return newIPv4Address(section)

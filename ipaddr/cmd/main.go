@@ -18,6 +18,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"net"
 
 	//"go/ast"
@@ -616,6 +617,88 @@ func main() {
 	fmt.Printf("decimal IPv4 address: %d\n", ipaddr.NewIPAddressString("255.255.255.255").GetAddress())
 	fmt.Printf("decimal IPv6 address: %d\n", ipv6Addr)
 	fmt.Printf("decimal IPv6 address: %d\n", ipaddr.NewIPAddressString("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff").GetAddress())
+
+	allocator := ipaddr.IPPrefixBlockAllocator{}
+	fmt.Println(allocator)
+	allocator.AddAvailable(ipaddr.NewIPAddressString("192.168.10.0/24").GetAddress())
+	fmt.Println(allocator)
+	allocator.SetReserved(2)
+	blocks := allocator.AllocateSizes(50, 30, 20, 2, 2, 2)
+	fmt.Println("allocated blocks are:", blocks)
+	fmt.Println(allocator)
+
+	allocator = ipaddr.IPPrefixBlockAllocator{}
+	fmt.Println(allocator)
+	allocator.AddAvailable(ipaddr.NewIPAddressString("192.168.10.0/24").GetAddress())
+	fmt.Println(allocator)
+	allocator.SetReserved(2)
+	blocks = allocator.AllocateSizes(60, 12, 12, 28)
+	fmt.Println("allocated blocks are:", blocks)
+	fmt.Println(allocator)
+
+	//ipaddr.NewIPAddressString("1.2.3.16/28")
+	//almostBlockStr := "1.2.3.17-31/28" xxxx
+	// when switching from /30 to /28, we get  1.2.3.0/28 1.2.3.16/28 1.2.3.32/28 1.2.3.48/28
+	almostBlockStr := "1.2.3.16-48/28"
+	fmt.Println("Splitting " + almostBlockStr + " to range then back to iterator")
+	almostBlock := ipaddr.NewIPAddressString(almostBlockStr).GetAddress()
+	almostBlockRng := almostBlock.ToSequentialRange()
+	fmt.Println("Range is " + almostBlockRng.String())
+	fmt.Println("Range lower is " + almostBlockRng.GetLower().ToSegmentedBinaryString())
+	fmt.Println("Range upper is " + almostBlockRng.GetUpper().ToSegmentedBinaryString())
+	almostBlockIterRng := almostBlockRng.PrefixBlockIterator(almostBlockRng.GetMinPrefixLenForBlock())
+	for almostBlockIterRng.HasNext() {
+		fmt.Println(almostBlockIterRng.Next())
+	}
+
+	// Same as above, but instead of starting from "1.2.3.16-48/28", starts from "1.2.3.0/26"
+	fmt.Println("and again")
+	block := ipaddr.NewIPAddressString("1.2.3.0/26").GetAddress().SetPrefixLen(28)
+	fmt.Println("count of prefixes of " + block.String() + " is " + block.GetPrefixCount().String())
+	almostBlockIter := block.PrefixBlockIterator()
+	almostBlockIter.Next()
+	almostBlockRng = almostBlockIter.Next().GetLower().SpanWithRange(block.GetUpper())
+	fmt.Println("Range is " + almostBlockRng.String())
+	almostBlockIterRng = almostBlockRng.PrefixBlockIterator(almostBlockRng.GetMinPrefixLenForBlock())
+	for almostBlockIterRng.HasNext() {
+		fmt.Println(almostBlockIterRng.Next())
+	}
+	// the above shows we can take an iterator, the 1.2.3.16/28 prefix block iterator, peel off the first, then convert to sequential range,
+	// then from the sequential range recover that iterator using almostBlockRng.PrefixBlockIterator(almostBlockRng.GetMinPrefixLenForBlock())
+
+	// but we can get large blocks instead, by spanning again:
+	fmt.Println(almostBlockRng.SpanWithPrefixBlocks())
+
+	// Let's try this with IPv6
+	originalBlock := ipaddr.NewIPAddressString("::/64").GetAddress()
+	shrinkIt := originalBlock.SetPrefixLen(126)
+	shrinkIter := shrinkIt.PrefixBlockIterator()
+	shrinkIter.Next()
+	low := shrinkIter.Next().GetLower()
+	up := originalBlock.GetUpper()
+	shrunkRange := low.SpanWithRange(up)
+	fmt.Println("low " + low.String() + " to " + up.String() + " size " + shrunkRange.GetCount().String())
+	fmt.Println(shrunkRange.SpanWithPrefixBlocks())
+
+	//fmt.Println(almostBlockRng.SpanWithSequentialBlocks())
+
+	alloc := ipaddr.IPPrefixBlockAllocator{}
+	fmt.Println(alloc)
+	alloc.AddAvailable(ipaddr.NewIPAddressString("192.168.10.0/24").GetAddress())
+	fmt.Println(alloc)
+	alloc.SetReserved(2)
+	blocks = alloc.AllocateSizes(50, 30, 20, 2, 2, 2)
+	fmt.Println("allocated blocks are:", blocks)
+	fmt.Println(alloc)
+
+	// put em back and see what happens
+	for _, allocated := range blocks {
+		alloc.AddAvailable(allocated.GetAddress())
+		//fmt.Println(alloc)
+	}
+	fmt.Println(alloc)
+
+	//log2()
 }
 
 func splitIntoBlocks(one, two string) {
@@ -714,4 +797,176 @@ func getDoc() error {
 		}
 	}
 	return nil
+}
+
+var faillog2, failceillog2, faillogbx, faililogbx, failBitsFor, ilogbShift, total int
+
+func log2() {
+
+	bitsFor := func(x uint64, expected uint64) {
+		total++
+		fmt.Printf("trying %x, want %d\n", x, expected)
+		res := math.Log2(float64(x))
+		if uint64(res) != expected {
+			faillog2++
+		}
+		fmt.Println("log2", res)
+		res = math.Ceil(math.Log2(float64(x)))
+		if uint64(res) != expected {
+			failceillog2++
+		}
+		fmt.Println("ceil log2", res)
+		//fmt.Println("logb", math.Logb(float64(x)))
+		//fmt.Println("ilogb", math.Ilogb(float64(x)))
+		res = math.Logb(float64(2*x - 1))
+		if uint64(res) != expected {
+			faillogbx++
+		}
+		fmt.Println("logb x * 2 - 1", res)
+		resi := math.Ilogb(float64(2*x - 1))
+		if uint64(resi) != expected {
+			faililogbx++
+		}
+		fmt.Println("ilogb x * 2 - 1", resi)
+		//fmt.Println("ceil logb x * 2 - 1", math.Ceil(math.Logb(float64(2*x-1))))
+
+		//  https://janmr.com/blog/2010/09/computing-the-integer-binary-logarithm/
+		// OR combo of that with ILogb
+
+		//	subtract 1 then shift, then we have 1 which needs to add 1 to result
+		//I think I need to add 1 back
+
+		limit := uint(53)
+		const mask = 0xfff0000000000000
+
+		BitsFor := func(x uint64) (result int) {
+			if ((x - 1) & mask) != 0 { // conversion to float64 will fail
+				x = ((x - 1) >> limit) + 1
+				result = int(limit)
+			}
+			result += math.Ilogb(float64((x << 1) - 1))
+			return
+		}
+		resi = BitsFor(x)
+		if uint64(resi) != expected {
+			failBitsFor++
+		}
+		fmt.Println("BitsFor", resi)
+
+		//maintissa is 52 bits I think
+		//var extra int
+		//y := (x - 1) >> 52
+		//if y != 0 { // equivalent to x > (1 << 52) or (x - 1) & 0x fff0000000000000  != 0
+		//	fmt.Println("in extra block")
+		//	x = ((x - 1) >> 52) + 1
+		//	extra += 52
+		//}
+
+		var extra int
+		if ((x - 1) & mask) != 0 { // equivalent to x > (1 << 52) or (x - 1) & 0xfffffffffffff != 0
+			//fmt.Println("in extra block")
+			x = ((x - 1) >> limit) + 1
+			extra += int(limit)
+		}
+
+		resi = extra + math.Ilogb(float64((x<<1)-1))
+		if uint64(resi) != expected {
+			ilogbShift++
+		}
+		//fmt.Println("ilogb with shift", result+math.Ilogb(float64(2*x-1)))
+		fmt.Println("ilogb with shift", resi)
+
+		fmt.Println()
+
+	}
+
+	// x bits holds 2 power x values, the largest being 2 power x - 1
+	bitsFor(1, 0)
+	bitsFor(2, 1)
+	bitsFor(4, 2)
+	bitsFor(5, 3)
+	bitsFor(6, 3)
+	bitsFor(7, 3)
+	bitsFor(8, 3)
+	bitsFor(9, 4)
+
+	bitsFor(0x4, 2)
+	bitsFor(0x5, 3)
+
+	bitsFor(0x8, 3)
+	bitsFor(0x9, 4)
+
+	bitsFor(0x10, 4)
+	bitsFor(0x10+1, 5)
+
+	bitsFor(0x100, 8)
+	bitsFor(0x100+1, 9)
+
+	bitsFor(0x1000000000000, 48)
+	bitsFor(0x1000000000000+1, 49)
+
+	bitsFor(0x4000000000000, 50)
+	bitsFor(0x4000000000000+1, 51)
+
+	bitsFor(0x8000000000000-1, 51)
+	bitsFor(0x8000000000000, 51)
+	bitsFor(0x8000000000000+1, 52)
+
+	bitsFor(0x10000000000000-1, 52)
+	bitsFor(0x10000000000000, 52)
+	bitsFor(0x10000000000000+1, 53)
+
+	bitsFor(0x20000000000000-1, 53)
+	bitsFor(0x20000000000000, 53)
+	bitsFor(0x20000000000000+1, 54)
+
+	bitsFor(0x40000000000000-1, 54)
+	bitsFor(0x40000000000000, 54)
+	bitsFor(0x40000000000000+1, 55)
+
+	bitsFor(0x100000000000000, 56)
+	bitsFor(0x100000000000000+1, 57)
+
+	bitsFor(0x1000000000000000, 60)
+	bitsFor(0x1000000000000000+1, 61)
+
+	bitsFor(0x8000000000000000, 63)
+	bitsFor(0x8000000000000000+1, 64)
+	bitsFor(0x8000000000000000+2, 64)
+	bitsFor(0x10000000000000000-1, 64)
+
+	fmt.Printf("fail counts %d %d %d %d %d %d total:%d\n", faillog2, failceillog2, faillogbx, faililogbx, failBitsFor, ilogbShift, total)
+
+	//fmt.Printf("%x\n", uint64(float64(0x10000000000000)))
+	//fmt.Printf("%x\n", uint64(float64(0x10000000000001)))
+	//fmt.Printf("10000000000000\n")
+	//fmt.Printf("10000000000001\n\n")
+	//fmt.Printf("%x\n", uint64(float64(0x100000000000000)))
+	//fmt.Printf("%x\n", uint64(float64(0x100000000000001)))
+	//fmt.Printf("100000000000000\n")
+	//fmt.Printf("100000000000001\n\n")
+	//fmt.Printf("%x\n", uint64(float64(0x1000000000000000)))
+	//fmt.Printf("%x\n", uint64(float64(0x1000000000000001)))
+	//fmt.Printf("1000000000000000\n")
+	//fmt.Printf("1000000000000001\n\n")
+	//fmt.Printf("%x\n", uint64(float64(0x800000000000000)))
+	//fmt.Printf("%x\n", uint64(float64(0x800000000000001)))
+	//fmt.Printf("800000000000000\n")
+	//fmt.Printf("800000000000001\n\n")
+	//fmt.Printf("%x\n", uint64(float64(0x400000000000000)))
+	//fmt.Printf("%x\n", uint64(float64(0x400000000000001)))
+	//fmt.Printf("400000000000000\n")
+	//fmt.Printf("400000000000001\n\n")
+	//fmt.Printf("%x\n", uint64(float64(0x200000000000000)))
+	//fmt.Printf("%x\n", uint64(float64(0x200000000000001)))
+	//fmt.Printf("200000000000000\n")
+	//fmt.Printf("200000000000001\n\n")
+
+	x := -1
+	fmt.Println(uint64(x))
+	fmt.Println(uint64(x - 1))
+
+	var y uint64 = 0xffffffffffffffff
+	var z uint = 2
+	fmt.Println(y + uint64(z))
 }

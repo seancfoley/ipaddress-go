@@ -138,6 +138,7 @@ func NewIPv6AddressFromSegs(segments []*IPv6AddressSegment) (addr *IPv6Address, 
 
 // NewIPv6AddressFromPrefixedSegs constructs an IPv6 address or subnet from the given segments and prefix length.
 // If the given slice does not have 8 segments, an error is returned.
+// If the address has a zero host for its prefix length, the returned address will be the prefix block.
 func NewIPv6AddressFromPrefixedSegs(segments []*IPv6AddressSegment, prefixLength PrefixLen) (addr *IPv6Address, err addrerr.AddressValueError) {
 	segCount := len(segments)
 	if segCount != IPv6SegmentCount {
@@ -166,6 +167,7 @@ func NewIPv6AddressFromZonedSegs(segments []*IPv6AddressSegment, zone string) (a
 
 // NewIPv6AddressFromPrefixedZonedSegs constructs an IPv6 address or subnet from the given segments, prefix length, and zone.
 // If the given slice does not have 8 segments, an error is returned.
+// If the address has a zero host for its prefix length, the returned address will be the prefix block.
 func NewIPv6AddressFromPrefixedZonedSegs(segments []*IPv6AddressSegment, prefixLength PrefixLen, zone string) (addr *IPv6Address, err addrerr.AddressValueError) {
 	segCount := len(segments)
 	if segCount != IPv6SegmentCount {
@@ -192,6 +194,7 @@ func NewIPv6AddressFromBytes(bytes []byte) (addr *IPv6Address, err addrerr.Addre
 // NewIPv6AddressFromPrefixedBytes constructs an IPv6 address from the given byte slice and prefix length.
 // An error is returned when the byte slice has too many bytes to match the IPv6 segment count of 8.
 // There should be 16 bytes or less, although extra leading zeros are tolerated.
+// If the address has a zero host for the given prefix length, the returned address will be the prefix block.
 func NewIPv6AddressFromPrefixedBytes(bytes []byte, prefixLength PrefixLen) (addr *IPv6Address, err addrerr.AddressValueError) {
 	section, err := NewIPv6SectionFromPrefixedBytes(bytes, IPv6SegmentCount, prefixLength)
 	if err == nil {
@@ -215,6 +218,7 @@ func NewIPv6AddressFromZonedBytes(bytes []byte, zone string) (addr *IPv6Address,
 // NewIPv6AddressFromPrefixedZonedBytes constructs an IPv6 address from the given byte slice, prefix length, and zone.
 // An error is returned when the byte slice has too many bytes to match the IPv6 segment count of 8.
 // There should be 16 bytes or less, although extra leading zeros are tolerated.
+// If the address has a zero host for the given prefix length, the returned address will be the prefix block.
 func NewIPv6AddressFromPrefixedZonedBytes(bytes []byte, prefixLength PrefixLen, zone string) (addr *IPv6Address, err addrerr.AddressValueError) {
 	addr, err = NewIPv6AddressFromPrefixedBytes(bytes, prefixLength)
 	if err == nil {
@@ -238,6 +242,7 @@ func NewIPv6AddressFromInt(val *big.Int) (addr *IPv6Address, err addrerr.Address
 
 // NewIPv6AddressFromPrefixedInt constructs an IPv6 address from the given value and prefix length.
 // An error is returned when the values is negative or too large.
+// If the address has a zero host for the given prefix length, the returned address will be the prefix block.
 func NewIPv6AddressFromPrefixedInt(val *big.Int, prefixLength PrefixLen) (addr *IPv6Address, err addrerr.AddressValueError) {
 	section, err := NewIPv6SectionFromPrefixedBigInt(val, IPv6SegmentCount, prefixLength)
 	if err == nil {
@@ -259,6 +264,7 @@ func NewIPv6AddressFromZonedInt(val *big.Int, zone string) (addr *IPv6Address, e
 
 // NewIPv6AddressFromPrefixedZonedInt constructs an IPv6 address from the given value, prefix length, and zone.
 // An error is returned when the values is negative or too large.
+// If the address has a zero host for the given prefix length, the returned address will be the prefix block.
 func NewIPv6AddressFromPrefixedZonedInt(val *big.Int, prefixLength PrefixLen, zone string) (addr *IPv6Address, err addrerr.AddressValueError) {
 	addr, err = NewIPv6AddressFromPrefixedInt(val, prefixLength)
 	if err == nil {
@@ -275,6 +281,7 @@ func NewIPv6AddressFromUint64(highBytes, lowBytes uint64) *IPv6Address {
 }
 
 // NewIPv6AddressFromPrefixedUint64 constructs an IPv6 address or prefix block from the given values and prefix length.
+// If the address has a zero host for the given prefix length, the returned address will be the prefix block.
 func NewIPv6AddressFromPrefixedUint64(highBytes, lowBytes uint64, prefixLength PrefixLen) *IPv6Address {
 	section := NewIPv6SectionFromPrefixedUint64(highBytes, lowBytes, IPv6SegmentCount, prefixLength)
 	return newIPv6Address(section)
@@ -287,6 +294,7 @@ func NewIPv6AddressFromZonedUint64(highBytes, lowBytes uint64, zone string) *IPv
 }
 
 // NewIPv6AddressFromPrefixedZonedUint64 constructs an IPv6 address or prefix block from the given values, prefix length, and zone
+// If the address has a zero host for the given prefix length, the returned address will be the prefix block.
 func NewIPv6AddressFromPrefixedZonedUint64(highBytes, lowBytes uint64, prefixLength PrefixLen, zone string) *IPv6Address {
 	section := NewIPv6SectionFromPrefixedUint64(highBytes, lowBytes, IPv6SegmentCount, prefixLength)
 	return newIPv6AddressZoned(section, zone)
@@ -299,6 +307,7 @@ func NewIPv6AddressFromVals(vals IPv6SegmentValueProvider) *IPv6Address {
 }
 
 // NewIPv6AddressFromPrefixedVals constructs an IPv6 address or prefix block from the given values and prefix length.
+// If the address has a zero host for the given prefix length, the returned address will be the prefix block.
 func NewIPv6AddressFromPrefixedVals(vals IPv6SegmentValueProvider, prefixLength PrefixLen) *IPv6Address {
 	section := NewIPv6SectionFromPrefixedVals(vals, IPv6SegmentCount, prefixLength)
 	return newIPv6Address(section)
@@ -311,6 +320,7 @@ func NewIPv6AddressFromRange(vals, upperVals IPv6SegmentValueProvider) *IPv6Addr
 }
 
 // NewIPv6AddressFromPrefixedRange constructs an IPv6 subnet from the given values and prefix length.
+// If the address has a zero host for the given prefix length, the returned address will be the prefix block.
 func NewIPv6AddressFromPrefixedRange(vals, upperVals IPv6SegmentValueProvider, prefixLength PrefixLen) *IPv6Address {
 	section := NewIPv6SectionFromPrefixedRange(vals, upperVals, IPv6SegmentCount, prefixLength)
 	return newIPv6Address(section)
@@ -323,6 +333,7 @@ func NewIPv6AddressFromZonedRange(vals, upperVals IPv6SegmentValueProvider, zone
 }
 
 // NewIPv6AddressFromPrefixedZonedRange constructs an IPv6 subnet from the given values, prefix length, and zone.
+// If the address has a zero host for the given prefix length, the returned address will be the prefix block.
 func NewIPv6AddressFromPrefixedZonedRange(vals, upperVals IPv6SegmentValueProvider, prefixLength PrefixLen, zone string) *IPv6Address {
 	section := NewIPv6SectionFromPrefixedRange(vals, upperVals, IPv6SegmentCount, prefixLength)
 	return newIPv6AddressZoned(section, zone)

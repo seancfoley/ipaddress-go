@@ -101,7 +101,7 @@ func (version IPVersion) String() string {
 	return string(version)
 }
 
-func (version IPVersion) getNetwork() (network IPAddressNetwork) {
+func (version IPVersion) GetNetwork() (network IPAddressNetwork) {
 	if version.IsIPv6() {
 		network = ipv6Network
 	} else if version.IsIPv4() {

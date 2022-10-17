@@ -330,7 +330,7 @@ func (addr *addressInternal) trieCompare(other *Address) int {
 					}
 					return -1
 				}
-				return CompareSegInt(segment1.GetSegmentValue(), segment2.GetSegmentValue())
+				return compareSegInt(segment1.GetSegmentValue(), segment2.GetSegmentValue())
 			} else {
 				matchingBits := getMatchingBits(segment1, segment2, segmentPref1, bitsPerSegment)
 				if matchingBits >= segmentPref1 {
@@ -346,7 +346,7 @@ func (addr *addressInternal) trieCompare(other *Address) int {
 						} // else must check the next segment
 					}
 				} else {
-					return CompareSegInt(segment1.GetSegmentValue(), segment2.GetSegmentValue())
+					return compareSegInt(segment1.GetSegmentValue(), segment2.GetSegmentValue())
 				}
 			}
 		} else if pref2 != nil {
@@ -365,12 +365,12 @@ func (addr *addressInternal) trieCompare(other *Address) int {
 					} // else must check the next segment
 				}
 			} else {
-				return CompareSegInt(segment1.GetSegmentValue(), segment2.GetSegmentValue())
+				return compareSegInt(segment1.GetSegmentValue(), segment2.GetSegmentValue())
 			}
 		} else {
 			matchingBits := getMatchingBits(segment1, segment2, bitsPerSegment, bitsPerSegment)
 			if matchingBits < bitsPerSegment { // no match - the current subnet/address is not here
-				return CompareSegInt(segment1.GetSegmentValue(), segment2.GetSegmentValue())
+				return compareSegInt(segment1.GetSegmentValue(), segment2.GetSegmentValue())
 			} else {
 				i++
 				if i == segmentCount {

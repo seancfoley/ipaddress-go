@@ -66,10 +66,6 @@ func addrIterator(
 	if single {
 		return &singleAddrIterator{original: original}
 	}
-	//var zone Zone= original.zone
-	//if original != nil {
-	//	zone = original.zone
-	//}
 	return multiAddrIterator{
 		SectionIterator: &multiSectionIterator{
 			original:        original.section,
@@ -143,6 +139,10 @@ func (iter *ipAddrSliceIterator) Next() (res *IPAddress) {
 		iter.addrs = iter.addrs[1:]
 	}
 	return
+}
+
+func (iter *ipAddrSliceIterator) append(addrs []*IPAddress) {
+	iter.addrs = append(iter.addrs, addrs...)
 }
 
 // IPv4AddressIterator iterates through IPv4 subnets and ranges

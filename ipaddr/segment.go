@@ -48,8 +48,8 @@ type segmentValues interface {
 	getUpperSegmentValue() SegInt
 }
 
-// CompareSegInt returns a negative number, 0 or a positive number if integer one is less than, equal to, or greater than integer two.
-func CompareSegInt(one, two SegInt) int {
+// compareSegInt returns a negative number, 0 or a positive number if integer one is less than, equal to, or greater than integer two.
+func compareSegInt(one, two SegInt) int {
 	if one < two {
 		return -1
 	} else if one > two {
