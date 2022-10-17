@@ -202,7 +202,7 @@ func (alloc *prefixBlockAllocator) AllocateMultiBitLens(bitLengths ...BitCount) 
 }
 
 // String returns a string showing the counts of available blocks for each prefix size in the allocator
-func (alloc *prefixBlockAllocator) String() string {
+func (alloc prefixBlockAllocator) String() string {
 	var builder strings.Builder
 	version := alloc.version
 	hasBlocks := false
