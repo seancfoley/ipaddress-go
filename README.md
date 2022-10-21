@@ -12,7 +12,8 @@ IP address and network manipulation, CIDR, operations, iterations, containment c
 
 | Version | Notes         |
 | ------- | ------------- |
-| [1.4.0](https://github.com/seancfoley/ipaddress-go/releases/tag/v1.4.0) | Requires Go 1.12 or higher |
+| [1.2.1](https://github.com/seancfoley/ipaddress-go/releases/tag/v1.2.1) | Requires Go 1.12 or higher |
+| [1.4.0](https://github.com/seancfoley/ipaddress-go/releases/tag/v1.4.0) | Requires Go 1.13 or higher |
 
 go get github.com/seancfoley/ipaddress-go@v1.4.0
 
