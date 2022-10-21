@@ -15,18 +15,18 @@ type prefixBlockAllocator struct {
 	totalBlockCount int
 }
 
-// GetBlockCount returns the count of blocks in this allocator
+// GetBlockCount returns the count of available blocks in this allocator
 func (alloc *prefixBlockAllocator) GetBlockCount() int {
 	return alloc.totalBlockCount
 }
 
-// GetVersion returns the IP version of the blocks in the allocator,
-// which is determined by the first block made available to the allocator.
+// GetVersion returns the IP version of the available blocks in the allocator,
+// which is determined by the version of the first block made available to the allocator.
 func (alloc *prefixBlockAllocator) GetVersion() IPVersion {
 	return alloc.version
 }
 
-// GetTotalCount returns the total of the count of all blocks in this allocator,
+// GetTotalCount returns the total of the count of all individual addresses available in this allocator,
 // which is the total number of individual addresses in all the blocks.
 func (alloc *prefixBlockAllocator) GetTotalCount() *big.Int {
 	if alloc.GetBlockCount() == 0 {
@@ -44,9 +44,10 @@ func (alloc *prefixBlockAllocator) GetTotalCount() *big.Int {
 	return result
 }
 
-// SetReserved returns the count of blocks in this allocator will increase all block size requests by the given number.
-// This can be useful when the size requests do not include the count of addresses that must be included in every block.
-// For IPv4 it is common to reserve two addresses, the network and broadcast addresses.
+// SetReserved sets the additional number of addresses to be included in any size allocation.
+// Any request for a block of a given size will adjust that size by the given number.
+// This can be useful when the size requests do not include the count of additional addresses that must be included in every block.
+// For IPv4, it is common to reserve two addresses, the network and broadcast addresses.
 // If the reservedCount is negative, then every request will be shrunk by that number, useful for cases where
 // insufficient space requires that all subnets be reduced in size by an equal number.
 func (alloc *prefixBlockAllocator) SetReserved(reservedCount int) {
@@ -129,7 +130,8 @@ func (alloc *prefixBlockAllocator) AllocateSize(sizeRequired uint64) *IPAddress 
 }
 
 // AllocateSizes returns multiple blocks of sufficient size for the given size required,
-// or nil if there is insufficient space in the allocator
+// or nil if there is insufficient space in the allocator.
+// The reserved count, if any, will be added to the required sizes.
 func (alloc *prefixBlockAllocator) AllocateSizes(blockSizes ...uint64) []IPAllocatedBlock {
 	sizes := append(make([]uint64, 0, len(blockSizes)), blockSizes...)
 	// sort required subnets by size, largest first
@@ -159,6 +161,7 @@ func (alloc *prefixBlockAllocator) AllocateSizes(blockSizes ...uint64) []IPAlloc
 // AllocateBitLen allocates a block with the given bit-length,
 // the bit-length being the number of bits extending beyond the prefix length,
 // or nil if no such block is available in the allocator
+// The reserved count is ignored when allocating by bit-length.
 func (alloc *prefixBlockAllocator) AllocateBitLen(bitLength BitCount) *IPAddress {
 	if alloc.totalBlockCount == 0 {
 		return nil
@@ -195,7 +198,8 @@ func (alloc *prefixBlockAllocator) AllocateBitLen(bitLength BitCount) *IPAddress
 }
 
 // AllocateMultiBitLens returns multiple blocks of the given bit-lengths,
-// or nil if there is insufficient space in the allocator
+// or nil if there is insufficient space in the allocator.
+// The reserved count is ignored when allocating by bit-length.
 func (alloc *prefixBlockAllocator) AllocateMultiBitLens(bitLengths ...BitCount) []IPAllocatedBlock {
 	lengths := append(make([]BitCount, 0, len(bitLengths)), bitLengths...)
 
