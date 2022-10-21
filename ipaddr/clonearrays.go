@@ -16,6 +16,10 @@
 
 package ipaddr
 
+//TODO seems likely you could create a few generic functions to cover all of this, but would we need to define new constraints?  maybe not.
+//// Need types to have ToIP and ToIPv4 and ToIPv6.  ToIP for sure is part of framework.  But not the other two.
+// Additionally, making a few of them public might be useful.
+
 func cloneIPv4Sections(sect *IPv4AddressSection, orig []*IPv4AddressSection) []ExtendedIPSegmentSeries {
 	origCount := len(orig)
 	count := origCount
@@ -27,7 +31,7 @@ func cloneIPv4Sections(sect *IPv4AddressSection, orig []*IPv4AddressSection) []E
 		result[origCount] = wrapIPSection(sect.ToIP())
 	}
 	for i := range orig {
-		result[i] = wrapIPSection(orig[i].ToIP()) // unlike Java, return types matter with interfaces - https://play.golang.org/p/HZR8FSp42a9 )
+		result[i] = wrapIPSection(orig[i].ToIP()) // return types matter with interfaces - https://play.golang.org/p/HZR8FSp42a9 )
 	}
 	return result
 }

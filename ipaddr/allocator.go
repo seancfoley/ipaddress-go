@@ -20,6 +20,12 @@ func (alloc *prefixBlockAllocator) GetBlockCount() int {
 	return alloc.totalBlockCount
 }
 
+// GetVersion returns the IP version of the blocks in the allocator,
+// which is determined by the first block made available to the allocator.
+func (alloc *prefixBlockAllocator) GetVersion() IPVersion {
+	return alloc.version
+}
+
 // GetTotalCount returns the total of the count of all blocks in this allocator,
 // which is the total number of individual addresses in all the blocks.
 func (alloc *prefixBlockAllocator) GetTotalCount() *big.Int {
@@ -89,6 +95,14 @@ func (alloc *prefixBlockAllocator) insertBlocks(blocks []*IPAddress) {
 	}
 }
 
+// GetAvailable returns a list of all the blocks available for allocating in the allocator
+func (alloc *prefixBlockAllocator) GetAvailable() (blocks []*IPAddress) {
+	for _, block := range alloc.blocks {
+		blocks = append(blocks, block...)
+	}
+	return
+}
+
 // AllocateSize returns a block of sufficient size,
 // the size indicating the number of distinct addresses required in the block,
 // or nil if no such block is available in the allocator,
@@ -124,6 +138,10 @@ func (alloc *prefixBlockAllocator) AllocateSizes(blockSizes ...uint64) []IPAlloc
 	})
 	result := make([]IPAllocatedBlock, 0, len(sizes))
 	for _, blockSize := range sizes {
+		if alloc.reservedCount < 0 && uint64(-alloc.reservedCount) >= blockSize {
+			// size zero
+			continue
+		}
 		allocated := alloc.AllocateSize(blockSize)
 		if allocated != nil {
 			result = append(result, IPAllocatedBlock{allocatedBlock{
@@ -258,6 +276,30 @@ type allocatedBlock struct {
 	reservedCount int
 }
 
+// GetSize returns the number of hosts for which this block was allocated
+func (alloc allocatedBlock) GetSize() *big.Int {
+	return alloc.blockSize
+}
+
+// GetCount returns the total number of addresses within the block
+func (alloc allocatedBlock) GetCount() *big.Int {
+	return alloc.block.GetCount()
+}
+
+// GetReservedCount returns the number of reserved addresses with the block
+func (alloc allocatedBlock) GetReservedCount() int {
+	return alloc.reservedCount
+}
+
+// String returns a string representation of the allocated block
+func (alloc allocatedBlock) String() string {
+	if alloc.reservedCount > 0 {
+		return fmt.Sprint(alloc.block, " for ", alloc.blockSize, " hosts and ",
+			alloc.reservedCount, " reserved addresses")
+	}
+	return fmt.Sprint(alloc.block, " for ", alloc.blockSize, " hosts")
+}
+
 // IPAllocatedBlock represents a prefix block allocated for a group of hosts of a given size
 type IPAllocatedBlock struct {
 	allocatedBlock
@@ -266,25 +308,6 @@ type IPAllocatedBlock struct {
 // GetAddress returns the block
 func (alloc IPAllocatedBlock) GetAddress() *IPAddress {
 	return alloc.block
-}
-
-// GetSize returns the number of hosts for which this block was allocated
-func (alloc IPAllocatedBlock) GetSize() *big.Int {
-	return alloc.blockSize
-}
-
-// GetCount returns the total number of addresses with the block
-func (alloc IPAllocatedBlock) GetCount() int {
-	return int(alloc.block.GetCount().Uint64())
-}
-
-// String returns a string representation of the allocated block
-func (alloc IPAllocatedBlock) String() string {
-	if alloc.reservedCount > 0 {
-		return fmt.Sprint(alloc.block, " for ", alloc.blockSize, " hosts and ",
-			alloc.reservedCount, " reserved addresses")
-	}
-	return fmt.Sprint(alloc.block, " for ", alloc.blockSize, " hosts")
 }
 
 func (alloc IPAllocatedBlock) toIPv4() IPv4AllocatedBlock {

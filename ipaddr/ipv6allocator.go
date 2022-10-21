@@ -40,6 +40,11 @@ func (alloc *IPv6PrefixBlockAllocator) AllocateMultiBitLens(bitLengths ...BitCou
 	return cloneIPAllocatedBlocksToIPv6AllocatedBlocks(alloc.prefixBlockAllocator.AllocateMultiBitLens(bitLengths...))
 }
 
+// GetAvailable returns a list of all the blocks available for allocating in the allocator
+func (alloc *IPv6PrefixBlockAllocator) GetAvailable() (blocks []*IPv6Address) {
+	return cloneIPAddrsToIPv6Addrs(alloc.prefixBlockAllocator.GetAvailable())
+}
+
 // IPv6AllocatedBlock represents an IPv4 prefix block allocated for a group of hosts of a given size
 type IPv6AllocatedBlock struct {
 	allocatedBlock

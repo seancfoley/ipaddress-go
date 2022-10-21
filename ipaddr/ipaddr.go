@@ -691,8 +691,6 @@ func (addr *ipAddressInternal) GetPrefixLenForSingleBlock() PrefixLen {
 
 var zeroIPAddr = createIPAddress(zeroSection, NoZone)
 
-//
-//
 // IPAddress represents an IP address or subnet, either IPv4 or IPv6 (except for the zero-IPAddress which is neither).
 // An IP address is composed of range-valued segments and can optionally have an associated prefix length.
 // The zero value IPAddress has no segments, neither IPv4 nor IPv6, which is not compatible with zero value for IPv4 or IPv6, those being 0.0.0.0 and :: respectively.
@@ -1310,8 +1308,8 @@ func (addr *IPAddress) CompareSize(other AddressItem) int { // this is here to t
 // The comparison is intended for individual addresses and CIDR prefix blocks.
 // If an address is neither an individual address nor a prefix block, it is treated like one:
 //
-//	- ranges that occur inside the prefix length are ignored, only the lower value is used.
-//	- ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
+//   - ranges that occur inside the prefix length are ignored, only the lower value is used.
+//   - ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
 func (addr *IPAddress) TrieCompare(other *IPAddress) (int, addrerr.IncompatibleAddressError) {
 	if thisAddr := addr.ToIPv4(); thisAddr != nil {
 		if oth := other.ToIPv4(); oth != nil {
@@ -1329,8 +1327,8 @@ func (addr *IPAddress) TrieCompare(other *IPAddress) (int, addrerr.IncompatibleA
 //
 // If an address is neither an individual address nor a prefix block, it is treated like one:
 //
-//	- ranges that occur inside the prefix length are ignored, only the lower value is used.
-//	- ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
+//   - ranges that occur inside the prefix length are ignored, only the lower value is used.
+//   - ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
 func (addr *IPAddress) TrieIncrement() *IPAddress {
 	return addr.trieIncrement().ToIP()
 }
@@ -1339,8 +1337,8 @@ func (addr *IPAddress) TrieIncrement() *IPAddress {
 //
 // If an address is neither an individual address nor a prefix block, it is treated like one:
 //
-//	- ranges that occur inside the prefix length are ignored, only the lower value is used.
-//	- ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
+//   - ranges that occur inside the prefix length are ignored, only the lower value is used.
+//   - ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
 func (addr *IPAddress) TrieDecrement() *IPAddress {
 	return addr.trieDecrement().ToIP()
 }
@@ -2587,6 +2585,8 @@ func NewIPAddressFromValueProvider(valueProvider IPAddressValueProvider) *IPAddr
 	}
 	return nil
 }
+
+// TODO generics change to use AddressType
 
 // AddrsMatchUnordered checks if the two slices share the same list of addresses in any order, using address equality.
 // The function can handle duplicates and nil addresses, both of which are ignored.
