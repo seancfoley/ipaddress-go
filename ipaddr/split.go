@@ -21,6 +21,13 @@ import (
 	"math/bits"
 )
 
+// TODO LATER change to generics , this also allows us to possibly avoid the slice copy with the return slice
+// So, what was I thinking at the time?   Hate it when I do that, write a to-do without enough details.
+// I think I wanted the ExtendedIPSegmentSeries slice to be generic somehow.
+// So, the idea I think, is that we can use the trick we used in tries, with [T TrieConstraint[T]], allowing us to specify methods like ToPrefixBlock T
+// So, then we can return []T.  Overall this is a bit of work.
+// In fact, when you think about it, generics can give you all the same things as ExtendedIPSegmentSeries
+
 // getSpanningPrefixBlocks returns the smallest set of prefix blocks that spans both this and the supplied address or subnet.
 func getSpanningPrefixBlocks(
 	first,
@@ -37,7 +44,7 @@ func getSpanningPrefixBlocks(
 		splitIntoPrefixBlocks)
 }
 
-func getSpanningSequentialBlocks(
+func getSpanningSequentialBlocks( // TODO LATER change to generics , this also allows us to possibly avoid the slice copy with the return slice
 	first,
 	other ExtendedIPSegmentSeries,
 ) []ExtendedIPSegmentSeries {

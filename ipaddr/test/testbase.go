@@ -99,18 +99,18 @@ func testAll(addresses addresses, rangedAddresses rangedAddresses, allAddresses 
 
 	hostATester := hostAllTester{hostRangeTester{hostTester{testBase{testResults: &acc, testAddresses: &rangedAddresses, fullTest: fullTest}}}}
 	hostATester.run()
-	rangedAddresses.getAllCached()
+	//rangedAddresses.getAllCached()
 
 	sTypesTester := specialTypesTester{testBase{testResults: &acc, testAddresses: &addresses, fullTest: fullTest}}
 	sTypesTester.run()
 
 	addressOrderTester := addressOrderTest{testBase{testResults: &acc, testAddresses: &addresses, fullTest: fullTest}}
 	addressOrderTester.run()
-	addresses.getAllCached()
+	//addresses.getAllCached()
 
 	// because trie test creates a mega tree from all previously created addresses, it should go last
-	trieTester := trieTester{testBase{testResults: &acc, testAddresses: &allAddresses, fullTest: fullTest}}
-	trieTester.run()
+	genericTrieTester := trieTesterGeneric{testBase{testResults: &acc, testAddresses: &allAddresses, fullTest: fullTest}}
+	genericTrieTester.run()
 
 	return acc
 }
@@ -1283,6 +1283,15 @@ func (t testBase) testCountRedirect(w ipaddr.ExtendedIdentifierString, number ui
 	}
 }
 
+// wrappedAddressIterator converts an address iterator of any address type to an iterator of *Address
+type wrappedAddressIterator[T ipaddr.AddressType] struct {
+	ipaddr.Iterator[T]
+}
+
+func (iter wrappedAddressIterator[T]) Next() *ipaddr.Address {
+	return iter.Iterator.Next().ToAddressBase()
+}
+
 func (t testBase) testCountImpl(w ipaddr.ExtendedIdentifierString, number uint64, excludeZeroHosts bool) {
 	if !t.fullTest && number > countLimit {
 		return
@@ -1298,9 +1307,9 @@ func (t testBase) testCountImpl(w ipaddr.ExtendedIdentifierString, number uint64
 	if count.Cmp(new(big.Int).SetUint64(number)) != 0 {
 		t.addFailure(newSegmentSeriesFailure("count was "+count.String()+" instead of expected count "+strconv.FormatUint(number, 10), val))
 	} else {
-		var addrIterator ipaddr.AddressIterator
+		var addrIterator ipaddr.Iterator[*ipaddr.Address]
 		if excludeZeroHosts {
-			addrIterator = ipaddr.WrappedIPAddressIterator{getNonZeroHostIterator(val.ToAddressBase().ToIP())}
+			addrIterator = wrappedAddressIterator[*ipaddr.IPAddress]{getNonZeroHostIterator(val.ToAddressBase().ToIP())}
 		} else {
 			addrIterator = val.ToAddressBase().Iterator()
 		}
@@ -1439,7 +1448,7 @@ func (t testBase) testPrefixCountImpl(w ipaddr.ExtendedIdentifierString, number 
 		for loopCount++; loopCount <= 2; loopCount++ {
 			countedCount = bigZero()
 			isBlock := loopCount == 1
-			var addrIterator ipaddr.AddressIterator
+			var addrIterator ipaddr.Iterator[*ipaddr.Address]
 			var set []ipaddr.AddressItem
 			if isBlock {
 				set = prefixBlockSet
@@ -1627,7 +1636,9 @@ type failure struct {
 	series ipaddr.AddressSegmentSeries
 	div    ipaddr.DivisionType
 	item   ipaddr.AddressItem
-	trie   *ipaddr.AddressTrie
+	//trie         *ipaddr.AddressTrie
+	trieAssocNew *ipaddr.AssociativeTrie[*ipaddr.Address, any]
+	trieNew      *ipaddr.Trie[*ipaddr.Address]
 }
 
 func (f failure) String() string {
@@ -1635,10 +1646,10 @@ func (f failure) String() string {
 		concat(
 			concat(
 				concat(
+					//concat(
 					concat(
-						concat(
-							"", f.series),
-						f.trie),
+						"", f.series),
+					//f.trie),
 					f.idStr),
 				f.rng),
 			f.div),
@@ -1696,12 +1707,26 @@ func newHostIdFailure(str string, idStr ipaddr.HostIdentifierString) failure {
 	}
 }
 
-func newTrieFailure(str string, trie *ipaddr.AddressTrie) failure {
+func newTrieFailure(str string, trie *ipaddr.Trie[*ipaddr.Address]) failure {
 	return failure{
-		str:  str,
-		trie: trie,
+		str:     str,
+		trieNew: trie,
 	}
 }
+
+func newAssocTrieFailure(str string, trie *ipaddr.AssociativeTrie[*ipaddr.Address, any]) failure {
+	return failure{
+		str:          str,
+		trieAssocNew: trie,
+	}
+}
+
+//func newTrieFailureOld(str string, trie *ipaddr.AddressTrie) failure {
+//	return failure{
+//		str:  str,
+//		trie: trie,
+//	}
+//}
 
 func newAddrFailure(str string, addr *ipaddr.Address) failure {
 	return newSegmentSeriesFailure(str, addr)

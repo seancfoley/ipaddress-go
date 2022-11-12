@@ -184,7 +184,7 @@ func (seg *ipAddressSegmentInternal) getStringAsLower() string {
 
 func (seg *ipAddressSegmentInternal) getString() string {
 	stringer := func() string {
-		if !seg.isMultiple() || seg.IsSinglePrefixBlock() { //covers the case of !isMult, ie single addresses, when there is no prefix or the prefix is the bit count
+		if !seg.isMultiple() || seg.IsSinglePrefixBlock() { //covers the case of !isMultiple, ie single addresses, when there is no prefix or the prefix is the bit count
 			return seg.getDefaultLowerString()
 		} else if seg.IsFullRange() {
 			return seg.getDefaultSegmentWildcardString()
@@ -638,7 +638,7 @@ func (seg *IPAddressSegment) ToHostSegment(segmentPrefixLength PrefixLen) *IPAdd
 // When iterating, the prefix length is preserved.  Remove it using WithoutPrefixLen prior to iterating if you wish to drop it from all individual address segments.
 //
 // Call IsMultiple to determine if this instance represents multiple address segments, or GetValueCount for the count.
-func (seg *IPAddressSegment) Iterator() IPSegmentIterator {
+func (seg *IPAddressSegment) Iterator() Iterator[*IPAddressSegment] {
 	if seg == nil {
 		return ipSegmentIterator{nilSegIterator()}
 	}
@@ -649,7 +649,7 @@ func (seg *IPAddressSegment) Iterator() IPSegmentIterator {
 // Each iterated address segment will be a prefix block with the same prefix length as this address segment.
 //
 // If this address segment has no prefix length, then this is equivalent to Iterator.
-func (seg *IPAddressSegment) PrefixBlockIterator() IPSegmentIterator {
+func (seg *IPAddressSegment) PrefixBlockIterator() Iterator[*IPAddressSegment] {
 	return ipSegmentIterator{seg.prefixBlockIterator()}
 }
 
@@ -657,7 +657,7 @@ func (seg *IPAddressSegment) PrefixBlockIterator() IPSegmentIterator {
 // one for each prefix of this address or subnet.
 //
 // It is similar to PrefixBlockIterator except that this method allows you to specify the prefix length.
-func (seg *IPAddressSegment) PrefixedBlockIterator(segmentPrefixLen BitCount) IPSegmentIterator {
+func (seg *IPAddressSegment) PrefixedBlockIterator(segmentPrefixLen BitCount) Iterator[*IPAddressSegment] {
 	return ipSegmentIterator{seg.prefixedBlockIterator(segmentPrefixLen)}
 }
 
@@ -668,7 +668,7 @@ func (seg *IPAddressSegment) PrefixedBlockIterator(segmentPrefixLen BitCount) IP
 // instead constraining themselves to values from this segment.
 //
 // If this address segment has no prefix length, then this is equivalent to Iterator.
-func (seg *IPAddressSegment) PrefixIterator() IPSegmentIterator {
+func (seg *IPAddressSegment) PrefixIterator() Iterator[*IPAddressSegment] {
 	return ipSegmentIterator{seg.prefixIterator()}
 }
 

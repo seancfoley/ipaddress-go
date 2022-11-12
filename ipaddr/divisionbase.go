@@ -94,6 +94,7 @@ type addressDivisionBase struct {
 	// But in the end, either way you are assuming you know that divisionValuesBase is a divisionValues.  So no point.
 	// Instead, each division type like IPAddressSegment and LargeDivision will know which value methods apply to that type.
 	divisionValues
+	// The field could possibly be generic.  However, since we aggregate implementations of divisionValues, what we have may be better
 }
 
 func (div *addressDivisionBase) getDivisionPrefixLength() PrefixLen {

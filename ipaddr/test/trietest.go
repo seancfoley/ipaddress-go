@@ -23,13 +23,40 @@ import (
 	"sync/atomic"
 )
 
-type trieTester struct {
+type trieTesterGeneric struct { //TODO to truly test the generics, need to create trieTesterGeneric[T][V] and then filter out the code for each in run()
 	testBase
 }
 
 var didOneMegaTree int32
 
-func (t trieTester) run() {
+type AddressTrie = ipaddr.AddressTrie
+type AddressTrieNode = ipaddr.TrieNode[*ipaddr.Address]
+
+func NewIPv4AddressGenericTrie() *AddressTrie {
+	return &AddressTrie{}
+}
+
+func NewIPv4AddressAssociativeGenericTrie[V any]() *ipaddr.AssociativeTrie[*ipaddr.Address, V] {
+	return &ipaddr.AssociativeTrie[*ipaddr.Address, V]{}
+}
+
+func NewIPv6AddressGenericTrie() *AddressTrie {
+	return &AddressTrie{}
+}
+
+func NewIPv6AddressAssociativeGenericTrie[V any]() *ipaddr.AssociativeTrie[*ipaddr.Address, V] {
+	return &ipaddr.AssociativeTrie[*ipaddr.Address, V]{}
+}
+
+func NewAddressGenericTrie() *AddressTrie {
+	return &AddressTrie{}
+}
+
+func NewAssociativeAddressGenericTrie[V any]() *ipaddr.AssociativeTrie[*ipaddr.Address, V] {
+	return &ipaddr.AssociativeTrie[*ipaddr.Address, V]{}
+}
+
+func (t trieTesterGeneric) run() {
 
 	t.testAddressCheck()
 	t.partitionTest()
@@ -41,26 +68,26 @@ func (t trieTester) run() {
 	notDoneEmptyIPv6 := true
 	notDoneEmptyIPv4 := true
 	for _, treeAddrs := range sampleIPAddressTries {
-		ipv6Tree := ipaddr.NewIPv6AddressTrie()
+		ipv6Tree := NewIPv6AddressGenericTrie()
 		t.createIPv6SampleTree(ipv6Tree, treeAddrs)
 		size := ipv6Tree.Size()
 		if size > 0 || notDoneEmptyIPv6 {
 			if notDoneEmptyIPv6 {
 				notDoneEmptyIPv6 = size != 0
 			}
-			t.testIterate(ipv6Tree.ToBase())
-			t.testContains(ipv6Tree.ToBase())
+			t.testIterate(ipv6Tree)
+			t.testContains(ipv6Tree)
 		}
 
-		ipv4Tree := ipaddr.NewIPv4AddressTrie()
+		ipv4Tree := NewIPv4AddressGenericTrie()
 		t.createIPv4SampleTree(ipv4Tree, treeAddrs)
 		size = ipv4Tree.Size()
 		if size > 0 || notDoneEmptyIPv4 {
 			if notDoneEmptyIPv4 {
 				notDoneEmptyIPv4 = size != 0
 			}
-			t.testIterate(ipv4Tree.ToBase())
-			t.testContains(ipv4Tree.ToBase())
+			t.testIterate(ipv4Tree)
+			t.testContains(ipv4Tree)
 		}
 	}
 	notDoneEmptyIPv6 = true
@@ -74,9 +101,10 @@ func (t trieTester) run() {
 			if notDoneEmptyIPv4 {
 				notDoneEmptyIPv4 = size != 0
 			}
-			t.testAdd(ipaddr.NewIPv4AddressTrie().ToBase(), addrs)
-			t.testEdges(ipaddr.NewIPv4AddressTrie().ToBase(), addrs)
-			t.testMap(ipaddr.NewIPv4AddressAssociativeTrie().ToAssociativeBase(), addrs, func(i int) ipaddr.NodeValue { return i }, func(v ipaddr.NodeValue) ipaddr.NodeValue { return 2 * 1 })
+
+			t.testAdd(NewIPv4AddressGenericTrie(), addrs)
+			t.testEdges(NewIPv4AddressGenericTrie(), addrs)
+			t.testMap(NewIPv4AddressAssociativeGenericTrie[any](), addrs, func(i int) any { return i }, func(v any) any { return 2 * 1 })
 		}
 		addrsv6 := collect(treeAddrs, func(addrStr string) *ipaddr.Address {
 			return t.createAddress(addrStr).GetAddress().ToIPv6().ToAddressBase()
@@ -86,26 +114,26 @@ func (t trieTester) run() {
 			if notDoneEmptyIPv6 {
 				notDoneEmptyIPv6 = size != 0
 			}
-			t.testAdd(ipaddr.NewIPv6AddressTrie().ToBase(), addrsv6)
-			t.testEdges(ipaddr.NewIPv6AddressTrie().ToBase(), addrsv6)
-			t.testMap(ipaddr.NewIPv6AddressAssociativeTrie().ToAssociativeBase(), addrsv6,
-				func(i int) ipaddr.NodeValue { return "bla" + strconv.Itoa(i) },
-				func(str ipaddr.NodeValue) ipaddr.NodeValue { return str.(string) + "foo" })
+			t.testAdd(NewIPv6AddressGenericTrie(), addrsv6)
+			t.testEdges(NewIPv6AddressGenericTrie(), addrsv6)
+			t.testMap(NewIPv6AddressAssociativeGenericTrie[any](), addrsv6,
+				func(i int) any { return "bla" + strconv.Itoa(i) },
+				func(str any) any { return str.(string) + "foo" })
 		}
 	}
 
 	notDoneEmptyMAC := true
 	for _, treeAddrs := range testMACTries {
-		tree := ipaddr.AddressTrie{}
-		macTree := tree.ToMAC()
+		tree := NewAddressGenericTrie()
+		macTree := tree
 		t.createMACSampleTree(macTree, treeAddrs)
 		size := macTree.Size()
 		if size > 0 || notDoneEmptyMAC {
 			if notDoneEmptyMAC {
 				notDoneEmptyMAC = size != 0
 			}
-			t.testIterate(macTree.ToBase())
-			t.testContains(macTree.ToBase())
+			t.testIterate(macTree)
+			t.testContains(macTree)
 		}
 	}
 	notDoneEmptyMAC = true
@@ -118,14 +146,14 @@ func (t trieTester) run() {
 			if notDoneEmptyMAC {
 				notDoneEmptyMAC = size != 0
 			}
-			tree := ipaddr.AddressTrie{}
-			t.testAdd(&tree, addrs)
-			tree2 := ipaddr.AddressTrie{}
-			t.testEdges(&tree2, addrs)
-			tree3 := ipaddr.AssociativeAddressTrie{}
-			t.testMap(&tree3, addrs,
-				func(i int) ipaddr.NodeValue { return i },
-				func(i ipaddr.NodeValue) ipaddr.NodeValue {
+			tree := NewAddressGenericTrie()
+			t.testAdd(tree, addrs)
+			tree2 := NewAddressGenericTrie()
+			t.testEdges(tree2, addrs)
+			tree3 := NewAssociativeAddressGenericTrie[any]()
+			t.testMap(tree3, addrs,
+				func(i int) any { return i },
+				func(i any) any {
 					if i == nil {
 						return 3
 					}
@@ -144,19 +172,19 @@ func (t trieTester) run() {
 			doMegaTree := atomic.CompareAndSwapInt32(&didOneMegaTree, 0, 1)
 			if doMegaTree {
 				//fmt.Println("doing the mega")
-				ipv6Tree1 := ipaddr.NewIPv6AddressTrie()
+				ipv6Tree1 := NewIPv6AddressGenericTrie()
 				t.createIPv6SampleTreeAddrs(ipv6Tree1, cached)
 				//fmt.Println(ipv6Tree1)
 				//fmt.Printf("ipv6 mega tree has %v elements", ipv6Tree1.Size())
-				t.testIterate(ipv6Tree1.ToBase())
-				t.testContains(ipv6Tree1.ToBase())
+				t.testIterate(ipv6Tree1)
+				t.testContains(ipv6Tree1)
 
-				ipv4Tree1 := ipaddr.NewIPv4AddressTrie()
+				ipv4Tree1 := NewIPv4AddressGenericTrie()
 				t.createIPv4SampleTreeAddrs(ipv4Tree1, cached)
 				//fmt.Println(ipv4Tree1)
 				//fmt.Printf("ipv4 mega tree has %v elements", ipv4Tree1.Size())
-				t.testIterate(ipv4Tree1.ToBase())
-				t.testContains(ipv4Tree1.ToBase())
+				t.testIterate(ipv4Tree1)
+				t.testContains(ipv4Tree1)
 			}
 		}
 	}
@@ -165,187 +193,73 @@ func (t trieTester) run() {
 	t.testString(treeTwo)
 
 	// try deleting the root
-	trieb := ipaddr.AddressTrie{}
-	trie := trieb.ToIPv4()
+	trieb := NewAddressGenericTrie()
+	trie := trieb
 	if trie.Size() != 0 {
-		t.addFailure(newTrieFailure("unexpected size "+strconv.Itoa(trie.Size()), trie.ToBase()))
+		t.addFailure(newTrieFailure("unexpected size "+strconv.Itoa(trie.Size()), trie))
 	}
 	if trie.NodeSize() != 0 {
-		t.addFailure(newTrieFailure("unexpected size "+strconv.Itoa(trie.NodeSize()), trie.ToBase()))
+		t.addFailure(newTrieFailure("unexpected size "+strconv.Itoa(trie.NodeSize()), trie))
 	}
-	trie.Add(ipaddr.NewIPAddressString("0.0.0.0/0").GetAddress().ToIPv4())
+	trie.Add(ipaddr.NewIPAddressString("0.0.0.0/0").GetAddress().ToAddressBase())
 	if trie.Size() != 1 {
-		t.addFailure(newTrieFailure("unexpected size "+strconv.Itoa(trie.Size()), trie.ToBase()))
+		t.addFailure(newTrieFailure("unexpected size "+strconv.Itoa(trie.Size()), trie))
 	}
 	if trie.NodeSize() != 1 {
-		t.addFailure(newTrieFailure("unexpected size "+strconv.Itoa(trie.Size()), trie.ToBase()))
+		t.addFailure(newTrieFailure("unexpected size "+strconv.Itoa(trie.Size()), trie))
 	}
 	trie.GetRoot().Remove()
 	if trie.Size() != 0 {
-		t.addFailure(newTrieFailure("unexpected size "+strconv.Itoa(trie.Size()), trie.ToBase()))
+		t.addFailure(newTrieFailure("unexpected size "+strconv.Itoa(trie.Size()), trie))
 	}
 	if trie.NodeSize() != 1 {
-		t.addFailure(newTrieFailure("unexpected node size "+strconv.Itoa(trie.NodeSize()), trie.ToBase()))
+		t.addFailure(newTrieFailure("unexpected node size "+strconv.Itoa(trie.NodeSize()), trie))
 	}
 
-	trie = ipaddr.NewIPv4AddressTrie()
-	trie.Add(ipaddr.NewIPAddressString("1.2.3.4").GetAddress().ToIPv4())
+	trie = NewIPv4AddressGenericTrie()
+	trie.Add(ipaddr.NewIPAddressString("1.2.3.4").GetAddress().ToAddressBase())
 	trie.GetRoot().SetAdded()
 	if trie.Size() != 2 {
-		t.addFailure(newTrieFailure("unexpected size "+strconv.Itoa(trie.Size()), trie.ToBase()))
+		t.addFailure(newTrieFailure("unexpected size "+strconv.Itoa(trie.Size()), trie))
 	}
 	trie.GetRoot().Remove()
 	if trie.Size() != 1 {
-		t.addFailure(newTrieFailure("unexpected size "+strconv.Itoa(trie.Size()), trie.ToBase()))
+		t.addFailure(newTrieFailure("unexpected size "+strconv.Itoa(trie.Size()), trie))
 	}
 	if trie.NodeSize() != 2 {
-		t.addFailure(newTrieFailure("unexpected node size "+strconv.Itoa(trie.NodeSize()), trie.ToBase()))
+		t.addFailure(newTrieFailure("unexpected node size "+strconv.Itoa(trie.NodeSize()), trie))
 	}
 	trie.Clear()
 	if trie.NodeSize() != 1 {
-		t.addFailure(newTrieFailure("unexpected node size "+strconv.Itoa(trie.NodeSize()), trie.ToBase()))
+		t.addFailure(newTrieFailure("unexpected node size "+strconv.Itoa(trie.NodeSize()), trie))
 	}
 	if trie.Size() != 0 {
-		t.addFailure(newTrieFailure("unexpected size "+strconv.Itoa(trie.Size()), trie.ToBase()))
+		t.addFailure(newTrieFailure("unexpected size "+strconv.Itoa(trie.Size()), trie))
 	}
 	trie.GetRoot().Remove()
 	if trie.NodeSize() != 1 {
-		t.addFailure(newTrieFailure("unexpected node size "+strconv.Itoa(trie.NodeSize()), trie.ToBase()))
+		t.addFailure(newTrieFailure("unexpected node size "+strconv.Itoa(trie.NodeSize()), trie))
 	}
 	if trie.Size() != 0 {
-		t.addFailure(newTrieFailure("unexpected size "+strconv.Itoa(trie.Size()), trie.ToBase()))
+		t.addFailure(newTrieFailure("unexpected size "+strconv.Itoa(trie.Size()), trie))
 	}
 	t.incrementTestCount()
 }
 
-type trieStrings struct {
-	addrs                       []string
-	treeString, addedNodeString string
-}
-
-var treeOne = trieStrings{
-	addrs: []string{"1::ffff:2:3:5",
-		"1::ffff:2:3:4",
-		"1::ffff:2:3:6",
-		"1::ffff:2:3:12",
-		"1::ffff:aa:3:4",
-		"1::ff:aa:3:4",
-		"1::ff:aa:3:12",
-		"bb::ffff:2:3:6",
-		"bb::ffff:2:3:12",
-		"bb::ffff:2:3:22",
-		"bb::ffff:2:3:32",
-		"bb::ffff:2:3:42",
-		"bb::ffff:2:3:43",
-	},
-	treeString: "\n" +
-		"○ ::/0 (13)\n" +
-		"└─○ ::/8 (13)\n" +
-		"  ├─○ 1::/64 (7)\n" +
-		"  │ ├─○ 1::ff:aa:3:0/123 (2)\n" +
-		"  │ │ ├─● 1::ff:aa:3:4 (1)\n" +
-		"  │ │ └─● 1::ff:aa:3:12 (1)\n" +
-		"  │ └─○ 1::ffff:0:0:0/88 (5)\n" +
-		"  │   ├─○ 1::ffff:2:3:0/123 (4)\n" +
-		"  │   │ ├─○ 1::ffff:2:3:4/126 (3)\n" +
-		"  │   │ │ ├─○ 1::ffff:2:3:4/127 (2)\n" +
-		"  │   │ │ │ ├─● 1::ffff:2:3:4 (1)\n" +
-		"  │   │ │ │ └─● 1::ffff:2:3:5 (1)\n" +
-		"  │   │ │ └─● 1::ffff:2:3:6 (1)\n" +
-		"  │   │ └─● 1::ffff:2:3:12 (1)\n" +
-		"  │   └─● 1::ffff:aa:3:4 (1)\n" +
-		"  └─○ bb::ffff:2:3:0/121 (6)\n" +
-		"    ├─○ bb::ffff:2:3:0/122 (4)\n" +
-		"    │ ├─○ bb::ffff:2:3:0/123 (2)\n" +
-		"    │ │ ├─● bb::ffff:2:3:6 (1)\n" +
-		"    │ │ └─● bb::ffff:2:3:12 (1)\n" +
-		"    │ └─○ bb::ffff:2:3:20/123 (2)\n" +
-		"    │   ├─● bb::ffff:2:3:22 (1)\n" +
-		"    │   └─● bb::ffff:2:3:32 (1)\n" +
-		"    └─○ bb::ffff:2:3:42/127 (2)\n" +
-		"      ├─● bb::ffff:2:3:42 (1)\n" +
-		"      └─● bb::ffff:2:3:43 (1)\n",
-	addedNodeString: "\n" +
-		"○ ::/0\n" +
-		"├─● 1::ff:aa:3:4\n" +
-		"├─● 1::ff:aa:3:12\n" +
-		"├─● 1::ffff:2:3:4\n" +
-		"├─● 1::ffff:2:3:5\n" +
-		"├─● 1::ffff:2:3:6\n" +
-		"├─● 1::ffff:2:3:12\n" +
-		"├─● 1::ffff:aa:3:4\n" +
-		"├─● bb::ffff:2:3:6\n" +
-		"├─● bb::ffff:2:3:12\n" +
-		"├─● bb::ffff:2:3:22\n" +
-		"├─● bb::ffff:2:3:32\n" +
-		"├─● bb::ffff:2:3:42\n" +
-		"└─● bb::ffff:2:3:43\n",
-}
-
-var treeTwo = trieStrings{
-	addrs: []string{"ff80::/8",
-		"ff80:8000::/16",
-		"ff80:8000::/24",
-		"ff80:8000::/32",
-		"ff80:8000:c000::/34",
-		"ff80:8000:c800::/36",
-		"ff80:8000:cc00::/38",
-		"ff80:8000:cc00::/40",
-	},
-	treeString: "\n" +
-		"○ ::/0 (8)\n" +
-		"└─○ ff80::/16 (8)\n" +
-		"  ├─● ff80:: (1)\n" +
-		"  └─● ff80:8000::/24 (7)\n" +
-		"    └─● ff80:8000::/32 (6)\n" +
-		"      ├─● ff80:8000:: (1)\n" +
-		"      └─● ff80:8000:c000::/34 (4)\n" +
-		"        └─○ ff80:8000:c800::/37 (3)\n" +
-		"          ├─● ff80:8000:c800:: (1)\n" +
-		"          └─● ff80:8000:cc00::/38 (2)\n" +
-		"            └─● ff80:8000:cc00::/40 (1)\n",
-	addedNodeString: "\n" +
-		"○ ::/0\n" +
-		"├─● ff80::\n" +
-		"└─● ff80:8000::/24\n" +
-		"  └─● ff80:8000::/32\n" +
-		"    ├─● ff80:8000::\n" +
-		"    └─● ff80:8000:c000::/34\n" +
-		"      ├─● ff80:8000:c800::\n" +
-		"      └─● ff80:8000:cc00::/38\n" +
-		"        └─● ff80:8000:cc00::/40\n",
-}
-
-func (t trieTester) testString(strs trieStrings) {
-	ipv6Tree := ipaddr.NewIPv6AddressTrie()
+func (t trieTesterGeneric) testString(strs trieStrings) {
+	ipv6Tree := NewIPv6AddressGenericTrie()
 	t.createIPv6SampleTree(ipv6Tree, strs.addrs)
 	treeStr := ipv6Tree.String()
 	if treeStr != strs.treeString {
-		t.addFailure(newTrieFailure("trie string not right, got "+treeStr+" instead of expected "+strs.treeString, ipv6Tree.ToBase()))
+		t.addFailure(newTrieFailure("trie string not right, got "+treeStr+" instead of expected "+strs.treeString, ipv6Tree))
 	}
 	addedString := ipv6Tree.AddedNodesTreeString()
 	if addedString != strs.addedNodeString {
-		t.addFailure(newTrieFailure("trie string not right, got "+addedString+" instead of expected "+strs.addedNodeString, ipv6Tree.ToBase()))
+		t.addFailure(newTrieFailure("trie string not right, got "+addedString+" instead of expected "+strs.addedNodeString, ipv6Tree))
 	}
 }
 
-func collect(addrs []string, converter func(string) *ipaddr.Address) []*ipaddr.Address {
-	list := make([]*ipaddr.Address, 0, len(addrs))
-	dupChecker := make(map[ipaddr.AddressKey]struct{})
-	for _, str := range addrs {
-		addr := converter(str)
-		if addr != nil {
-			key := addr.ToKey()
-			if _, exists := dupChecker[*key]; !exists {
-				dupChecker[*key] = struct{}{}
-				list = append(list, addr)
-			}
-		}
-	}
-	return list
-}
-
-func (t trieTester) testAddressCheck() {
+func (t trieTesterGeneric) testAddressCheck() {
 	addr := t.createAddress("1.2.3.4/16").GetAddress()
 
 	t.testConvertedAddrBlock(addr.ToAddressBase(), nil)
@@ -373,12 +287,12 @@ func (t trieTester) testAddressCheck() {
 	t.testMACAddrBlock("a:b:c:1:2:3")
 }
 
-func (t trieTester) testConvertedBlock(str string, expectedPrefLen ipaddr.PrefixLen) {
+func (t trieTesterGeneric) testConvertedBlock(str string, expectedPrefLen ipaddr.PrefixLen) {
 	addr := t.createAddress(str).GetAddress()
 	t.testConvertedAddrBlock(addr.ToAddressBase(), expectedPrefLen)
 }
 
-func (t trieTester) testConvertedAddrBlock(addr *ipaddr.Address, expectedPrefLen ipaddr.PrefixLen) {
+func (t trieTesterGeneric) testConvertedAddrBlock(addr *ipaddr.Address, expectedPrefLen ipaddr.PrefixLen) {
 	result := addr.ToSinglePrefixBlockOrAddress()
 	if result == nil {
 		t.addFailure(newAddrFailure("unexpectedly got no single block or address for "+addr.String(), addr))
@@ -388,7 +302,7 @@ func (t trieTester) testConvertedAddrBlock(addr *ipaddr.Address, expectedPrefLen
 	}
 }
 
-func (t trieTester) testNonBlock(str string) {
+func (t trieTesterGeneric) testNonBlock(str string) {
 	addr := t.createAddress(str).GetAddress()
 	result := addr.ToSinglePrefixBlockOrAddress()
 	if result != nil {
@@ -396,7 +310,7 @@ func (t trieTester) testNonBlock(str string) {
 	}
 }
 
-func (t trieTester) testNonMACBlock(str string) {
+func (t trieTesterGeneric) testNonMACBlock(str string) {
 	addr := t.createMACAddress(str).GetAddress()
 	result := addr.ToSinglePrefixBlockOrAddress()
 	if result != nil {
@@ -404,7 +318,7 @@ func (t trieTester) testNonMACBlock(str string) {
 	}
 }
 
-func (t trieTester) testIPAddrBlock(str string) {
+func (t trieTesterGeneric) testIPAddrBlock(str string) {
 	addr := t.createAddress(str).GetAddress()
 	result := addr.ToSinglePrefixBlockOrAddress()
 	if result != addr {
@@ -412,7 +326,7 @@ func (t trieTester) testIPAddrBlock(str string) {
 	}
 }
 
-func (t trieTester) testMACAddrBlock(str string) {
+func (t trieTesterGeneric) testMACAddrBlock(str string) {
 	addr := t.createMACAddress(str).GetAddress()
 	result := addr.ToSinglePrefixBlockOrAddress()
 	if result != addr {
@@ -420,48 +334,82 @@ func (t trieTester) testMACAddrBlock(str string) {
 	}
 }
 
-func (t trieTester) partitionTest() {
+func (t trieTesterGeneric) partitionTest() {
 	addrs := "1.2.1-15.*"
-	trie := ipaddr.NewIPv4AddressTrie()
+	trie := NewIPv4AddressGenericTrie()
 	addr := t.createAddress(addrs).GetAddress()
-	t.partitionForTrie(trie.ToBase(), addr)
+	t.partitionForTrie(trie, addr)
 }
 
-func (t trieTester) partitionForTrie(trie *ipaddr.AddressTrie, subnet *ipaddr.IPAddress) {
-	//ipaddr.PartitionIPWithSingleBlockSize(subnet).PredicateForEach(func(ipaddr *ipaddr.IPAddress) bool {
-	//	return trie.Add(ipaddr.ToAddressBase())
-	//})
-	ipaddr.PartitionIPWithSingleBlockSize(subnet).PredicateForEach(IPAddressPredicateAdapter{trie.Add}.IPPredicate)
+func (t trieTesterGeneric) partitionForTrie(trie *AddressTrie, subnet *ipaddr.IPAddress) {
+	ipaddr.PartitionWithSingleBlockSize(subnet).PredicateForEach(IPAddressPredicateAdapter{trie.Add}.IPPredicate)
 	if trie.Size() != 15 {
 		t.addFailure(newTrieFailure("partition size unexpected "+strconv.Itoa(trie.Size())+", expected 15", trie.Clone()))
 	}
-	// TODO LATER this one needs generics
-	//Map<T, TrieNode<T>> all = ipaddr.PartitionIPWithSingleBlockSize(subnet).ApplyForEach(trie::getAddedNode);
-	//if(all.size() != 15) {
-	//	addFailure("map size unexpected " + trie.size() + ", expected " + 15, trie);
-	//}
-	//HashMap<T, TrieNode<T>> all2 = new HashMap<>();
-	all2 := make(map[*ipaddr.IPAddress]*ipaddr.AddressTrieNode)
-	ipaddr.PartitionIPWithSingleBlockSize(subnet).ForEach(func(addr *ipaddr.IPAddress) {
+
+	partition := ipaddr.PartitionWithSingleBlockSize(subnet.ToAddressBase())
+	all := ipaddr.ApplyForEach[*ipaddr.Address, *AddressTrieNode](partition, trie.GetAddedNode)
+
+	if len(all) != 15 {
+		t.addFailure(newTrieFailure("map size unexpected "+strconv.Itoa(trie.Size())+", expected 15", trie))
+	}
+	partition = ipaddr.PartitionWithSingleBlockSize(subnet.ToAddressBase())
+	keyAll := ipaddr.ApplyForEach[*ipaddr.Address, struct{}](partition, func(*ipaddr.Address) struct{} { return struct{}{} })
+	if len(keyAll) != 15 {
+		t.addFailure(newTrieFailure("map size unexpected "+strconv.Itoa(trie.Size())+", expected 15", trie))
+	}
+	keyAll1 := make(map[ipaddr.Key[*ipaddr.Address]]struct{})
+	for k, v := range keyAll {
+		keyAll1[*k.ToKey()] = v
+	}
+
+	all2 := make(map[*ipaddr.Address]*AddressTrieNode)
+	keyAll2 := make(map[ipaddr.Key[*ipaddr.Address]]struct{})
+	ipaddr.PartitionWithSingleBlockSize(subnet).ForEach(func(addr *ipaddr.IPAddress) {
 		node := trie.GetAddedNode(addr.ToAddressBase())
-		all2[addr] = node
+		all2[addr.ToAddressBase()] = node
+		keyAll2[*addr.ToAddressBase().ToKey()] = struct{}{}
 	})
-	//TODO LATER needs generics
-	//if(!reflect.DeepEqual(all,all2) {
-	//	t.addFailure("maps not equal " + all + " and " + all2, trie);
-	//}
+
+	// using keys and struct{} allow for deep-equal comparison
+	if !reflect.DeepEqual(keyAll1, keyAll2) {
+		str := fmt.Sprintf("maps not equal %v and %v", all, all2)
+		reflect.DeepEqual(keyAll1, keyAll2)
+		t.addFailure(newTrieFailure(str, trie))
+	}
+
+	// the maps using *Address keys and *Address nodes are not expected to be equal since they use pointers
+	for k, v := range all {
+		if !k.Equal(v.GetKey()) {
+			t.addFailure(newTrieFailure("node key wrong for "+k.String(), trie))
+		}
+		found := false
+		for k2, v2 := range all2 {
+			if !k2.Equal(v2.GetKey()) {
+				t.addFailure(newTrieFailure("node key wrong for "+k2.String(), trie))
+			}
+			if k.Equal(k2) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.addFailure(newTrieFailure("could not find "+k.String(), trie))
+		}
+	}
+
 	trie.Clear()
 	ipaddr.PartitionIPWithSpanningBlocks(subnet).PredicateForEach(IPAddressPredicateAdapter{trie.Add}.IPPredicate)
 	if trie.Size() != 4 {
 		t.addFailure(newTrieFailure("partition size unexpected "+strconv.Itoa(trie.Size())+", expected 4", trie.Clone()))
 	}
 	trie.Clear()
-	ipaddr.PartitionIPWithSingleBlockSize(subnet).PredicateForEach(IPAddressPredicateAdapter{trie.Add}.IPPredicate)
+	ipaddr.PartitionWithSingleBlockSize(subnet).PredicateForEach(IPAddressPredicateAdapter{trie.Add}.IPPredicate)
 	ipaddr.PartitionIPWithSpanningBlocks(subnet).PredicateForEach(IPAddressPredicateAdapter{trie.Add}.IPPredicate)
 	if trie.Size() != 18 {
 		t.addFailure(newTrieFailure("partition size unexpected "+strconv.Itoa(trie.Size())+", expected 18", trie.Clone()))
 	}
-	allAreThere := ipaddr.PartitionIPWithSingleBlockSize(subnet).PredicateForEach(IPAddressPredicateAdapter{trie.Contains}.IPPredicate)
+	allAreThere := ipaddr.PartitionWithSingleBlockSize(subnet).PredicateForEach(IPAddressPredicateAdapter{trie.Contains}.IPPredicate)
 	allAreThere2 := ipaddr.PartitionIPWithSpanningBlocks(subnet).PredicateForEach(IPAddressPredicateAdapter{trie.Contains}.IPPredicate)
 	if !(allAreThere && allAreThere2) {
 		t.addFailure(newTrieFailure("partition contains check failing", trie))
@@ -469,7 +417,7 @@ func (t trieTester) partitionForTrie(trie *ipaddr.AddressTrie, subnet *ipaddr.IP
 	t.incrementTestCount()
 }
 
-func (t trieTester) getSampleIPAddressTries() [][]string {
+func (t trieTesterGeneric) getSampleIPAddressTries() [][]string {
 	if !t.fullTest {
 		return testIPAddressTries
 	}
@@ -482,14 +430,14 @@ func (t trieTester) getSampleIPAddressTries() [][]string {
 	return append(testIPAddressTries, oneMore)
 }
 
-func (t trieTester) testRemove(addrs []string) {
-	ipv6Tree := ipaddr.NewIPv6AddressTrie()
-	ipv4Tree := ipaddr.NewIPv4AddressTrie()
+func (t trieTesterGeneric) testRemove(addrs []string) {
+	ipv6Tree := NewIPv6AddressGenericTrie()
+	ipv4Tree := NewIPv4AddressGenericTrie()
 
-	t.testRemoveAddrs(ipv6Tree.ToBase(), addrs, func(addrStr string) *ipaddr.Address {
+	t.testRemoveAddrs(ipv6Tree, addrs, func(addrStr string) *ipaddr.Address {
 		return t.createAddress(addrStr).GetAddress().ToIPv6().ToAddressBase()
 	})
-	t.testRemoveAddrs(ipv4Tree.ToBase(), addrs, func(addrStr string) *ipaddr.Address {
+	t.testRemoveAddrs(ipv4Tree, addrs, func(addrStr string) *ipaddr.Address {
 		return t.createAddress(addrStr).GetAddress().ToIPv4().ToAddressBase()
 	})
 
@@ -500,17 +448,17 @@ func (t trieTester) testRemove(addrs []string) {
 	}
 
 	// both trees should be empty now
-	t.testRemoveAddrs(ipv6Tree.ToBase(), addrs, func(addrStr string) *ipaddr.Address {
+	t.testRemoveAddrs(ipv6Tree, addrs, func(addrStr string) *ipaddr.Address {
 		return t.createAddress(addrStr).GetAddress().ToIPv6().ToAddressBase()
 	})
-	t.testRemoveAddrs(ipv4Tree.ToBase(), addrs, func(addrStr string) *ipaddr.Address {
+	t.testRemoveAddrs(ipv4Tree, addrs, func(addrStr string) *ipaddr.Address {
 		return t.createAddress(addrStr).GetAddress().ToIPv4().ToAddressBase()
 	})
 }
 
-func (t trieTester) testRemoveMAC(addrs []string) {
-	tree := ipaddr.AddressTrie{}
-	t.testRemoveAddrs(&tree, addrs, func(addrStr string) *ipaddr.Address {
+func (t trieTesterGeneric) testRemoveMAC(addrs []string) {
+	tree := NewAddressGenericTrie()
+	t.testRemoveAddrs(tree, addrs, func(addrStr string) *ipaddr.Address {
 		return t.createMACAddress(addrStr).GetAddress().ToAddressBase()
 	})
 
@@ -521,16 +469,16 @@ func (t trieTester) testRemoveMAC(addrs []string) {
 	}
 
 	// tree should be empty now
-	t.testRemoveAddrs(&tree, addrs, func(addrStr string) *ipaddr.Address {
+	t.testRemoveAddrs(tree, addrs, func(addrStr string) *ipaddr.Address {
 		return t.createMACAddress(addrStr).GetAddress().ToAddressBase()
 	})
 	t.incrementTestCount()
 }
 
-func (t trieTester) testRemoveAddrs(tree *ipaddr.AddressTrie, addrs []string, converter func(addrStr string) *ipaddr.Address) {
+func (t trieTesterGeneric) testRemoveAddrs(tree *AddressTrie, addrs []string, converter func(addrStr string) *ipaddr.Address) {
 	count := 0
 	var list []*ipaddr.Address
-	dupChecker := make(map[ipaddr.AddressKey]struct{})
+	dupChecker := make(map[AddressKey]struct{})
 	for _, str := range addrs {
 		addr := converter(str)
 		if addr != nil {
@@ -546,7 +494,7 @@ func (t trieTester) testRemoveAddrs(tree *ipaddr.AddressTrie, addrs []string, co
 	t.testRemoveAddrsConverted(tree, count, list)
 }
 
-func (t trieTester) testRemoveAddrsConverted(tree *ipaddr.AddressTrie, count int, addrs []*ipaddr.Address) {
+func (t trieTesterGeneric) testRemoveAddrsConverted(tree *AddressTrie, count int, addrs []*ipaddr.Address) {
 	tree2 := tree.Clone()
 	tree3 := tree2.Clone()
 	tree4 := tree2.Clone()
@@ -679,80 +627,80 @@ func (t trieTester) testRemoveAddrsConverted(tree *ipaddr.AddressTrie, count int
 	t.incrementTestCount()
 }
 
-func (t trieTester) createMACSampleTree(tree *ipaddr.MACAddressTrie, addrs []string) {
+func (t trieTesterGeneric) createMACSampleTree(tree *AddressTrie, addrs []string) {
 	for _, addr := range addrs {
 		addressStr := t.createMACAddress(addr)
 		address := addressStr.GetAddress()
-		tree.Add(address)
+		tree.Add(address.ToAddressBase())
 	}
 }
 
-func (t trieTester) createIPv6SampleTree(tree *ipaddr.IPv6AddressTrie, addrs []string) {
+func (t trieTesterGeneric) createIPv6SampleTree(tree *AddressTrie, addrs []string) {
 	for _, addr := range addrs {
 		addressStr := t.createAddress(addr)
 		if addressStr.IsIPv6() {
-			address := addressStr.GetAddress().ToIPv6()
-			tree.Add(address)
+			address := addressStr.GetAddress()
+			tree.Add(address.ToAddressBase())
 		}
 	}
 }
 
-func (t trieTester) createIPv6SampleTreeAddrs(tree *ipaddr.IPv6AddressTrie, addrs []*ipaddr.IPAddress) {
+func (t trieTesterGeneric) createIPv6SampleTreeAddrs(tree *AddressTrie, addrs []*ipaddr.IPAddress) {
 	for _, addr := range addrs {
 		if addr.IsIPv6() {
 			addr = addr.ToSinglePrefixBlockOrAddress()
 			if addr != nil {
 				address := addr.ToIPv6()
-				tree.Add(address)
+				tree.Add(address.ToAddressBase())
 			}
 		}
 	}
 }
 
-func (t trieTester) createIPv4SampleTreeAddrs(tree *ipaddr.IPv4AddressTrie, addrs []*ipaddr.IPAddress) {
+func (t trieTesterGeneric) createIPv4SampleTreeAddrs(tree *AddressTrie, addrs []*ipaddr.IPAddress) {
 	for _, addr := range addrs {
 		if addr.IsIPv4() {
 			addr = addr.ToSinglePrefixBlockOrAddress()
 			if addr != nil {
 				address := addr.ToIPv4()
-				tree.Add(address)
+				tree.Add(address.ToAddressBase())
 			}
 		}
 	}
 }
 
-func (t trieTester) createIPv4SampleTree(tree *ipaddr.IPv4AddressTrie, addrs []string) {
+func (t trieTesterGeneric) createIPv4SampleTree(tree *AddressTrie, addrs []string) {
 	for _, addr := range addrs {
 		addressStr := t.createAddress(addr)
 		if addressStr.IsIPv4() {
 			address := addressStr.GetAddress().ToIPv4()
-			tree.Add(address)
+			tree.Add(address.ToAddressBase())
 		}
 	}
 }
 
 //<R extends AddressTrie<T>, T extends Address>
-func (t trieTester) testIterationContainment(tree *ipaddr.AddressTrie) {
-	t.testIterationContainmentTree(tree, func(trie *ipaddr.AddressTrie) ipaddr.CachingAddressTrieNodeIterator {
+func (t trieTesterGeneric) testIterationContainment(tree *AddressTrie) {
+	t.testIterationContainmentTree(tree, func(trie *AddressTrie) ipaddr.CachingTrieIterator[*AddressTrieNode] {
 		return trie.BlockSizeCachingAllNodeIterator()
 	}, false)
-	t.testIterationContainmentTree(tree, func(trie *ipaddr.AddressTrie) ipaddr.CachingAddressTrieNodeIterator {
+	t.testIterationContainmentTree(tree, func(trie *AddressTrie) ipaddr.CachingTrieIterator[*AddressTrieNode] {
 		return trie.ContainingFirstAllNodeIterator(true)
 	}, false /* added only */)
-	t.testIterationContainmentTree(tree, func(trie *ipaddr.AddressTrie) ipaddr.CachingAddressTrieNodeIterator {
+	t.testIterationContainmentTree(tree, func(trie *AddressTrie) ipaddr.CachingTrieIterator[*AddressTrieNode] {
 		return trie.ContainingFirstAllNodeIterator(false)
 	}, false /* added only */)
-	t.testIterationContainmentTree(tree, func(trie *ipaddr.AddressTrie) ipaddr.CachingAddressTrieNodeIterator {
+	t.testIterationContainmentTree(tree, func(trie *AddressTrie) ipaddr.CachingTrieIterator[*AddressTrieNode] {
 		return trie.ContainingFirstIterator(true)
 	}, true /* added only */)
-	t.testIterationContainmentTree(tree, func(trie *ipaddr.AddressTrie) ipaddr.CachingAddressTrieNodeIterator {
+	t.testIterationContainmentTree(tree, func(trie *AddressTrie) ipaddr.CachingTrieIterator[*AddressTrieNode] {
 		return trie.ContainingFirstIterator(false)
 	}, true /* added only */)
 }
 
-func (t trieTester) testIterationContainmentTree(
-	trie *ipaddr.AddressTrie,
-	iteratorFunc func(addressTrie *ipaddr.AddressTrie) ipaddr.CachingAddressTrieNodeIterator,
+func (t trieTesterGeneric) testIterationContainmentTree(
+	trie *ipaddr.Trie[*ipaddr.Address],
+	iteratorFunc func(addressTrie *AddressTrie) ipaddr.CachingTrieIterator[*AddressTrieNode],
 	addedNodesOnly bool) {
 	iterator := iteratorFunc(trie)
 	for iterator.HasNext() {
@@ -789,65 +737,74 @@ func (t trieTester) testIterationContainmentTree(
 	t.incrementTestCount()
 }
 
-func (t trieTester) testIterate(tree *ipaddr.AddressTrie) {
+func (t trieTesterGeneric) testIterate(tree *AddressTrie) {
 
-	t.testIteratorRem(tree, func(trie *ipaddr.AddressTrie) ipaddr.AddressTrieNodeIteratorRem {
+	type triePtr = (*AddressTrie)
+	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorRem[*AddressTrieNode] {
 		return trie.BlockSizeNodeIterator(true)
-	}, (*ipaddr.AddressTrie).Size)
-	t.testIteratorRem(tree, func(trie *ipaddr.AddressTrie) ipaddr.AddressTrieNodeIteratorRem {
+	}, triePtr.Size)
+	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorRem[*AddressTrieNode] {
 		return trie.BlockSizeAllNodeIterator(true)
-	}, (*ipaddr.AddressTrie).NodeSize)
-	t.testIteratorRem(tree, func(trie *ipaddr.AddressTrie) ipaddr.AddressTrieNodeIteratorRem {
+	}, triePtr.NodeSize)
+	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorRem[*AddressTrieNode] {
 		return trie.BlockSizeNodeIterator(false)
-	}, (*ipaddr.AddressTrie).Size)
-	t.testIteratorRem(tree, func(trie *ipaddr.AddressTrie) ipaddr.AddressTrieNodeIteratorRem {
+	}, triePtr.Size)
+	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorRem[*AddressTrieNode] {
 		return trie.BlockSizeAllNodeIterator(false)
-	}, (*ipaddr.AddressTrie).NodeSize)
+	}, triePtr.NodeSize)
 
-	t.testIteratorRem(tree, func(trie *ipaddr.AddressTrie) ipaddr.AddressTrieNodeIteratorRem {
+	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorRem[*AddressTrieNode] {
 		return trie.BlockSizeCachingAllNodeIterator()
-	}, (*ipaddr.AddressTrie).NodeSize)
+	}, triePtr.NodeSize)
 
-	t.testIteratorRem(tree, func(trie *ipaddr.AddressTrie) ipaddr.AddressTrieNodeIteratorRem { return trie.NodeIterator(true) }, (*ipaddr.AddressTrie).Size)
-	t.testIteratorRem(tree, func(trie *ipaddr.AddressTrie) ipaddr.AddressTrieNodeIteratorRem { return trie.AllNodeIterator(true) }, (*ipaddr.AddressTrie).NodeSize)
-	t.testIteratorRem(tree, func(trie *ipaddr.AddressTrie) ipaddr.AddressTrieNodeIteratorRem { return trie.NodeIterator(false) }, (*ipaddr.AddressTrie).Size)
-	t.testIteratorRem(tree, func(trie *ipaddr.AddressTrie) ipaddr.AddressTrieNodeIteratorRem { return trie.AllNodeIterator(false) }, (*ipaddr.AddressTrie).NodeSize)
+	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorRem[*AddressTrieNode] {
+		return trie.NodeIterator(true)
+	}, triePtr.Size)
+	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorRem[*AddressTrieNode] {
+		return trie.AllNodeIterator(true)
+	}, triePtr.NodeSize)
+	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorRem[*AddressTrieNode] {
+		return trie.NodeIterator(false)
+	}, triePtr.Size)
+	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorRem[*AddressTrieNode] {
+		return trie.AllNodeIterator(false)
+	}, triePtr.NodeSize)
 
-	t.testIteratorRem(tree, func(trie *ipaddr.AddressTrie) ipaddr.AddressTrieNodeIteratorRem {
+	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorRem[*AddressTrieNode] {
 		return trie.ContainedFirstIterator(true)
-	}, (*ipaddr.AddressTrie).Size)
-	t.testIterator(tree, func(trie *ipaddr.AddressTrie) ipaddr.AddressTrieNodeIterator {
+	}, triePtr.Size)
+	t.testIterator(tree, func(trie *AddressTrie) ipaddr.Iterator[*AddressTrieNode] {
 		return trie.ContainedFirstAllNodeIterator(true)
-	}, (*ipaddr.AddressTrie).NodeSize)
-	t.testIteratorRem(tree, func(trie *ipaddr.AddressTrie) ipaddr.AddressTrieNodeIteratorRem {
+	}, triePtr.NodeSize)
+	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorRem[*AddressTrieNode] {
 		return trie.ContainedFirstIterator(false)
-	}, (*ipaddr.AddressTrie).Size)
-	t.testIterator(tree, func(trie *ipaddr.AddressTrie) ipaddr.AddressTrieNodeIterator {
+	}, triePtr.Size)
+	t.testIterator(tree, func(trie *AddressTrie) ipaddr.Iterator[*AddressTrieNode] {
 		return trie.ContainedFirstAllNodeIterator(false)
-	}, (*ipaddr.AddressTrie).NodeSize)
+	}, triePtr.NodeSize)
 
-	t.testIteratorRem(tree, func(trie *ipaddr.AddressTrie) ipaddr.AddressTrieNodeIteratorRem {
+	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorRem[*AddressTrieNode] {
 		return trie.ContainingFirstIterator(true)
-	}, (*ipaddr.AddressTrie).Size)
-	t.testIteratorRem(tree, func(trie *ipaddr.AddressTrie) ipaddr.AddressTrieNodeIteratorRem {
+	}, triePtr.Size)
+	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorRem[*AddressTrieNode] {
 		return trie.ContainingFirstAllNodeIterator(true)
-	}, (*ipaddr.AddressTrie).NodeSize)
-	t.testIteratorRem(tree, func(trie *ipaddr.AddressTrie) ipaddr.AddressTrieNodeIteratorRem {
+	}, triePtr.NodeSize)
+	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorRem[*AddressTrieNode] {
 		return trie.ContainingFirstIterator(false)
-	}, (*ipaddr.AddressTrie).Size)
-	t.testIteratorRem(tree, func(trie *ipaddr.AddressTrie) ipaddr.AddressTrieNodeIteratorRem {
+	}, triePtr.Size)
+	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorRem[*AddressTrieNode] {
 		return trie.ContainingFirstAllNodeIterator(false)
-	}, (*ipaddr.AddressTrie).NodeSize)
+	}, triePtr.NodeSize)
 
 	t.testIterationContainment(tree)
 
 	t.incrementTestCount()
 }
 
-func (t trieTester) testIteratorRem(
-	trie *ipaddr.AddressTrie,
-	iteratorFunc func(*ipaddr.AddressTrie) ipaddr.AddressTrieNodeIteratorRem,
-	countFunc func(*ipaddr.AddressTrie) int) {
+func (t trieTesterGeneric) testIteratorRem(
+	trie *AddressTrie,
+	iteratorFunc func(*AddressTrie) ipaddr.IteratorRem[*AddressTrieNode],
+	countFunc func(*AddressTrie) int) {
 	// iterate the tree, confirm the size by counting
 	// clone the trie, iterate again, but remove each time, confirm the size
 	// confirm trie is empty at the end
@@ -890,7 +847,7 @@ func (t trieTester) testIteratorRem(
 	for {
 		expectedSize := countFunc(trie)
 		actualSize := 0
-		set := make(map[ipaddr.AddressKey]struct{})
+		set := make(map[AddressKey]struct{})
 		iterator := iteratorFunc(trie)
 		for iterator.HasNext() {
 			next := iterator.Next()
@@ -948,10 +905,10 @@ func (t trieTester) testIteratorRem(
 	t.incrementTestCount()
 }
 
-func (t trieTester) testIterator(
-	trie *ipaddr.AddressTrie,
-	iteratorFunc func(*ipaddr.AddressTrie) ipaddr.AddressTrieNodeIterator,
-	countFunc func(*ipaddr.AddressTrie) int) {
+func (t trieTesterGeneric) testIterator(
+	trie *AddressTrie,
+	iteratorFunc func(*AddressTrie) ipaddr.Iterator[*AddressTrieNode],
+	countFunc func(*AddressTrie) int) {
 	// iterate the tree, confirm the size by counting
 	// clone the trie, iterate again, but remove each time, confirm the size
 	// confirm trie is empty at the end
@@ -991,7 +948,7 @@ func (t trieTester) testIterator(
 
 	expectedSize := countFunc(trie)
 	actualSize := 0
-	set := make(map[ipaddr.AddressKey]struct{})
+	set := make(map[AddressKey]struct{})
 	iterator := iteratorFunc(trie)
 	for iterator.HasNext() {
 		next := iterator.Next()
@@ -1023,7 +980,7 @@ func (t trieTester) testIterator(
 	t.incrementTestCount()
 }
 
-func (t trieTester) testContains(trie *ipaddr.AddressTrie) {
+func (t trieTesterGeneric) testContains(trie *AddressTrie) {
 	if trie.Size() > 0 {
 		last := trie.GetAddedNode(trie.LastAddedNode().GetKey())
 		if !trie.Contains(last.GetKey()) {
@@ -1104,7 +1061,7 @@ func (t trieTester) testContains(trie *ipaddr.AddressTrie) {
 				t.addFailure(newTrieFailure("containing is true for address "+halfwayAddr.String()+" instead of expected false", trie))
 			}
 		} else {
-			var lastContaining *ipaddr.ContainmentPathNode
+			var lastContaining *ipaddr.ContainmentPathNode[*ipaddr.Address]
 			//fmt.Printf("containing is %s\n", containing)
 			if containing.Count() > 0 {
 				lastContaining = containing.ShortestPrefixMatch()
@@ -1116,9 +1073,9 @@ func (t trieTester) testContains(trie *ipaddr.AddressTrie) {
 					}
 				}
 			}
-			if lastContaining == nil || !lastContaining.GetKey().Equal(addedParent.GetKey()) || lastContaining.GetValue() != addedParent.GetValue() {
+			if lastContaining == nil || !lastContaining.GetKey().Equal(addedParent.GetKey()) {
 				t.addFailure(newTrieFailure("containing ends with "+lastContaining.String()+" for address "+halfwayAddr.String()+" instead of expected "+addedParent.String(), trie))
-			} else if !lastContaining.GetKey().Equal(smallestContaining.GetKey()) || lastContaining.GetValue() != smallestContaining.GetValue() {
+			} else if !lastContaining.GetKey().Equal(smallestContaining.GetKey()) {
 				t.addFailure(newTrieFailure("containing ends with "+lastContaining.String()+" for address "+halfwayAddr.String()+" instead of expected smallest containing "+smallestContaining.String(), trie))
 			} else if lastContaining.GetKey() != lpm {
 				t.addFailure(newTrieFailure("containing ends with addr "+lastContaining.GetKey().String()+" for address "+halfwayAddr.String()+" instead of expected "+lpm.String(), trie))
@@ -1131,13 +1088,13 @@ func (t trieTester) testContains(trie *ipaddr.AddressTrie) {
 	t.incrementTestCount()
 }
 
-func (t trieTester) testEdges(trie *ipaddr.AddressTrie, addrs []*ipaddr.Address) {
+func (t trieTesterGeneric) testEdges(trie *AddressTrie, addrs []*ipaddr.Address) {
 	trie2 := trie.Clone()
 	for _, addr := range addrs {
 		trie.Add(addr)
 	}
 	i := 0
-	ordered := make([]*ipaddr.AddressTrieNode, 0, len(addrs))
+	ordered := make([]*AddressTrieNode, 0, len(addrs))
 	iter := trie.Iterator()
 	for addr := iter.Next(); addr != nil; addr = iter.Next() {
 		if i%2 == 0 {
@@ -1230,7 +1187,7 @@ func (t trieTester) testEdges(trie *ipaddr.AddressTrie, addrs []*ipaddr.Address)
 }
 
 // pass in an empty trie
-func (t trieTester) testAdd(trie *ipaddr.AddressTrie, addrs []*ipaddr.Address) {
+func (t trieTesterGeneric) testAdd(trie *AddressTrie, addrs []*ipaddr.Address) {
 	trie2 := trie.Clone()
 	trie3 := trie.Clone()
 	trie4 := trie.Clone()
@@ -1275,8 +1232,8 @@ func (t trieTester) testAdd(trie *ipaddr.AddressTrie, addrs []*ipaddr.Address) {
 	t.incrementTestCount()
 }
 
-func (t trieTester) testMap(trie *ipaddr.AssociativeAddressTrie, addrs []*ipaddr.Address,
-	valueProducer func(int) ipaddr.NodeValue, mapper func(ipaddr.NodeValue) ipaddr.NodeValue) {
+func (t trieTesterGeneric) testMap(trie *ipaddr.AssociativeTrie[*ipaddr.Address, any], addrs []*ipaddr.Address,
+	valueProducer func(int) any, mapper func(any) any) {
 	// put tests
 	trie2 := trie.Clone()
 	trie4 := trie.Clone()
@@ -1284,49 +1241,49 @@ func (t trieTester) testMap(trie *ipaddr.AssociativeAddressTrie, addrs []*ipaddr
 		trie.Put(addr, valueProducer(i))
 	}
 	for i, addr := range addrs {
-		v := trie.Get(addr)
+		_, v := trie.Get(addr)
 		expected := valueProducer(i)
 		if !reflect.DeepEqual(v, expected) { //reflect deep equal
 			fmt.Println(trie)
-			t.addFailure(newTrieFailure(fmt.Sprintf("got mismatch, got %v, not %v for %v", v, expected, addr), trie.ToBase()))
-			v = trie.Get(addr)
+			t.addFailure(newAssocTrieFailure(fmt.Sprintf("got mismatch, got %v, not %v for %v", v, expected, addr), trie))
+			_, v = trie.Get(addr)
 		}
 	}
 	// all trie2 from now on
 	trie2.PutTrie(trie.GetRoot())
 	for i, addr := range addrs {
-		v := trie2.Get(addr)
+		_, v := trie2.Get(addr)
 		expected := valueProducer(i)
 		if !reflect.DeepEqual(v, expected) {
-			t.addFailure(newTrieFailure(fmt.Sprintf("got mismatch, got %v, not %v", v, expected), trie2.ToBase()))
+			t.addFailure(newAssocTrieFailure(fmt.Sprintf("got mismatch, got %v, not %v", v, expected), trie2))
 		}
 		if i%2 == 0 {
 			trie2.Remove(addr)
 		}
 	}
 	if trie2.Size() != (len(addrs) >> 1) {
-		t.addFailure(newTrieFailure("got size mismatch, got "+strconv.Itoa(trie2.Size())+" not "+strconv.Itoa(len(addrs)>>1), trie2.ToBase()))
+		t.addFailure(newAssocTrieFailure("got size mismatch, got "+strconv.Itoa(trie2.Size())+" not "+strconv.Itoa(len(addrs)>>1), trie2))
 	}
 	trie2.PutTrie(trie.GetRoot())
 	for i, addr := range addrs {
-		v := trie2.Get(addr)
+		_, v := trie2.Get(addr)
 		expected := valueProducer(i)
 		if !reflect.DeepEqual(v, expected) {
-			t.addFailure(newTrieFailure(fmt.Sprintf("get mismatch, got %v, not %v", v, expected), trie2.ToBase()))
+			t.addFailure(newAssocTrieFailure(fmt.Sprintf("get mismatch, got %v, not %v", v, expected), trie2))
 		}
 	}
 	if trie2.Size() != len(addrs) {
-		t.addFailure(newTrieFailure("got size mismatch, got "+strconv.Itoa(trie2.Size())+" not "+strconv.Itoa(len(addrs)), trie2.ToBase()))
+		t.addFailure(newAssocTrieFailure("got size mismatch, got "+strconv.Itoa(trie2.Size())+" not "+strconv.Itoa(len(addrs)), trie2))
 	}
 	for i, addr := range addrs {
 		if i%2 == 0 {
 			b := trie2.Remove(addr)
 			if !b {
-				t.addFailure(newTrieFailure("remove should have succeeded", trie2.ToBase()))
+				t.addFailure(newAssocTrieFailure("remove should have succeeded", trie2))
 			}
 			b = trie2.Remove(addr)
 			if b {
-				t.addFailure(newTrieFailure("remove should not have succeeded", trie2.ToBase()))
+				t.addFailure(newAssocTrieFailure("remove should not have succeeded", trie2))
 			}
 		}
 
@@ -1334,38 +1291,38 @@ func (t trieTester) testMap(trie *ipaddr.AssociativeAddressTrie, addrs []*ipaddr
 	for i, addr := range addrs {
 		exists, _ := trie2.Put(addr, valueProducer(i))
 		if exists != (i%2 == 0) {
-			t.addFailure(newTrieFailure("putNew mismatch", trie2.ToBase()))
+			t.addFailure(newAssocTrieFailure("putNew mismatch", trie2))
 		}
 	}
 	if trie2.Size() != len(addrs) {
-		t.addFailure(newTrieFailure("got size mismatch, got "+strconv.Itoa(trie.Size())+" not "+strconv.Itoa(len(addrs)), trie2.ToBase()))
+		t.addFailure(newAssocTrieFailure("got size mismatch, got "+strconv.Itoa(trie.Size())+" not "+strconv.Itoa(len(addrs)), trie2))
 	}
 	for i, addr := range addrs {
 		res, _ := trie2.Put(addr, valueProducer(i+1))
 		if res {
-			t.addFailure(newTrieFailure("putNew mismatch", trie2.ToBase()))
+			t.addFailure(newAssocTrieFailure("putNew mismatch", trie2))
 		}
 	}
 	if trie2.Size() != len(addrs) {
-		t.addFailure(newTrieFailure("got size mismatch, got "+strconv.Itoa(trie.Size())+" not "+strconv.Itoa(len(addrs)), trie2.ToBase()))
+		t.addFailure(newAssocTrieFailure("got size mismatch, got "+strconv.Itoa(trie.Size())+" not "+strconv.Itoa(len(addrs)), trie2))
 	}
 	for i, addr := range addrs {
-		v := trie2.Get(addr)
+		_, v := trie2.Get(addr)
 		expected := valueProducer(i + 1)
 		if !reflect.DeepEqual(v, expected) {
-			t.addFailure(newTrieFailure(fmt.Sprintf("get mismatch, got %v, not %v", v, expected), trie.ToBase()))
+			t.addFailure(newAssocTrieFailure(fmt.Sprintf("get mismatch, got %v, not %v", v, expected), trie))
 		}
 	}
 	for i, addr := range addrs {
 		_, v := trie2.Put(addr, valueProducer(i))
 		expected := valueProducer(i + 1)
 		if !reflect.DeepEqual(v, expected) {
-			t.addFailure(newTrieFailure(fmt.Sprintf("get mismatch, got %v, not %v", v, expected), trie.ToBase()))
+			t.addFailure(newAssocTrieFailure(fmt.Sprintf("get mismatch, got %v, not %v", v, expected), trie))
 		}
-		v = trie2.Get(addr)
+		_, v = trie2.Get(addr)
 		expected = valueProducer(i)
 		if !reflect.DeepEqual(v, expected) {
-			t.addFailure(newTrieFailure(fmt.Sprintf("get mismatch, got %v, not %v", v, expected), trie.ToBase()))
+			t.addFailure(newAssocTrieFailure(fmt.Sprintf("get mismatch, got %v, not %v", v, expected), trie))
 		}
 	}
 
@@ -1374,13 +1331,13 @@ func (t trieTester) testMap(trie *ipaddr.AssociativeAddressTrie, addrs []*ipaddr
 		if i%2 == 0 {
 			b := trie2.Remove(addr)
 			if !b {
-				t.addFailure(newTrieFailure("remove should have succeeded", trie2.ToBase()))
+				t.addFailure(newAssocTrieFailure("remove should have succeeded", trie2))
 			}
 		}
 		// the reason for the (i % 8 == 1) is that the existing value is already valueProducer.apply(i),
 		// so half the time we are re-adding the existing value,
 		// half the time we are changing to a new value
-		var value ipaddr.NodeValue
+		var value any
 		if i%4 == 1 {
 			if i%8 == 1 {
 				value = valueProducer(i + 1)
@@ -1388,26 +1345,32 @@ func (t trieTester) testMap(trie *ipaddr.AssociativeAddressTrie, addrs []*ipaddr
 				value = valueProducer(i)
 			}
 		}
-		node := trie2.Remap(addr, func(val ipaddr.NodeValue) ipaddr.NodeValue {
+		node := trie2.Remap(addr, func(val any, found bool) (any, bool) {
 			if val == nil {
-				return valueProducer(0)
+				if found {
+					t.addFailure(newAssocTrieFailure("got unexpected vals", trie2))
+				}
+				return valueProducer(0), true
 			} else {
-				return value
+				if !found {
+					t.addFailure(newAssocTrieFailure("got unexpected vals", trie2))
+				}
+				return value, true
 			}
 		})
 		if node == nil || !node.GetKey().Equal(addr) {
-			t.addFailure(newTrieFailure("got unexpected return, got "+node.String(), trie2.ToBase()))
+			t.addFailure(newAssocTrieFailure("got unexpected return, got "+node.String(), trie2))
 		}
 		if i%2 != 0 && value == nil {
 			k++
 		}
 	}
 	if trie2.Size()+k != len(addrs) {
-		t.addFailure(newTrieFailure("got size mismatch, got "+strconv.Itoa(trie2.Size())+" not "+strconv.Itoa(len(addrs)-k), trie2.ToBase()))
+		t.addFailure(newAssocTrieFailure("got size mismatch, got "+strconv.Itoa(trie2.Size())+" not "+strconv.Itoa(len(addrs)-k), trie2))
 	}
 	for i, addr := range addrs {
-		v := trie2.Get(addr)
-		var expected ipaddr.NodeValue
+		_, v := trie2.Get(addr)
+		var expected any
 		if i%2 == 0 {
 			expected = valueProducer(0)
 		} else if i%4 == 1 {
@@ -1418,20 +1381,20 @@ func (t trieTester) testMap(trie *ipaddr.AssociativeAddressTrie, addrs []*ipaddr
 			}
 		}
 		if !reflect.DeepEqual(v, expected) {
-			t.addFailure(newTrieFailure(fmt.Sprintf("got mismatch, got %v, not %v", v, expected), trie.ToBase()))
+			t.addFailure(newAssocTrieFailure(fmt.Sprintf("got mismatch, got %v, not %v", v, expected), trie))
 		}
 	}
 	for _, addr := range addrs {
-		trie2.RemapIfAbsent(addr, func() ipaddr.NodeValue {
-			return valueProducer(1)
-		}, false)
+		trie2.RemapIfAbsent(addr, func() (any, bool) {
+			return valueProducer(1), true
+		}) // false
 	}
 	if trie2.Size() != len(addrs) {
-		t.addFailure(newTrieFailure("got size mismatch, got "+strconv.Itoa(trie2.Size())+" not "+strconv.Itoa(len(addrs)), trie2.ToBase()))
+		t.addFailure(newAssocTrieFailure("got size mismatch, got "+strconv.Itoa(trie2.Size())+" not "+strconv.Itoa(len(addrs)), trie2))
 	}
 	for i, addr := range addrs {
-		v := trie2.Get(addr)
-		var expected ipaddr.NodeValue
+		_, v := trie2.Get(addr)
+		var expected any
 		if i%2 == 0 {
 			expected = valueProducer(0)
 		} else if i%4 == 1 {
@@ -1445,11 +1408,11 @@ func (t trieTester) testMap(trie *ipaddr.AssociativeAddressTrie, addrs []*ipaddr
 			expected = valueProducer(1)
 		}
 		if !reflect.DeepEqual(v, expected) {
-			t.addFailure(newTrieFailure(fmt.Sprintf("get mismatch, got %v, not %v", v, expected), trie.ToBase()))
+			t.addFailure(newAssocTrieFailure(fmt.Sprintf("get mismatch, got %v, not %v", v, expected), trie))
 		}
 	}
 	if trie2.Size() != len(addrs) {
-		t.addFailure(newTrieFailure("got size mismatch, got "+strconv.Itoa(trie2.Size())+" not "+strconv.Itoa(len(addrs)), trie2.ToBase()))
+		t.addFailure(newAssocTrieFailure("got size mismatch, got "+strconv.Itoa(trie2.Size())+" not "+strconv.Itoa(len(addrs)), trie2))
 	}
 
 	for i, addr := range addrs {
@@ -1458,36 +1421,39 @@ func (t trieTester) testMap(trie *ipaddr.AssociativeAddressTrie, addrs []*ipaddr
 		}
 	}
 	if trie2.Size() != (len(addrs) >> 1) {
-		t.addFailure(newTrieFailure("got size mismatch, got "+strconv.Itoa(trie2.Size())+" not "+strconv.Itoa(len(addrs)>>1), trie2.ToBase()))
+		t.addFailure(newAssocTrieFailure("got size mismatch, got "+strconv.Itoa(trie2.Size())+" not "+strconv.Itoa(len(addrs)>>1), trie2))
 	}
 
 	for i, addr := range addrs {
-		node := trie2.RemapIfAbsent(addr, func() ipaddr.NodeValue {
-			return nil
-		}, false)
+		node := trie2.RemapIfAbsent(addr, func() (any, bool) {
+			return nil, false
+		}) // false
 		if (node == nil) != (i%2 == 0) {
-			t.addFailure(newTrieFailure("got unexpected return, got "+node.String(), trie2.ToBase()))
+			t.addFailure(newAssocTrieFailure("got unexpected return, got "+node.String(), trie2))
 		}
 	}
 	if trie2.Size() != (len(addrs) >> 1) {
-		t.addFailure(newTrieFailure("got size mismatch, got "+strconv.Itoa(trie2.Size())+" not "+strconv.Itoa(len(addrs)>>1), trie2.ToBase()))
+		t.addFailure(newAssocTrieFailure("got size mismatch, got "+strconv.Itoa(trie2.Size())+" not "+strconv.Itoa(len(addrs)>>1), trie2))
 	}
 
 	for _, addr := range addrs {
-		node := trie2.RemapIfAbsent(addr, func() ipaddr.NodeValue {
-			return nil
-		}, true)
-		if node == nil || !node.GetKey().Equal(addr) {
-			t.addFailure(newTrieFailure("got unexpected return, got "+node.String(), trie2.ToBase()))
+		node := trie2.RemapIfAbsent(addr, func() (any, bool) {
+			return nil, false
+		}) // true
+		if node != nil && !node.GetKey().Equal(addr) {
+			t.addFailure(newAssocTrieFailure("got unexpected return, got "+node.String(), trie2))
+		}
+		if node == nil {
+			trie2.Put(addr, nil)
 		}
 	}
 	if trie2.Size() != len(addrs) {
-		t.addFailure(newTrieFailure("got size mismatch, got "+strconv.Itoa(trie2.Size())+" not "+strconv.Itoa(len(addrs)), trie2.ToBase()))
+		t.addFailure(newAssocTrieFailure("got size mismatch, got "+strconv.Itoa(trie2.Size())+" not "+strconv.Itoa(len(addrs)), trie2))
 	}
 
 	for i, addr := range addrs {
-		v := trie2.Get(addr)
-		var expected ipaddr.NodeValue
+		_, v := trie2.Get(addr)
+		var expected any
 		if i%2 == 0 {
 		} else if i%4 == 1 {
 			if i%8 == 1 {
@@ -1499,210 +1465,62 @@ func (t trieTester) testMap(trie *ipaddr.AssociativeAddressTrie, addrs []*ipaddr
 			expected = valueProducer(1)
 		}
 		if !reflect.DeepEqual(v, expected) {
-			t.addFailure(newTrieFailure(fmt.Sprintf("get mismatch, got %v, not %v", v, expected), trie.ToBase()))
+			t.addFailure(newAssocTrieFailure(fmt.Sprintf("get mismatch, got %v, not %v", v, expected), trie))
 		}
 	}
-	var firstNode *ipaddr.AssociativeAddressTrieNode
+	var firstNode *ipaddr.AssociativeTrieNode[*ipaddr.Address, any]
 	func() {
 		defer func() {
 			if r := recover(); r != nil {
-				b, _ := trie2.Put(firstNode.GetKey(), firstNode.GetValue())
+				v := firstNode.GetValue()
+				b, _ := trie2.Put(firstNode.GetKey(), v)
 				if !b {
-					t.addFailure(newTrieFailure("should have added", trie2.ToBase()))
+					t.addFailure(newAssocTrieFailure("should have added", trie2))
 				}
 			}
 		}()
 		for _, addr := range addrs {
 			node := trie2.GetAddedNode(addr)
 			firstNode = node
-			trie2.RemapIfAbsent(addr, func() ipaddr.NodeValue {
+			trie2.RemapIfAbsent(addr, func() (any, bool) {
 				node.Remove()
-				return valueProducer(1)
-			}, false)
-			t.addFailure(newTrieFailure("should have paniced", trie2.ToBase()))
+				return valueProducer(1), true
+			}) // false
+			t.addFailure(newAssocTrieFailure("should have paniced", trie2))
 		}
 	}()
 
 	func() {
 		defer func() {
 			if r := recover(); r != nil {
-				b, _ := trie2.Put(firstNode.GetKey(), firstNode.GetValue())
+				v := firstNode.GetValue()
+				b, _ := trie2.Put(firstNode.GetKey(), v)
 				if !b {
-					t.addFailure(newTrieFailure("should have added", trie2.ToBase()))
+					t.addFailure(newAssocTrieFailure("should have added", trie2))
 				}
 			}
 		}()
 		for _, addr := range addrs {
 			node := trie2.GetAddedNode(addr)
 			firstNode = node
-			trie2.Remap(addr, func(ipaddr.NodeValue) ipaddr.NodeValue {
+			trie2.Remap(addr, func(any, bool) (any, bool) {
 				node.Remove()
-				return valueProducer(1)
+				return valueProducer(1), true
 			})
-			t.addFailure(newTrieFailure("should have paniced", trie2.ToBase()))
+			t.addFailure(newAssocTrieFailure("should have paniced", trie2))
 		}
 	}()
 
 	// all trie4 from now on
 	for i, addr := range addrs {
 		node := trie4.PutNode(addr, valueProducer(i))
-		if !reflect.DeepEqual(node.GetValue(), valueProducer(i)) {
-			t.addFailure(newTrieFailure(fmt.Sprintf("got putNode mismatch, got %v not %v", node.GetValue(), valueProducer(i)), trie.ToBase()))
+		v := node.GetValue()
+		if !reflect.DeepEqual(v, valueProducer(i)) {
+			t.addFailure(newAssocTrieFailure(fmt.Sprintf("got putNode mismatch, got %v not %v", node.GetValue(), valueProducer(i)), trie))
 		}
 	}
 	if trie4.Size() != len(addrs) {
-		t.addFailure(newTrieFailure("got size mismatch, got "+strconv.Itoa(trie4.Size())+" not "+strconv.Itoa(len(addrs)), trie4.ToBase()))
+		t.addFailure(newAssocTrieFailure("got size mismatch, got "+strconv.Itoa(trie4.Size())+" not "+strconv.Itoa(len(addrs)), trie4))
 	}
 	// end put tests
-}
-
-var testIPAddressTries = [][]string{{
-	"1.2.3.4",
-	"1.2.3.5",
-	"1.2.3.6",
-	"1.2.3.3",
-	"1.2.3.255",
-	"2.2.3.5",
-	"2.2.3.128",
-	"2.2.3.0/24",
-	"2.2.4.0/24",
-	"2.2.7.0/24",
-	"2.2.4.3",
-	"1::ffff:2:3:5",
-	"1::ffff:2:3:4",
-	"1::ffff:2:3:6",
-	"1::ffff:2:3:12",
-	"1::ffff:aa:3:4",
-	"1::ff:aa:3:4",
-	"1::ff:aa:3:12",
-	"bb::ffff:2:3:6",
-	"bb::ffff:2:3:12",
-	"bb::ffff:2:3:22",
-	"bb::ffff:2:3:32",
-	"bb::ffff:2:3:42",
-	"bb::ffff:2:3:43",
-}, {
-	"0.0.0.0/8",
-	"0.0.0.0/16",
-	"0.0.0.0/24",
-	"0.0.0.0",
-}, {
-	"1.2.3.4",
-}, {}, {
-	"128.0.0.0",
-}, {
-	"0.0.0.0",
-}, {
-	"0.0.0.0/0",
-	"128.0.0.0/8",
-	"128.128.0.0/16",
-	"128.128.128.0/24",
-	"128.128.128.128",
-}, {
-	"0.0.0.0/0",
-	"0.0.0.0/8",
-	"0.128.0.0/16",
-	"0.128.0.0/24",
-	"0.128.0.128",
-}, {
-	"128.0.0.0/8",
-	"128.128.0.0/16",
-	"128.128.128.0/24",
-	"128.128.128.128",
-}, {
-	"0.0.0.0/8",
-	"0.128.0.0/16",
-	"0.128.0.0/24",
-	"0.128.0.128",
-}, {
-	"ff80::/8",
-	"ff80:8000::/16",
-	"ff80:8000::/24",
-	"ff80:8000::/32",
-	"ff80:8000:c000::/34",
-	"ff80:8000:c800::/36",
-	"ff80:8000:cc00::/38",
-	"ff80:8000:cc00::/40",
-}, {
-	"0.0.0.0/0",
-	"128.0.0.0/8",
-	"128.0.0.0/16",
-	"128.0.128.0/24",
-	"128.0.128.0",
-}, {
-	"0.0.0.0/0",
-	"0.0.0.0/8",
-	"0.0.0.0/16",
-	"0.0.0.0/24",
-	"0.0.0.0",
-},
-	{
-		"1.2.3.0",
-		"1.2.3.0/31", // consecutive
-		"1.2.3.1",
-		"1.2.3.0/30",
-		"1.2.3.2",
-	},
-}
-
-var testMACTries = [][]string{{
-	"a:b:c:d:e:f",
-	"f:e:c:d:b:a",
-	"a:b:c:*:*:*",
-	"a:b:c:d:*:*",
-	"a:b:c:e:f:*",
-}, {
-	"a:b:c:d:e:f",
-}, {
-	"a:b:c:d:*:*",
-}, {}, {
-	"a:a:a:b:c:d:e:f",
-	"a:a:f:e:c:d:b:a",
-	"a:a:a:b:c:*:*:*",
-	"a:a:a:b:c:d:*:*",
-	"a:a:a:b:c:b:*:*",
-	"a:a:a:b:c:e:f:*",
-}, {
-	"*:*:*:*:*:*",
-},
-}
-
-// IPAddressPredicateAdapter has methods to supply IP, IPv4, and IPv6 addresses to a wrapped predicate function that takes Address arguments
-type IPAddressPredicateAdapter struct {
-	Adapted func(*ipaddr.Address) bool
-}
-
-// IPPredicate calls the wrapped predicate function with the given IP address as the argument
-func (a IPAddressPredicateAdapter) IPPredicate(addr *ipaddr.IPAddress) bool {
-	return a.Adapted(addr.ToAddressBase())
-}
-
-// IPv4Predicate calls the wrapped predicate function with the given IPv4 address as the argument
-func (a IPAddressPredicateAdapter) IPv4Predicate(addr *ipaddr.IPv4Address) bool {
-	return a.Adapted(addr.ToAddressBase())
-}
-
-// IPv6Predicate calls the wrapped predicate function with the given IPv6 address as the argument
-func (a IPAddressPredicateAdapter) IPv6Predicate(addr *ipaddr.IPv6Address) bool {
-	return a.Adapted(addr.ToAddressBase())
-}
-
-// IPAddressActionAdapter has methods to supply IP, IPv4, and IPv6 addresses to a wrapped consumer function that takes Address arguments
-type IPAddressActionAdapter struct {
-	Adapted func(*ipaddr.Address)
-}
-
-// IPAction calls the wrapped consumer function with the given IP address as the argument
-func (a IPAddressActionAdapter) IPAction(addr *ipaddr.IPAddress) {
-	a.Adapted(addr.ToAddressBase())
-}
-
-// IPv4Action calls the wrapped consumer function with the given IPv4 address as the argument
-func (a IPAddressActionAdapter) IPv4Action(addr *ipaddr.IPv4Address) {
-	a.Adapted(addr.ToAddressBase())
-}
-
-// IPv6Action calls the wrapped consumer function with the given IPv6 address as the argument
-func (a IPAddressActionAdapter) IPv6Action(addr *ipaddr.IPv6Address) {
-	a.Adapted(addr.ToAddressBase())
 }

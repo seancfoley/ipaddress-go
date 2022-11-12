@@ -22,14 +22,6 @@ type hasNext interface {
 	HasNext() bool
 }
 
-// SegmentIterator iterates through address segments
-type SegmentIterator interface {
-	hasNext
-
-	// Next returns the next address segment, or nil if there is none left.
-	Next() *AddressSegment
-}
-
 type singleSegmentIterator struct {
 	original *AddressSegment
 }
@@ -135,7 +127,7 @@ func (it *segmentPrefIterator) Next() (res *AddressSegment) {
 	return
 }
 
-func nilSegIterator() SegmentIterator {
+func nilSegIterator() Iterator[*AddressSegment] {
 	return &singleSegmentIterator{}
 }
 
@@ -146,7 +138,7 @@ func segIterator(
 	bitCount BitCount,
 	creator segderiver,
 	segmentPrefixLength PrefixLen,
-	isPrefixIterator, isBlockIterator bool) SegmentIterator {
+	isPrefixIterator, isBlockIterator bool) Iterator[*AddressSegment] {
 	var shiftAdjustment BitCount
 	var shiftMask, upperShiftMask SegInt
 	if segmentPrefixLength == nil {
@@ -202,75 +194,43 @@ func segIterator(
 	}
 }
 
-// IPSegmentIterator iterates through IP address segments
-type IPSegmentIterator interface {
-	hasNext
-
-	// Next returns the next IP address segment, or nil if there is none left.
-	Next() *IPAddressSegment
-}
-
 type ipSegmentIterator struct {
-	SegmentIterator
+	Iterator[*AddressSegment]
 }
 
 func (iter ipSegmentIterator) Next() *IPAddressSegment {
-	return iter.SegmentIterator.Next().ToIP()
+	return iter.Iterator.Next().ToIP()
 }
 
-// WrappedIPSegmentIterator converts an IP address segment iterator to an address segment iterator
-type WrappedIPSegmentIterator struct {
-	IPSegmentIterator
+// wrappedSegmentIterator converts an IP address segment iterator to an address segment iterator
+type wrappedSegmentIterator[T AddressSegmentType] struct {
+	Iterator[T]
 }
 
-func (iter WrappedIPSegmentIterator) Next() *AddressSegment {
-	return iter.IPSegmentIterator.Next().ToSegmentBase()
-}
-
-// IPv4SegmentIterator iterates through IPv4 address segments
-type IPv4SegmentIterator interface {
-	hasNext
-
-	// Next returns the next IPv6 address segment, or nil if there is none left.
-	Next() *IPv4AddressSegment
+func (iter wrappedSegmentIterator[T]) Next() *AddressSegment {
+	return iter.Iterator.Next().ToSegmentBase()
 }
 
 type ipv4SegmentIterator struct {
-	SegmentIterator
+	Iterator[*AddressSegment]
 }
 
 func (iter ipv4SegmentIterator) Next() *IPv4AddressSegment {
-	return iter.SegmentIterator.Next().ToIPv4()
-}
-
-// IPv6SegmentIterator iterates through IPv6 address segments
-type IPv6SegmentIterator interface {
-	hasNext
-
-	// Next returns the next IPv6 address segment, or nil if there is none left.
-	Next() *IPv6AddressSegment
+	return iter.Iterator.Next().ToIPv4()
 }
 
 type ipv6SegmentIterator struct {
-	SegmentIterator
+	Iterator[*AddressSegment]
 }
 
 func (iter ipv6SegmentIterator) Next() *IPv6AddressSegment {
-	return iter.SegmentIterator.Next().ToIPv6()
-}
-
-// MACSegmentIterator iterates through MAC address segments
-type MACSegmentIterator interface {
-	hasNext
-
-	// Next returns the next MAC address segment, or nil if there is none left.
-	Next() *MACAddressSegment
+	return iter.Iterator.Next().ToIPv6()
 }
 
 type macSegmentIterator struct {
-	SegmentIterator
+	Iterator[*AddressSegment]
 }
 
 func (iter macSegmentIterator) Next() *MACAddressSegment {
-	return iter.SegmentIterator.Next().ToMAC()
+	return iter.Iterator.Next().ToMAC()
 }

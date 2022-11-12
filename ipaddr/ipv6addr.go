@@ -228,7 +228,7 @@ func NewIPv6AddressFromPrefixedZonedBytes(bytes []byte, prefixLength PrefixLen, 
 	return
 }
 
-//TODO LATER maybe integrate with net.Interface "Name"
+//   TODO LATER maybe integrate with net.Interface "Name"
 
 // NewIPv6AddressFromInt constructs an IPv6 address from the given value.
 // An error is returned when the values is negative or too large.
@@ -779,8 +779,8 @@ func (addr *IPv6Address) Intersect(other *IPv6Address) *IPv6Address {
 
 // SpanWithRange returns an IPv6AddressSeqRange instance that spans this subnet to the given subnet.
 // If the other address is a different version than this, then the other is ignored, and the result is equivalent to calling ToSequentialRange.
-func (addr *IPv6Address) SpanWithRange(other *IPv6Address) *IPv6AddressSeqRange {
-	return NewIPv6SeqRange(addr.init(), other.init())
+func (addr *IPv6Address) SpanWithRange(other *IPv6Address) *SequentialRange[*IPv6Address] {
+	return NewSequentialRange(addr.init(), other)
 }
 
 // GetLower returns the lowest address in the subnet range,
@@ -1001,7 +1001,15 @@ func (addr *IPv6Address) AssignMinPrefixForBlock() *IPv6Address {
 // This method provides the address formats used by tries.
 // ToSinglePrefixBlockOrAddress is quite similar to AssignPrefixForSingleBlock, which always returns prefixed addresses, while this does not.
 func (addr *IPv6Address) ToSinglePrefixBlockOrAddress() *IPv6Address {
-	return addr.init().toSinglePrefixBlockOrAddress().ToIPv6()
+	return addr.init().toSinglePrefixBlockOrAddr().ToIPv6()
+}
+
+func (addr *IPv6Address) toSinglePrefixBlockOrAddress() (*IPv6Address, addrerr.IncompatibleAddressError) {
+	res := addr.ToSinglePrefixBlockOrAddress()
+	if res == nil {
+		return nil, &incompatibleAddressError{addressError{key: "ipaddress.error.address.not.block"}}
+	}
+	return res, nil
 }
 
 // ContainsPrefixBlock returns whether the range of this address or subnet contains the block of addresses for the given prefix length.
@@ -1224,7 +1232,10 @@ func (addr *IPv6Address) TrieCompare(other *IPv6Address) int {
 //	- ranges that occur inside the prefix length are ignored, only the lower value is used.
 //	- ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
 func (addr *IPv6Address) TrieIncrement() *IPv6Address {
-	return addr.trieIncrement().ToIPv6()
+	if res, ok := trieIncrement(addr); ok {
+		return res
+	}
+	return nil
 }
 
 // TrieDecrement returns the previous address or block according to address trie ordering
@@ -1234,7 +1245,10 @@ func (addr *IPv6Address) TrieIncrement() *IPv6Address {
 //	- ranges that occur inside the prefix length are ignored, only the lower value is used.
 //	- ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
 func (addr *IPv6Address) TrieDecrement() *IPv6Address {
-	return addr.trieDecrement().ToIPv6()
+	if res, ok := trieDecrement(addr); ok {
+		return res
+	}
+	return nil
 }
 
 // MatchesWithMask applies the mask to this address and then compares the result with the given address,
@@ -1274,15 +1288,20 @@ func (addr *IPv6Address) SetZone(zone string) *IPv6Address {
 // and apply this method to each iterated subnet.
 //
 // If this represents just a single address then the returned instance covers just that single address as well.
-func (addr *IPv6Address) ToSequentialRange() *IPv6AddressSeqRange {
+func (addr *IPv6Address) ToSequentialRange() *SequentialRange[*IPv6Address] {
 	if addr == nil {
 		return nil
 	}
 	addr = addr.init().WithoutPrefixLen().WithoutZone()
-	return newSeqRangeUnchecked(
-		addr.GetLowerIPAddress(),
-		addr.GetUpperIPAddress(),
-		addr.isMultiple()).ToIPv6()
+	return newSequRangeUnchecked(
+		addr.GetLower(),
+		addr.GetUpper(),
+		addr.isMultiple())
+}
+
+func (addr *IPv6Address) getLowestHighestAddrs() (lower, upper *IPv6Address) {
+	l, u := addr.ipAddressInternal.getLowestHighestAddrs()
+	return l.ToIPv6(), u.ToIPv6()
 }
 
 // ToAddressString retrieves or generates an IPAddressString instance for this IPAddress instance.
@@ -1481,7 +1500,7 @@ func (addr *IPv6Address) IsLoopback() bool {
 // When iterating, the prefix length is preserved.  Remove it using WithoutPrefixLen prior to iterating if you wish to drop it from all individual addresses.
 //
 // Call IsMultiple to determine if this instance represents multiple addresses, or GetCount for the count.
-func (addr *IPv6Address) Iterator() IPv6AddressIterator {
+func (addr *IPv6Address) Iterator() Iterator[*IPv6Address] {
 	if addr == nil {
 		return ipv6AddressIterator{nilAddrIterator()}
 	}
@@ -1495,7 +1514,7 @@ func (addr *IPv6Address) Iterator() IPv6AddressIterator {
 // instead constraining themselves to values from this subnet.
 //
 // If the subnet has no prefix length, then this is equivalent to Iterator.
-func (addr *IPv6Address) PrefixIterator() IPv6AddressIterator {
+func (addr *IPv6Address) PrefixIterator() Iterator[*IPv6Address] {
 	return ipv6AddressIterator{addr.init().prefixIterator(false)}
 }
 
@@ -1503,13 +1522,13 @@ func (addr *IPv6Address) PrefixIterator() IPv6AddressIterator {
 // Each iterated address or subnet will be a prefix block with the same prefix length as this address or subnet.
 //
 // If this address has no prefix length, then this is equivalent to Iterator.
-func (addr *IPv6Address) PrefixBlockIterator() IPv6AddressIterator {
+func (addr *IPv6Address) PrefixBlockIterator() Iterator[*IPv6Address] {
 	return ipv6AddressIterator{addr.init().prefixIterator(true)}
 }
 
 // BlockIterator iterates through the addresses that can be obtained by iterating through all the upper segments up to the given segment count.
 // The segments following remain the same in all iterated addresses.
-func (addr *IPv6Address) BlockIterator(segmentCount int) IPv6AddressIterator {
+func (addr *IPv6Address) BlockIterator(segmentCount int) Iterator[*IPv6Address] {
 	return ipv6AddressIterator{addr.init().blockIterator(segmentCount)}
 }
 
@@ -1520,7 +1539,7 @@ func (addr *IPv6Address) BlockIterator(segmentCount int) IPv6AddressIterator {
 // For instance, given the IPv4 subnet 1-2.3-4.5-6.7-8, it will iterate through 1.3.5.7-8, 1.3.6.7-8, 1.4.5.7-8, 1.4.6.7-8, 2.3.5.7-8, 2.3.6.7-8, 2.4.6.7-8, 2.4.6.7-8.
 //
 // Use GetSequentialBlockCount to get the number of iterated elements.
-func (addr *IPv6Address) SequentialBlockIterator() IPv6AddressIterator {
+func (addr *IPv6Address) SequentialBlockIterator() Iterator[*IPv6Address] {
 	return ipv6AddressIterator{addr.init().sequentialBlockIterator()}
 }
 
@@ -1536,6 +1555,20 @@ func (addr *IPv6Address) GetSequentialBlockIndex() int {
 // GetSequentialBlockCount provides the count of elements from the sequential block iterator, the minimal number of sequential subnets that comprise this subnet
 func (addr *IPv6Address) GetSequentialBlockCount() *big.Int {
 	return addr.getSequentialBlockCount()
+}
+
+func (addr *IPv6Address) rangeIterator(
+	upper *IPv6Address,
+	valsAreMultiple bool,
+	prefixLen PrefixLen,
+	segProducer func(addr *IPAddress, index int) *IPAddressSegment,
+	segmentIteratorProducer func(seg *IPAddressSegment, index int) Iterator[*IPAddressSegment],
+	segValueComparator func(seg1, seg2 *IPAddress, index int) bool,
+	networkSegmentIndex,
+	hostSegmentIndex int,
+	prefixedSegIteratorProducer func(seg *IPAddressSegment, index int) Iterator[*IPAddressSegment],
+) Iterator[*IPv6Address] {
+	return ipv6AddressIterator{addr.ipAddressInternal.rangeIterator(upper.ToIP(), valsAreMultiple, prefixLen, segProducer, segmentIteratorProducer, segValueComparator, networkSegmentIndex, hostSegmentIndex, prefixedSegIteratorProducer)}
 }
 
 // IncrementBoundary returns the address that is the given increment from the range boundaries of this subnet.
@@ -1731,7 +1764,7 @@ func (addr *IPv6Address) Replace(startIndex int, replacement *IPv6AddressSection
 //
 // This method applies to the lower value of the range if this is a subnet representing multiple values.
 func (addr *IPv6Address) GetLeadingBitCount(ones bool) BitCount {
-	return addr.GetSection().GetLeadingBitCount(ones)
+	return addr.init().getLeadingBitCount(ones)
 }
 
 // GetTrailingBitCount returns the number of consecutive trailing one or zero bits.
@@ -1740,7 +1773,7 @@ func (addr *IPv6Address) GetLeadingBitCount(ones bool) BitCount {
 //
 // This method applies to the lower value of the range if this is a subnet representing multiple values.
 func (addr *IPv6Address) GetTrailingBitCount(ones bool) BitCount {
-	return addr.GetSection().GetTrailingBitCount(ones)
+	return addr.init().getTrailingBitCount(ones)
 }
 
 // GetNetwork returns the singleton IPv6 network instance.
@@ -2091,6 +2124,14 @@ func (addr *IPv6Address) ToCustomString(stringOptions addrstr.IPv6StringOptions)
 	return addr.GetSection().toCustomString(stringOptions, addr.zone)
 }
 
+func (addr *IPv6Address) toMaxLower() *IPv6Address {
+	return addr.init().addressInternal.toMaxLower().ToIPv6()
+}
+
+func (addr *IPv6Address) toMinUpper() *IPv6Address {
+	return addr.init().addressInternal.toMinUpper().ToIPv6()
+}
+
 // ToAddressBase converts to an Address, a polymorphic type usable with all addresses and subnets.
 // Afterwards, you can convert back with ToIPv6.
 //
@@ -2126,22 +2167,40 @@ func (addr *IPv6Address) WrapAddress() WrappedAddress {
 // ToKey creates the associated address key.
 // While addresses can be compared with the Compare, TrieCompare or Equal methods as well as various provided instances of AddressComparator,
 // they are not comparable with go operators.
-// However, IPv6AddressKey instances are comparable with go operators, and thus can be used as map keys.
-func (addr *IPv6Address) ToKey() *IPv6AddressKey {
+// However, Key instances are comparable with go operators, and thus can be used as map keys.
+func (addr *IPv6Address) ToKey() *Key[*IPv6Address] {
 	addr = addr.init()
-	key := &IPv6AddressKey{
-		Prefix: PrefixKey{
-			IsPrefixed: addr.IsPrefixed(),
-			PrefixLen:  PrefixBitCount(addr.GetPrefixLen().Len()),
+	key := &Key[*IPv6Address]{
+		keyContents{
+			scheme: ipv6Scheme,
+			zone:   addr.GetZone(),
 		},
-		Zone: addr.GetZone(),
 	}
 	section := addr.GetSection()
 	divs := section.getDivArray()
 	for i, div := range divs {
 		seg := div.ToIPv6()
-		vals := &key.Values[i]
-		vals.Value, vals.UpperValue = seg.GetIPv6SegmentValue(), seg.GetIPv6UpperSegmentValue()
+		valIndex := i >> 2
+		val := &key.keyContents.vals[valIndex]
+		if i&3 != 0 {
+			val.lower <<= IPv6BitsPerSegment
+			val.upper <<= IPv6BitsPerSegment
+		}
+		val.lower |= uint64(seg.GetIPv6SegmentValue())
+		val.upper |= uint64(seg.GetIPv6UpperSegmentValue())
 	}
 	return key
+}
+
+func (addr *IPv6Address) fromKey(key *keyContents) *IPv6Address {
+	return NewIPv6AddressFromZonedRange(
+		func(segmentIndex int) IPv6SegInt {
+			valsIndex := segmentIndex >> 2
+			return IPv6SegInt(key.vals[valsIndex].lower >> ((((IPv6SegmentCount - 1) - segmentIndex) % 4) << ipv6BitsToSegmentBitshift))
+		}, func(segmentIndex int) IPv6SegInt {
+			valsIndex := segmentIndex >> 2
+			return IPv6SegInt(key.vals[valsIndex].upper >> ((((IPv6SegmentCount - 1) - segmentIndex) % 4) << ipv6BitsToSegmentBitshift))
+		},
+		string(key.zone),
+	)
 }

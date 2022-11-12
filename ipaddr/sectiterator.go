@@ -16,14 +16,6 @@
 
 package ipaddr
 
-// SegmentsIterator iterates through segment arrays of addresses and sections
-type SegmentsIterator interface {
-	hasNext
-
-	// Next returns the next segment as an address division, or nil if there is none left.
-	Next() []*AddressDivision
-}
-
 type singleSegmentsIterator struct {
 	original []*AddressDivision
 }
@@ -42,11 +34,11 @@ func (it *singleSegmentsIterator) Next() (res []*AddressDivision) {
 
 type multiSegmentsIterator struct {
 	done       bool
-	variations []SegmentIterator
+	variations []Iterator[*AddressSegment]
 	nextSet    []*AddressDivision
 
 	segIteratorProducer,
-	hostSegIteratorProducer func(int) SegmentIterator
+	hostSegIteratorProducer func(int) Iterator[*AddressSegment]
 
 	networkSegmentIndex,
 	hostSegmentIndex int
@@ -134,8 +126,8 @@ func (it *multiSegmentsIterator) increment() (res []*AddressDivision) {
 func allSegmentsIterator(
 	divCount int,
 	segSupplier func() []*AddressDivision, // only useful for a segment iterator.  Address/section iterators use address/section for single valued iterator.
-	segIteratorProducer func(int) SegmentIterator,
-	excludeFunc func([]*AddressDivision) bool /* can be nil */) SegmentsIterator {
+	segIteratorProducer func(int) Iterator[*AddressSegment],
+	excludeFunc func([]*AddressDivision) bool /* can be nil */) Iterator[[]*AddressDivision] {
 	return segmentsIterator(divCount, segSupplier, segIteratorProducer, excludeFunc, divCount-1, divCount, nil)
 }
 
@@ -143,16 +135,16 @@ func allSegmentsIterator(
 func segmentsIterator(
 	divCount int,
 	segSupplier func() []*AddressDivision,
-	segIteratorProducer func(int) SegmentIterator, // unused at this time, since we do not have a public segments iterator
+	segIteratorProducer func(int) Iterator[*AddressSegment], // unused at this time, since we do not have a public segments iterator
 	excludeFunc func([]*AddressDivision) bool, // can be nil
 	networkSegmentIndex,
 	hostSegmentIndex int,
-	hostSegIteratorProducer func(int) SegmentIterator) SegmentsIterator { // returns Iterator<S[]>
+	hostSegIteratorProducer func(int) Iterator[*AddressSegment]) Iterator[[]*AddressDivision] { // returns Iterator<S[]>
 	if segSupplier != nil {
 		return &singleSegmentsIterator{segSupplier()}
 	}
 	iterator := &multiSegmentsIterator{
-		variations:              make([]SegmentIterator, divCount),
+		variations:              make([]Iterator[*AddressSegment], divCount),
 		nextSet:                 make([]*AddressDivision, divCount),
 		segIteratorProducer:     segIteratorProducer,
 		hostSegIteratorProducer: hostSegIteratorProducer,
@@ -167,10 +159,10 @@ func segmentsIterator(
 // this iterator function used by sequential ranges
 func rangeSegmentsIterator(
 	divCount int,
-	segIteratorProducer func(int) SegmentIterator,
+	segIteratorProducer func(int) Iterator[*AddressSegment],
 	networkSegmentIndex,
 	hostSegmentIndex int,
-	prefixedSegIteratorProducer func(int) SegmentIterator) SegmentsIterator {
+	prefixedSegIteratorProducer func(int) Iterator[*AddressSegment]) Iterator[[]*AddressDivision] {
 	return segmentsIterator(
 		divCount,
 		nil,
@@ -179,14 +171,6 @@ func rangeSegmentsIterator(
 		networkSegmentIndex,
 		hostSegmentIndex,
 		prefixedSegIteratorProducer)
-}
-
-// SectionIterator iterates through address sections
-type SectionIterator interface {
-	hasNext
-
-	// Next returns the next address section, or nil if there is none left.
-	Next() *AddressSection
 }
 
 type singleSectionIterator struct {
@@ -207,7 +191,7 @@ func (it *singleSectionIterator) Next() (res *AddressSection) {
 
 type multiSectionIterator struct {
 	original        *AddressSection
-	iterator        SegmentsIterator
+	iterator        Iterator[[]*AddressDivision]
 	valsAreMultiple bool
 	prefixLen       PrefixLen
 }
@@ -226,7 +210,7 @@ func (it *multiSectionIterator) Next() (res *AddressSection) {
 	return
 }
 
-func nilSectIterator() SectionIterator {
+func nilSectIterator() Iterator[*AddressSection] {
 	return &singleSectionIterator{}
 }
 
@@ -234,8 +218,8 @@ func sectIterator(
 	useOriginal bool,
 	original *AddressSection,
 	valsAreMultiple bool,
-	iterator SegmentsIterator,
-) SectionIterator {
+	iterator Iterator[[]*AddressDivision],
+) Iterator[*AddressSection] {
 	if useOriginal {
 		return &singleSectionIterator{original: original}
 	}
@@ -249,7 +233,7 @@ func sectIterator(
 
 type prefixSectionIterator struct {
 	original   *AddressSection
-	iterator   SegmentsIterator
+	iterator   Iterator[[]*AddressDivision]
 	isNotFirst bool
 	prefixLen  PrefixLen
 }
@@ -264,10 +248,10 @@ func (it *prefixSectionIterator) Next() (res *AddressSection) {
 		original := it.original
 		res = createSection(segs, it.prefixLen, original.addrType)
 		if !it.isNotFirst {
-			res.initMultiple() // sets isMult
+			res.initMultiple() // sets isMultiple
 			it.isNotFirst = true
 		} else if !it.HasNext() {
-			res.initMultiple() // sets isMult
+			res.initMultiple() // sets isMultiple
 		} else {
 			res.isMult = true
 		}
@@ -278,8 +262,8 @@ func (it *prefixSectionIterator) Next() (res *AddressSection) {
 func prefixSectIterator(
 	useOriginal bool,
 	original *AddressSection,
-	iterator SegmentsIterator,
-) SectionIterator {
+	iterator Iterator[[]*AddressDivision],
+) Iterator[*AddressSection] {
 	if useOriginal {
 		return &singleSectionIterator{original: original}
 	}
@@ -290,66 +274,34 @@ func prefixSectIterator(
 	}
 }
 
-// IPSectionIterator iterates through IP address sections
-type IPSectionIterator interface {
-	hasNext
-
-	// Next returns the next address section, or nil if there is none left.
-	Next() *IPAddressSection
-}
-
 type ipSectionIterator struct {
-	SectionIterator
+	Iterator[*AddressSection]
 }
 
 func (iter ipSectionIterator) Next() *IPAddressSection {
-	return iter.SectionIterator.Next().ToIP()
-}
-
-// IPv4SectionIterator iterates through IPv4 address sections
-type IPv4SectionIterator interface {
-	hasNext
-
-	// Next returns the next address section, or nil if there is none left.
-	Next() *IPv4AddressSection
+	return iter.Iterator.Next().ToIP()
 }
 
 type ipv4SectionIterator struct {
-	SectionIterator
+	Iterator[*AddressSection]
 }
 
 func (iter ipv4SectionIterator) Next() *IPv4AddressSection {
-	return iter.SectionIterator.Next().ToIPv4()
-}
-
-// IPv6SectionIterator iterates through IPv6 address sections
-type IPv6SectionIterator interface {
-	hasNext
-
-	// Next returns the next address section, or nil if there is none left.
-	Next() *IPv6AddressSection
+	return iter.Iterator.Next().ToIPv4()
 }
 
 type ipv6SectionIterator struct {
-	SectionIterator
+	Iterator[*AddressSection]
 }
 
 func (iter ipv6SectionIterator) Next() *IPv6AddressSection {
-	return iter.SectionIterator.Next().ToIPv6()
-}
-
-// MACSectionIterator iterates through MAC address sections
-type MACSectionIterator interface {
-	hasNext
-
-	// Next returns the next address section, or nil if there is none left.
-	Next() *MACAddressSection
+	return iter.Iterator.Next().ToIPv6()
 }
 
 type macSectionIterator struct {
-	SectionIterator
+	Iterator[*AddressSection]
 }
 
 func (iter macSectionIterator) Next() *MACAddressSection {
-	return iter.SectionIterator.Next().ToMAC()
+	return iter.Iterator.Next().ToMAC()
 }

@@ -16,48 +16,26 @@
 
 package ipaddr
 
-//TODO seems likely you could create a few generic functions to cover all of this, but would we need to define new constraints?  maybe not.
-//// Need types to have ToIP and ToIPv4 and ToIPv6.  ToIP for sure is part of framework.  But not the other two.
-// Additionally, making a few of them public might be useful.
-
 func cloneIPv4Sections(sect *IPv4AddressSection, orig []*IPv4AddressSection) []ExtendedIPSegmentSeries {
-	origCount := len(orig)
-	count := origCount
-	if sect != nil {
-		count++
+	converter := func(a *IPv4AddressSection) ExtendedIPSegmentSeries { return wrapIPSection(a.ToIP()) }
+	if sect == nil {
+		return cloneTo(orig, converter)
 	}
-	result := make([]ExtendedIPSegmentSeries, count)
-	if sect != nil {
-		result[origCount] = wrapIPSection(sect.ToIP())
-	}
-	for i := range orig {
-		result[i] = wrapIPSection(orig[i].ToIP()) // return types matter with interfaces - https://play.golang.org/p/HZR8FSp42a9 )
-	}
-	return result
+	return cloneToExtra(sect, orig, converter) // return types matter with interfaces - https://play.golang.org/p/HZR8FSp42a9 )
 }
 
 func cloneIPv6Sections(sect *IPv6AddressSection, orig []*IPv6AddressSection) []ExtendedIPSegmentSeries {
-	origCount := len(orig)
-	count := origCount
-	if sect != nil {
-		count++
+	converter := func(a *IPv6AddressSection) ExtendedIPSegmentSeries { return wrapIPSection(a.ToIP()) }
+	if sect == nil {
+		return cloneTo(orig, converter)
 	}
-	result := make([]ExtendedIPSegmentSeries, count)
-	if sect != nil {
-		result[origCount] = wrapIPSection(sect.ToIP())
-	}
-	for i := range orig {
-		result[i] = wrapIPSection(orig[i].ToIP())
-	}
-	return result
+	return cloneToExtra(sect, orig, converter)
 }
 
 // returns a slice of addresses that match the same IP version as the given
 func filterCloneIPAddrs(addr *IPAddress, orig []*IPAddress) []ExtendedIPSegmentSeries {
 	addrType := addr.getAddrType()
-	origCount := len(orig)
-	count := origCount + 1
-	result := make([]ExtendedIPSegmentSeries, 0, count)
+	result := make([]ExtendedIPSegmentSeries, 0, len(orig)+1)
 	result = append(result, wrapIPAddress(addr))
 	for _, a := range orig {
 		if addrType == a.getAddrType() {
@@ -68,145 +46,73 @@ func filterCloneIPAddrs(addr *IPAddress, orig []*IPAddress) []ExtendedIPSegmentS
 }
 
 func cloneIPv4Addrs(sect *IPv4Address, orig []*IPv4Address) []ExtendedIPSegmentSeries {
-	origCount := len(orig)
-	count := origCount
-	if sect != nil {
-		count++
+	converter := func(a *IPv4Address) ExtendedIPSegmentSeries { return wrapIPAddress(a.ToIP()) }
+	if sect == nil {
+		return cloneTo(orig, converter)
 	}
-	result := make([]ExtendedIPSegmentSeries, count)
-	if sect != nil {
-		result[origCount] = wrapIPAddress(sect.ToIP())
-	}
-	for i := range orig {
-		result[i] = wrapIPAddress(orig[i].ToIP())
-	}
-	return result
+	return cloneToExtra(sect, orig, converter)
 }
 
 func cloneIPv6Addrs(sect *IPv6Address, orig []*IPv6Address) []ExtendedIPSegmentSeries {
-	origCount := len(orig)
-	count := origCount
-	if sect != nil {
-		count++
+	converter := func(a *IPv6Address) ExtendedIPSegmentSeries { return wrapIPAddress(a.ToIP()) }
+	if sect == nil {
+		return cloneTo(orig, converter)
 	}
-	result := make([]ExtendedIPSegmentSeries, count)
-	if sect != nil {
-		result[origCount] = wrapIPAddress(sect.ToIP())
-	}
-	for i := range orig {
-		result[i] = wrapIPAddress(orig[i].ToIP())
-	}
-	return result
+	return cloneToExtra(sect, orig, converter)
 }
 
 func cloneToIPSections(orig []ExtendedIPSegmentSeries) []*IPAddressSection {
-	result := make([]*IPAddressSection, len(orig))
-	for i := range result {
-		result[i] = orig[i].(WrappedIPAddressSection).IPAddressSection
-	}
-	return result
+	return cloneTo(orig, func(a ExtendedIPSegmentSeries) *IPAddressSection { return a.(WrappedIPAddressSection).IPAddressSection })
 }
 
 func cloneToIPv4Sections(orig []ExtendedIPSegmentSeries) []*IPv4AddressSection {
-	result := make([]*IPv4AddressSection, len(orig))
-	for i := range result {
-		result[i] = orig[i].(WrappedIPAddressSection).IPAddressSection.ToIPv4()
-	}
-	return result
+	return cloneTo(orig, func(a ExtendedIPSegmentSeries) *IPv4AddressSection {
+		return a.(WrappedIPAddressSection).IPAddressSection.ToIPv4()
+	})
 }
 
 func cloneToIPv6Sections(orig []ExtendedIPSegmentSeries) []*IPv6AddressSection {
-	result := make([]*IPv6AddressSection, len(orig))
-	for i := range result {
-		result[i] = orig[i].(WrappedIPAddressSection).IPAddressSection.ToIPv6()
-	}
-	return result
+	return cloneTo(orig, func(a ExtendedIPSegmentSeries) *IPv6AddressSection {
+		return a.(WrappedIPAddressSection).IPAddressSection.ToIPv6()
+	})
 }
 
 func cloneToIPAddrs(orig []ExtendedIPSegmentSeries) []*IPAddress {
-	result := make([]*IPAddress, len(orig))
-	for i := range result {
-		result[i] = orig[i].(WrappedIPAddress).IPAddress
-	}
-	return result
+	return cloneTo(orig, func(a ExtendedIPSegmentSeries) *IPAddress { return a.(WrappedIPAddress).IPAddress })
 }
 
 func cloneToIPv4Addrs(orig []ExtendedIPSegmentSeries) []*IPv4Address {
-	result := make([]*IPv4Address, len(orig))
-	for i := range result {
-		result[i] = orig[i].(WrappedIPAddress).IPAddress.ToIPv4()
-	}
-	return result
+	return cloneTo(orig, func(a ExtendedIPSegmentSeries) *IPv4Address { return a.(WrappedIPAddress).IPAddress.ToIPv4() })
 }
 
 func cloneToIPv6Addrs(orig []ExtendedIPSegmentSeries) []*IPv6Address {
-	result := make([]*IPv6Address, len(orig))
-	for i := range result {
-		result[i] = orig[i].(WrappedIPAddress).IPAddress.ToIPv6()
-	}
-	return result
+	return cloneTo(orig, func(a ExtendedIPSegmentSeries) *IPv6Address { return a.(WrappedIPAddress).IPAddress.ToIPv6() })
 }
 
-func cloneToIPv4SeqRange(orig []*IPAddressSeqRange) []*IPv4AddressSeqRange {
-	result := make([]*IPv4AddressSeqRange, len(orig))
-	for i := range result {
-		result[i] = orig[i].ToIPv4()
-	}
-	return result
-}
-
-func cloneToIPv6SeqRange(orig []*IPAddressSeqRange) []*IPv6AddressSeqRange {
-	result := make([]*IPv6AddressSeqRange, len(orig))
-	for i := range result {
-		result[i] = orig[i].ToIPv6()
-	}
-	return result
-}
-
-func cloneIPv4AddrsToIPAddrs(orig []*IPv4Address) []*IPAddress {
-	result := make([]*IPAddress, len(orig))
+func cloneTo[T any, U any](orig []T, conv func(T) U) []U {
+	result := make([]U, len(orig))
 	for i := range orig {
-		result[i] = orig[i].ToIP()
+		result[i] = conv(orig[i])
 	}
 	return result
 }
 
-func cloneIPv6AddrsToIPAddrs(orig []*IPv6Address) []*IPAddress {
-	result := make([]*IPAddress, len(orig))
+func cloneToExtra[T any, U any](sect T, orig []T, conv func(T) U) []U {
+	origCount := len(orig)
+	result := make([]U, origCount+1)
+	result[origCount] = conv(sect)
 	for i := range orig {
-		result[i] = orig[i].ToIP()
+		result[i] = conv(orig[i])
 	}
 	return result
 }
 
-func cloneIPAddrsToIPv4Addrs(orig []*IPAddress) []*IPv4Address {
-	result := make([]*IPv4Address, len(orig))
+func copyTo[T any, U any](dest []U, orig []T, conv func(T) U) {
 	for i := range orig {
-		result[i] = orig[i].ToIPv4()
+		if i == len(dest) {
+			break
+		}
+		dest[i] = conv(orig[i])
 	}
-	return result
-}
-
-func cloneIPAddrsToIPv6Addrs(orig []*IPAddress) []*IPv6Address {
-	result := make([]*IPv6Address, len(orig))
-	for i := range orig {
-		result[i] = orig[i].ToIPv6()
-	}
-	return result
-}
-
-func cloneIPSectsToIPv4Sects(orig []*IPAddressSection) []*IPv4AddressSection {
-	result := make([]*IPv4AddressSection, len(orig))
-	for i := range orig {
-		result[i] = orig[i].ToIPv4()
-	}
-	return result
-}
-
-func cloneIPSectsToIPv6Sects(orig []*IPAddressSection) []*IPv6AddressSection {
-	result := make([]*IPv6AddressSection, len(orig))
-	for i := range orig {
-		result[i] = orig[i].ToIPv6()
-	}
-	return result
+	return
 }

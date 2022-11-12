@@ -488,8 +488,8 @@ func (addr *IPv4Address) Intersect(other *IPv4Address) *IPv4Address {
 
 // SpanWithRange returns an IPv4AddressSeqRange instance that spans this subnet to the given subnet.
 // If the other address is a different version than this, then the other is ignored, and the result is equivalent to calling ToSequentialRange.
-func (addr *IPv4Address) SpanWithRange(other *IPv4Address) *IPv4AddressSeqRange {
-	return NewIPv4SeqRange(addr.init(), other.init())
+func (addr *IPv4Address) SpanWithRange(other *IPv4Address) *SequentialRange[*IPv4Address] {
+	return NewSequentialRange(addr.init(), other)
 }
 
 // GetLower returns the lowest address in the subnet range,
@@ -747,7 +747,15 @@ func (addr *IPv4Address) AssignMinPrefixForBlock() *IPv4Address {
 // This method provides the address formats used by tries.
 // ToSinglePrefixBlockOrAddress is quite similar to AssignPrefixForSingleBlock, which always returns prefixed addresses, while this does not.
 func (addr *IPv4Address) ToSinglePrefixBlockOrAddress() *IPv4Address {
-	return addr.init().toSinglePrefixBlockOrAddress().ToIPv4()
+	return addr.init().toSinglePrefixBlockOrAddr().ToIPv4()
+}
+
+func (addr *IPv4Address) toSinglePrefixBlockOrAddress() (*IPv4Address, addrerr.IncompatibleAddressError) {
+	res := addr.ToSinglePrefixBlockOrAddress()
+	if res == nil {
+		return nil, &incompatibleAddressError{addressError{key: "ipaddress.error.address.not.block"}}
+	}
+	return res, nil
 }
 
 // ContainsPrefixBlock returns whether the range of this address or subnet contains the block of addresses for the given prefix length.
@@ -987,7 +995,10 @@ func (addr *IPv4Address) TrieCompare(other *IPv4Address) int {
 //	- ranges that occur inside the prefix length are ignored, only the lower value is used.
 //	- ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
 func (addr *IPv4Address) TrieIncrement() *IPv4Address {
-	return addr.trieIncrement().ToIPv4()
+	if res, ok := trieIncrement(addr); ok {
+		return res
+	}
+	return nil
 }
 
 // TrieDecrement returns the previous address or block according to address trie ordering
@@ -997,7 +1008,10 @@ func (addr *IPv4Address) TrieIncrement() *IPv4Address {
 //	- ranges that occur inside the prefix length are ignored, only the lower value is used.
 //	- ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
 func (addr *IPv4Address) TrieDecrement() *IPv4Address {
-	return addr.trieDecrement().ToIPv4()
+	if res, ok := trieDecrement(addr); ok {
+		return res
+	}
+	return nil
 }
 
 // MatchesWithMask applies the mask to this address and then compares the result with the given address,
@@ -1021,12 +1035,20 @@ func (addr *IPv4Address) GetMaxSegmentValue() SegInt {
 // and apply this method to each iterated subnet.
 //
 // If this represents just a single address then the returned instance covers just that single address as well.
-func (addr *IPv4Address) ToSequentialRange() *IPv4AddressSeqRange {
+func (addr *IPv4Address) ToSequentialRange() *SequentialRange[*IPv4Address] {
 	if addr == nil {
 		return nil
 	}
 	addr = addr.init().WithoutPrefixLen()
-	return newSeqRangeUnchecked(addr.GetLower().ToIP(), addr.GetUpper().ToIP(), addr.isMultiple()).ToIPv4()
+	return newSequRangeUnchecked(
+		addr.GetLower(),
+		addr.GetUpper(),
+		addr.isMultiple())
+}
+
+func (addr *IPv4Address) getLowestHighestAddrs() (lower, upper *IPv4Address) {
+	l, u := addr.ipAddressInternal.getLowestHighestAddrs()
+	return l.ToIPv4(), u.ToIPv4()
 }
 
 // ToBroadcastAddress returns the IPv4 broadcast address.
@@ -1142,7 +1164,7 @@ func (addr *IPv4Address) IsLoopback() bool {
 // When iterating, the prefix length is preserved.  Remove it using WithoutPrefixLen prior to iterating if you wish to drop it from all individual addresses.
 //
 // Call IsMultiple to determine if this instance represents multiple addresses, or GetCount for the count.
-func (addr *IPv4Address) Iterator() IPv4AddressIterator {
+func (addr *IPv4Address) Iterator() Iterator[*IPv4Address] {
 	if addr == nil {
 		return ipv4AddressIterator{nilAddrIterator()}
 	}
@@ -1156,7 +1178,7 @@ func (addr *IPv4Address) Iterator() IPv4AddressIterator {
 // instead constraining themselves to values from this subnet.
 //
 // If the subnet has no prefix length, then this is equivalent to Iterator.
-func (addr *IPv4Address) PrefixIterator() IPv4AddressIterator {
+func (addr *IPv4Address) PrefixIterator() Iterator[*IPv4Address] {
 	return ipv4AddressIterator{addr.init().prefixIterator(false)}
 }
 
@@ -1164,7 +1186,7 @@ func (addr *IPv4Address) PrefixIterator() IPv4AddressIterator {
 // Each iterated address or subnet will be a prefix block with the same prefix length as this address or subnet.
 //
 // If this address has no prefix length, then this is equivalent to Iterator.
-func (addr *IPv4Address) PrefixBlockIterator() IPv4AddressIterator {
+func (addr *IPv4Address) PrefixBlockIterator() Iterator[*IPv4Address] {
 	return ipv4AddressIterator{addr.init().prefixIterator(true)}
 }
 
@@ -1173,7 +1195,7 @@ func (addr *IPv4Address) PrefixBlockIterator() IPv4AddressIterator {
 //
 // For instance, given the IPv4 subnet 1-2.3-4.5-6.7, given the count argument 2,
 // it will iterate through 1.3.5-6.7, 1.4.5-6.7, 2.3.5-6.7, 2.4.5-6.7
-func (addr *IPv4Address) BlockIterator(segmentCount int) IPv4AddressIterator {
+func (addr *IPv4Address) BlockIterator(segmentCount int) Iterator[*IPv4Address] {
 	return ipv4AddressIterator{addr.init().blockIterator(segmentCount)}
 }
 
@@ -1184,7 +1206,7 @@ func (addr *IPv4Address) BlockIterator(segmentCount int) IPv4AddressIterator {
 // For instance, given the IPv4 subnet 1-2.3-4.5-6.7-8, it will iterate through 1.3.5.7-8, 1.3.6.7-8, 1.4.5.7-8, 1.4.6.7-8, 2.3.5.7-8, 2.3.6.7-8, 2.4.6.7-8, 2.4.6.7-8.
 //
 // Use GetSequentialBlockCount to get the number of iterated elements.
-func (addr *IPv4Address) SequentialBlockIterator() IPv4AddressIterator {
+func (addr *IPv4Address) SequentialBlockIterator() Iterator[*IPv4Address] {
 	return ipv4AddressIterator{addr.init().sequentialBlockIterator()}
 }
 
@@ -1200,6 +1222,20 @@ func (addr *IPv4Address) GetSequentialBlockIndex() int {
 // GetSequentialBlockCount provides the count of elements from the sequential block iterator, the minimal number of sequential subnets that comprise this subnet
 func (addr *IPv4Address) GetSequentialBlockCount() *big.Int {
 	return addr.getSequentialBlockCount()
+}
+
+func (addr *IPv4Address) rangeIterator(
+	upper *IPv4Address,
+	valsAreMultiple bool,
+	prefixLen PrefixLen,
+	segProducer func(addr *IPAddress, index int) *IPAddressSegment,
+	segmentIteratorProducer func(seg *IPAddressSegment, index int) Iterator[*IPAddressSegment],
+	segValueComparator func(seg1, seg2 *IPAddress, index int) bool,
+	networkSegmentIndex,
+	hostSegmentIndex int,
+	prefixedSegIteratorProducer func(seg *IPAddressSegment, index int) Iterator[*IPAddressSegment],
+) Iterator[*IPv4Address] {
+	return ipv4AddressIterator{addr.ipAddressInternal.rangeIterator(upper.ToIP(), valsAreMultiple, prefixLen, segProducer, segmentIteratorProducer, segValueComparator, networkSegmentIndex, hostSegmentIndex, prefixedSegIteratorProducer)}
 }
 
 // IncrementBoundary returns the address that is the given increment from the range boundaries of this subnet.
@@ -1395,7 +1431,7 @@ func (addr *IPv4Address) Replace(startIndex int, replacement *IPv4AddressSection
 //
 // This method applies to the lower value of the range if this is a subnet representing multiple values.
 func (addr *IPv4Address) GetLeadingBitCount(ones bool) BitCount {
-	return addr.GetSection().GetLeadingBitCount(ones)
+	return addr.init().getLeadingBitCount(ones)
 }
 
 // GetTrailingBitCount returns the number of consecutive trailing one or zero bits.
@@ -1404,7 +1440,7 @@ func (addr *IPv4Address) GetLeadingBitCount(ones bool) BitCount {
 //
 // This method applies to the lower value of the range if this is a subnet representing multiple values.
 func (addr *IPv4Address) GetTrailingBitCount(ones bool) BitCount {
-	return addr.GetSection().GetTrailingBitCount(ones)
+	return addr.init().getTrailingBitCount(ones)
 }
 
 // GetNetwork returns the singleton IPv4 network instance.
@@ -1746,24 +1782,46 @@ func (addr *IPv4Address) WrapAddress() WrappedAddress {
 	return wrapAddress(addr.ToAddressBase())
 }
 
+func (addr *IPv4Address) toMaxLower() *IPv4Address {
+	return addr.init().addressInternal.toMaxLower().ToIPv4()
+}
+
+func (addr *IPv4Address) toMinUpper() *IPv4Address {
+	return addr.init().addressInternal.toMinUpper().ToIPv4()
+}
+
 // ToKey creates the associated address key.
 // While addresses can be compared with the Compare, TrieCompare or Equal methods as well as various provided instances of AddressComparator,
 // they are not comparable with go operators.
-// However, IPv4AddressKey instances are comparable with go operators, and thus can be used as map keys.
-func (addr *IPv4Address) ToKey() *IPv4AddressKey {
+// However, Key instances are comparable with go operators, and thus can be used as map keys.
+func (addr *IPv4Address) ToKey() *Key[*IPv4Address] {
 	addr = addr.init()
-	key := &IPv4AddressKey{
-		Prefix: PrefixKey{
-			IsPrefixed: addr.IsPrefixed(),
-			PrefixLen:  PrefixBitCount(addr.GetPrefixLen().Len()),
+	key := &Key[*IPv4Address]{
+		keyContents{
+			scheme: ipv4Scheme,
 		},
 	}
 	section := addr.GetSection()
 	divs := section.getDivArray()
+	val := &key.keyContents.vals[0]
 	for i, div := range divs {
 		seg := div.ToIPv4()
-		vals := &key.Values[i]
-		vals.Value, vals.UpperValue = seg.GetIPv4SegmentValue(), seg.GetIPv4UpperSegmentValue()
+		if i > 0 {
+			val.lower <<= IPv4BitsPerSegment
+			val.upper <<= IPv4BitsPerSegment
+		}
+		val.lower |= uint64(seg.GetIPv4SegmentValue())
+		val.upper |= uint64(seg.GetIPv4UpperSegmentValue())
 	}
 	return key
+}
+
+func (addr *IPv4Address) fromKey(key *keyContents) *IPv4Address {
+	return NewIPv4AddressFromRange(
+		func(segmentIndex int) IPv4SegInt {
+			return IPv4SegInt(key.vals[0].lower >> (((IPv4SegmentCount - 1) - segmentIndex) << ipv4BitsToSegmentBitshift))
+		}, func(segmentIndex int) IPv4SegInt {
+			return IPv4SegInt(key.vals[0].upper >> (((IPv4SegmentCount - 1) - segmentIndex) << ipv4BitsToSegmentBitshift))
+		},
+	)
 }

@@ -66,7 +66,7 @@ type ipAddressProvider interface {
 
 	isSequential() bool
 
-	getProviderSeqRange() *IPAddressSeqRange
+	getProviderSeqRange() *SequentialRange[*IPAddress]
 
 	getProviderMask() *IPAddress
 
@@ -144,7 +144,7 @@ func (p *ipAddrProvider) getProviderAddress() (*IPAddress, addrerr.IncompatibleA
 	return nil, nil
 }
 
-func (p *ipAddrProvider) getProviderSeqRange() *IPAddressSeqRange {
+func (p *ipAddrProvider) getProviderSeqRange() *SequentialRange[*IPAddress] {
 	return nil
 }
 
@@ -317,7 +317,7 @@ type addressResult struct {
 	addrErr, hostErr addrerr.IncompatibleAddressError
 
 	// only used when no address can be obtained
-	rng *IPAddressSeqRange
+	rng *SequentialRange[*IPAddress]
 }
 
 type cachedAddressProvider struct {
@@ -349,7 +349,7 @@ func (cached *cachedAddressProvider) getVersionedAddress(version IPVersion) (*IP
 	return cached.getProviderAddress()
 }
 
-func (cached *cachedAddressProvider) getProviderSeqRange() *IPAddressSeqRange {
+func (cached *cachedAddressProvider) getProviderSeqRange() *SequentialRange[*IPAddress] {
 	addr, _ := cached.getProviderAddress()
 	if addr != nil {
 		return addr.ToSequentialRange()
@@ -739,14 +739,14 @@ func (all *allCreator) getProviderAddress() (res *IPAddress, err addrerr.Incompa
 	return
 }
 
-func (all *allCreator) getProviderSeqRange() *IPAddressSeqRange {
+func (all *allCreator) getProviderSeqRange() *SequentialRange[*IPAddress] {
 	if all.isProvidingAllAddresses() {
 		return nil
 	}
 	return all.createRange()
 }
 
-func (all *allCreator) createRange() (rng *IPAddressSeqRange) {
+func (all *allCreator) createRange() (rng *SequentialRange[*IPAddress]) {
 	rng, _, _, _, _ = all.createAll()
 	return
 }
@@ -756,7 +756,7 @@ func (all *allCreator) createAddrs() (addr *IPAddress, hostAddr *IPAddress, addr
 	return
 }
 
-func (all *allCreator) createAll() (rng *IPAddressSeqRange, addr *IPAddress, hostAddr *IPAddress, addrErr, hostErr addrerr.IncompatibleAddressError) {
+func (all *allCreator) createAll() (rng *SequentialRange[*IPAddress], addr *IPAddress, hostAddr *IPAddress, addrErr, hostErr addrerr.IncompatibleAddressError) {
 	addrs := (*addressResult)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&all.addresses))))
 	if addrs == nil {
 		var lower, upper *IPAddress

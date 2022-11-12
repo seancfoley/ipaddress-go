@@ -227,15 +227,16 @@ func checkGroupingType(series AddressDivisionSeries) (
 	return
 }
 
-func checkRangeType(r IPAddressSeqRangeType) (isNil bool, rngType rangeType, rng *IPAddressSeqRange) {
+func checkRangeTypeX(r IPAddressSeqRangeType) (isNil bool, rngType rangeType, rng *SequentialRange[*IPAddress]) {
 	if isNil = r == nil; isNil {
 		rngType = unknownrangetype
 	} else {
 		rng = r.ToIP()
 		if isNil = rng == nil; !isNil {
-			if rng.IsIPv4() {
+			version := r.GetIPVersion()
+			if version.IsIPv4() {
 				rngType = ipv4rangetype
-			} else if rng.IsIPv6() {
+			} else if version.IsIPv6() {
 				rngType = ipv6rangetype
 			} else {
 				rngType = iprangetype
@@ -423,8 +424,8 @@ func (comp AddressComparator) CompareDivisions(one, two DivisionType) int {
 // CompareRanges compares any two IP address sequential ranges (including from different IP versions).
 // It returns a negative integer, zero, or a positive integer if address item one is less than, equal, or greater than address item two.
 func (comp AddressComparator) CompareRanges(one, two IPAddressSeqRangeType) int {
-	oneIsNil, r1Type, r1 := checkRangeType(one)
-	twoIsNil, r2Type, r2 := checkRangeType(two)
+	oneIsNil, r1Type, r1 := checkRangeTypeX(one)
+	twoIsNil, r2Type, r2 := checkRangeTypeX(two)
 	if oneIsNil {
 		if twoIsNil {
 			return 0
@@ -443,7 +444,7 @@ func (comp AddressComparator) CompareRanges(one, two IPAddressSeqRangeType) int 
 		r2ipv4 := r2.ToIPv4()
 		return compComp.compareValues(uint64(r1ipv4.GetUpper().Uint32Value()), uint64(r1ipv4.GetLower().Uint32Value()), uint64(r2ipv4.GetUpper().Uint32Value()), uint64(r2ipv4.GetLower().Uint32Value()))
 	}
-	return compComp.compareLargeValues(r1.GetUpperValue(), r1.GetValue(), r2.GetUpperValue(), r2.GetValue())
+	return compComp.compareLargeValues(one.GetUpperValue(), one.GetValue(), two.GetUpperValue(), two.GetValue())
 }
 
 // Compare returns a negative integer, zero, or a positive integer if address item one is less than, equal, or greater than address item two.
@@ -470,6 +471,14 @@ func (comp AddressComparator) Compare(one, two AddressItem) int {
 		} else {
 			return -1
 		}
+		//} else if rng1, ok := one.(IPAddressSeqRangeType); ok { //TODO remove
+		//	if rng2, ok := two.(IPAddressSeqRangeType); ok {
+		//		return comp.CompareRanges(rng1, rng2)
+		//	} else if _, ok := two.(AddressDivisionSeries); ok {
+		//		return -1
+		//	}
+		//	return 1
+		//}
 	} else if rng1, ok := one.(IPAddressSeqRangeType); ok {
 		if rng2, ok := two.(IPAddressSeqRangeType); ok {
 			return comp.CompareRanges(rng1, rng2)
@@ -483,6 +492,8 @@ func (comp AddressComparator) Compare(one, two AddressItem) int {
 		return -1
 	} else if _, ok := two.(DivisionType); ok {
 		return 1
+		//} else if _, ok := two.(IPAddressSeqRangeType); ok {
+		//	return -1
 	} else if _, ok := two.(IPAddressSeqRangeType); ok {
 		return -1
 	}
@@ -1071,6 +1082,8 @@ func isNilItem(item AddressItem) bool {
 		} else if largeGrouping, ok := divSeries.(*IPAddressLargeDivisionGrouping); ok {
 			return largeGrouping.isNil()
 		} // else a type external to this library, which we cannot test for nil
+		//} else if rng, ok := item.(IPAddressSeqRangeType); ok {
+		//	return rng.ToIP() == nil
 	} else if rng, ok := item.(IPAddressSeqRangeType); ok {
 		return rng.ToIP() == nil
 	} else if div, ok := item.(DivisionType); ok {
@@ -1130,11 +1143,18 @@ func getCount(item AddressItem) (b *big.Int, u uint64) {
 		if grouping != nil {
 			b = grouping.getCachedCount()
 		}
+		//} else if rng, ok := item.(IPAddressSeqRangeType); ok {
+		//	//ipRange := rng.ToIP()
+		//	//if ipRange != nil {
+		//	b = rng.GetCount()
+		//	//b = rng.getCachedCount(false)
+		//	//}
 	} else if rng, ok := item.(IPAddressSeqRangeType); ok {
-		ipRange := rng.ToIP()
-		if ipRange != nil {
-			b = ipRange.getCachedCount(false)
-		}
+		//ipRange := rng.ToIP()
+		//if ipRange != nil {
+		b = rng.GetCount()
+		//b = rng.getCachedCount(false)
+		//}
 	} else if div, ok := item.(StandardDivisionType); ok {
 		base := div.ToDiv()
 		if base != nil {

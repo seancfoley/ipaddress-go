@@ -317,7 +317,7 @@ func checkPrefLen(prefixLength PrefixLen, max BitCount) PrefixLen {
 
 // wrapperIterator notifies the iterator to the right when wrapperIterator reaches its final value
 type wrappedIterator struct {
-	iterator   IPSegmentIterator
+	iterator   Iterator[*IPAddressSegment]
 	finalValue []bool
 	indexi     int
 }

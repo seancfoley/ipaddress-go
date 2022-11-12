@@ -20,147 +20,48 @@ import (
 	"math/big"
 )
 
-// A Partition is a collection of addresses partitioned from an original address.
-// Much like an iterator, the elements of the partition can be iterated just once, after which it becomes empty.
-type Partition struct {
-	original *IPAddress
+// A Partition is a collection of items (such as addresses) partitioned from an original item (such as a subnet).
+// Much like an iterator, the elements of a partition can be iterated just once (using the iterator, using ForEach, or using any other iteration),
+// after which it becomes empty.
+type Partition[T any] struct {
+	original,
 
-	single *IPAddress
+	single T
+	hasSingle bool
 
-	iterator IPAddressIterator
+	iterator Iterator[T]
 
 	count *big.Int
 }
 
-// IPv6Partition is a Partition of an IPv6 address
-type IPv6Partition struct {
-	p *Partition
-}
-
-// ForEach calls the action with each partition element
-func (p IPv6Partition) ForEach(action func(*IPv6Address)) {
-	p.p.ForEach(func(address *IPAddress) {
-		action(address.ToIPv6())
+// ApplyForEach supplies to the given function each element of the given partition,
+// inserting return values into the returned map as directed.
+func ApplyForEachConditionally[T comparable, V any](p *Partition[T], action func(T) (V, bool)) map[T]V {
+	results := make(map[T]V)
+	p.ForEach(func(addr T) {
+		if result, ok := action(addr); ok {
+			results[addr] = result
+		}
 	})
+	return results
 }
 
-// Iterator provides an iterator to iterate through each element of the partition.
-func (p IPv6Partition) Iterator() IPv6AddressIterator {
-	return ipv6IPAddressIterator{p.p.Iterator()}
-}
-
-// PredicateForEach applies the supplied predicate operation argument to each element of the partition,
-// returning true if they all return true, false otherwise
-func (p IPv6Partition) PredicateForEach(predicate func(*IPv6Address) bool) bool {
-	return p.p.PredicateForEach(func(address *IPAddress) bool {
-		return predicate(address.ToIPv6())
+// ApplyForEach supplies to the given function each element of the given partition,
+// inserting return values into the returned map as directed.
+func ApplyForEach[T comparable, V any](p *Partition[T], action func(T) V) map[T]V {
+	results := make(map[T]V)
+	p.ForEach(func(addr T) {
+		results[addr] = action(addr)
 	})
+	return results
 }
-
-// PredicateForEachEarly applies the supplied predicate operation argument to each element of the partition,
-// returning false if the given predicate returns false for any of the elements.
-//
-// The method returns when one application of the predicate returns false (determining the overall result)
-func (p IPv6Partition) PredicateForEachEarly(predicate func(*IPv6Address) bool) bool {
-	return p.p.PredicateForEachEarly(func(address *IPAddress) bool {
-		return predicate(address.ToIPv6())
-	})
-}
-
-// PredicateForAnyEarly applies the operation to each element of the partition,
-// returning true if the given predicate returns true for any of the elements.
-//
-// The method returns when one application of the predicate returns true (determining the overall result)
-func (p IPv6Partition) PredicateForAnyEarly(predicate func(*IPv6Address) bool) bool {
-	return p.p.PredicateForAnyEarly(func(address *IPAddress) bool {
-		return predicate(address.ToIPv6())
-	})
-}
-
-// PredicateForAny applies the supplied predicate operation argument to each element of the partition,
-// returning true if the given predicate returns true for any of the elements.
-func (p IPv6Partition) PredicateForAny(predicate func(*IPv6Address) bool) bool {
-	return p.p.PredicateForAny(func(address *IPAddress) bool {
-		return predicate(address.ToIPv6())
-	})
-}
-
-// IPv4Partition is a Partition of an IPv4 address
-type IPv4Partition struct {
-	p *Partition
-}
-
-// ForEach calls the action with each partition element
-func (p IPv4Partition) ForEach(action func(*IPv4Address)) {
-	p.p.ForEach(func(address *IPAddress) {
-		action(address.ToIPv4())
-	})
-}
-
-// Iterator provides an iterator to iterate through each element of the partition.
-func (p IPv4Partition) Iterator() IPv4AddressIterator {
-	return ipv4IPAddressIterator{p.p.Iterator()}
-}
-
-// PredicateForEach applies the supplied predicate operation argument to each element of the partition,
-// returning true if they all return true, false otherwise
-func (p IPv4Partition) PredicateForEach(predicate func(*IPv4Address) bool) bool {
-	return p.p.PredicateForEach(func(address *IPAddress) bool {
-		return predicate(address.ToIPv4())
-	})
-}
-
-// PredicateForEachEarly applies the supplied predicate operation argument to each element of the partition,
-// returning false if the given predicate returns false for any of the elements.
-//
-// The method returns when one application of the predicate returns false (determining the overall result)
-func (p IPv4Partition) PredicateForEachEarly(predicate func(*IPv4Address) bool) bool {
-	return p.p.PredicateForEachEarly(func(address *IPAddress) bool {
-		return predicate(address.ToIPv4())
-	})
-}
-
-// PredicateForAnyEarly applies the supplied predicate operation argument to each element of the partition,
-// returning true if the given predicate returns true for any of the elements.
-//
-// The method returns when one application of the predicate returns true (determining the overall result)
-func (p IPv4Partition) PredicateForAnyEarly(predicate func(*IPv4Address) bool) bool {
-	return p.p.PredicateForAnyEarly(func(address *IPAddress) bool {
-		return predicate(address.ToIPv4())
-	})
-}
-
-// PredicateForAny applies the supplied predicate operation argument to each element of the partition,
-// returning true if the given predicate returns true for any of the elements.
-func (p IPv4Partition) PredicateForAny(predicate func(*IPv4Address) bool) bool {
-	return p.p.PredicateForAny(func(address *IPAddress) bool {
-		return predicate(address.ToIPv4())
-	})
-}
-
-// TODO LATER this needs generics (of course, the whole Partition type could be generic as well)
-// Otherwise our map function would have to map *IPAddress to interface{}
-//
-// Supplies to the given function each element of this partition,
-// inserting non-null return values into the returned map.
-//	public <R> Map<E, R> ApplyForEach(Function<? super E, ? extends R> func) {
-//		TreeMap<E, R> results = new TreeMap<>();
-//		forEach(address -> {
-//			R result = func.apply(address);
-//			if(result != null) {
-//				results.put(address, result);
-//			}
-//		});
-//		return results;
-//	}
 
 // ForEach calls the given action on each partition element.
-func (p *Partition) ForEach(action func(*IPAddress)) {
+func (p *Partition[T]) ForEach(action func(T)) {
 	if p.iterator == nil {
-		item := p.single
-		if item != nil {
-			p.single = nil
-			action(item)
+		if p.hasSingle {
+			p.hasSingle = false
+			action(p.single)
 		}
 	} else {
 		iterator := p.iterator
@@ -172,12 +73,11 @@ func (p *Partition) ForEach(action func(*IPAddress)) {
 }
 
 // Iterator provides an iterator to iterate through each element of the partition.
-func (p *Partition) Iterator() IPAddressIterator {
+func (p *Partition[T]) Iterator() Iterator[T] {
 	if p.iterator == nil {
-		item := p.single
-		if item != nil {
-			res := &ipAddrIterator{&singleAddrIterator{item.ToAddressBase()}}
-			item = nil
+		if p.hasSingle {
+			p.hasSingle = false
+			res := &singleIterator[T]{original: p.single}
 			return res
 		}
 		return nil
@@ -191,7 +91,7 @@ func (p *Partition) Iterator() IPAddressIterator {
 // returning true if they all return true, false otherwise
 //
 // Use IPAddressPredicateAdapter to pass in a function that takes *Address as argument instead.
-func (p *Partition) PredicateForEach(predicate func(*IPAddress) bool) bool {
+func (p *Partition[T]) PredicateForEach(predicate func(T) bool) bool {
 	return p.predicateForEach(predicate, false)
 }
 
@@ -201,11 +101,11 @@ func (p *Partition) PredicateForEach(predicate func(*IPAddress) bool) bool {
 // The method returns when one application of the predicate returns false (determining the overall result)
 //
 // Use IPAddressPredicateAdapter to pass in a function that takes *Address as argument instead.
-func (p *Partition) PredicateForEachEarly(predicate func(*IPAddress) bool) bool {
+func (p *Partition[T]) PredicateForEachEarly(predicate func(T) bool) bool {
 	return p.predicateForEach(predicate, false)
 }
 
-func (p *Partition) predicateForEach(predicate func(*IPAddress) bool, returnEarly bool) bool {
+func (p *Partition[T]) predicateForEach(predicate func(T) bool, returnEarly bool) bool {
 	if p.iterator == nil {
 		return predicate(p.single)
 	}
@@ -226,125 +126,172 @@ func (p *Partition) predicateForEach(predicate func(*IPAddress) bool, returnEarl
 // returning true if the given predicate returns true for any of the elements.
 //
 // The method returns when one application of the predicate returns true (determining the overall result)
-func (p *Partition) PredicateForAnyEarly(predicate func(*IPAddress) bool) bool {
+func (p *Partition[T]) PredicateForAnyEarly(predicate func(T) bool) bool {
 	return p.predicateForAny(predicate, true)
 }
 
 // PredicateForAny applies the supplied predicate operation to each element of the partition,
 // returning true if the given predicate returns true for any of the elements.
-func (p *Partition) PredicateForAny(predicate func(*IPAddress) bool) bool {
+func (p *Partition[T]) PredicateForAny(predicate func(T) bool) bool {
 	return p.predicateForAny(predicate, false)
 }
 
-func (p *Partition) predicateForAny(predicate func(address *IPAddress) bool, returnEarly bool) bool {
-	return !p.predicateForEach(func(addr *IPAddress) bool {
+func (p *Partition[T]) predicateForAny(predicate func(address T) bool, returnEarly bool) bool {
+	return !p.predicateForEach(func(addr T) bool {
 		return !predicate(addr)
 	}, returnEarly)
 }
 
-// PartitionIpv6WithSpanningBlocks partitions the address series into prefix blocks and single addresses.
+//// PartitionIpv6WithSpanningBlocks partitions the address series into prefix blocks and single addresses.
+////
+//// This method iterates through a list of prefix blocks of different sizes that span the entire subnet.
+//func PartitionIpv6WithSpanningBlocks(newAddr *IPv6Address) IPv6Partition {
+//	return IPv6Partition{PartitionIPWithSpanningBlocks(newAddr.ToIP())}
+//}
 //
-// This method iterates through a list of prefix blocks of different sizes that span the entire subnet.
-func PartitionIpv6WithSpanningBlocks(newAddr *IPv6Address) IPv6Partition {
-	return IPv6Partition{PartitionIPWithSpanningBlocks(newAddr.ToIP())}
+//// PartitionIpv4WithSpanningBlocks partitions the address series into prefix blocks and single addresses.
+////
+//// This method iterates through a list of prefix blocks of different sizes that span the entire subnet.
+//func PartitionIpv4WithSpanningBlocks(newAddr *IPv4Address) IPv4Partition {
+//	return IPv4Partition{PartitionIPWithSpanningBlocks(newAddr.ToIP())}
+//}
+
+// SpanPartitionConstraint is the generic type constraint for IP subnet spanning partitions
+type SpanPartitionConstraint[T any] interface {
+	AddressDivisionSeries
+
+	WithoutPrefixLen() T
+	SpanWithPrefixBlocks() []T
 }
 
-// PartitionIpv4WithSpanningBlocks partitions the address series into prefix blocks and single addresses.
-//
-// This method iterates through a list of prefix blocks of different sizes that span the entire subnet.
-func PartitionIpv4WithSpanningBlocks(newAddr *IPv4Address) IPv4Partition {
-	return IPv4Partition{PartitionIPWithSpanningBlocks(newAddr.ToIP())}
-}
+var (
+	_ SpanPartitionConstraint[*IPAddress]
+	_ SpanPartitionConstraint[*IPv4Address]
+	_ SpanPartitionConstraint[*IPv6Address]
+	_ SpanPartitionConstraint[*IPAddressSection]
+	_ SpanPartitionConstraint[*IPv4AddressSection]
+	_ SpanPartitionConstraint[*IPv6AddressSection]
+)
 
 // PartitionIPWithSpanningBlocks partitions the address series into prefix blocks and single addresses.
 //
 // This method iterates through a list of prefix blocks of different sizes that span the entire subnet.
-func PartitionIPWithSpanningBlocks(newAddr *IPAddress) *Partition {
-	if !newAddr.isMultiple() {
+func PartitionIPWithSpanningBlocks[T SpanPartitionConstraint[T]](newAddr T) *Partition[T] {
+	if !newAddr.IsMultiple() {
 		if !newAddr.IsPrefixed() {
-			return &Partition{
-				original: newAddr,
-				single:   newAddr,
-				count:    bigOneConst(),
+			return &Partition[T]{
+				original:  newAddr,
+				single:    newAddr,
+				hasSingle: true,
+				count:     bigOneConst(),
 			}
 		}
-		return &Partition{
-			original: newAddr,
-			single:   newAddr.WithoutPrefixLen(),
-			count:    bigOneConst(),
+		return &Partition[T]{
+			original:  newAddr,
+			single:    newAddr.WithoutPrefixLen(),
+			hasSingle: true,
+			count:     bigOneConst(),
 		}
 	} else if newAddr.IsSinglePrefixBlock() {
-		return &Partition{
-			original: newAddr,
-			single:   newAddr,
-			count:    bigOneConst(),
+		return &Partition[T]{
+			original:  newAddr,
+			single:    newAddr,
+			hasSingle: true,
+			count:     bigOneConst(),
 		}
 	}
 	blocks := newAddr.SpanWithPrefixBlocks()
-	return &Partition{
+	return &Partition[T]{
 		original: newAddr,
-		iterator: &ipAddrSliceIterator{blocks},
+		iterator: &sliceIterator[T]{blocks},
 		count:    big.NewInt(int64(len(blocks))),
 	}
 }
 
-// PartitionIPv6WithSingleBlockSize partitions the address series into prefix blocks and single addresses.
+//// PartitionIPv6WithSingleBlockSize partitions the address series into prefix blocks and single addresses.
+////
+//// This method chooses the maximum block size for a list of prefix blocks contained by the address or subnet,
+//// and then iterates to produce blocks of that size.
+//func PartitionIPv6WithSingleBlockSize(newAddr *IPv6Address) IPv6Partition {
+//	return IPv6Partition{PartitionIPWithSingleBlockSize(newAddr.ToIP())}
+//}
 //
-// This method chooses the maximum block size for a list of prefix blocks contained by the address or subnet,
-// and then iterates to produce blocks of that size.
-func PartitionIPv6WithSingleBlockSize(newAddr *IPv6Address) IPv6Partition {
-	return IPv6Partition{PartitionIPWithSingleBlockSize(newAddr.ToIP())}
+//// PartitionIPv4WithSingleBlockSize partitions the address series into prefix blocks and single addresses.
+////
+//// This method chooses the maximum block size for a list of prefix blocks contained by the address or subnet,
+//// and then iterates to produce blocks of that size.
+//func PartitionIPv4WithSingleBlockSize(newAddr *IPv4Address) IPv4Partition {
+//	return IPv4Partition{PartitionIPWithSingleBlockSize(newAddr.ToIP())}
+//}
+
+// IteratePartitionConstraint is the generic type constraint for IP subnet and IP section iteration partitions
+type IteratePartitionConstraint[T any] interface {
+	AddressDivisionSeries
+
+	WithoutPrefixLen() T
+	AssignMinPrefixForBlock() T
+	PrefixBlockIterator() Iterator[T]
+	Iterator() Iterator[T]
 }
 
-// PartitionIPv4WithSingleBlockSize partitions the address series into prefix blocks and single addresses.
-//
-// This method chooses the maximum block size for a list of prefix blocks contained by the address or subnet,
-// and then iterates to produce blocks of that size.
-func PartitionIPv4WithSingleBlockSize(newAddr *IPv4Address) IPv4Partition {
-	return IPv4Partition{PartitionIPWithSingleBlockSize(newAddr.ToIP())}
-}
+var (
+	_ IteratePartitionConstraint[*Address]
+	_ IteratePartitionConstraint[*IPAddress]
+	_ IteratePartitionConstraint[*IPv4Address]
+	_ IteratePartitionConstraint[*IPv6Address]
+	_ IteratePartitionConstraint[*MACAddress]
+	_ IteratePartitionConstraint[*IPAddressSection]
+	_ IteratePartitionConstraint[*IPv4AddressSection]
+	_ IteratePartitionConstraint[*IPv6AddressSection]
+	_ IteratePartitionConstraint[*MACAddressSection]
+)
 
-// PartitionIPWithSingleBlockSize partitions the address series into prefix blocks and single addresses.
+// PartitionWithSingleBlockSize partitions the address series into prefix blocks and single addresses.
 //
 // This method chooses the maximum block size for a list of prefix blocks contained by the address or subnet,
 // and then iterates to produce blocks of that size.
-func PartitionIPWithSingleBlockSize(newAddr *IPAddress) *Partition {
-	if !newAddr.isMultiple() {
+func PartitionWithSingleBlockSize[T IteratePartitionConstraint[T]](newAddr T) *Partition[T] {
+	if !newAddr.IsMultiple() {
 		if !newAddr.IsPrefixed() {
-			return &Partition{
-				original: newAddr,
-				single:   newAddr,
-				count:    bigOneConst(),
+			return &Partition[T]{
+				original:  newAddr,
+				single:    newAddr,
+				hasSingle: true,
+				count:     bigOneConst(),
 			}
 		}
-		return &Partition{
-			original: newAddr,
-			single:   newAddr.WithoutPrefixLen(),
-			count:    bigOneConst(),
+		return &Partition[T]{
+			original:  newAddr,
+			single:    newAddr.WithoutPrefixLen(),
+			hasSingle: true,
+			count:     bigOneConst(),
 		}
 	} else if newAddr.IsSinglePrefixBlock() {
-		return &Partition{
-			original: newAddr,
-			single:   newAddr,
-			count:    bigOneConst(),
+		return &Partition[T]{
+			original:  newAddr,
+			single:    newAddr,
+			hasSingle: true,
+			count:     bigOneConst(),
 		}
 	}
 	// prefix blocks are handled as prefix blocks,
 	// such as 1.2.*.*, which is handled as prefix block iterator for 1.2.0.0/16,
 	// but 1.2.3-4.5 is handled as iterator with no prefix lengths involved
 	series := newAddr.AssignMinPrefixForBlock()
-	if series.getPrefixLen().bitCount() != newAddr.GetBitCount() {
-		return &Partition{
+	if series.GetPrefixLen().bitCount() != newAddr.GetBitCount() {
+		return &Partition[T]{
 			original: newAddr,
 			iterator: series.PrefixBlockIterator(),
-			count:    series.GetPrefixCountLen(series.getPrefixLen().bitCount()),
+			count:    series.GetPrefixCountLen(series.GetPrefixLen().bitCount()),
 		}
 	}
-	return &Partition{
+	return &Partition[T]{
 		original: newAddr,
 		iterator: newAddr.WithoutPrefixLen().Iterator(),
 		count:    newAddr.GetCount(),
 	}
 }
 
-//TODO LATER partition ranges (not just addresses) with spanning blocks
+// TODO consider bringing back the old public constructors for partitions - there are 4, seen above
+
+// TODO LATER partition ranges (not just addresses) with spanning blocks

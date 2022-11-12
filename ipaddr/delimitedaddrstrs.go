@@ -60,7 +60,7 @@ func isDelimitedBoundary(c byte) bool {
 //
 // This method will not validate strings.  Each string produced can be validated using an instance of IPAddressString.
 // Use CountDelimitedAddresses for the count of elements in the iterator.
-func ParseDelimitedSegments(str string) StringIterator {
+func ParseDelimitedSegments(str string) Iterator[string] {
 	var parts [][]string
 	var lastSegmentStartIndex, lastPartIndex, lastDelimiterIndex int
 	anyDelimited := false
@@ -115,11 +115,11 @@ func addParts(str string, parts [][]string, lastSegmentStartIndex, lastPartIndex
 	return parts, delimitedList
 }
 
-func newDelimitedStringsIterator(parts [][]string) StringIterator {
+func newDelimitedStringsIterator(parts [][]string) Iterator[string] {
 	partCount := len(parts)
 	it := &delimitedStringsIterator{
 		parts:      parts,
-		variations: make([]StringIterator, partCount),
+		variations: make([]Iterator[string], partCount),
 		nextSet:    make([]string, partCount),
 	}
 	it.updateVariations(0)
@@ -129,7 +129,7 @@ func newDelimitedStringsIterator(parts [][]string) StringIterator {
 type delimitedStringsIterator struct {
 	parts      [][]string
 	done       bool
-	variations []StringIterator
+	variations []Iterator[string]
 	nextSet    []string
 }
 
@@ -181,13 +181,7 @@ func (it *delimitedStringsIterator) increment() {
 	it.done = true
 }
 
-// StringIterator iterates through a number of strings
-type StringIterator interface {
-	hasNext
-	Next() string
-}
-
-func newStrSliceIterator(strs []string) StringIterator {
+func newStrSliceIterator(strs []string) Iterator[string] {
 	return &stringIterator{strs: strs}
 }
 
@@ -208,7 +202,7 @@ func (it *stringIterator) Next() (res string) {
 	return
 }
 
-func newSingleStrIterator(str string) StringIterator {
+func newSingleStrIterator(str string) Iterator[string] {
 	return &singleStringIterator{str: str}
 }
 

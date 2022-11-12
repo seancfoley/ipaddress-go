@@ -55,14 +55,14 @@ func createSectionMultiple(segments []*AddressDivision, prefixLength PrefixLen, 
 // callers to this function supply segments with prefix length consistent with the supplied prefix length
 func createInitializedSection(segments []*AddressDivision, prefixLength PrefixLen, addrType addrType) *AddressSection {
 	result := createSection(segments, prefixLength, addrType)
-	result.initMultiple() // assigns isMult
+	result.initMultiple() // assigns isMultiple
 	return result
 }
 
 // callers to this function supply segments with prefix length consistent with the supplied prefix length
 func deriveAddressSectionPrefLen(from *AddressSection, segments []*AddressDivision, prefixLength PrefixLen) *AddressSection {
 	result := createSection(segments, prefixLength, from.getAddrType())
-	result.initMultiple() // assigns isMult
+	result.initMultiple() // assigns isMultiple
 	return result
 }
 
@@ -1488,6 +1488,17 @@ func (section *addressSectionInternal) toNormalizedString() string {
 	return nilSection()
 }
 
+func (section *addressSectionInternal) toNormalizedWildcardString() string {
+	if sect := section.toIPv4AddressSection(); sect != nil {
+		return sect.ToNormalizedWildcardString()
+	} else if sect := section.toIPv6AddressSection(); sect != nil {
+		return sect.ToNormalizedWildcardString()
+	} else if sect := section.toMACAddressSection(); sect != nil {
+		return sect.ToNormalizedWildcardString()
+	}
+	return nilSection()
+}
+
 func (section *addressSectionInternal) toCompressedString() string {
 	if sect := section.toIPv4AddressSection(); sect != nil {
 		return sect.ToCompressedString()
@@ -1657,10 +1668,10 @@ func (section *addressSectionInternal) isDualString() (bool, addrerr.Incompatibl
 }
 
 // used by iterator() and nonZeroHostIterator() in section classes
-func (section *addressSectionInternal) sectionIterator(excludeFunc func([]*AddressDivision) bool) SectionIterator {
+func (section *addressSectionInternal) sectionIterator(excludeFunc func([]*AddressDivision) bool) Iterator[*AddressSection] {
 	useOriginal := !section.isMultiple()
 	var original = section.toAddressSection()
-	var iterator SegmentsIterator
+	var iterator Iterator[[]*AddressDivision]
 	if useOriginal {
 		if excludeFunc != nil && excludeFunc(section.getDivisionsInternal()) {
 			original = nil // the single-valued iterator starts out empty
@@ -1669,7 +1680,7 @@ func (section *addressSectionInternal) sectionIterator(excludeFunc func([]*Addre
 		iterator = allSegmentsIterator(
 			section.GetSegmentCount(),
 			nil,
-			func(index int) SegmentIterator { return section.GetSegment(index).iterator() },
+			func(index int) Iterator[*AddressSegment] { return section.GetSegment(index).iterator() },
 			excludeFunc)
 	}
 	return sectIterator(
@@ -1679,7 +1690,7 @@ func (section *addressSectionInternal) sectionIterator(excludeFunc func([]*Addre
 		iterator)
 }
 
-func (section *addressSectionInternal) prefixIterator(isBlockIterator bool) SectionIterator {
+func (section *addressSectionInternal) prefixIterator(isBlockIterator bool) Iterator[*AddressSection] {
 	prefLen := section.prefixLength
 	if prefLen == nil {
 		return section.sectionIterator(nil)
@@ -1696,22 +1707,22 @@ func (section *addressSectionInternal) prefixIterator(isBlockIterator bool) Sect
 	networkSegIndex := getNetworkSegmentIndex(prefLength, bytesPerSeg, bitsPerSeg)
 	hostSegIndex := getHostSegmentIndex(prefLength, bytesPerSeg, bitsPerSeg)
 	segCount := section.GetSegmentCount()
-	var iterator SegmentsIterator
+	var iterator Iterator[[]*AddressDivision]
 	if !useOriginal {
-		var hostSegIteratorProducer func(index int) SegmentIterator
+		var hostSegIteratorProducer func(index int) Iterator[*AddressSegment]
 		if isBlockIterator {
-			hostSegIteratorProducer = func(index int) SegmentIterator {
+			hostSegIteratorProducer = func(index int) Iterator[*AddressSegment] {
 				return section.GetSegment(index).prefixBlockIterator()
 			}
 		} else {
-			hostSegIteratorProducer = func(index int) SegmentIterator {
+			hostSegIteratorProducer = func(index int) Iterator[*AddressSegment] {
 				return section.GetSegment(index).prefixIterator()
 			}
 		}
 		iterator = segmentsIterator(
 			segCount,
 			nil, //when no prefix we defer to other iterator, when there is one we use the whole original section in the encompassing iterator and not just the original segments
-			func(index int) SegmentIterator { return section.GetSegment(index).iterator() },
+			func(index int) Iterator[*AddressSegment] { return section.GetSegment(index).iterator() },
 			nil,
 			networkSegIndex,
 			hostSegIndex,
@@ -1730,7 +1741,7 @@ func (section *addressSectionInternal) prefixIterator(isBlockIterator bool) Sect
 		iterator)
 }
 
-func (section *addressSectionInternal) blockIterator(segmentCount int) SectionIterator {
+func (section *addressSectionInternal) blockIterator(segmentCount int) Iterator[*AddressSection] {
 	if segmentCount < 0 {
 		segmentCount = 0
 	}
@@ -1739,13 +1750,13 @@ func (section *addressSectionInternal) blockIterator(segmentCount int) SectionIt
 		return section.sectionIterator(nil)
 	}
 	useOriginal := !section.isMultipleTo(segmentCount)
-	var iterator SegmentsIterator
+	var iterator Iterator[[]*AddressDivision]
 	if !useOriginal {
-		var hostSegIteratorProducer func(index int) SegmentIterator
-		hostSegIteratorProducer = func(index int) SegmentIterator {
+		var hostSegIteratorProducer func(index int) Iterator[*AddressSegment]
+		hostSegIteratorProducer = func(index int) Iterator[*AddressSegment] {
 			return section.GetSegment(index).identityIterator()
 		}
-		segIteratorProducer := func(index int) SegmentIterator {
+		segIteratorProducer := func(index int) Iterator[*AddressSegment] {
 			return section.GetSegment(index).iterator()
 		}
 		iterator = segmentsIterator(
@@ -1764,7 +1775,7 @@ func (section *addressSectionInternal) blockIterator(segmentCount int) SectionIt
 		iterator)
 }
 
-func (section *addressSectionInternal) sequentialBlockIterator() SectionIterator {
+func (section *addressSectionInternal) sequentialBlockIterator() Iterator[*AddressSection] {
 	return section.blockIterator(section.GetSequentialBlockIndex())
 }
 
@@ -2481,7 +2492,7 @@ func (section *AddressSection) Wrap() WrappedAddressSection {
 // When iterating, the prefix length is preserved.  Remove it using WithoutPrefixLen prior to iterating if you wish to drop it from all individual address sections.
 //
 // Call IsMultiple to determine if this instance represents multiple address sections, or GetCount for the count.
-func (section *AddressSection) Iterator() SectionIterator {
+func (section *AddressSection) Iterator() Iterator[*AddressSection] {
 	if section == nil {
 		return nilSectIterator()
 	}
@@ -2495,7 +2506,7 @@ func (section *AddressSection) Iterator() SectionIterator {
 // instead constraining themselves to values from this address section.
 //
 // If the series has no prefix length, then this is equivalent to Iterator.
-func (section *AddressSection) PrefixIterator() SectionIterator {
+func (section *AddressSection) PrefixIterator() Iterator[*AddressSection] {
 	return section.prefixIterator(false)
 }
 
@@ -2503,7 +2514,7 @@ func (section *AddressSection) PrefixIterator() SectionIterator {
 // Each iterated address section will be a prefix block with the same prefix length as this address section.
 //
 // If this address section has no prefix length, then this is equivalent to Iterator.
-func (section *AddressSection) PrefixBlockIterator() SectionIterator {
+func (section *AddressSection) PrefixBlockIterator() Iterator[*AddressSection] {
 	return section.prefixIterator(true)
 }
 
@@ -2619,6 +2630,15 @@ func (section *AddressSection) ToNormalizedString() string {
 		return nilString()
 	}
 	return section.toNormalizedString()
+}
+
+// ToNormalizedWildcardString produces a string similar to the normalized string but for IP address sections it avoids the CIDR prefix length.
+// Multiple-valued segments will be shown with wildcards and ranges (denoted by '*' and '-') instead of using the CIDR prefix notation.
+func (section *AddressSection) ToNormalizedWildcardString() string {
+	if section == nil {
+		return nilString()
+	}
+	return section.toNormalizedWildcardString()
 }
 
 // ToCompressedString produces a short representation of this address section while remaining within the confines of standard representation(s) of the address.

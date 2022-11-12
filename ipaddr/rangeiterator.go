@@ -16,43 +16,19 @@
 
 package ipaddr
 
-// IPAddressSeqRangeIterator iterates through IP address sequential ranges
-type IPAddressSeqRangeIterator interface {
-	hasNext
-
-	// Next returns the next sequential address range, or nil if there is none left.
-	Next() *IPAddressSeqRange
-}
-
-type singleRangeIterator struct {
-	original *IPAddressSeqRange
-}
-
-func (it *singleRangeIterator) HasNext() bool {
-	return it.original != nil
-}
-
-func (it *singleRangeIterator) Next() (res *IPAddressSeqRange) {
-	if it.HasNext() {
-		res = it.original
-		it.original = nil
-	}
-	return
-}
-
-type rangeIterator struct {
-	rng                 *IPAddressSeqRange
-	creator             func(*IPAddress, *IPAddress) *IPAddressSeqRange
-	prefixBlockIterator IPAddressIterator
+type sequRangeIterator[T SequentialRangeConstraint[T]] struct {
+	rng                 *SequentialRange[T]
+	creator             func(T, T) *SequentialRange[T]
+	prefixBlockIterator Iterator[T]
 	prefixLength        BitCount
 	notFirst            bool
 }
 
-func (it *rangeIterator) HasNext() bool {
+func (it *sequRangeIterator[T]) HasNext() bool {
 	return it.prefixBlockIterator.HasNext()
 }
 
-func (it *rangeIterator) Next() (res *IPAddressSeqRange) {
+func (it *sequRangeIterator[T]) Next() (res *SequentialRange[T]) {
 	if it.HasNext() {
 		next := it.prefixBlockIterator.Next()
 		if !it.notFirst {
@@ -76,39 +52,8 @@ func (it *rangeIterator) Next() (res *IPAddressSeqRange) {
 				return it.creator(next.GetLower(), upper)
 			}
 		}
-		return next.toSequentialRangeUnchecked()
+		lower, upper := next.getLowestHighestAddrs()
+		return newSequRangeUnchecked(lower, upper, lower != upper)
 	}
 	return
-}
-
-// IPv4AddressSeqRangeIterator iterates through IPv4 address sequential ranges
-type IPv4AddressSeqRangeIterator interface {
-	hasNext
-
-	// Next returns the next sequential address range, or nil if there is none left.
-	Next() *IPv4AddressSeqRange
-}
-
-type ipv4RangeIterator struct {
-	IPAddressSeqRangeIterator
-}
-
-func (iter ipv4RangeIterator) Next() *IPv4AddressSeqRange {
-	return iter.IPAddressSeqRangeIterator.Next().ToIPv4()
-}
-
-// IPv6AddressSeqRangeIterator iterates through IPv6 address sequential ranges
-type IPv6AddressSeqRangeIterator interface {
-	hasNext
-
-	// Next returns the next sequential address range, or nil if there is none left.
-	Next() *IPv6AddressSeqRange
-}
-
-type ipv6RangeIterator struct {
-	IPAddressSeqRangeIterator
-}
-
-func (iter ipv6RangeIterator) Next() *IPv6AddressSeqRange {
-	return iter.IPAddressSeqRangeIterator.Next().ToIPv6()
 }

@@ -16,6 +16,6 @@
 
 module github.com/seancfoley/ipaddress-go
 
-go 1.13
+go 1.18
 
 require github.com/seancfoley/bintree v1.1.0

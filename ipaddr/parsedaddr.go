@@ -35,7 +35,7 @@ import (
 type translatedResult struct {
 	sections *sectionResult
 
-	rng *IPAddressSeqRange
+	rng *SequentialRange[*IPAddress]
 
 	mask *IPAddress
 
@@ -46,7 +46,7 @@ type boundaryResult struct {
 	lowerSection, upperSection *IPAddressSection
 }
 
-func (res *boundaryResult) createRange() *IPAddressSeqRange {
+func (res *boundaryResult) createRange() *SequentialRange[*IPAddress] {
 	//we need to add zone in order to reuse the lower and upper
 	lowerSection := res.lowerSection
 	creator := lowerSection.getAddrType().getIPNetwork().getIPAddressCreator()
@@ -157,9 +157,9 @@ func (parseData *parsedIPAddress) createSections(doSections, doRangeBoundaries, 
 	return
 }
 
-func (parseData *parsedIPAddress) getProviderSeqRange() *IPAddressSeqRange {
+func (parseData *parsedIPAddress) getProviderSeqRange() *SequentialRange[*IPAddress] {
 	val := parseData.values()
-	result := (*IPAddressSeqRange)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&val.rng))))
+	result := (*SequentialRange[*IPAddress])(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&val.rng))))
 	if result == nil {
 		parseData.creationLock.Lock()
 		result = val.rng
@@ -1638,7 +1638,7 @@ func createIPv6Segment(value1, value2 SegInt, segmentPrefixLength PrefixLen, cre
 func createIPv6RangeSegment(
 	//finalResult *translatedResult,
 	sections *sectionResult,
-	_ *IPv4AddressSeqRange, // this was only used to be put into any exceptions
+	_ *SequentialRange[*IPv4Address], // this was only used to be put into any exceptions
 	upperRangeLower,
 	upperRangeUpper,
 	lowerRangeLower,

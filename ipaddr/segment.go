@@ -268,31 +268,31 @@ func (seg *addressSegmentInternal) getDefaultSegmentWildcardString() string {
 	return SegmentWildcardStr
 }
 
-func (seg *addressSegmentInternal) iterator() SegmentIterator {
+func (seg *addressSegmentInternal) iterator() Iterator[*AddressSegment] {
 	return seg.segmentIterator(seg.getDivisionPrefixLength(), false, false)
 }
 
-func (seg *addressSegmentInternal) identityIterator() SegmentIterator {
+func (seg *addressSegmentInternal) identityIterator() Iterator[*AddressSegment] {
 	return &singleSegmentIterator{original: seg.toAddressSegment()}
 }
 
-func (seg *addressSegmentInternal) prefixBlockIterator() SegmentIterator {
+func (seg *addressSegmentInternal) prefixBlockIterator() Iterator[*AddressSegment] {
 	return seg.segmentIterator(seg.getDivisionPrefixLength(), true, true)
 }
 
-func (seg *addressSegmentInternal) prefixedBlockIterator(segPrefLen BitCount) SegmentIterator {
+func (seg *addressSegmentInternal) prefixedBlockIterator(segPrefLen BitCount) Iterator[*AddressSegment] {
 	return seg.segmentIterator(cacheBitCount(segPrefLen), true, true)
 }
 
-func (seg *addressSegmentInternal) prefixIterator() SegmentIterator {
+func (seg *addressSegmentInternal) prefixIterator() Iterator[*AddressSegment] {
 	return seg.segmentIterator(seg.getDivisionPrefixLength(), true, false)
 }
 
-func (seg *addressSegmentInternal) prefixedIterator(segPrefLen BitCount) SegmentIterator {
+func (seg *addressSegmentInternal) prefixedIterator(segPrefLen BitCount) Iterator[*AddressSegment] {
 	return seg.segmentIterator(cacheBitCount(segPrefLen), true, false)
 }
 
-func (seg *addressSegmentInternal) segmentIterator(segPrefLen PrefixLen, isPrefixIterator, isBlockIterator bool) SegmentIterator {
+func (seg *addressSegmentInternal) segmentIterator(segPrefLen PrefixLen, isPrefixIterator, isBlockIterator bool) Iterator[*AddressSegment] {
 	vals := seg.divisionValues
 	if vals == nil {
 		return segIterator(seg,
@@ -861,7 +861,7 @@ func (seg *AddressSegment) IsMAC() bool {
 // Iterator provides an iterator to iterate through the individual address segments of this address segment.
 //
 // Call IsMultiple to determine if this instance represents multiple address segments, or GetValueCount for the count.
-func (seg *AddressSegment) Iterator() SegmentIterator {
+func (seg *AddressSegment) Iterator() Iterator[*AddressSegment] {
 	if seg == nil {
 		return nilSegIterator()
 	}
@@ -986,4 +986,41 @@ func getPrefixValueCount(segment *AddressSegment, segmentPrefixLength BitCount) 
 		return SegIntCount(segment.GetUpperSegmentValue()) - SegIntCount(segment.GetSegmentValue()) + 1
 	}
 	return SegIntCount(segment.GetUpperSegmentValue()>>uint(shiftAdjustment)) - SegIntCount(segment.GetSegmentValue()>>uint(shiftAdjustment)) + 1
+}
+
+func getSegmentPrefLen(
+	_ AddressSegmentSeries,
+	prefLen PrefixLen,
+	bitsPerSegment,
+	bitsMatchedSoFar BitCount,
+	segment *AddressSegment) PrefixLen {
+	if ipSeg := segment.ToIP(); ipSeg != nil {
+		return ipSeg.GetSegmentPrefixLen()
+	} else if prefLen != nil {
+		result := prefLen.Len() - bitsMatchedSoFar
+		if result <= bitsPerSegment {
+			if result < 0 {
+				result = 0
+			}
+			return cacheBitCount(result)
+		}
+	}
+	return nil
+}
+
+func getMatchingBits(segment1, segment2 *AddressSegment, maxBits, bitsPerSegment BitCount) BitCount {
+	if maxBits == 0 {
+		return 0
+	}
+	val1 := segment1.getSegmentValue()
+	val2 := segment2.getSegmentValue()
+	xor := val1 ^ val2
+	switch bitsPerSegment {
+	case IPv4BitsPerSegment:
+		return BitCount(bits.LeadingZeros8(uint8(xor)))
+	case IPv6BitsPerSegment:
+		return BitCount(bits.LeadingZeros16(uint16(xor)))
+	default:
+		return BitCount(bits.LeadingZeros32(xor)) - 32 + bitsPerSegment
+	}
 }

@@ -16,45 +16,75 @@
 
 package ipaddr
 
-// AddressIterator iterates through addresses, subnets and address ranges
-type AddressIterator interface {
+// Iterator iterates collections, such as subnets and sequential address ranges
+type Iterator[T any] interface {
 	hasNext
 
-	// Next returns the next address, or nil if there is none left.
-	Next() *Address
+	// Next returns the next item, or the zero value for T if there is none left.
+	Next() T
 }
 
-type singleAddrIterator struct {
-	original *Address
+// IteratorRem is an iterator that provides a removal operation
+type IteratorRem[T any] interface { //TODO rename IteratorRemover or IteratorRemove?  But we are not removing the iterator.  IteratorWithRemove?  IterateRemover?  That last one is not bad.   Actually, I sorta like IteratorWithRemove
+	Iterator[T]
+
+	// Remove removes the last iterated item from the underlying data structure or collection, and returns that element.
+	// If there is no such element, it returns the zero value for T.
+	Remove() T
 }
 
-func (it *singleAddrIterator) HasNext() bool {
-	return it.original != nil
+//type singleAddrIterator struct {
+//	original *Address
+//}
+//
+//func (it *singleAddrIterator) HasNext() bool {
+//	return it.original != nil
+//}
+//
+//func (it *singleAddrIterator) Next() (res *Address) {
+//	if it.HasNext() {
+//		res = it.original
+//		it.original = nil
+//	}
+//	return
+//}
+
+type singleIterator[T any] struct {
+	empty    bool
+	original T
 }
 
-func (it *singleAddrIterator) Next() (res *Address) {
+func (it *singleIterator[T]) HasNext() bool {
+	return !it.empty
+}
+
+func (it *singleIterator[T]) Next() (res T) {
 	if it.HasNext() {
 		res = it.original
-		it.original = nil
+		it.empty = true
 	}
 	return
 }
 
 type multiAddrIterator struct {
-	SectionIterator
+	Iterator[*AddressSection]
 	zone Zone
 }
 
 func (it multiAddrIterator) Next() (res *Address) {
 	if it.HasNext() {
-		sect := it.SectionIterator.Next()
+		sect := it.Iterator.Next()
 		res = createAddress(sect, it.zone)
 	}
 	return
 }
 
-func nilAddrIterator() AddressIterator {
-	return &singleAddrIterator{}
+func nilAddrIterator() Iterator[*Address] {
+	return &singleIterator[*Address]{}
+}
+
+func nilIterator[T any]() Iterator[T] {
+	return &singleIterator[T]{}
 }
 
 func addrIterator(
@@ -62,12 +92,12 @@ func addrIterator(
 	original *Address,
 	prefixLen PrefixLen,
 	valsAreMultiple bool,
-	iterator SegmentsIterator) AddressIterator {
+	iterator Iterator[[]*AddressDivision]) Iterator[*Address] {
 	if single {
-		return &singleAddrIterator{original: original}
+		return &singleIterator[*Address]{original: original}
 	}
 	return multiAddrIterator{
-		SectionIterator: &multiSectionIterator{
+		Iterator: &multiSectionIterator{
 			original:        original.section,
 			iterator:        iterator,
 			valsAreMultiple: valsAreMultiple,
@@ -81,16 +111,16 @@ func prefixAddrIterator(
 	single bool,
 	original *Address,
 	prefixLen PrefixLen,
-	iterator SegmentsIterator) AddressIterator {
+	iterator Iterator[[]*AddressDivision]) Iterator[*Address] {
 	if single {
-		return &singleAddrIterator{original: original}
+		return &singleIterator[*Address]{original: original}
 	}
 	var zone Zone
 	if original != nil {
 		zone = original.zone
 	}
 	return multiAddrIterator{
-		SectionIterator: &prefixSectionIterator{
+		Iterator: &prefixSectionIterator{
 			original:  original.section,
 			iterator:  iterator,
 			prefixLen: prefixLen,
@@ -105,163 +135,134 @@ func rangeAddrIterator(
 	original *Address,
 	prefixLen PrefixLen,
 	valsAreMultiple bool,
-	iterator SegmentsIterator) AddressIterator {
+	iterator Iterator[[]*AddressDivision]) Iterator[*Address] {
 	return addrIterator(single, original, prefixLen, valsAreMultiple, iterator)
 }
 
-// IPAddressIterator iterates through IP subnets and ranges
-type IPAddressIterator interface {
-	hasNext
-
-	// Next returns the next IP address, or nil if there is none left.
-	Next() *IPAddress
-}
-
 type ipAddrIterator struct {
-	AddressIterator
+	Iterator[*Address]
 }
 
 func (iter ipAddrIterator) Next() *IPAddress {
-	return iter.AddressIterator.Next().ToIP()
+	return iter.Iterator.Next().ToIP()
 }
 
-type ipAddrSliceIterator struct {
-	addrs []*IPAddress
+//type ipAddrSliceIterator struct {
+//	addrs []*IPAddress
+//}
+//
+//func (iter *ipAddrSliceIterator) HasNext() bool {
+//	return len(iter.addrs) > 0
+//}
+//
+//func (iter *ipAddrSliceIterator) Next() (res *IPAddress) {
+//	if iter.HasNext() {
+//		res = iter.addrs[0]
+//		iter.addrs = iter.addrs[1:]
+//	}
+//	return
+//}
+
+//func (iter *ipAddrSliceIterator) append(addrs []*IPAddress) {
+//	iter.addrs = append(iter.addrs, addrs...)
+//}
+
+type sliceIterator[T any] struct {
+	elements []T
 }
 
-func (iter *ipAddrSliceIterator) HasNext() bool {
-	return len(iter.addrs) > 0
+func (iter *sliceIterator[T]) HasNext() bool {
+	return len(iter.elements) > 0
 }
 
-func (iter *ipAddrSliceIterator) Next() (res *IPAddress) {
+func (iter *sliceIterator[T]) Next() (res T) {
 	if iter.HasNext() {
-		res = iter.addrs[0]
-		iter.addrs = iter.addrs[1:]
+		res = iter.elements[0]
+		iter.elements = iter.elements[1:]
 	}
 	return
 }
 
-func (iter *ipAddrSliceIterator) append(addrs []*IPAddress) {
-	iter.addrs = append(iter.addrs, addrs...)
-}
-
-// IPv4AddressIterator iterates through IPv4 subnets and ranges
-type IPv4AddressIterator interface {
-	hasNext
-
-	// Next returns the next IPv4 address, or nil if there is none left.
-	Next() *IPv4Address
-}
+//func (iter *sliceIterator[T]) append(addrs []T) {
+//	iter.elements = append(iter.elements, addrs...)
+//}
 
 type ipv4AddressIterator struct {
-	AddressIterator
+	Iterator[*Address]
 }
 
 func (iter ipv4AddressIterator) Next() *IPv4Address {
-	return iter.AddressIterator.Next().ToIPv4()
+	return iter.Iterator.Next().ToIPv4()
 }
 
-type ipv4IPAddressIterator struct {
-	IPAddressIterator
-}
-
-func (iter ipv4IPAddressIterator) Next() *IPv4Address {
-	return iter.IPAddressIterator.Next().ToIPv4()
-}
-
-// IPv6AddressIterator iterates through IPv6 subnets and ranges
-type IPv6AddressIterator interface {
-	hasNext
-
-	// Next returns the next IPv6 address, or nil if there is none left.
-	Next() *IPv6Address
-}
+//type ipv4IPAddressIterator struct {
+//	Iterator[*IPAddress]
+//}
+//
+//func (iter ipv4IPAddressIterator) Next() *IPv4Address {
+//	return iter.Iterator.Next().ToIPv4()
+//}
 
 type ipv6AddressIterator struct {
-	AddressIterator
+	Iterator[*Address]
 }
 
 func (iter ipv6AddressIterator) Next() *IPv6Address {
-	return iter.AddressIterator.Next().ToIPv6()
+	return iter.Iterator.Next().ToIPv6()
 }
 
-type ipv6IPAddressIterator struct {
-	IPAddressIterator
-}
-
-func (iter ipv6IPAddressIterator) Next() *IPv6Address {
-	return iter.IPAddressIterator.Next().ToIPv6()
-}
-
-// MACAddressIterator iterates through MAC address collections
-type MACAddressIterator interface {
-	hasNext
-
-	// Next returns the next MAC address, or nil if there is none left.
-	Next() *MACAddress
-}
+//type ipv6IPAddressIterator struct {
+//	Iterator[*IPAddress]
+//}
+//
+//func (iter ipv6IPAddressIterator) Next() *IPv6Address {
+//	return iter.Iterator.Next().ToIPv6()
+//}
 
 type macAddressIterator struct {
-	AddressIterator
+	Iterator[*Address]
 }
 
 func (iter macAddressIterator) Next() *MACAddress {
-	return iter.AddressIterator.Next().ToMAC()
-}
-
-// ExtendedSegmentSeriesIterator iterates through either addresses or address sections
-type ExtendedSegmentSeriesIterator interface {
-	hasNext
-
-	// Next returns the next section or address, or nil if there is none left
-	Next() ExtendedSegmentSeries
-}
-
-// ExtendedIPSegmentSeriesIterator iterates through either IP addresses or IP address sections
-type ExtendedIPSegmentSeriesIterator interface {
-	hasNext
-
-	// Next returns the next IP section or IP address, or nil if there is none left
-	Next() ExtendedIPSegmentSeries
+	return iter.Iterator.Next().ToMAC()
 }
 
 type addressSeriesIterator struct {
-	AddressIterator
+	Iterator[*Address]
 }
 
 func (iter addressSeriesIterator) Next() ExtendedSegmentSeries {
-	return wrapAddress(iter.AddressIterator.Next())
+	return wrapAddress(iter.Iterator.Next())
 }
 
+//type wrapperIterator[T WrappedConstraint[T, R, S], R AddressSectionType, S AddressSegmentType] struct {
+//	Iterator[T]
+//}
+//
+//func (iter wrapperIterator[T, R, S]) Next() ExtendedSegmentSeries {
+//	return wrap(iter.Iterator.Next())
+//}
+
 type ipaddressSeriesIterator struct {
-	IPAddressIterator
+	Iterator[*IPAddress]
 }
 
 func (iter ipaddressSeriesIterator) Next() ExtendedIPSegmentSeries {
-	return iter.IPAddressIterator.Next().Wrap()
+	return iter.Iterator.Next().Wrap()
 }
 
 type sectionSeriesIterator struct {
-	SectionIterator
+	Iterator[*AddressSection]
 }
 
 func (iter sectionSeriesIterator) Next() ExtendedSegmentSeries {
-	return wrapSection(iter.SectionIterator.Next())
+	return wrapSection(iter.Iterator.Next())
 }
 
 type ipsectionSeriesIterator struct {
-	IPSectionIterator
+	Iterator[*IPAddressSection]
 }
 
 func (iter ipsectionSeriesIterator) Next() ExtendedIPSegmentSeries {
-	return wrapIPSection(iter.IPSectionIterator.Next())
-}
-
-// WrappedIPAddressIterator converts an IP address iterator to an address iterator
-type WrappedIPAddressIterator struct {
-	IPAddressIterator
-}
-
-func (iter WrappedIPAddressIterator) Next() *Address {
-	return iter.IPAddressIterator.Next().ToAddressBase()
+	return wrapIPSection(iter.Iterator.Next())
 }

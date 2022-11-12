@@ -274,15 +274,15 @@ func (addr *MACAddress) GetUpperValue() *big.Int {
 // GetLower returns the address in the collection with the lowest numeric value,
 // which will be the receiver if it represents a single address.
 // For example, for "1:1:1:2-3:4:5-6", the series "1:1:1:2:4:5" is returned.
-func (addr *MACAddress) GetLower() *Address {
-	return addr.init().getLower()
+func (addr *MACAddress) GetLower() *MACAddress {
+	return addr.init().getLower().ToMAC()
 }
 
 // GetUpper returns the address in the collection with the highest numeric value,
 // which will be the receiver if it represents a single address.
 // For example, for "1:1:1:2-3:4:5-6", the series "1:1:1:3:4:6" is returned.
-func (addr *MACAddress) GetUpper() *Address {
-	return addr.init().getUpper()
+func (addr *MACAddress) GetUpper() *MACAddress {
+	return addr.init().getUpper().ToMAC()
 }
 
 // Uint64Value returns the lowest address in the address collection as a uint64
@@ -544,7 +544,15 @@ func (addr *MACAddress) AssignMinPrefixForBlock() *MACAddress {
 // This method provides the address formats used by tries.
 // ToSinglePrefixBlockOrAddress is quite similar to AssignPrefixForSingleBlock, which always returns prefixed addresses, while this does not.
 func (addr *MACAddress) ToSinglePrefixBlockOrAddress() *MACAddress {
-	return addr.init().toSinglePrefixBlockOrAddress().ToMAC()
+	return addr.init().toSinglePrefixBlockOrAddr().ToMAC()
+}
+
+func (addr *MACAddress) toSinglePrefixBlockOrAddress() (*MACAddress, addrerr.IncompatibleAddressError) {
+	res := addr.ToSinglePrefixBlockOrAddress()
+	if res == nil {
+		return nil, &incompatibleAddressError{addressError{key: "ipaddress.error.address.not.block"}}
+	}
+	return res, nil
 }
 
 // ContainsPrefixBlock returns whether the range of this address or address collection contains the block of addresses for the given prefix length.
@@ -666,7 +674,10 @@ func (addr *MACAddress) TrieCompare(other *MACAddress) (int, addrerr.Incompatibl
 //	- ranges that occur inside the prefix length are ignored, only the lower value is used.
 //	- ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
 func (addr *MACAddress) TrieIncrement() *MACAddress {
-	return addr.trieIncrement().ToMAC()
+	if res, ok := trieIncrement(addr); ok {
+		return res
+	}
+	return nil
 }
 
 // TrieDecrement returns the previous address or block according to address trie ordering
@@ -676,7 +687,10 @@ func (addr *MACAddress) TrieIncrement() *MACAddress {
 //	- ranges that occur inside the prefix length are ignored, only the lower value is used.
 //	- ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
 func (addr *MACAddress) TrieDecrement() *MACAddress {
-	return addr.trieDecrement().ToMAC()
+	if res, ok := trieDecrement(addr); ok {
+		return res
+	}
+	return nil
 }
 
 // GetMaxSegmentValue returns the maximum possible segment value for this type of address.
@@ -716,7 +730,7 @@ func (addr *MACAddress) IsLocal() bool {
 // When iterating, the prefix length is preserved.  Remove it using WithoutPrefixLen prior to iterating if you wish to drop it from all individual addresses.
 //
 // Call IsMultiple to determine if this instance represents multiple addresses, or GetCount for the count.
-func (addr *MACAddress) Iterator() MACAddressIterator {
+func (addr *MACAddress) Iterator() Iterator[*MACAddress] {
 	if addr == nil {
 		return macAddressIterator{nilAddrIterator()}
 	}
@@ -730,7 +744,7 @@ func (addr *MACAddress) Iterator() MACAddressIterator {
 // instead constraining themselves to values from this subnet.
 //
 // If the subnet has no prefix length, then this is equivalent to Iterator.
-func (addr *MACAddress) PrefixIterator() MACAddressIterator {
+func (addr *MACAddress) PrefixIterator() Iterator[*MACAddress] {
 	return macAddressIterator{addr.init().prefixIterator(false)}
 }
 
@@ -738,13 +752,13 @@ func (addr *MACAddress) PrefixIterator() MACAddressIterator {
 // Each iterated address or subnet will be a prefix block with the same prefix length as this address or subnet.
 //
 // If this address has no prefix length, then this is equivalent to Iterator.
-func (addr *MACAddress) PrefixBlockIterator() MACAddressIterator {
+func (addr *MACAddress) PrefixBlockIterator() Iterator[*MACAddress] {
 	return macAddressIterator{addr.init().prefixIterator(true)}
 }
 
 // BlockIterator iterates through the addresses that can be obtained by iterating through all the upper segments up to the given segment count.
 // The segments following remain the same in all iterated addresses.
-func (addr *MACAddress) BlockIterator(segmentCount int) MACAddressIterator {
+func (addr *MACAddress) BlockIterator(segmentCount int) Iterator[*MACAddress] {
 	return macAddressIterator{addr.init().blockIterator(segmentCount)}
 }
 
@@ -755,7 +769,7 @@ func (addr *MACAddress) BlockIterator(segmentCount int) MACAddressIterator {
 // For instance, given the IPv4 subnet 1-2.3-4.5-6.7-8, it will iterate through 1.3.5.7-8, 1.3.6.7-8, 1.4.5.7-8, 1.4.6.7-8, 2.3.5.7-8, 2.3.6.7-8, 2.4.6.7-8, 2.4.6.7-8.
 //
 // Use GetSequentialBlockCount to get the number of iterated elements.
-func (addr *MACAddress) SequentialBlockIterator() MACAddressIterator {
+func (addr *MACAddress) SequentialBlockIterator() Iterator[*MACAddress] {
 	return macAddressIterator{addr.init().sequentialBlockIterator()}
 }
 
@@ -1054,6 +1068,11 @@ func (addr *MACAddress) ToNormalizedString() string {
 	return addr.init().toNormalizedString()
 }
 
+// ToNormalizedWildcardString produces the normalized string.
+func (addr *MACAddress) ToNormalizedWildcardString() string {
+	return addr.toNormalizedWildcardString()
+}
+
 // ToCompressedString produces a short representation of this address while remaining within the confines of standard representation(s) of the address.
 //
 // For MAC, it differs from the canonical string.  It produces a shorter string for the address that has no leading zeros.
@@ -1168,7 +1187,14 @@ func (addr *MACAddress) ToAddressString() *MACAddressString {
 		}
 	}
 	return newMACAddressStringFromAddr(addr.toCanonicalString(), addr)
+}
 
+func (addr *MACAddress) toMaxLower() *MACAddress {
+	return addr.init().addressInternal.toMaxLower().ToMAC()
+}
+
+func (addr *MACAddress) toMinUpper() *MACAddress {
+	return addr.init().addressInternal.toMinUpper().ToMAC()
 }
 
 // ToAddressBase converts to an Address, a polymorphic type usable with all addresses and subnets.
@@ -1191,22 +1217,43 @@ func (addr *MACAddress) Wrap() WrappedAddress {
 // ToKey creates the associated address key.
 // While addresses can be compared with the Compare, TrieCompare or Equal methods as well as various provided instances of AddressComparator,
 // they are not comparable with go operators.
-// However, IPv6AddressKey instances are comparable with go operators, and thus can be used as map keys.
-func (addr *MACAddress) ToKey() *MACAddressKey {
+// However, Key instances are comparable with go operators, and thus can be used as map keys.
+func (addr *MACAddress) ToKey() *Key[*MACAddress] {
 	addr = addr.init()
-	key := &MACAddressKey{
-		Prefix: PrefixKey{
-			IsPrefixed: addr.IsPrefixed(),
-			PrefixLen:  PrefixBitCount(addr.GetPrefixLen().Len()),
-		},
-		SegmentCount: uint8(addr.GetSegmentCount()),
+	key := &Key[*MACAddress]{}
+	if addr.GetSegmentCount() == ExtendedUniqueIdentifier64SegmentCount {
+		key.scheme = eui64Scheme
+	} else {
+		key.scheme = mac48Scheme
 	}
 	section := addr.GetSection()
 	divs := section.getDivArray()
 	for i, div := range divs {
 		seg := div.ToMAC()
-		vals := &key.Values[i]
-		vals.Value, vals.UpperValue = seg.GetMACSegmentValue(), seg.GetMACUpperSegmentValue()
+		valIndex := i >> 3
+		val := &key.keyContents.vals[valIndex]
+		if i&3 != 0 {
+			val.lower <<= MACBitsPerSegment
+			val.upper <<= MACBitsPerSegment
+		}
+		val.lower |= uint64(seg.GetMACSegmentValue())
+		val.upper |= uint64(seg.GetMACUpperSegmentValue())
 	}
 	return key
+}
+
+func (addr *MACAddress) fromKey(key *keyContents) *MACAddress {
+	var segCount int
+	if key.scheme == eui64Scheme {
+		segCount = ExtendedUniqueIdentifier64SegmentCount
+	} else {
+		segCount = MediaAccessControlSegmentCount
+	}
+	return NewMACAddressFromRange(
+		func(segmentIndex int) MACSegInt {
+			return MACSegInt(key.vals[0].lower >> (((segCount - 1) - segmentIndex) << macBitsToSegmentBitshift))
+		}, func(segmentIndex int) MACSegInt {
+			return MACSegInt(key.vals[0].lower >> (((segCount - 1) - segmentIndex) << macBitsToSegmentBitshift))
+		},
+	)
 }

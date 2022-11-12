@@ -401,7 +401,7 @@ func (seg *IPv6AddressSegment) ToHostSegment(segmentPrefixLength PrefixLen) *IPv
 // When iterating, the prefix length is preserved.  Remove it using WithoutPrefixLen prior to iterating if you wish to drop it from all individual address segments.
 //
 // Call IsMultiple to determine if this instance represents multiple address segments, or GetValueCount for the count.
-func (seg *IPv6AddressSegment) Iterator() IPv6SegmentIterator {
+func (seg *IPv6AddressSegment) Iterator() Iterator[*IPv6AddressSegment] {
 	if seg == nil {
 		return ipv6SegmentIterator{nilSegIterator()}
 	}
@@ -412,7 +412,7 @@ func (seg *IPv6AddressSegment) Iterator() IPv6SegmentIterator {
 // Each iterated address segment will be a prefix block with the same prefix length as this address segment.
 //
 // If this address segment has no prefix length, then this is equivalent to Iterator.
-func (seg *IPv6AddressSegment) PrefixBlockIterator() IPv6SegmentIterator {
+func (seg *IPv6AddressSegment) PrefixBlockIterator() Iterator[*IPv6AddressSegment] {
 	return ipv6SegmentIterator{seg.init().prefixBlockIterator()}
 }
 
@@ -420,7 +420,7 @@ func (seg *IPv6AddressSegment) PrefixBlockIterator() IPv6SegmentIterator {
 // one for each prefix of this address or subnet.
 //
 // It is similar to PrefixBlockIterator except that this method allows you to specify the prefix length.
-func (seg *IPv6AddressSegment) PrefixedBlockIterator(segmentPrefixLen BitCount) IPv6SegmentIterator {
+func (seg *IPv6AddressSegment) PrefixedBlockIterator(segmentPrefixLen BitCount) Iterator[*IPv6AddressSegment] {
 	return ipv6SegmentIterator{seg.init().prefixedBlockIterator(segmentPrefixLen)}
 }
 
@@ -431,7 +431,7 @@ func (seg *IPv6AddressSegment) PrefixedBlockIterator(segmentPrefixLen BitCount) 
 // instead constraining themselves to values from this segment.
 //
 // If this address segment has no prefix length, then this is equivalent to Iterator.
-func (seg *IPv6AddressSegment) PrefixIterator() IPv6SegmentIterator {
+func (seg *IPv6AddressSegment) PrefixIterator() Iterator[*IPv6AddressSegment] {
 	return ipv6SegmentIterator{seg.init().prefixIterator()}
 }
 

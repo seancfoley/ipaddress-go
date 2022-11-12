@@ -289,16 +289,23 @@ func (div *addressDivisionInternal) containsPrefixBlock(divisionPrefixLen BitCou
 
 // Returns whether the division range includes the block of values for its prefix length
 func (div *addressDivisionInternal) isPrefixBlockVals(divisionValue, upperValue DivInt, divisionPrefixLen BitCount) bool {
+	return isPrefixBlockVals(divisionValue, upperValue, divisionPrefixLen, div.GetBitCount())
+}
+
+func isPrefixBlockVals(divisionValue, upperValue DivInt, divisionPrefixLen, divisionBitCount BitCount) bool {
 	if divisionPrefixLen <= 0 {
-		return divisionValue == 0 && upperValue == div.getMaxValue()
+		if divisionValue != 0 {
+			return false
+		}
+		maxValue := ^(^DivInt(0) << uint(divisionBitCount))
+		return upperValue == maxValue
 	}
-	bitCount := div.GetBitCount()
-	if divisionPrefixLen >= bitCount {
+	if divisionPrefixLen >= divisionBitCount {
 		return true
 	}
 	var ones = ^DivInt(0)
-	divisionBitMask := ^(ones << uint(bitCount))
-	divisionPrefixMask := ones << uint(bitCount-divisionPrefixLen)
+	divisionBitMask := ^(ones << uint(divisionBitCount))
+	divisionPrefixMask := ones << uint(divisionBitCount-divisionPrefixLen)
 	var divisionNonPrefixMask = ^divisionPrefixMask
 	return testRange(divisionValue,
 		upperValue,

@@ -108,7 +108,7 @@ func mult(currentResult *big.Int, newResult uint64) *big.Int {
 	return currentResult.Mul(currentResult, newBig)
 }
 
-// only called when isMult() is true, so segCount >= 1
+// only called when isMultiple() is true, so segCount >= 1
 func count(segmentCountProvider func(index int) uint64, segCount, safeMultiplies int, safeLimit uint64) *big.Int {
 	if segCount <= 0 {
 		return bigOne()
@@ -254,7 +254,7 @@ func BlockSize(bits uint) *big.Int {
 	return new(big.Int).Lsh(bigOneConst(), bits)
 }
 
-// TODO generics: replace all uses of atomicStorePointer with atomic.Pointer
+//  TODO LATER generics: replace all uses of atomicStorePointer with atomic.Pointer, when we move up to 1.19
 
 func atomicLoadPointer(dataLoc *unsafe.Pointer) unsafe.Pointer {
 	return atomic.LoadPointer(dataLoc)

@@ -398,7 +398,7 @@ func (seg *IPv4AddressSegment) ToHostSegment(segmentPrefixLength PrefixLen) *IPv
 // When iterating, the prefix length is preserved.  Remove it using WithoutPrefixLen prior to iterating if you wish to drop it from all individual address segments.
 //
 // Call IsMultiple to determine if this instance represents multiple address segments, or GetValueCount for the count.
-func (seg *IPv4AddressSegment) Iterator() IPv4SegmentIterator {
+func (seg *IPv4AddressSegment) Iterator() Iterator[*IPv4AddressSegment] {
 	if seg == nil {
 		return ipv4SegmentIterator{nilSegIterator()}
 	}
@@ -409,7 +409,7 @@ func (seg *IPv4AddressSegment) Iterator() IPv4SegmentIterator {
 // Each iterated address segment will be a prefix block with the same prefix length as this address segment.
 //
 // If this address segment has no prefix length, then this is equivalent to Iterator.
-func (seg *IPv4AddressSegment) PrefixBlockIterator() IPv4SegmentIterator {
+func (seg *IPv4AddressSegment) PrefixBlockIterator() Iterator[*IPv4AddressSegment] {
 	return ipv4SegmentIterator{seg.init().prefixBlockIterator()}
 }
 
@@ -417,7 +417,7 @@ func (seg *IPv4AddressSegment) PrefixBlockIterator() IPv4SegmentIterator {
 // one for each prefix of this address or subnet.
 //
 // It is similar to PrefixBlockIterator except that this method allows you to specify the prefix length.
-func (seg *IPv4AddressSegment) PrefixedBlockIterator(segmentPrefixLen BitCount) IPv4SegmentIterator {
+func (seg *IPv4AddressSegment) PrefixedBlockIterator(segmentPrefixLen BitCount) Iterator[*IPv4AddressSegment] {
 	return ipv4SegmentIterator{seg.init().prefixedBlockIterator(segmentPrefixLen)}
 }
 
@@ -428,7 +428,7 @@ func (seg *IPv4AddressSegment) PrefixedBlockIterator(segmentPrefixLen BitCount) 
 // instead constraining themselves to values from this segment.
 //
 // If this address segment has no prefix length, then this is equivalent to Iterator.
-func (seg *IPv4AddressSegment) PrefixIterator() IPv4SegmentIterator {
+func (seg *IPv4AddressSegment) PrefixIterator() Iterator[*IPv4AddressSegment] {
 	return ipv4SegmentIterator{seg.init().prefixIterator()}
 }
 

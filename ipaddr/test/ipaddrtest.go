@@ -1612,7 +1612,7 @@ func (t ipAddressTester) run() {
 	t.testURL("https://[a:a:a:a:b:b:b:b]")
 	t.testURL("https://a:a:a:a:b:b:b:b")
 
-	//TODO LATER maybe - testSections works with getStartsWithSQLClause
+	// TODO LATER maybe - testSections works with getStartsWithSQLClause
 	//testSections("9.129.237.26", 0, 1)
 	//testSections("9.129.237.26", 8, 1 /* 2 */)
 	//testSections("9.129.237.26", 16, 1 /* 2 */)
@@ -2535,7 +2535,6 @@ func (t ipAddressTester) testIPv6Allocator(blocksStrs []string, sizes []uint64, 
 	t.incrementTestCount()
 }
 
-// TODO generics: get rid of these later, use what you have in clonearrays.go
 func cloneIPv4AddrsToIPAddrs(orig []*ipaddr.IPv4Address) []*ipaddr.IPAddress {
 	result := make([]*ipaddr.IPAddress, len(orig))
 	for i := range orig {
@@ -4278,7 +4277,7 @@ func (t ipAddressTester) testZeroHost(addrString, zeroHostString string) {
 	//for i := 0; i < addr.GetSegmentCount(); i++ {
 	//	seg := addr.GetSegment(i)
 	//	for j := 0; j < 2; j++ {
-	//TODO LATER consider re-adding toZeroHost on segments, and then if you do, put back the old tests here using it
+	// TODO LATER consider re-adding toZeroHost on segments, and then if you do, put back the old tests here using it
 	// currently the section toZeroHost uses getSubnetSegments with masks
 	//IPAddressSegment newSeg = seg.toZeroHost();
 	//if(seg.isPrefixed()) {
@@ -4805,7 +4804,7 @@ func (t ipAddressTester) testRangeSubtract(lower1, higher1, lower2, higher2 stri
 // Alternatively, instead of supplying Object[1] you can supply the first and only element instead
 func (t ipAddressTester) testAddressStringRangeP(address string, isIncompatibleAddress, isMaskedIncompatibleAddress bool, lowerAddress, upperAddress string, divs interface{}, prefixLength ipaddr.PrefixLen, isSequential *bool) {
 	addrStr := t.createAddress(address)
-	//TODO LATER this code and the calling tests are all ready to go once I support toDivisionGrouping,
+	// TODO LATER this code and the calling tests are all ready to go once I support toDivisionGrouping,
 	//just a little more Java to go translation in here is needed, but not much.  I left some of the Java types to help with clarity.
 
 	//IPAddressDivisionSeries s, err := addrStr.ToDivisionGrouping();

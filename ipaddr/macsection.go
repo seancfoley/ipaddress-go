@@ -545,7 +545,7 @@ func (section *MACAddressSection) ToBlock(segmentIndex int, lower, upper SegInt)
 // When iterating, the prefix length is preserved.  Remove it using WithoutPrefixLen prior to iterating if you wish to drop it from all individual address sections.
 //
 // Call IsMultiple to determine if this instance represents multiple address sections, or GetCount for the count.
-func (section *MACAddressSection) Iterator() MACSectionIterator {
+func (section *MACAddressSection) Iterator() Iterator[*MACAddressSection] {
 	if section == nil {
 		return macSectionIterator{nilSectIterator()}
 	}
@@ -559,7 +559,7 @@ func (section *MACAddressSection) Iterator() MACSectionIterator {
 // instead constraining themselves to values from this address section.
 //
 // If the series has no prefix length, then this is equivalent to Iterator.
-func (section *MACAddressSection) PrefixIterator() MACSectionIterator {
+func (section *MACAddressSection) PrefixIterator() Iterator[*MACAddressSection] {
 	return macSectionIterator{section.prefixIterator(false)}
 }
 
@@ -567,7 +567,7 @@ func (section *MACAddressSection) PrefixIterator() MACSectionIterator {
 // Each iterated address section will be a prefix block with the same prefix length as this address section.
 //
 // If this address section has no prefix length, then this is equivalent to Iterator.
-func (section *MACAddressSection) PrefixBlockIterator() MACSectionIterator {
+func (section *MACAddressSection) PrefixBlockIterator() Iterator[*MACAddressSection] {
 	return macSectionIterator{section.prefixIterator(true)}
 }
 
@@ -784,6 +784,11 @@ func (section *MACAddressSection) ToNormalizedString() string {
 		func() string {
 			return section.toCustomString(macNormalizedParams)
 		})
+}
+
+// ToNormalizedWildcardString produces the normalized string.
+func (addr *MACAddressSection) ToNormalizedWildcardString() string {
+	return addr.ToNormalizedString()
 }
 
 // ToCompressedString produces a short representation of this address section while remaining within the confines of standard representation(s) of the address.

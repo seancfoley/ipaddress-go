@@ -511,14 +511,14 @@ func main() {
 	fmt.Printf("\n\n")
 	// _ = getDoc()
 
-	bn := ipaddr.AddressTrieNode{}
+	bn := NewAddressTrieNode()
 	_ = bn
 
 	addrStr = ipaddr.NewIPAddressString("1.2.0.0/32")
 	pAddr = addrStr.GetAddress()
 	fmt.Printf("bit count pref len is pref block: %t\n", pAddr.IsPrefixBlock())
 
-	trie := ipaddr.IPv4AddressTrie{}
+	trie := NewIPv4AddressTrie()
 	addrStr = ipaddr.NewIPAddressString("1.2.0.0/16")
 	trie.Add(pAddr.ToIPv4())
 	addrStr = ipaddr.NewIPAddressString("1.2.3.4")
@@ -535,14 +535,14 @@ func main() {
 	fmt.Printf("node hex: %#x\n", *trie.GetRoot())
 
 	trie2 := ipaddr.IPv4AddressTrie{}
-	fmt.Println(ipaddr.TreesString(true, trie.ToBase(), trie2.ToBase(), trie.ToBase()))
+	fmt.Println(ipaddr.TreesString[*ipaddr.IPv4Address](true, &trie, &trie2, &trie))
 	fmt.Println("zero trie\n", trie2)
 	var ptraddr *ipaddr.IPv4Address
 	fmt.Printf("nil addr %s\n", ptraddr)
 	var trie3 *ipaddr.IPv4AddressTrie
 	fmt.Printf("nil trie %s\n", trie3)
 	fmt.Println("nil trie\n", trie3)
-	fmt.Println(ipaddr.TreesString(true, trie.ToBase(), trie2.ToBase(), trie.ToBase(), trie3.ToBase(), trie.ToBase()))
+	fmt.Println(ipaddr.TreesString(true, &trie, &trie2, &trie, trie3, &trie))
 	trie = ipaddr.IPv4AddressTrie{}
 	fmt.Printf("%v %d %d %t %t",
 		trie,
@@ -969,4 +969,12 @@ func log2() {
 	var y uint64 = 0xffffffffffffffff
 	var z uint = 2
 	fmt.Println(y + uint64(z))
+}
+
+func NewIPv4AddressTrie() ipaddr.IPv4AddressTrie {
+	return ipaddr.IPv4AddressTrie{}
+}
+
+func NewAddressTrieNode() ipaddr.TrieNode[*ipaddr.Address] {
+	return ipaddr.TrieNode[*ipaddr.Address]{}
 }

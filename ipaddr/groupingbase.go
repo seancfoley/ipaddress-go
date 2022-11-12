@@ -23,7 +23,7 @@ import (
 )
 
 type addressDivisionGroupingBase struct {
-	// the non-cacheBitCountx elements are assigned at creation and are immutable
+	// the non-cacheBitCount elements are assigned at creation and are immutable
 	divisions divArray // either standard or large
 
 	prefixLength PrefixLen // must align with the divisions if they store prefix lengths
@@ -377,7 +377,7 @@ func (grouping *addressDivisionGroupingBase) calcUint64Count(counter func() uint
 }
 
 func (grouping *addressDivisionGroupingBase) cacheUint64PrefixCount(counter func() uint64) uint64 {
-	cache := grouping.cache // isMult checks prior to this ensures cache not nil here
+	cache := grouping.cache // isMultiple checks prior to this ensures cache not nil here
 	if cache == nil {
 		return grouping.calcUint64PrefixCount(counter)
 	}
@@ -393,7 +393,7 @@ func (grouping *addressDivisionGroupingBase) cacheUint64PrefixCount(counter func
 }
 
 func (grouping *addressDivisionGroupingBase) cachePrefixCount(counter func() *big.Int) *big.Int {
-	cache := grouping.cache // isMult checks prior to this ensures cache not nil here
+	cache := grouping.cache // isMultiple checks prior to this ensures cache not nil here
 	if cache == nil {
 		return grouping.calcPrefixCount(counter)
 	}

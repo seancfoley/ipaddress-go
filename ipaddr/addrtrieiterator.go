@@ -1,5 +1,5 @@
 //
-// Copyright 2022 Sean C Foley
+// Copyright 2020-2022 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,139 +12,132 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+//
 
 package ipaddr
 
 import "github.com/seancfoley/bintree/tree"
 
-// addressKeyIterator implements AddressIterator for tries
-type addressKeyIterator struct {
-	tree.TrieKeyIterator
-}
+// CachingTrieIterator is an iterator of a tree that allows you to cache an object with the
+// lower or upper sub-node of the currently visited node.
+// The cached object can be retrieved later when iterating the sub-node.
+// That allows you to provide iteration context from a parent to its sub-nodes when iterating,
+// but can only be provided with iterators in which parent nodes are visited before their sub-nodes.
+// The caching and retrieval is done in constant-time.
+type CachingTrieIterator[T any] interface {
+	IteratorRem[T]
 
-func (iter addressKeyIterator) Next() *Address {
-	key := iter.TrieKeyIterator.Next()
-	if key != nil {
-		return key.(*addressTrieKey).Address
-	}
-	return nil
-}
+	// Note: We could theoretically try to make the cached type generic.
+	// But the problem with that is that the iterator methods that return them cannot be generic on their own.
+	// The other problem is that even if we could, some callers would not care about the caching behaviour and thus would not want to have to specify a cache type.
 
-func (iter addressKeyIterator) Remove() *Address {
-	key := iter.TrieKeyIterator.Remove()
-	if key != nil {
-		return key.(*addressTrieKey).Address
-	}
-	return nil
-}
-
-// AddressTrieNodeIterator iterates through an address trie, until both Next returns nil and HasNext returns false
-type AddressTrieNodeIterator interface {
-	hasNext
-
-	Next() *AddressTrieNode
-}
-
-// AddressTrieNodeIteratorRem iterates through an address trie, until both Next returns nil and HasNext returns false,
-// and also allows you to remove the node just visited
-type AddressTrieNodeIteratorRem interface {
-	AddressTrieNodeIterator
-
-	// Remove removes the last iterated element from the underlying trie, and returns that element.
-	// If there is no such element, it returns nil.
-	Remove() *AddressTrieNode
-}
-
-type addrTrieNodeIteratorRem struct {
-	tree.TrieNodeIteratorRem
-}
-
-func (iter addrTrieNodeIteratorRem) Next() *AddressTrieNode {
-	return toAddressTrieNode(iter.TrieNodeIteratorRem.Next())
-}
-
-func (iter addrTrieNodeIteratorRem) Remove() *AddressTrieNode {
-	return toAddressTrieNode(iter.TrieNodeIteratorRem.Remove())
-}
-
-type addrTrieNodeIterator struct {
-	tree.TrieNodeIterator
-}
-
-func (iter addrTrieNodeIterator) Next() *AddressTrieNode {
-	return toAddressTrieNode(iter.TrieNodeIterator.Next())
-}
-
-type CachingAddressTrieNodeIterator interface {
-	AddressTrieNodeIteratorRem
 	tree.CachingIterator
 }
 
-type cachingAddressTrieNodeIterator struct {
+// addressKeyIterator implements the address key iterator for tries
+type addressKeyIterator[T TrieKeyConstraint[T]] struct {
+	tree.TrieKeyIterator
+}
+
+func (iter addressKeyIterator[T]) Next() (t T) {
+	key := iter.TrieKeyIterator.Next()
+	if key != nil {
+		return key.(trieKey[T]).address
+	}
+	return
+}
+
+func (iter addressKeyIterator[T]) Remove() (t T) {
+	key := iter.TrieKeyIterator.Remove()
+	if key != nil {
+		return key.(trieKey[T]).address
+	}
+	return
+}
+
+//
+type addrTrieNodeIteratorRem[T TrieKeyConstraint[T]] struct {
+	tree.TrieNodeIteratorRem
+}
+
+func (iter addrTrieNodeIteratorRem[T]) Next() *TrieNode[T] {
+	return toAddressTrieNodeX[T](iter.TrieNodeIteratorRem.Next())
+}
+
+func (iter addrTrieNodeIteratorRem[T]) Remove() *TrieNode[T] {
+	return toAddressTrieNodeX[T](iter.TrieNodeIteratorRem.Remove())
+}
+
+//
+type addrTrieNodeIterator[T TrieKeyConstraint[T]] struct {
+	tree.TrieNodeIterator
+}
+
+func (iter addrTrieNodeIterator[T]) Next() *TrieNode[T] {
+	return toAddressTrieNodeX[T](iter.TrieNodeIterator.Next())
+}
+
+//
+type cachingAddressTrieNodeIterator[T TrieKeyConstraint[T]] struct {
 	tree.CachingTrieNodeIterator
 }
 
-func (iter cachingAddressTrieNodeIterator) Next() *AddressTrieNode {
-	return toAddressTrieNode(iter.CachingTrieNodeIterator.Next())
+func (iter cachingAddressTrieNodeIterator[T]) Next() *TrieNode[T] {
+	return toAddressTrieNodeX[T](iter.CachingTrieNodeIterator.Next())
 }
 
-func (iter cachingAddressTrieNodeIterator) Remove() *AddressTrieNode {
-	return toAddressTrieNode(iter.CachingTrieNodeIterator.Remove())
+func (iter cachingAddressTrieNodeIterator[T]) Remove() *TrieNode[T] {
+	return toAddressTrieNodeX[T](iter.CachingTrieNodeIterator.Remove())
 }
 
 //////////////////////////////////////////////////////////////////
 //////
 
-// AssociativeAddressTrieNodeIteratorRem iterates through an associative address trie, until both Next returns nil and HasNext returns false.
-// It also allows you to remove the last visited node.
-type AssociativeAddressTrieNodeIteratorRem interface {
-	AssociativeAddressTrieNodeIterator
-
-	// Remove removes the last iterated element from the underlying trie, and returns that element.
-	// If there is no such element, it returns nil.
-	Remove() *AssociativeAddressTrieNode
+type associativeAddressTrieNodeIteratorRem[T TrieKeyConstraint[T], V any] struct {
+	tree.TrieNodeIteratorRem
 }
 
-// AssociativeAddressTrieNodeIterator iterates through an associative address trie, until both Next returns nil and HasNext returns false
-type AssociativeAddressTrieNodeIterator interface {
-	hasNext
-
-	Next() *AssociativeAddressTrieNode
+func (iter associativeAddressTrieNodeIteratorRem[T, V]) Next() *AssociativeTrieNode[T, V] {
+	return toAssociativeTrieNode[T, V](iter.TrieNodeIteratorRem.Next())
 }
 
-type associativeAddressTrieNodeIteratorRem struct {
-	AddressTrieNodeIteratorRem
+func (iter associativeAddressTrieNodeIteratorRem[T, V]) Remove() *AssociativeTrieNode[T, V] {
+	return toAssociativeTrieNode[T, V](iter.TrieNodeIteratorRem.Remove())
 }
 
-func (iter associativeAddressTrieNodeIteratorRem) Next() *AssociativeAddressTrieNode {
-	return iter.AddressTrieNodeIteratorRem.Next().ToAssociative()
+//
+type associativeAddressTrieNodeIterator[T TrieKeyConstraint[T], V any] struct {
+	tree.TrieNodeIterator
 }
 
-func (iter associativeAddressTrieNodeIteratorRem) Remove() *AssociativeAddressTrieNode {
-	return iter.AddressTrieNodeIteratorRem.Remove().ToAssociative()
+func (iter associativeAddressTrieNodeIterator[T, V]) Next() *AssociativeTrieNode[T, V] {
+	return toAssociativeTrieNode[T, V](iter.TrieNodeIterator.Next())
 }
 
-type associativeAddressTrieNodeIterator struct {
-	AddressTrieNodeIterator
+//
+type cachingAssociativeAddressTrieNodeIteratorX[T TrieKeyConstraint[T], V any] struct {
+	tree.CachingTrieNodeIterator
 }
 
-func (iter associativeAddressTrieNodeIterator) Next() *AssociativeAddressTrieNode {
-	return iter.AddressTrieNodeIterator.Next().ToAssociative()
+func (iter cachingAssociativeAddressTrieNodeIteratorX[T, V]) Next() *AssociativeTrieNode[T, V] {
+	return toAssociativeTrieNode[T, V](iter.CachingTrieNodeIterator.Next())
 }
 
-type CachingAssociativeAddressTrieNodeIterator interface {
-	AssociativeAddressTrieNodeIteratorRem
-	tree.CachingIterator
+func (iter cachingAssociativeAddressTrieNodeIteratorX[T, V]) Remove() *AssociativeTrieNode[T, V] {
+	return toAssociativeTrieNode[T, V](iter.CachingTrieNodeIterator.Remove())
 }
 
-type cachingAssociativeAddressTrieNodeIterator struct {
-	CachingAddressTrieNodeIterator
+//
+type emptyIterator[T any] struct{}
+
+func (it emptyIterator[T]) HasNext() bool {
+	return false
 }
 
-func (iter cachingAssociativeAddressTrieNodeIterator) Next() *AssociativeAddressTrieNode {
-	return iter.CachingAddressTrieNodeIterator.Next().ToAssociative()
+func (it emptyIterator[T]) Next() (t T) {
+	return
 }
 
-func (iter cachingAssociativeAddressTrieNodeIterator) Remove() *AssociativeAddressTrieNode {
-	return iter.CachingAddressTrieNodeIterator.Remove().ToAssociative()
+func nilAddressIterator[T any]() Iterator[T] {
+	return emptyIterator[T]{}
 }

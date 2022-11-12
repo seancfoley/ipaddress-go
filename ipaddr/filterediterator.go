@@ -18,7 +18,7 @@ package ipaddr
 
 type filteredAddrIterator struct {
 	skip func(*Address) bool
-	iter AddressIterator
+	iter Iterator[*Address]
 	next *Address
 }
 
@@ -40,7 +40,7 @@ func (it *filteredAddrIterator) HasNext() bool {
 
 // NewFilteredAddrIterator modifies an address iterator to skip certain addresses,
 // skipping those elements for which the "skip" function returns true
-func NewFilteredAddrIterator(iter AddressIterator, skip func(*Address) bool) AddressIterator {
+func NewFilteredAddrIterator(iter Iterator[*Address], skip func(*Address) bool) Iterator[*Address] {
 	res := &filteredAddrIterator{skip: skip, iter: iter}
 	res.Next()
 	return res
@@ -48,7 +48,7 @@ func NewFilteredAddrIterator(iter AddressIterator, skip func(*Address) bool) Add
 
 type filteredIPAddrIterator struct {
 	skip func(*IPAddress) bool
-	iter IPAddressIterator
+	iter Iterator[*IPAddress]
 	next *IPAddress
 }
 
@@ -70,7 +70,7 @@ func (it *filteredIPAddrIterator) HasNext() bool {
 
 // NewFilteredIPAddrIterator returns an iterator similar to the passed in iterator,
 // but skipping those elements for which the "skip" function returns true
-func NewFilteredIPAddrIterator(iter IPAddressIterator, skip func(*IPAddress) bool) IPAddressIterator {
+func NewFilteredIPAddrIterator(iter Iterator[*IPAddress], skip func(*IPAddress) bool) Iterator[*IPAddress] {
 	res := &filteredIPAddrIterator{skip: skip, iter: iter}
 	res.Next()
 	return res

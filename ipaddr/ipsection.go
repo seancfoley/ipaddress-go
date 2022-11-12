@@ -1980,7 +1980,7 @@ func (section *IPAddressSection) ToBlock(segmentIndex int, lower, upper SegInt) 
 // When iterating, the prefix length is preserved.  Remove it using WithoutPrefixLen prior to iterating if you wish to drop it from all individual address sections.
 //
 // Call IsMultiple to determine if this instance represents multiple address sections, or GetCount for the count.
-func (section *IPAddressSection) Iterator() IPSectionIterator {
+func (section *IPAddressSection) Iterator() Iterator[*IPAddressSection] {
 	if section == nil {
 		return ipSectionIterator{nilSectIterator()}
 	}
@@ -1994,7 +1994,7 @@ func (section *IPAddressSection) Iterator() IPSectionIterator {
 // instead constraining themselves to values from this address section.
 //
 // If the series has no prefix length, then this is equivalent to Iterator.
-func (section *IPAddressSection) PrefixIterator() IPSectionIterator {
+func (section *IPAddressSection) PrefixIterator() Iterator[*IPAddressSection] {
 	return ipSectionIterator{section.prefixIterator(false)}
 }
 
@@ -2002,13 +2002,13 @@ func (section *IPAddressSection) PrefixIterator() IPSectionIterator {
 // Each iterated address section will be a prefix block with the same prefix length as this address section.
 //
 // If this address section has no prefix length, then this is equivalent to Iterator.
-func (section *IPAddressSection) PrefixBlockIterator() IPSectionIterator {
+func (section *IPAddressSection) PrefixBlockIterator() Iterator[*IPAddressSection] {
 	return ipSectionIterator{section.prefixIterator(true)}
 }
 
 // BlockIterator Iterates through the address sections that can be obtained by iterating through all the upper segments up to the given segment count.
 // The segments following remain the same in all iterated sections.
-func (section *IPAddressSection) BlockIterator(segmentCount int) IPSectionIterator {
+func (section *IPAddressSection) BlockIterator(segmentCount int) Iterator[*IPAddressSection] {
 	return ipSectionIterator{section.blockIterator(segmentCount)}
 }
 
@@ -2017,7 +2017,7 @@ func (section *IPAddressSection) BlockIterator(segmentCount int) IPSectionIterat
 // Practically, this means finding the count of segments for which the segments that follow are not full range, and then using BlockIterator with that segment count.
 //
 // Use GetSequentialBlockCount to get the number of iterated elements.
-func (section *IPAddressSection) SequentialBlockIterator() IPSectionIterator {
+func (section *IPAddressSection) SequentialBlockIterator() Iterator[*IPAddressSection] {
 	return ipSectionIterator{section.sequentialBlockIterator()}
 }
 

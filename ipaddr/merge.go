@@ -18,7 +18,7 @@ package ipaddr
 
 import "sort"
 
-func getMergedPrefixBlocks(sections []ExtendedIPSegmentSeries) []ExtendedIPSegmentSeries {
+func getMergedPrefixBlocks(sections []ExtendedIPSegmentSeries) []ExtendedIPSegmentSeries { // TODO LATER change to generics , this also allows us to possibly avoid the slice copy with the return slice and maybe the passed in one too
 	singleElement, list := organizeSequentially(sections)
 	if singleElement {
 		return list
@@ -168,7 +168,7 @@ top:
 	return list
 }
 
-func getMergedSequentialBlocks(sections []ExtendedIPSegmentSeries) []ExtendedIPSegmentSeries {
+func getMergedSequentialBlocks(sections []ExtendedIPSegmentSeries) []ExtendedIPSegmentSeries { // TODO change to generics , this also allows us to possibly avoid the slice copy with the return slice and maybe the passed in one too
 	singleElement, list := organizeSequentialMerge(sections)
 	if singleElement {
 		list[0] = list[0].WithoutPrefixLen()
@@ -321,7 +321,7 @@ top:
 	return list
 }
 
-func organizeSequentially(sections []ExtendedIPSegmentSeries) (singleElement bool, list []ExtendedIPSegmentSeries) {
+func organizeSequentially(sections []ExtendedIPSegmentSeries) (singleElement bool, list []ExtendedIPSegmentSeries) { //TODO change to generics
 	var sequentialList []ExtendedIPSegmentSeries
 	length := len(sections)
 	for i := 0; i < length; i++ {
@@ -369,7 +369,7 @@ func organizeSequentially(sections []ExtendedIPSegmentSeries) (singleElement boo
 	return false, list
 }
 
-func organizeSequentialMerge(sections []ExtendedIPSegmentSeries) (singleElement bool, list []ExtendedIPSegmentSeries) {
+func organizeSequentialMerge(sections []ExtendedIPSegmentSeries) (singleElement bool, list []ExtendedIPSegmentSeries) { // TODO LATER change to generics
 	for i := 0; i < len(sections); i++ {
 		section := sections[i]
 		if section == nil {

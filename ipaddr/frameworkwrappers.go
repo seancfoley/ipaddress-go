@@ -170,7 +170,7 @@ type ExtendedSegmentSeries interface {
 	// When iterating, the prefix length is preserved.  Remove it using WithoutPrefixLen prior to iterating if you wish to drop it from all individual series.
 	//
 	// Call IsMultiple to determine if this instance represents multiple series, or GetCount for the count.
-	Iterator() ExtendedSegmentSeriesIterator
+	Iterator() Iterator[ExtendedSegmentSeries]
 
 	// PrefixIterator provides an iterator to iterate through the individual prefixes of this series,
 	// each iterated element spanning the range of values for its prefix.
@@ -179,13 +179,13 @@ type ExtendedSegmentSeries interface {
 	// instead constraining themselves to values from this series.
 	//
 	// If the series has no prefix length, then this is equivalent to Iterator.
-	PrefixIterator() ExtendedSegmentSeriesIterator
+	PrefixIterator() Iterator[ExtendedSegmentSeries]
 
 	// PrefixBlockIterator provides an iterator to iterate through the individual prefix blocks, one for each prefix of this series.
 	// Each iterated series will be a prefix block with the same prefix length as this series.
 	//
 	// If this series has no prefix length, then this is equivalent to Iterator.
-	PrefixBlockIterator() ExtendedSegmentSeriesIterator
+	PrefixBlockIterator() Iterator[ExtendedSegmentSeries]
 
 	// AdjustPrefixLen increases or decreases the prefix length by the given increment.
 	//
@@ -300,7 +300,7 @@ func (addr WrappedAddress) ToMAC() MACAddressSegmentSeries {
 // When iterating, the prefix length is preserved.  Remove it using WithoutPrefixLen prior to iterating if you wish to drop it from all individual series.
 //
 // Call IsMultiple to determine if this instance represents multiple series, or GetCount for the count.
-func (addr WrappedAddress) Iterator() ExtendedSegmentSeriesIterator {
+func (addr WrappedAddress) Iterator() Iterator[ExtendedSegmentSeries] {
 	return addressSeriesIterator{addr.Address.Iterator()}
 }
 
@@ -311,7 +311,7 @@ func (addr WrappedAddress) Iterator() ExtendedSegmentSeriesIterator {
 // instead constraining themselves to values from this series.
 //
 // If the series has no prefix length, then this is equivalent to Iterator.
-func (addr WrappedAddress) PrefixIterator() ExtendedSegmentSeriesIterator {
+func (addr WrappedAddress) PrefixIterator() Iterator[ExtendedSegmentSeries] {
 	return addressSeriesIterator{addr.Address.PrefixIterator()}
 }
 
@@ -319,7 +319,7 @@ func (addr WrappedAddress) PrefixIterator() ExtendedSegmentSeriesIterator {
 // Each iterated series will be a prefix block with the same prefix length as this series.
 //
 // If this series has no prefix length, then this is equivalent to Iterator.
-func (addr WrappedAddress) PrefixBlockIterator() ExtendedSegmentSeriesIterator {
+func (addr WrappedAddress) PrefixBlockIterator() Iterator[ExtendedSegmentSeries] {
 	return addressSeriesIterator{addr.Address.PrefixBlockIterator()}
 }
 
@@ -559,7 +559,7 @@ func (section WrappedAddressSection) ToMAC() MACAddressSegmentSeries {
 // When iterating, the prefix length is preserved.  Remove it using WithoutPrefixLen prior to iterating if you wish to drop it from all individual series.
 //
 // Call IsMultiple to determine if this instance represents multiple series, or GetCount for the count.
-func (section WrappedAddressSection) Iterator() ExtendedSegmentSeriesIterator {
+func (section WrappedAddressSection) Iterator() Iterator[ExtendedSegmentSeries] {
 	return sectionSeriesIterator{section.AddressSection.Iterator()}
 }
 
@@ -570,7 +570,7 @@ func (section WrappedAddressSection) Iterator() ExtendedSegmentSeriesIterator {
 // instead constraining themselves to values from this series.
 //
 // If the series has no prefix length, then this is equivalent to Iterator.
-func (section WrappedAddressSection) PrefixIterator() ExtendedSegmentSeriesIterator {
+func (section WrappedAddressSection) PrefixIterator() Iterator[ExtendedSegmentSeries] {
 	return sectionSeriesIterator{section.AddressSection.PrefixIterator()}
 }
 
@@ -578,7 +578,7 @@ func (section WrappedAddressSection) PrefixIterator() ExtendedSegmentSeriesItera
 // Each iterated series will be a prefix block with the same prefix length as this series.
 //
 // If this series has no prefix length, then this is equivalent to Iterator.
-func (section WrappedAddressSection) PrefixBlockIterator() ExtendedSegmentSeriesIterator {
+func (section WrappedAddressSection) PrefixBlockIterator() Iterator[ExtendedSegmentSeries] {
 	return sectionSeriesIterator{section.AddressSection.PrefixBlockIterator()}
 }
 

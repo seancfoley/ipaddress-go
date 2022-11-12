@@ -19,6 +19,7 @@ package ipaddr
 import (
 	"fmt"
 	"math/big"
+	"reflect"
 	"unsafe"
 
 	"github.com/seancfoley/bintree/tree"
@@ -116,6 +117,14 @@ func (addr *addressInternal) GetByteCount() int {
 		return 0
 	}
 	return section.GetByteCount()
+}
+
+func (addr *addressInternal) getTrailingBitCount(ones bool) BitCount {
+	return addr.section.GetTrailingBitCount(ones)
+}
+
+func (addr *addressInternal) getLeadingBitCount(ones bool) BitCount {
+	return addr.section.GetLeadingBitCount(ones)
 }
 
 func (addr *addressInternal) getCount() *big.Int {
@@ -383,22 +392,22 @@ func (addr *addressInternal) trieCompare(other *Address) int {
 	}
 }
 
-// trieIncrement returns the next address according to address trie ordering
-func (addr *addressInternal) trieIncrement() *Address {
-	res := tree.TrieIncrement(&addressTrieKey{addr.toAddress()})
+func trieIncrement[T TrieKeyConstraint[T]](addr T) (T, bool) {
+	res := tree.TrieIncrement(trieKey[T]{addr})
 	if res == nil {
-		return nil
+		var t T
+		return t, false
 	}
-	return res.(*addressTrieKey).Address
+	return res.(trieKey[T]).address, true
 }
 
-// trieDecrement returns the previous address according to address trie ordering
-func (addr *addressInternal) trieDecrement() *Address {
-	res := tree.TrieDecrement(&addressTrieKey{addr.toAddress()})
+func trieDecrement[T TrieKeyConstraint[T]](addr T) (T, bool) {
+	res := tree.TrieDecrement(trieKey[T]{addr})
 	if res == nil {
-		return nil
+		var t T
+		return t, false
 	}
-	return res.(*addressTrieKey).Address
+	return res.(trieKey[T]).address, true
 }
 
 func (addr *addressInternal) toString() string {
@@ -686,7 +695,7 @@ func (addr *addressInternal) equals(other AddressType) bool {
 		addr.isSameZone(otherAddr)
 }
 
-func (addr *IPAddress) equalsSameVersion(other *IPAddress) bool {
+func (addr *addressInternal) equalsSameVersion(other AddressType) bool {
 	otherAddr := other.ToAddressBase()
 	if addr.toAddress() == otherAddr {
 		return true
@@ -747,7 +756,7 @@ func (addr *addressInternal) assignMinPrefixForBlock() *Address {
 // If it can be converted to a single prefix block by assigning a prefix length, the converted block is returned.
 // If it is a single address, any prefix length is removed and the address is returned.
 // Otherwise, nil is returned.
-func (addr *addressInternal) toSinglePrefixBlockOrAddress() *Address {
+func (addr *addressInternal) toSinglePrefixBlockOrAddr() *Address {
 	if !addr.isMultiple() {
 		if !addr.isPrefixed() {
 			return addr.toAddress()
@@ -776,10 +785,10 @@ func (addr *addressInternal) getAddrType() addrType {
 }
 
 // equivalent to section.sectionIterator
-func (addr *addressInternal) addrIterator(excludeFunc func([]*AddressDivision) bool) AddressIterator {
+func (addr *addressInternal) addrIterator(excludeFunc func([]*AddressDivision) bool) Iterator[*Address] {
 	useOriginal := !addr.isMultiple()
 	original := addr.toAddress()
-	var iterator SegmentsIterator
+	var iterator Iterator[[]*AddressDivision]
 	if useOriginal {
 		if excludeFunc != nil && excludeFunc(addr.getDivisionsInternal()) {
 			original = nil // the single-valued iterator starts out empty
@@ -789,7 +798,7 @@ func (addr *addressInternal) addrIterator(excludeFunc func([]*AddressDivision) b
 		iterator = allSegmentsIterator(
 			addr.getDivisionCount(),
 			nil,
-			func(index int) SegmentIterator { return address.getSegment(index).iterator() },
+			func(index int) Iterator[*AddressSegment] { return address.getSegment(index).iterator() },
 			excludeFunc)
 	}
 	return addrIterator(
@@ -800,7 +809,7 @@ func (addr *addressInternal) addrIterator(excludeFunc func([]*AddressDivision) b
 		iterator)
 }
 
-func (addr *addressInternal) prefixIterator(isBlockIterator bool) AddressIterator {
+func (addr *addressInternal) prefixIterator(isBlockIterator bool) Iterator[*Address] {
 	prefLen := addr.getPrefixLen()
 	if prefLen == nil {
 		return addr.addrIterator(nil)
@@ -817,12 +826,12 @@ func (addr *addressInternal) prefixIterator(isBlockIterator bool) AddressIterato
 	networkSegIndex := getNetworkSegmentIndex(prefLength, bytesPerSeg, bitsPerSeg)
 	hostSegIndex := getHostSegmentIndex(prefLength, bytesPerSeg, bitsPerSeg)
 	segCount := addr.getDivisionCount()
-	var iterator SegmentsIterator
+	var iterator Iterator[[]*AddressDivision]
 	address := addr.toAddress()
 	if !useOriginal {
-		var hostSegIteratorProducer func(index int) SegmentIterator
+		var hostSegIteratorProducer func(index int) Iterator[*AddressSegment]
 		if isBlockIterator {
-			hostSegIteratorProducer = func(index int) SegmentIterator {
+			hostSegIteratorProducer = func(index int) Iterator[*AddressSegment] {
 				seg := address.getSegment(index)
 				if seg.isPrefixed() { // IP address segments know their own prefix, MAC segments do not
 					return seg.prefixBlockIterator()
@@ -831,7 +840,7 @@ func (addr *addressInternal) prefixIterator(isBlockIterator bool) AddressIterato
 				return seg.prefixedBlockIterator(segPref.bitCount())
 			}
 		} else {
-			hostSegIteratorProducer = func(index int) SegmentIterator {
+			hostSegIteratorProducer = func(index int) Iterator[*AddressSegment] {
 				seg := address.getSegment(index)
 				if seg.isPrefixed() { // IP address segments know their own prefix, MACS segments do not
 					return seg.prefixIterator()
@@ -843,7 +852,7 @@ func (addr *addressInternal) prefixIterator(isBlockIterator bool) AddressIterato
 		iterator = segmentsIterator(
 			segCount,
 			nil, //when no prefix we defer to other iterator, when there is one we use the whole original section in the encompassing iterator and not just the original segments
-			func(index int) SegmentIterator { return address.getSegment(index).iterator() },
+			func(index int) Iterator[*AddressSegment] { return address.getSegment(index).iterator() },
 			nil,
 			networkSegIndex,
 			hostSegIndex,
@@ -864,7 +873,7 @@ func (addr *addressInternal) prefixIterator(isBlockIterator bool) AddressIterato
 		iterator)
 }
 
-func (addr *addressInternal) blockIterator(segmentCount int) AddressIterator {
+func (addr *addressInternal) blockIterator(segmentCount int) Iterator[*Address] {
 	if segmentCount < 0 {
 		segmentCount = 0
 	}
@@ -874,13 +883,13 @@ func (addr *addressInternal) blockIterator(segmentCount int) AddressIterator {
 	}
 	useOriginal := !addr.section.isMultipleTo(segmentCount)
 	address := addr.toAddress()
-	var iterator SegmentsIterator
+	var iterator Iterator[[]*AddressDivision]
 	if !useOriginal {
-		var hostSegIteratorProducer func(index int) SegmentIterator
-		hostSegIteratorProducer = func(index int) SegmentIterator {
+		var hostSegIteratorProducer func(index int) Iterator[*AddressSegment]
+		hostSegIteratorProducer = func(index int) Iterator[*AddressSegment] {
 			return address.getSegment(index).identityIterator()
 		}
-		segIteratorProducer := func(index int) SegmentIterator {
+		segIteratorProducer := func(index int) Iterator[*AddressSegment] {
 			return address.getSegment(index).iterator()
 		}
 		iterator = segmentsIterator(
@@ -902,7 +911,7 @@ func (addr *addressInternal) blockIterator(segmentCount int) AddressIterator {
 
 // sequentialBlockIterator iterates through the minimal number of maximum-sized blocks comprising this subnet
 // a block is sequential if given any two addresses in the block, any intervening address between the two is also in the block
-func (addr *addressInternal) sequentialBlockIterator() AddressIterator {
+func (addr *addressInternal) sequentialBlockIterator() Iterator[*Address] {
 	return addr.blockIterator(addr.getSequentialBlockIndex())
 }
 
@@ -966,6 +975,18 @@ func (addr *addressInternal) toNormalizedString() string {
 			func() string { return addr.section.ToIPv6().toNormalizedString(addr.zone) })
 	}
 	return addr.section.ToNormalizedString()
+}
+
+func (addr *addressInternal) toNormalizedWildcardString() string {
+	if addr.hasZone() {
+		cache := addr.getStringCache()
+		if cache == nil {
+			return addr.section.ToIPv6().toNormalizedWildcardStringZoned(addr.zone)
+		}
+		return cacheStr(&cache.normalizedIPv6String,
+			func() string { return addr.section.ToIPv6().toNormalizedWildcardStringZoned(addr.zone) })
+	}
+	return addr.section.ToNormalizedWildcardString()
 }
 
 func (addr *addressInternal) toCompressedString() string {
@@ -1183,6 +1204,11 @@ func (addr *Address) TrieCompare(other *Address) (int, addrerr.IncompatibleAddre
 			return thisAddr.TrieCompare(oth)
 		}
 	}
+	if segmentCount, otherSegmentCount := addr.getDivisionCount(), other.getDivisionCount(); segmentCount == otherSegmentCount {
+		if bitsPerSegment, otherBitsPerSegment := addr.GetBitsPerSegment(), other.GetBitsPerSegment(); bitsPerSegment == otherBitsPerSegment {
+			return addr.trieCompare(other), nil
+		}
+	}
 	return 0, &incompatibleAddressError{addressError{key: "ipaddress.error.mismatched.bit.size"}}
 }
 
@@ -1193,7 +1219,10 @@ func (addr *Address) TrieCompare(other *Address) (int, addrerr.IncompatibleAddre
 //	- ranges that occur inside the prefix length are ignored, only the lower value is used.
 //	- ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
 func (addr *Address) TrieIncrement() *Address {
-	return addr.trieIncrement()
+	if res, ok := trieIncrement(addr); ok {
+		return res
+	}
+	return nil
 }
 
 // TrieDecrement returns the previous or block address according to address trie ordering
@@ -1203,7 +1232,10 @@ func (addr *Address) TrieIncrement() *Address {
 //	- ranges that occur inside the prefix length are ignored, only the lower value is used.
 //	- ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
 func (addr *Address) TrieDecrement() *Address {
-	return addr.trieDecrement()
+	if res, ok := trieDecrement(addr); ok {
+		return res
+	}
+	return nil
 }
 
 // GetSection returns the backing section for this address or subnet, comprising all segments.
@@ -1479,7 +1511,15 @@ func (addr *Address) AssignMinPrefixForBlock() *Address {
 // This method provides the address formats used by tries.
 // ToSinglePrefixBlockOrAddress is quite similar to AssignPrefixForSingleBlock, which always returns prefixed addresses, while this does not.
 func (addr *Address) ToSinglePrefixBlockOrAddress() *Address {
-	return addr.init().toSinglePrefixBlockOrAddress()
+	return addr.init().toSinglePrefixBlockOrAddr()
+}
+
+func (addr *Address) toSinglePrefixBlockOrAddress() (*Address, addrerr.IncompatibleAddressError) {
+	res := addr.ToSinglePrefixBlockOrAddress()
+	if res == nil {
+		return nil, &incompatibleAddressError{addressError{key: "ipaddress.error.address.not.block"}}
+	}
+	return res, nil
 }
 
 // GetMaxSegmentValue returns the maximum possible segment value for this type of address.
@@ -1495,7 +1535,7 @@ func (addr *Address) GetMaxSegmentValue() SegInt {
 // When iterating, the prefix length is preserved.  Remove it using WithoutPrefixLen prior to iterating if you wish to drop it from all individual addresses.
 //
 // Call IsMultiple to determine if this instance represents multiple addresses, or GetCount for the count.
-func (addr *Address) Iterator() AddressIterator {
+func (addr *Address) Iterator() Iterator[*Address] {
 	if addr == nil {
 		return nilAddrIterator()
 	}
@@ -1509,7 +1549,7 @@ func (addr *Address) Iterator() AddressIterator {
 // instead constraining themselves to values from this subnet.
 //
 // If the subnet has no prefix length, then this is equivalent to Iterator.
-func (addr *Address) PrefixIterator() AddressIterator {
+func (addr *Address) PrefixIterator() Iterator[*Address] {
 	return addr.prefixIterator(false)
 }
 
@@ -1517,7 +1557,7 @@ func (addr *Address) PrefixIterator() AddressIterator {
 // Each iterated address or subnet will be a prefix block with the same prefix length as this address or subnet.
 //
 // If this address has no prefix length, then this is equivalent to Iterator.
-func (addr *Address) PrefixBlockIterator() AddressIterator {
+func (addr *Address) PrefixBlockIterator() Iterator[*Address] {
 	return addr.prefixIterator(true)
 }
 
@@ -1526,7 +1566,7 @@ func (addr *Address) PrefixBlockIterator() AddressIterator {
 //
 // For instance, given the IPv4 subnet 1-2.3-4.5-6.7, given the count argument 2,
 // it will iterate through 1.3.5-6.7, 1.4.5-6.7, 2.3.5-6.7, 2.4.5-6.7
-func (addr *Address) BlockIterator(segmentCount int) AddressIterator {
+func (addr *Address) BlockIterator(segmentCount int) Iterator[*Address] {
 	return addr.init().blockIterator(segmentCount)
 }
 
@@ -1537,7 +1577,7 @@ func (addr *Address) BlockIterator(segmentCount int) AddressIterator {
 // For instance, given the IPv4 subnet 1-2.3-4.5-6.7-8, it will iterate through 1.3.5.7-8, 1.3.6.7-8, 1.4.5.7-8, 1.4.6.7-8, 2.3.5.7-8, 2.3.6.7-8, 2.4.6.7-8, 2.4.6.7-8.
 //
 // Use GetSequentialBlockCount to get the number of iterated elements.
-func (addr *Address) SequentialBlockIterator() AddressIterator {
+func (addr *Address) SequentialBlockIterator() Iterator[*Address] {
 	return addr.init().sequentialBlockIterator()
 }
 
@@ -1647,7 +1687,7 @@ func (addr *Address) IsLocal() bool {
 //
 // This method applies to the lower address of the range if this is a subnet representing multiple values.
 func (addr *Address) GetLeadingBitCount(ones bool) BitCount {
-	return addr.GetSection().GetLeadingBitCount(ones)
+	return addr.init().getLeadingBitCount(ones)
 }
 
 // GetTrailingBitCount returns the number of consecutive trailing one or zero bits.
@@ -1656,7 +1696,7 @@ func (addr *Address) GetLeadingBitCount(ones bool) BitCount {
 //
 // This method applies to the lower value of the range if this is a subnet representing multiple values.
 func (addr *Address) GetTrailingBitCount(ones bool) BitCount {
-	return addr.GetSection().GetTrailingBitCount(ones)
+	return addr.init().getTrailingBitCount(ones)
 }
 
 // Format implements fmt.Formatter interface. It accepts the formats
@@ -1732,6 +1772,15 @@ func (addr *Address) ToNormalizedString() string {
 		return nilString()
 	}
 	return addr.init().toNormalizedString()
+}
+
+// ToNormalizedWildcardString produces a string similar to the normalized string but avoids the CIDR prefix length in IP addresses.
+// Multi-valued segments will be shown with wildcards and ranges (denoted by '*' and '-').
+func (addr *Address) ToNormalizedWildcardString() string {
+	if addr == nil {
+		return nilString()
+	}
+	return addr.init().toNormalizedWildcardString()
 }
 
 // ToCompressedString produces a short representation of this address while remaining within the confines of standard representation(s) of the address.
@@ -1887,13 +1936,75 @@ func (addr *Address) Wrap() WrappedAddress {
 // While addresses can be compared with the Compare, TrieCompare or Equal methods as well as various provided instances of AddressComparator,
 // they are not comparable with go operators.
 // However, AddressKey instances are comparable with go operators, and thus can be used as map keys.
-func (addr *Address) ToKey() *AddressKey {
+func (addr *Address) ToKey() *Key[*Address] {
 	if thisAddr := addr.ToIPv4(); thisAddr != nil {
-		return thisAddr.ToKey().ToBaseKey()
+		contents := &thisAddr.ToKey().keyContents
+		return &Key[*Address]{*contents}
 	} else if thisAddr := addr.ToIPv6(); thisAddr != nil {
-		return thisAddr.ToKey().ToBaseKey()
+		contents := &thisAddr.ToKey().keyContents
+		return &Key[*Address]{*contents}
 	} else if thisAddr := addr.ToMAC(); thisAddr != nil {
-		return thisAddr.ToKey().ToBaseKey()
+		contents := &thisAddr.ToKey().keyContents
+		return &Key[*Address]{*contents}
 	}
 	return nil
+}
+
+func (addr *Address) fromKey(key *keyContents) *Address {
+	if thisAddr := addr.ToIPv4(); thisAddr != nil {
+		return thisAddr.fromKey(key).ToAddressBase()
+	} else if thisAddr := addr.ToIPv6(); thisAddr != nil {
+		return thisAddr.fromKey(key).ToAddressBase()
+	} else if thisAddr := addr.ToMAC(); thisAddr != nil {
+		return thisAddr.fromKey(key).ToAddressBase()
+	}
+	return nil
+}
+
+// AddrsMatchUnordered checks if the two slices share the same list of addresses, subnets, or address collections, in any order, using address equality.
+// The function can handle duplicates and nil addresses.
+func AddrsMatchUnordered[T, U AddressType](addrs1 []T, addrs2 []U) (result bool) {
+	len1 := len(addrs1)
+	len2 := len(addrs2)
+	sameLen := len1 == len2
+	if len1 == 0 || len2 == 0 {
+		result = sameLen
+	} else if len1 == 1 && sameLen {
+		result = addrs1[0].Equal(addrs2[0])
+	} else if len1 == 2 && sameLen {
+		if addrs1[0].Equal(addrs2[0]) {
+			result = addrs1[1].Equal(addrs2[1])
+		} else if result = addrs1[0].Equal(addrs2[1]); result {
+			result = addrs1[1].Equal(addrs2[0])
+		}
+	} else {
+		result = reflect.DeepEqual(asMap(addrs1), asMap(addrs2))
+	}
+	return
+}
+
+// AddrsMatchOrdered checks if the two slices share the same ordered list of addresses, subnets, or address collections, using address equality.
+// Duplicates and nil addresses are allowed.
+func AddrsMatchOrdered[T, U AddressType](addrs1 []T, addrs2 []U) (result bool) {
+	len1 := len(addrs1)
+	len2 := len(addrs2)
+	if len1 != len2 {
+		return
+	}
+	for i, addr := range addrs1 {
+		if !addr.Equal(addrs2[i]) {
+			return
+		}
+	}
+	return true
+}
+
+func asMap[T AddressType](addrs []T) (result map[string]struct{}) {
+	if addrLen := len(addrs); addrLen > 0 {
+		result = make(map[string]struct{})
+		for _, addr := range addrs {
+			result[addr.ToAddressBase().ToNormalizedWildcardString()] = struct{}{}
+		}
+	}
+	return
 }

@@ -2443,7 +2443,7 @@ func (t ipAddressRangeTester) testCountBig(original string, number, excludeZeros
 	}
 }
 
-func getNonZeroHostIterator(val *ipaddr.IPAddress) ipaddr.IPAddressIterator {
+func getNonZeroHostIterator(val *ipaddr.IPAddress) ipaddr.Iterator[*ipaddr.IPAddress] {
 	return ipaddr.NewFilteredIPAddrIterator(val.Iterator(), (*ipaddr.IPAddress).IsZeroHost)
 }
 

@@ -225,7 +225,7 @@ type AddressComponent interface { //AddressSegment and above, AddressSegmentSeri
 	// the number of digits according to the bit count, with or without a preceding "0x" prefix.
 	//
 	// If a multiple-valued component cannot be written as a single prefix block or a range of two values, an error is returned.
-	ToHexString(bool) (string, addrerr.IncompatibleAddressError)
+	ToHexString(with0xPrefix bool) (string, addrerr.IncompatibleAddressError)
 
 	// ToNormalizedString produces a string that is consistent for all address components of the same type and version,
 	ToNormalizedString() string
@@ -268,6 +268,10 @@ type AddressSegmentSeries interface { // Address and above, AddressSection and a
 	// With IP addresses and sections, the prefix length is included in the string, and the prefix length can cause two equal addresses to have different strings, for example "1.2.3.4/16" and "1.2.3.4".
 	// It can also cause two different addresses to have the same string, such as "1.2.0.0/16" for the individual address "1.2.0.0" and also the prefix block "1.2.*.*".
 	ToCanonicalString() string
+
+	// ToNormalizedWildcardString produces a string similar to the normalized string but avoids the CIDR prefix length in the case of IP addresses.
+	// Multiple-valued segments will be shown with wildcards and ranges (denoted by '*' and '-').
+	ToNormalizedWildcardString() string
 
 	// ToCompressedString produces a short representation of this series while remaining within the confines of standard representation(s) of the series.
 	//
@@ -397,10 +401,6 @@ type IPAddressSegmentSeries interface { // IPAddress and above, IPAddressSection
 	// In the case of IPv4, this means that wildcards are used instead of a network prefix when a network prefix has been supplied.
 	// In the case of IPv6, when a network prefix has been supplied, the prefix will be shown and the host section will be compressed with ::.
 	ToSubnetString() string
-
-	// ToNormalizedWildcardString produces a string similar to the normalized string but avoids the CIDR prefix length.
-	// CIDR addresses will be shown with wildcards and ranges (denoted by '*' and '-') instead of using the CIDR prefix notation.
-	ToNormalizedWildcardString() string
 
 	// ToCanonicalWildcardString produces a string similar to the canonical string but avoids the CIDR prefix length.
 	// Series with a network prefix length will be shown with wildcards and ranges (denoted by '*' and '-') instead of using the CIDR prefix length notation.
@@ -616,6 +616,7 @@ var _, _, _, _, _ AddressSectionType = &AddressSection{},
 
 // AddressType represents any address, all of which can be represented by the base type Address.
 // This includes IPAddress, IPv4Address, IPv6Address, and MACAddress.
+// You must use the pointers types *Address, *IPAddress, *IPv4Address, *IPv6Address, and *MACAddress when implementing AddressType.
 // It can be useful as a parameter for functions to take any address type, while inside the function you can convert to *Address using ToAddressBase
 type AddressType interface {
 	AddressSegmentSeries
@@ -649,6 +650,9 @@ type AddressType interface {
 var _, _ AddressType = &Address{}, &MACAddress{}
 
 type ipAddressRange interface {
+	// GetIPVersion returns the IP version of this IP address range
+	GetIPVersion() IPVersion
+
 	// GetLowerIPAddress returns the address in the subnet or address range with the lowest numeric value,
 	// which will be the receiver if it represents a single address.
 	// For example, for "1.2-3.4.5-6", the series "1.2.4.5" is returned.
@@ -698,13 +702,11 @@ type IPAddressRange interface { //IPAddress and above, IPAddressSeqRange and abo
 var _, _, _, _, _, _ IPAddressRange = &IPAddress{},
 	&IPv4Address{},
 	&IPv6Address{},
-	&IPAddressSeqRange{},
-	&IPv4AddressSeqRange{},
-	&IPv6AddressSeqRange{}
+	&SequentialRange[*IPAddress]{},
+	&SequentialRange[*IPv4Address]{},
+	&SequentialRange[*IPv6Address]{}
 
-// IPAddressType represents any IP address, all of which can be represented by the base type IPAddress.
-// This includes IPv4Address and IPv6Address.
-type IPAddressType interface {
+type ipAddressType interface {
 	AddressType
 
 	ipAddressRange
@@ -717,15 +719,23 @@ type IPAddressType interface {
 	//
 	// ToIP can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 	ToIP() *IPAddress
+}
+
+// IPAddressType represents any IP address, all of which can be represented by the base type IPAddress.
+// This includes IPv4Address and IPv6Address.
+// You must use the pointers types *IPAddress, *IPv4Address, and *IPv6Address when implementing IPAddressType.
+type IPAddressType interface {
+	ipAddressType
+
+	ipAddressRange // this is here for godoc to ensure methods from ipAddressRange are included (it is already included in ipAddressType so redundant)
 
 	// ToAddressString retrieves or generates an IPAddressString instance for this IP address.
 	// This may be the IPAddressString this instance was generated from, if it was generated from an IPAddressString.
 	//
 	// In general, users are intended to create IP address instances from IPAddressString instances,
-	// while the reverse direction is generally not common and not useful, except under specific circumstances.
+	// while the reverse direction, calling this method, is generally not encouraged and not useful, except under specific circumstances.
 	//
-	// However, the reverse direction can be useful under certain circumstances,
-	// such as when maintaining a collection of HostIdentifierString or IPAddressString instances.
+	// Those specific circumstances may include when maintaining a collection of HostIdentifierString or IPAddressString instances.
 	ToAddressString() *IPAddressString
 }
 
@@ -761,12 +771,12 @@ type IPAddressSeqRangeType interface {
 	// ToIP converts to an IPAddressSeqRange, a polymorphic type usable with all IP address sequential ranges.
 	//
 	// ToIP can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
-	ToIP() *IPAddressSeqRange
+	ToIP() *SequentialRange[*IPAddress]
 }
 
-var _, _, _ IPAddressSeqRangeType = &IPAddressSeqRange{},
-	&IPv4AddressSeqRange{},
-	&IPv6AddressSeqRange{}
+var _, _, _ IPAddressSeqRangeType = &SequentialRange[*IPAddress]{},
+	&SequentialRange[*IPv4Address]{},
+	&SequentialRange[*IPv6Address]{}
 
 // HostIdentifierString represents a string that is used to identify a host.
 type HostIdentifierString interface {

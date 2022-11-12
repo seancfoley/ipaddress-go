@@ -350,7 +350,7 @@ func (seg *MACAddressSegment) setRangeString(
 // Iterator provides an iterator to iterate through the individual address segments of this address segment.
 //
 // Call IsMultiple to determine if this instance represents multiple address segments, or GetValueCount for the count.
-func (seg *MACAddressSegment) Iterator() MACSegmentIterator {
+func (seg *MACAddressSegment) Iterator() Iterator[*MACAddressSegment] {
 	if seg == nil {
 		return macSegmentIterator{nilSegIterator()}
 	}
@@ -359,7 +359,7 @@ func (seg *MACAddressSegment) Iterator() MACSegmentIterator {
 
 // PrefixBlockIterator provides an iterator to iterate through the individual prefix blocks of the given prefix length,
 // one for each prefix of that length in the segment.
-func (seg *MACAddressSegment) PrefixBlockIterator(segmentPrefixLen BitCount) MACSegmentIterator {
+func (seg *MACAddressSegment) PrefixBlockIterator(segmentPrefixLen BitCount) Iterator[*MACAddressSegment] {
 	return macSegmentIterator{seg.init().prefixedBlockIterator(segmentPrefixLen)}
 }
 
@@ -368,7 +368,7 @@ func (seg *MACAddressSegment) PrefixBlockIterator(segmentPrefixLen BitCount) MAC
 //
 // It is similar to the prefix block iterator, except for possibly the first and last iterated elements, which might not be prefix blocks,
 // instead constraining themselves to values from this range.
-func (seg *MACAddressSegment) PrefixIterator(segmentPrefixLen BitCount) MACSegmentIterator {
+func (seg *MACAddressSegment) PrefixIterator(segmentPrefixLen BitCount) Iterator[*MACAddressSegment] {
 	return macSegmentIterator{seg.init().prefixedIterator(segmentPrefixLen)}
 }
 

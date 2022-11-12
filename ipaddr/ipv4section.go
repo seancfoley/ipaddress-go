@@ -563,7 +563,7 @@ func (section *IPv4AddressSection) MatchesWithMask(other *IPv4AddressSection, ma
 func (section *IPv4AddressSection) Subtract(other *IPv4AddressSection) (res []*IPv4AddressSection, err addrerr.SizeMismatchError) {
 	sections, err := section.subtract(other.ToIP())
 	if err == nil {
-		res = cloneIPSectsToIPv4Sects(sections)
+		res = cloneTo(sections, (*IPAddressSection).ToIPv4)
 	}
 	return
 }
@@ -782,7 +782,7 @@ func (section *IPv4AddressSection) AssignMinPrefixForBlock() *IPv4AddressSection
 // When iterating, the prefix length is preserved.  Remove it using WithoutPrefixLen prior to iterating if you wish to drop it from all individual address sections.
 //
 // Call IsMultiple to determine if this instance represents multiple address sections, or GetCount for the count.
-func (section *IPv4AddressSection) Iterator() IPv4SectionIterator {
+func (section *IPv4AddressSection) Iterator() Iterator[*IPv4AddressSection] {
 	if section == nil {
 		return ipv4SectionIterator{nilSectIterator()}
 	}
@@ -796,7 +796,7 @@ func (section *IPv4AddressSection) Iterator() IPv4SectionIterator {
 // instead constraining themselves to values from this address section.
 //
 // If the series has no prefix length, then this is equivalent to Iterator.
-func (section *IPv4AddressSection) PrefixIterator() IPv4SectionIterator {
+func (section *IPv4AddressSection) PrefixIterator() Iterator[*IPv4AddressSection] {
 	return ipv4SectionIterator{section.prefixIterator(false)}
 }
 
@@ -804,13 +804,13 @@ func (section *IPv4AddressSection) PrefixIterator() IPv4SectionIterator {
 // Each iterated address section will be a prefix block with the same prefix length as this address section.
 //
 // If this address section has no prefix length, then this is equivalent to Iterator.
-func (section *IPv4AddressSection) PrefixBlockIterator() IPv4SectionIterator {
+func (section *IPv4AddressSection) PrefixBlockIterator() Iterator[*IPv4AddressSection] {
 	return ipv4SectionIterator{section.prefixIterator(true)}
 }
 
 // BlockIterator Iterates through the address sections that can be obtained by iterating through all the upper segments up to the given segment count.
 // The segments following remain the same in all iterated sections.
-func (section *IPv4AddressSection) BlockIterator(segmentCount int) IPv4SectionIterator {
+func (section *IPv4AddressSection) BlockIterator(segmentCount int) Iterator[*IPv4AddressSection] {
 	return ipv4SectionIterator{section.blockIterator(segmentCount)}
 }
 
@@ -819,7 +819,7 @@ func (section *IPv4AddressSection) BlockIterator(segmentCount int) IPv4SectionIt
 // Practically, this means finding the count of segments for which the segments that follow are not full range, and then using BlockIterator with that segment count.
 //
 // Use GetSequentialBlockCount to get the number of iterated elements.
-func (section *IPv4AddressSection) SequentialBlockIterator() IPv4SectionIterator {
+func (section *IPv4AddressSection) SequentialBlockIterator() Iterator[*IPv4AddressSection] {
 	return ipv4SectionIterator{section.sequentialBlockIterator()}
 }
 
