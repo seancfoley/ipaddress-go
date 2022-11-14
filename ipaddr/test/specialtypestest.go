@@ -544,12 +544,6 @@ func (t specialTypesTester) testZeros() {
 
 	if addrZero.ToIP() == nil || addrZero.ToIPv4() != nil || addrZero.ToIPv6() != nil || addrZero.ToMAC() != nil {
 		t.addFailure(newAddrFailure("zero of "+addrZero.String(), &addrZero))
-		//a := addrZero.ToIP()
-		//b := addrZero.ToIPv4()
-		//c := addrZero.ToIPv6()
-		//d := addrZero.ToMAC()
-		//e := addrZero.String()
-		//_, _, _, _, _ = a, b, c, d, e
 	} else if !ipZero.ToAddressBase().Equal(&ipZero) || !ipZero.ToIP().Equal(&ipZero) || ipZero.ToIPv4() != nil || ipZero.ToIPv6() != nil {
 		t.addFailure(newIPAddrFailure("zero of "+ipZero.String(), &ipZero))
 	} else if !macZero.ToAddressBase().Equal(&macZero) {
@@ -995,7 +989,7 @@ func (t specialTypesTester) testNils() {
 	ipAddressesIPv6 = append(ipAddressesIPv6, nil)
 	ipAddressesIPv6 = append(ipAddressesIPv6, &ipaddr.IPAddress{})
 	ipAddressesIPv6 = append(ipAddressesIPv6, (&ipaddr.IPv6Address{}).ToIP())
-	ipAddressesIPv6 = append(ipAddressesIPv6, (&ipaddr.IPv6AddressSeqRange{}).GetLowerIPAddress())
+	ipAddressesIPv6 = append(ipAddressesIPv6, (&ipaddr.IPv6AddressSeqRange{}).GetLower().ToIP())
 	ipAddressesIPv6 = append(ipAddressesIPv6, noIPV6Error(nil))
 	ipAddressesIPv6 = append(ipAddressesIPv6, noIPV6Error(ipv6Section1))
 
@@ -1039,7 +1033,7 @@ func (t specialTypesTester) testNils() {
 	ipAddressesIPv4 = append(ipAddressesIPv4, nil)
 	ipAddressesIPv4 = append(ipAddressesIPv4, &ipaddr.IPAddress{})
 	ipAddressesIPv4 = append(ipAddressesIPv4, (&ipaddr.IPv4Address{}).ToIP())
-	ipAddressesIPv4 = append(ipAddressesIPv4, (&ipaddr.IPv4AddressSeqRange{}).GetLowerIPAddress())
+	ipAddressesIPv4 = append(ipAddressesIPv4, (&ipaddr.IPv4AddressSeqRange{}).GetLower().ToIP())
 	ipAddressesIPv4 = append(ipAddressesIPv4, noIPV4Error(nil))
 	ipAddressesIPv4 = append(ipAddressesIPv4, noIPV4Error(ipv4Section1))
 
