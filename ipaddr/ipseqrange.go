@@ -35,9 +35,13 @@ type rangeCache struct {
 
 // SequentialRangeConstraint is the generic type constraint for an IP address sequential range
 type SequentialRangeConstraint[T any] interface {
-	ipAddressType
+	AddressType // cannot use IPAddressType here because ToAddressString() results in a circular dependency, SequentialRangeConstraint -> IPAddressType -> IPAddressString -> SequentialRange -> SequentialRangeConstraint
+
+	IPAddressRange
 
 	comparable
+
+	ToIP() *IPAddress
 
 	Increment(int64) T
 	WithoutPrefixLen() T

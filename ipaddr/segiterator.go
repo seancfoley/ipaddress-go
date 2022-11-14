@@ -16,12 +16,6 @@
 
 package ipaddr
 
-// hasNext is a component of all interfaces, defining the hasNext interface method
-type hasNext interface {
-	// HasNext returns true if there is another address to iterate, false otherwise
-	HasNext() bool
-}
-
 type singleSegmentIterator struct {
 	original *AddressSegment
 }

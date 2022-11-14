@@ -36,7 +36,12 @@ type bitItem interface {
 // AddressItem represents all addresses, division groupings, divisions, and sequential ranges.
 // Any address item can be compared to any other.
 type AddressItem interface {
-	bitItem
+	// GetByteCount returns the number of bytes required for each value comprising this address item,
+	// rounding up if the bit count is not a multiple of 8.
+	GetByteCount() int
+
+	// GetBitCount returns the number of bits in each value comprising this address item
+	GetBitCount() BitCount
 
 	// GetValue returns the lowest individual address item in the address item range as an integer value
 	GetValue() *big.Int
@@ -649,7 +654,8 @@ type AddressType interface {
 
 var _, _ AddressType = &Address{}, &MACAddress{}
 
-type ipAddressRange interface {
+// IPAddressRange represents all IPAddress instances and all IPAddress sequential range instances
+type IPAddressRange interface {
 	// GetIPVersion returns the IP version of this IP address range
 	GetIPVersion() IPVersion
 
@@ -680,13 +686,6 @@ type ipAddressRange interface {
 
 	// GetUpperNetIP returns the highest address in this subnet or address range as a net.IP
 	GetUpperNetIP() net.IP
-}
-
-// IPAddressRange represents all IPAddress instances and all IPAddress sequential range instances
-type IPAddressRange interface { //IPAddress and above, IPAddressSeqRange and above
-	AddressItem
-
-	ipAddressRange
 
 	// IsSequential returns whether the address item represents a range of addresses that are sequential.
 	//
@@ -706,10 +705,13 @@ var _, _, _, _, _, _ IPAddressRange = &IPAddress{},
 	&SequentialRange[*IPv4Address]{},
 	&SequentialRange[*IPv6Address]{}
 
-type ipAddressType interface {
+// IPAddressType represents any IP address, all of which can be represented by the base type IPAddress.
+// This includes IPv4Address and IPv6Address.
+// You must use the pointers types *IPAddress, *IPv4Address, and *IPv6Address when implementing IPAddressType.
+type IPAddressType interface {
 	AddressType
 
-	ipAddressRange
+	IPAddressRange
 
 	// Wrap wraps this IP address, returning a WrappedIPAddress, an implementation of ExtendedIPSegmentSeries,
 	// which can be used to write code that works with both IP addresses and IP address sections.
@@ -719,15 +721,6 @@ type ipAddressType interface {
 	//
 	// ToIP can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 	ToIP() *IPAddress
-}
-
-// IPAddressType represents any IP address, all of which can be represented by the base type IPAddress.
-// This includes IPv4Address and IPv6Address.
-// You must use the pointers types *IPAddress, *IPv4Address, and *IPv6Address when implementing IPAddressType.
-type IPAddressType interface {
-	ipAddressType
-
-	ipAddressRange // this is here for godoc to ensure methods from ipAddressRange are included (it is already included in ipAddressType so redundant)
 
 	// ToAddressString retrieves or generates an IPAddressString instance for this IP address.
 	// This may be the IPAddressString this instance was generated from, if it was generated from an IPAddressString.
@@ -748,7 +741,7 @@ var _, _, _ IPAddressType = &IPAddress{},
 type IPAddressSeqRangeType interface {
 	AddressItem
 
-	ipAddressRange
+	IPAddressRange
 
 	// ContainsRange returns whether all the addresses in the given sequential range are also contained in this sequential range.
 	ContainsRange(IPAddressSeqRangeType) bool
