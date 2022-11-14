@@ -471,14 +471,6 @@ func (comp AddressComparator) Compare(one, two AddressItem) int {
 		} else {
 			return -1
 		}
-		//} else if rng1, ok := one.(IPAddressSeqRangeType); ok { //TODO remove
-		//	if rng2, ok := two.(IPAddressSeqRangeType); ok {
-		//		return comp.CompareRanges(rng1, rng2)
-		//	} else if _, ok := two.(AddressDivisionSeries); ok {
-		//		return -1
-		//	}
-		//	return 1
-		//}
 	} else if rng1, ok := one.(IPAddressSeqRangeType); ok {
 		if rng2, ok := two.(IPAddressSeqRangeType); ok {
 			return comp.CompareRanges(rng1, rng2)

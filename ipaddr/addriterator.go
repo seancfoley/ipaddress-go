@@ -25,7 +25,7 @@ type Iterator[T any] interface {
 }
 
 // IteratorRem is an iterator that provides a removal operation
-type IteratorRem[T any] interface { //TODO rename IteratorRemover or IteratorRemove?  But we are not removing the iterator.  IteratorWithRemove?  IterateRemover?  That last one is not bad.   Actually, I sorta like IteratorWithRemove
+type IteratorRem[T any] interface { //TODO NOW rename IteratorRemover or IteratorRemove?  But we are not removing the iterator.  IteratorWithRemove?  IterateRemover?  That last one is not bad.   Actually, I sorta like IteratorWithRemove
 	Iterator[T]
 
 	// Remove removes the last iterated item from the underlying data structure or collection, and returns that element.

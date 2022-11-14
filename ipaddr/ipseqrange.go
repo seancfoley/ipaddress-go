@@ -71,6 +71,8 @@ type SequentialRangeConstraint[T any] interface {
 	equalsSameVersion(AddressType) bool
 
 	getLowestHighestAddrs() (lower, upper T)
+
+	getAddrType() addrType
 }
 
 var (
@@ -874,9 +876,10 @@ func (rng *SequentialRange[T]) Subtract(other *SequentialRange[T]) []*Sequential
 // ToKey creates the associated address range key.
 // While address ranges can be compared with the Compare or Equal methods as well as various provided instances of AddressComparator,
 // they are not comparable with go operators.
-// However, IPAddressSeqRangeKey instances are comparable with go operators, and thus can be used as map keys.
-func (rng *SequentialRange[T]) ToKey() *SequentialRangeKey[T] {
-	return &SequentialRangeKey[T]{
+// However, SequentialRangeKey instances are comparable with go operators, and thus can be used as map keys.
+func (rng *SequentialRange[T]) ToKey() SequentialRangeKey[T] {
+	rng = rng.init()
+	return SequentialRangeKey[T]{
 		lowerKey: rng.lower.toKey(),
 		upperKey: rng.upper.toKey(),
 	}
@@ -1018,28 +1021,38 @@ func newSequRange[T SequentialRangeConstraint[T]](first, other T) *SequentialRan
 }
 
 // NewSequentialRange creates a sequential range from the given addresses.
+// If the type of T is *IPAddress and the versions of lower and upper do not match (one is IPv4, one IPv6), then nil is returned.
+// Otherwise the range is returned.
 func NewSequentialRange[T SequentialRangeConstraint[T]](lower, upper T) *SequentialRange[T] {
 	var t T
-	if lower == t { // nil for pointers
+	if lower == t && upper == t { // nil for pointers
 		lower = nilConvert[T]()
-	} else {
-		//TODO NOW when T is *IPAddress, you need to handle a mix of IPv4 and IPv6!
-
-		//TODO NOW also, getting the zero for *IPAddress, we should choose the correct zero when upper is not nil and lower is nil
-		// nilConvert works for zero ranges but not for that case
+	} else if lower != t && upper != t {
+		// this check only matters when T is *IPAddress
+		if lower.getAddrType() != upper.getAddrType() {
+			// when both are zero-type, we do not go in here
+			// but if only one is, we return nil.  zero-type is "indeterminate", so we cannot "infer" a different version for it
+			// However, nil is the absence of a version/type so we can and do
+			return nil
+		}
 	}
-
-	//if lower == nil && upper == nil {
-	//	return &SequentialRange[T]{} // TODO remove
-	//}
 	return newSequRange(lower, upper)
 }
 
 // NewIPSeqRange creates an IP sequential range from the given addresses.
 // It is here for backwards compatibility. NewSequentialRange is recommended instead.
+// If the type of T is *IPAddress and the versions of lower and upper do not match (one is IPv4, one IPv6), then nil is returned.
+// Otherwise the range is returned.
 func NewIPSeqRange(lower, upper *IPAddress) *SequentialRange[*IPAddress] { // for backwards compatibility
 	if lower == nil && upper == nil {
 		lower = zeroIPAddr
+	} else if lower != nil && upper != nil {
+		if lower.getAddrType() != upper.getAddrType() {
+			// when both are zero-type, we do not go in here
+			// but if only one is, we return nil.  zero-type is "indeterminate", so we cannot "infer" a different version for it
+			// However, nil is the absence of a version/type so we can and do
+			return nil
+		}
 	}
 	return newSequRange(lower, upper)
 }
@@ -1133,10 +1146,6 @@ func joinRanges[T SequentialRangeConstraint[T]](ranges []*SequentialRange[T]) []
 	}
 	ret := ranges[:finalLen]
 	return ret
-}
-
-func compareLowValues(one, two AddressType) int {
-	return LowValueComparator.CompareAddresses(one, two)
 }
 
 func compareLowIPAddressValues(one, two AddressType) int {

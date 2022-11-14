@@ -112,6 +112,9 @@ func testAll(addresses addresses, rangedAddresses rangedAddresses, allAddresses 
 	genericTrieTester := trieTesterGeneric{testBase{testResults: &acc, testAddresses: &allAddresses, fullTest: fullTest}}
 	genericTrieTester.run()
 
+	keyTester := keyTester{testBase{testResults: &acc, testAddresses: &allAddresses, fullTest: fullTest}}
+	keyTester.run()
+
 	return acc
 }
 

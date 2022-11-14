@@ -643,11 +643,165 @@ func (t specialTypesTester) testZeros() {
 		t.addFailure(newAddressItemFailure("zero of "+macZero.String(), &macZero))
 	}
 
-	//TODO NOW similar tests for seq range keys and converting seq range keys to address keys
+	ipRangeZero := ipaddr.IPAddressSeqRange{}
+	ipv4RangeZero := ipaddr.IPv4AddressSeqRange{}
+	ipv6RangeZero := ipaddr.IPv6AddressSeqRange{}
 
-	// TODO we also want a test that goes through all sorts of addresses converting to key and back, and it should also
-	// test all the address type keys, since the key code for IPv6Address is different from IPAddress is different from Address, and so on.
-	// We could simply use the big set of addresses we use in trieTest, maybe we add a keyTest and make that the last test
+	ipZero3 := ipRangeZero.GetLower()
+	ipv4Zero3 := ipv4RangeZero.GetLower()
+	ipv6Zero3 := ipv6RangeZero.GetLower()
+
+	// check that zero values from address ranges match zero values from addresses
+	if !ipZero.Equal(ipZero3) || !ipZero3.Equal(&ipZero) || !ipZero3.Equal(ipZero3) || !ipZero.Equal(&ipZero) {
+		t.addFailure(newIPAddrFailure("zero of "+ipZero.String(), ipZero3))
+	} else if ipZero.Compare(ipZero3) != 0 || ipZero3.Compare(&ipZero) != 0 || ipZero.Compare(&ipZero) != 0 || ipZero3.Compare(ipZero3) != 0 {
+		t.addFailure(newIPAddrFailure("zero of "+ipZero.String(), ipZero3))
+	} else if !ipv4Zero.Equal(ipv4Zero3) || !ipv4Zero3.Equal(&ipv4Zero) || !ipv4Zero3.Equal(ipv4Zero3) || !ipv4Zero.Equal(&ipv4Zero) {
+		t.addFailure(newAddressItemFailure("zero of "+ipv4Zero.String(), ipv4Zero3))
+	} else if ipv4Zero.Compare(ipv4Zero3) != 0 || ipv4Zero3.Compare(&ipv4Zero) != 0 || ipv4Zero.Compare(&ipv4Zero) != 0 || ipv4Zero3.Compare(ipv4Zero3) != 0 {
+		t.addFailure(newAddressItemFailure("zero of "+ipv4Zero.String(), ipv4Zero3))
+	} else if !ipv6Zero.Equal(ipv6Zero3) || !ipv6Zero3.Equal(&ipv6Zero) || !ipv6Zero3.Equal(ipv6Zero3) || !ipv6Zero.Equal(&ipv6Zero) {
+		t.addFailure(newAddressItemFailure("zero of "+ipv6Zero.String(), ipv6Zero3))
+	} else if ipv6Zero.Compare(ipv6Zero3) != 0 || ipv6Zero3.Compare(&ipv6Zero) != 0 || ipv6Zero.Compare(&ipv6Zero) != 0 || ipv6Zero3.Compare(ipv6Zero3) != 0 {
+		t.addFailure(newAddressItemFailure("zero of "+ipv6Zero.String(), ipv6Zero3))
+	}
+
+	ipZero3 = ipRangeZero.GetUpper()
+	ipv4Zero3 = ipv4RangeZero.GetUpper()
+	ipv6Zero3 = ipv6RangeZero.GetUpper()
+
+	// check that zero values from address ranges match zero values from addresses
+	if !ipZero.Equal(ipZero3) || !ipZero3.Equal(&ipZero) || !ipZero3.Equal(ipZero3) || !ipZero.Equal(&ipZero) {
+		t.addFailure(newIPAddrFailure("zero of "+ipZero.String(), ipZero3))
+	} else if ipZero.Compare(ipZero3) != 0 || ipZero3.Compare(&ipZero) != 0 || ipZero.Compare(&ipZero) != 0 || ipZero3.Compare(ipZero3) != 0 {
+		t.addFailure(newIPAddrFailure("zero of "+ipZero.String(), ipZero3))
+	} else if !ipv4Zero.Equal(ipv4Zero3) || !ipv4Zero3.Equal(&ipv4Zero) || !ipv4Zero3.Equal(ipv4Zero3) || !ipv4Zero.Equal(&ipv4Zero) {
+		t.addFailure(newAddressItemFailure("zero of "+ipv4Zero.String(), ipv4Zero3))
+	} else if ipv4Zero.Compare(ipv4Zero3) != 0 || ipv4Zero3.Compare(&ipv4Zero) != 0 || ipv4Zero.Compare(&ipv4Zero) != 0 || ipv4Zero3.Compare(ipv4Zero3) != 0 {
+		t.addFailure(newAddressItemFailure("zero of "+ipv4Zero.String(), ipv4Zero3))
+	} else if !ipv6Zero.Equal(ipv6Zero3) || !ipv6Zero3.Equal(&ipv6Zero) || !ipv6Zero3.Equal(ipv6Zero3) || !ipv6Zero.Equal(&ipv6Zero) {
+		t.addFailure(newAddressItemFailure("zero of "+ipv6Zero.String(), ipv6Zero3))
+	} else if ipv6Zero.Compare(ipv6Zero3) != 0 || ipv6Zero3.Compare(&ipv6Zero) != 0 || ipv6Zero.Compare(&ipv6Zero) != 0 || ipv6Zero3.Compare(ipv6Zero3) != 0 {
+		t.addFailure(newAddressItemFailure("zero of "+ipv6Zero.String(), ipv6Zero3))
+	}
+
+	ipZero3 = ipRangeZero.ToKey().GetLowerKey().ToAddress()
+	ipv4Zero3 = ipv4RangeZero.ToKey().GetLowerKey().ToAddress()
+	ipv6Zero3 = ipv6RangeZero.ToKey().GetLowerKey().ToAddress()
+
+	// check that zero values from address ranges match zero values from addresses
+	if !ipZero.Equal(ipZero3) || !ipZero3.Equal(&ipZero) || !ipZero3.Equal(ipZero3) || !ipZero.Equal(&ipZero) {
+		t.addFailure(newIPAddrFailure("zero of "+ipZero.String(), ipZero3))
+	} else if ipZero.Compare(ipZero3) != 0 || ipZero3.Compare(&ipZero) != 0 || ipZero.Compare(&ipZero) != 0 || ipZero3.Compare(ipZero3) != 0 {
+		t.addFailure(newIPAddrFailure("zero of "+ipZero.String(), ipZero3))
+	} else if !ipv4Zero.Equal(ipv4Zero3) || !ipv4Zero3.Equal(&ipv4Zero) || !ipv4Zero3.Equal(ipv4Zero3) || !ipv4Zero.Equal(&ipv4Zero) {
+		t.addFailure(newAddressItemFailure("zero of "+ipv4Zero.String(), ipv4Zero3))
+	} else if ipv4Zero.Compare(ipv4Zero3) != 0 || ipv4Zero3.Compare(&ipv4Zero) != 0 || ipv4Zero.Compare(&ipv4Zero) != 0 || ipv4Zero3.Compare(ipv4Zero3) != 0 {
+		t.addFailure(newAddressItemFailure("zero of "+ipv4Zero.String(), ipv4Zero3))
+	} else if !ipv6Zero.Equal(ipv6Zero3) || !ipv6Zero3.Equal(&ipv6Zero) || !ipv6Zero3.Equal(ipv6Zero3) || !ipv6Zero.Equal(&ipv6Zero) {
+		t.addFailure(newAddressItemFailure("zero of "+ipv6Zero.String(), ipv6Zero3))
+	} else if ipv6Zero.Compare(ipv6Zero3) != 0 || ipv6Zero3.Compare(&ipv6Zero) != 0 || ipv6Zero.Compare(&ipv6Zero) != 0 || ipv6Zero3.Compare(ipv6Zero3) != 0 {
+		t.addFailure(newAddressItemFailure("zero of "+ipv6Zero.String(), ipv6Zero3))
+	}
+
+	ipZero3 = ipRangeZero.ToKey().GetUpperKey().ToAddress()
+	ipv4Zero3 = ipv4RangeZero.ToKey().GetUpperKey().ToAddress()
+	ipv6Zero3 = ipv6RangeZero.ToKey().GetUpperKey().ToAddress()
+
+	// check that zero values from address ranges match zero values from addresses
+	if !ipZero.Equal(ipZero3) || !ipZero3.Equal(&ipZero) || !ipZero3.Equal(ipZero3) || !ipZero.Equal(&ipZero) {
+		t.addFailure(newIPAddrFailure("zero of "+ipZero.String(), ipZero3))
+	} else if ipZero.Compare(ipZero3) != 0 || ipZero3.Compare(&ipZero) != 0 || ipZero.Compare(&ipZero) != 0 || ipZero3.Compare(ipZero3) != 0 {
+		t.addFailure(newIPAddrFailure("zero of "+ipZero.String(), ipZero3))
+	} else if !ipv4Zero.Equal(ipv4Zero3) || !ipv4Zero3.Equal(&ipv4Zero) || !ipv4Zero3.Equal(ipv4Zero3) || !ipv4Zero.Equal(&ipv4Zero) {
+		t.addFailure(newAddressItemFailure("zero of "+ipv4Zero.String(), ipv4Zero3))
+	} else if ipv4Zero.Compare(ipv4Zero3) != 0 || ipv4Zero3.Compare(&ipv4Zero) != 0 || ipv4Zero.Compare(&ipv4Zero) != 0 || ipv4Zero3.Compare(ipv4Zero3) != 0 {
+		t.addFailure(newAddressItemFailure("zero of "+ipv4Zero.String(), ipv4Zero3))
+	} else if !ipv6Zero.Equal(ipv6Zero3) || !ipv6Zero3.Equal(&ipv6Zero) || !ipv6Zero3.Equal(ipv6Zero3) || !ipv6Zero.Equal(&ipv6Zero) {
+		t.addFailure(newAddressItemFailure("zero of "+ipv6Zero.String(), ipv6Zero3))
+	} else if ipv6Zero.Compare(ipv6Zero3) != 0 || ipv6Zero3.Compare(&ipv6Zero) != 0 || ipv6Zero.Compare(&ipv6Zero) != 0 || ipv6Zero3.Compare(ipv6Zero3) != 0 {
+		t.addFailure(newAddressItemFailure("zero of "+ipv6Zero.String(), ipv6Zero3))
+	}
+
+	ipZero3 = ipRangeZero.ToKey().ToSeqRange().GetLower()
+	ipv4Zero3 = ipv4RangeZero.ToKey().ToSeqRange().GetLower()
+	ipv6Zero3 = ipv6RangeZero.ToKey().ToSeqRange().GetLower()
+
+	// check that zero values from address ranges match zero values from addresses
+	if !ipZero.Equal(ipZero3) || !ipZero3.Equal(&ipZero) || !ipZero3.Equal(ipZero3) || !ipZero.Equal(&ipZero) {
+		t.addFailure(newIPAddrFailure("zero of "+ipZero.String(), ipZero3))
+	} else if ipZero.Compare(ipZero3) != 0 || ipZero3.Compare(&ipZero) != 0 || ipZero.Compare(&ipZero) != 0 || ipZero3.Compare(ipZero3) != 0 {
+		t.addFailure(newIPAddrFailure("zero of "+ipZero.String(), ipZero3))
+	} else if !ipv4Zero.Equal(ipv4Zero3) || !ipv4Zero3.Equal(&ipv4Zero) || !ipv4Zero3.Equal(ipv4Zero3) || !ipv4Zero.Equal(&ipv4Zero) {
+		t.addFailure(newAddressItemFailure("zero of "+ipv4Zero.String(), ipv4Zero3))
+	} else if ipv4Zero.Compare(ipv4Zero3) != 0 || ipv4Zero3.Compare(&ipv4Zero) != 0 || ipv4Zero.Compare(&ipv4Zero) != 0 || ipv4Zero3.Compare(ipv4Zero3) != 0 {
+		t.addFailure(newAddressItemFailure("zero of "+ipv4Zero.String(), ipv4Zero3))
+	} else if !ipv6Zero.Equal(ipv6Zero3) || !ipv6Zero3.Equal(&ipv6Zero) || !ipv6Zero3.Equal(ipv6Zero3) || !ipv6Zero.Equal(&ipv6Zero) {
+		t.addFailure(newAddressItemFailure("zero of "+ipv6Zero.String(), ipv6Zero3))
+	} else if ipv6Zero.Compare(ipv6Zero3) != 0 || ipv6Zero3.Compare(&ipv6Zero) != 0 || ipv6Zero.Compare(&ipv6Zero) != 0 || ipv6Zero3.Compare(ipv6Zero3) != 0 {
+		t.addFailure(newAddressItemFailure("zero of "+ipv6Zero.String(), ipv6Zero3))
+	}
+
+	ipZero3 = ipRangeZero.ToKey().ToSeqRange().GetUpper()
+	ipv4Zero3 = ipv4RangeZero.ToKey().ToSeqRange().GetUpper()
+	ipv6Zero3 = ipv6RangeZero.ToKey().ToSeqRange().GetUpper()
+
+	// check that zero values from address ranges match zero values from addresses
+	if !ipZero.Equal(ipZero3) || !ipZero3.Equal(&ipZero) || !ipZero3.Equal(ipZero3) || !ipZero.Equal(&ipZero) {
+		t.addFailure(newIPAddrFailure("zero of "+ipZero.String(), ipZero3))
+	} else if ipZero.Compare(ipZero3) != 0 || ipZero3.Compare(&ipZero) != 0 || ipZero.Compare(&ipZero) != 0 || ipZero3.Compare(ipZero3) != 0 {
+		t.addFailure(newIPAddrFailure("zero of "+ipZero.String(), ipZero3))
+	} else if !ipv4Zero.Equal(ipv4Zero3) || !ipv4Zero3.Equal(&ipv4Zero) || !ipv4Zero3.Equal(ipv4Zero3) || !ipv4Zero.Equal(&ipv4Zero) {
+		t.addFailure(newAddressItemFailure("zero of "+ipv4Zero.String(), ipv4Zero3))
+	} else if ipv4Zero.Compare(ipv4Zero3) != 0 || ipv4Zero3.Compare(&ipv4Zero) != 0 || ipv4Zero.Compare(&ipv4Zero) != 0 || ipv4Zero3.Compare(ipv4Zero3) != 0 {
+		t.addFailure(newAddressItemFailure("zero of "+ipv4Zero.String(), ipv4Zero3))
+	} else if !ipv6Zero.Equal(ipv6Zero3) || !ipv6Zero3.Equal(&ipv6Zero) || !ipv6Zero3.Equal(ipv6Zero3) || !ipv6Zero.Equal(&ipv6Zero) {
+		t.addFailure(newAddressItemFailure("zero of "+ipv6Zero.String(), ipv6Zero3))
+	} else if ipv6Zero.Compare(ipv6Zero3) != 0 || ipv6Zero3.Compare(&ipv6Zero) != 0 || ipv6Zero.Compare(&ipv6Zero) != 0 || ipv6Zero3.Compare(ipv6Zero3) != 0 {
+		t.addFailure(newAddressItemFailure("zero of "+ipv6Zero.String(), ipv6Zero3))
+	}
+
+	ipRangeZeroKey := ipRangeZero.ToKey()
+	ipv4ZeroRangeKey := ipv4RangeZero.ToIP().ToKey()
+	ipv6ZeroRangeKey := ipv6RangeZero.ToIP().ToKey()
+
+	if ipRangeZeroKey != ipRangeZeroKey || ipRangeZeroKey == ipv4ZeroRangeKey || ipRangeZeroKey == ipv6ZeroRangeKey {
+		t.addFailure(newAddressItemFailure("zero of "+ipRangeZeroKey.String(), &ipRangeZero))
+	}
+
+	iprange := ipaddr.NewIPSeqRange(nil, &ipZero)
+	ipv4range := ipaddr.NewIPv4SeqRange(nil, &ipv4Zero).ToIP()
+	ipv6range := ipaddr.NewIPv6SeqRange(nil, &ipv6Zero).ToIP()
+
+	if iprange.ToKey() != iprange.ToKey() || iprange.ToKey() == ipv4range.ToKey() || iprange.ToKey() == ipv6range.ToKey() {
+		t.addFailure(newAddressItemFailure("range from nil "+iprange.String(), iprange))
+	}
+
+	iprange = ipaddr.NewSequentialRange(nil, &ipZero)
+	ipv4range = ipaddr.NewSequentialRange(nil, &ipv4Zero).ToIP()
+	ipv6range = ipaddr.NewSequentialRange(nil, &ipv6Zero).ToIP()
+
+	if iprange.ToKey() != iprange.ToKey() || iprange.ToKey() == ipv4range.ToKey() || iprange.ToKey() == ipv6range.ToKey() {
+		t.addFailure(newAddressItemFailure("range from nil "+iprange.String(), iprange))
+	}
+
+	iprange = ipaddr.NewIPSeqRange(&ipZero, nil)
+	ipv4range = ipaddr.NewIPv4SeqRange(&ipv4Zero, nil).ToIP()
+	ipv6range = ipaddr.NewIPv6SeqRange(&ipv6Zero, nil).ToIP()
+
+	if iprange.ToKey() != iprange.ToKey() || iprange.ToKey() == ipv4range.ToKey() || iprange.ToKey() == ipv6range.ToKey() {
+		t.addFailure(newAddressItemFailure("range from nil "+iprange.String(), iprange))
+	}
+
+	iprange = ipaddr.NewSequentialRange(&ipZero, nil)
+	ipv4range = ipaddr.NewSequentialRange(&ipv4Zero, nil).ToIP()
+	ipv6range = ipaddr.NewSequentialRange(&ipv6Zero, nil).ToIP()
+
+	if iprange.ToKey() != iprange.ToKey() || iprange.ToKey() == ipv4range.ToKey() || iprange.ToKey() == ipv6range.ToKey() {
+		t.addFailure(newAddressItemFailure("range from nil "+iprange.String(), iprange))
+	}
+
+	t.incrementTestCount()
 }
 
 func (t specialTypesTester) testNils() {

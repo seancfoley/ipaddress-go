@@ -623,7 +623,7 @@ func (trie Trie[T]) Format(state fmt.State, verb rune) {
 	trie.trieBase.trie.Format(state, verb)
 }
 
-func TreesString[T TrieKeyConstraint[T]](withNonAddedKeys bool, tries ...*Trie[T]) string { //TODO drop the pointer?
+func TreesString[T TrieKeyConstraint[T]](withNonAddedKeys bool, tries ...*Trie[T]) string {
 	binTries := make([]*tree.BinTrie, 0, len(tries))
 	for _, trie := range tries {
 		binTries = append(binTries, toBinTrie[T](trie))

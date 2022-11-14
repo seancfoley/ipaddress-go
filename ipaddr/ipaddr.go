@@ -1729,20 +1729,6 @@ func (addr *IPAddress) Increment(increment int64) *IPAddress {
 // SpanWithRange returns an IPAddressSeqRange instance that spans this subnet to the given subnet.
 // If the other address is a different version than this, then the other is ignored, and the result is equivalent to calling ToSequentialRange
 func (addr *IPAddress) SpanWithRange(other *IPAddress) *SequentialRange[*IPAddress] {
-	if thisAddr := addr.ToIPv4(); thisAddr != nil {
-		if oth := other.ToIPv4(); oth != nil {
-			return thisAddr.SpanWithRange(oth).ToIP()
-		} else {
-			// TODO NOW you need to handle a mix of IPv4 and IPv6!  What did this method look like before?
-		}
-	} else if thisAddr := addr.ToIPv6(); thisAddr != nil {
-		if oth := other.ToIPv6(); oth != nil {
-			return thisAddr.SpanWithRange(oth).ToIP()
-		} else {
-			// TODO NOW you need to handle a mix of IPv4 and IPv6!  What did this method look like before?
-		}
-	}
-	// TODO NOW you need to handle a mix of IPv4 and IPv6!  What did this method look like before?
 	return NewSequentialRange(addr.init(), other)
 }
 

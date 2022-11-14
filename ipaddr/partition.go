@@ -292,6 +292,6 @@ func PartitionWithSingleBlockSize[T IteratePartitionConstraint[T]](newAddr T) *P
 	}
 }
 
-// TODO consider bringing back the old public constructors for partitions - there are 4, seen above
+// TODO NOW consider bringing back the old public constructors for partitions - there are 4, seen above
 
 // TODO LATER partition ranges (not just addresses) with spanning blocks

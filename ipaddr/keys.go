@@ -42,6 +42,14 @@ func (key SequentialRangeKey[T]) String() string {
 	return key.ToSeqRange().String()
 }
 
+func (key SequentialRangeKey[T]) GetLowerKey() RangeBoundaryKey[T] {
+	return key.lowerKey
+}
+
+func (key SequentialRangeKey[T]) GetUpperKey() RangeBoundaryKey[T] {
+	return key.upperKey
+}
+
 // GenericComparableIPKey converts the IP address range key to a Key[*IPAddress].
 // The type Key[*IPAddress] satisfies the comparable generic constraint, unlike RangeBoundaryKey
 func GenericComparableIPKey(key RangeBoundaryKey[*IPAddress]) Key[*IPAddress] {
@@ -52,6 +60,8 @@ func GenericComparableIPKey(key RangeBoundaryKey[*IPAddress]) Key[*IPAddress] {
 // See https://go.dev/ref/spec#Comparison_operators
 // It can be used as a map key.  It can be obtained from its originating address instances.
 // The zero value corresponds to the zero-value for IPv4Address.
+// Keys do not incorporate prefix length to ensure that all equal addresses have equal keys.
+// To create a key that has prefix length, combine into a struct with the PrefixKey obtained by passing the address into PrefixKeyFrom.
 // IPv4Address can be compared using the Compare or Equal methods, or using an AddressComparator.
 type IPv4AddressKey struct {
 	vals uint64 // upper and lower combined into one uint64
@@ -89,6 +99,8 @@ var (
 // See https://go.dev/ref/spec#Comparison_operators
 // It can be used as a map key.  It can be obtained from its originating address instances.
 // The zero value corresponds to the zero-value for IPv6Address.
+// Keys do not incorporate prefix length to ensure that all equal addresses have equal keys.
+// To create a key that has prefix length, combine into a struct with the PrefixKey obtained by passing the address into PrefixKeyFrom.
 // IPv6Address can be compared using the Compare or Equal methods, or using an AddressComparator.
 type IPv6AddressKey struct {
 	keyContents
@@ -114,6 +126,8 @@ func GenericComparableIPv6Key(key RangeBoundaryKey[*IPv6Address]) IPv6AddressKey
 // See https://go.dev/ref/spec#Comparison_operators
 // It can be used as a map key.  It can be obtained from its originating address instances.
 // The zero value corresponds to the zero-value for MACAddress.
+// Keys do not incorporate prefix length to ensure that all equal addresses have equal keys.
+// To create a key that has prefix length, combine into a struct with the PrefixKey obtained by passing the address into PrefixKeyFrom.
 // MACAddress can be compared using the Compare or Equal methods, or using an AddressComparator.
 type MACAddressKey struct {
 	vals struct {
@@ -159,6 +173,8 @@ const (
 // See https://go.dev/ref/spec#Comparison_operators
 // It can be used as a map key.  It can be obtained from its originating address instances.
 // The zero value corresponds to the zero-value for its generic address type.
+// Keys do not incorporate prefix length to ensure that all equal addresses have equal keys.
+// To create a key that has prefix length, combine into a struct with the PrefixKey obtained by passing the address into PrefixKeyFrom.
 type Key[T KeyConstraint[T]] struct {
 	scheme addressScheme
 	keyContents
@@ -222,9 +238,19 @@ type PrefixKey struct {
 }
 
 // ToPrefixLen converts this key to its corresponding prefix length.
-func (pref *PrefixKey) ToPrefixLen() PrefixLen {
+func (pref PrefixKey) ToPrefixLen() PrefixLen {
 	if pref.IsPrefixed {
 		return &pref.PrefixLen
 	}
 	return nil
+}
+
+func PrefixKeyFrom(addr AddressType) PrefixKey {
+	if addr.IsPrefixed() {
+		return PrefixKey{
+			IsPrefixed: true,
+			PrefixLen:  *addr.ToAddressBase().getPrefixLen(), // doing this instead of calling GetPrefixLen() on AddressType avoids the prefix len copy
+		}
+	}
+	return PrefixKey{}
 }
