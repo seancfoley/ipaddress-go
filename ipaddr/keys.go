@@ -50,12 +50,6 @@ func (key SequentialRangeKey[T]) GetUpperKey() RangeBoundaryKey[T] {
 	return key.upperKey
 }
 
-// GenericComparableIPKey converts the IP address range key to a Key[*IPAddress].
-// The type Key[*IPAddress] satisfies the comparable generic constraint, unlike RangeBoundaryKey
-func GenericComparableIPKey(key RangeBoundaryKey[*IPAddress]) Key[*IPAddress] {
-	return key.(Key[*IPAddress])
-}
-
 // IPv4AddressKey is a representation of an IPv4 address that is comparable as defined by the language specification.
 // See https://go.dev/ref/spec#Comparison_operators
 // It can be used as a map key.  It can be obtained from its originating address instances.
@@ -77,10 +71,15 @@ func (key IPv4AddressKey) String() string {
 	return key.ToAddress().String()
 }
 
-// GenericComparableIPv4Key converts the IPv4 range key to an IPv4AddressKey.
-// The IPv4AddressKey satisfies the comparable generic constraint, unlike RangeBoundaryKey.
-func GenericComparableIPv4Key(key RangeBoundaryKey[*IPv4Address]) IPv4AddressKey {
-	return key.(IPv4AddressKey)
+// IPv4KeyFromRangeKey converts the IPv4 range key to an IPv4AddressKey.
+// The IPv4AddressKey satisfies the "comparable" generic constraint, unlike RangeBoundaryKey.
+// Both key types are "comparable" with respect to comparison operators and map keys.
+func IPv4KeyFromRangeKey(key RangeBoundaryKey[*IPv4Address]) IPv4AddressKey {
+	if conv, ok := key.(IPv4AddressKey); ok {
+		return conv
+	}
+	var addr *IPv4Address = key.ToAddress()
+	return addr.ToKey()
 }
 
 type testComparableConstraint[T comparable] struct{}
@@ -94,6 +93,13 @@ var (
 	_ testComparableConstraint[Key[*Address]]
 	//_ testComparableConstraint[RangeBoundaryKey[*IPv4Address]] // does not compile, as expected, because it has an interface field.  But it is still go-comparable.
 )
+
+func testCompare() {
+	var one1, two1 IPv4AddressKey
+	_ = one1 == two1 // comparable
+	var one2, two2 RangeBoundaryKey[*IPv4Address]
+	_ = one2 == two2 // comparable
+}
 
 // IPv6AddressKey is a representation of an IPv6 address that is comparable as defined by the language specification.
 // See https://go.dev/ref/spec#Comparison_operators
@@ -116,10 +122,15 @@ func (key IPv6AddressKey) String() string {
 	return key.ToAddress().String()
 }
 
-// GenericComparableIPv6Key converts the IPv6 range key to an IPv6AddressKey.
-// The IPv6AddressKey satisfies the comparable generic constraint, unlike RangeBoundaryKey
-func GenericComparableIPv6Key(key RangeBoundaryKey[*IPv6Address]) IPv6AddressKey {
-	return key.(IPv6AddressKey)
+// IPv6KeyFromRangeKey converts the IPv6 range key to an IPv6AddressKey.
+// The IPv6AddressKey satisfies the "comparable" generic constraint, unlike RangeBoundaryKey.
+// Both key types are "comparable" with respect to comparison operators and map keys.
+func IPv6KeyFromRangeKey(key RangeBoundaryKey[*IPv6Address]) IPv6AddressKey {
+	if conv, ok := key.(IPv6AddressKey); ok {
+		return conv
+	}
+	var addr *IPv6Address = key.ToAddress()
+	return addr.ToKey()
 }
 
 // MACAddressKey is a representation of a MAC address that is comparable as defined by the language specification.
@@ -147,12 +158,6 @@ func (key MACAddressKey) String() string {
 	return key.ToAddress().String()
 }
 
-// GenericComparableMACKey converts the MAC range key to an MACAddressKey.
-// The MACAddressKey satisfies the comparable generic constraint, unlike RangeBoundaryKey
-func GenericComparableMACKey(key RangeBoundaryKey[*MACAddress]) MACAddressKey {
-	return key.(MACAddressKey)
-}
-
 // KeyConstraint is the generic type constraint for the generic address type corresponding to an address key
 type KeyConstraint[T any] interface {
 	fmt.Stringer
@@ -178,6 +183,17 @@ const (
 type Key[T KeyConstraint[T]] struct {
 	scheme addressScheme
 	keyContents
+}
+
+// IPKeyFromRangeKey converts the IP address range key to a Key[*IPAddress].
+// The type Key[*IPAddress] satisfies the "comparable" generic constraint, unlike RangeBoundaryKey.
+// Both key types are "comparable" with respect to comparison operators and map keys.
+func IPKeyFromRangeKey(key RangeBoundaryKey[*IPAddress]) Key[*IPAddress] {
+	if conv, ok := key.(Key[*IPAddress]); ok {
+		return conv
+	}
+	var addr *IPAddress = key.ToAddress()
+	return addr.ToKey()
 }
 
 // ToAddress converts back to an address instance
