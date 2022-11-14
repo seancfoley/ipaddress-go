@@ -742,13 +742,13 @@ func (section WrappedIPAddressSection) GetHostMask() ExtendedIPSegmentSeries {
 //
 // Use GetSequentialBlockCount to get the number of iterated elements.
 func (section WrappedIPAddressSection) SequentialBlockIterator() Iterator[ExtendedIPSegmentSeries] {
-	return ipsectionSeriesIterator{section.IPAddressSection.SequentialBlockIterator()}
+	return ipSectionSeriesIterator{section.IPAddressSection.SequentialBlockIterator()}
 }
 
 // BlockIterator Iterates through the series that can be obtained by iterating through all the upper segments up to the given segment count.
 // The segments following remain the same in all iterated series.
 func (section WrappedIPAddressSection) BlockIterator(segmentCount int) Iterator[ExtendedIPSegmentSeries] {
-	return ipsectionSeriesIterator{section.IPAddressSection.BlockIterator(segmentCount)}
+	return ipSectionSeriesIterator{section.IPAddressSection.BlockIterator(segmentCount)}
 }
 
 // Iterator provides an iterator to iterate through the individual series of this series.
@@ -757,7 +757,7 @@ func (section WrappedIPAddressSection) BlockIterator(segmentCount int) Iterator[
 //
 // Call IsMultiple to determine if this instance represents multiple series, or GetCount for the count.
 func (section WrappedIPAddressSection) Iterator() Iterator[ExtendedIPSegmentSeries] {
-	return ipsectionSeriesIterator{section.IPAddressSection.Iterator()}
+	return ipSectionSeriesIterator{section.IPAddressSection.Iterator()}
 }
 
 // PrefixIterator provides an iterator to iterate through the individual prefixes of this series,
@@ -768,7 +768,7 @@ func (section WrappedIPAddressSection) Iterator() Iterator[ExtendedIPSegmentSeri
 //
 // If the series has no prefix length, then this is equivalent to Iterator.
 func (section WrappedIPAddressSection) PrefixIterator() Iterator[ExtendedIPSegmentSeries] {
-	return ipsectionSeriesIterator{section.IPAddressSection.PrefixIterator()}
+	return ipSectionSeriesIterator{section.IPAddressSection.PrefixIterator()}
 }
 
 // PrefixBlockIterator provides an iterator to iterate through the individual prefix blocks, one for each prefix of this series.
@@ -776,7 +776,7 @@ func (section WrappedIPAddressSection) PrefixIterator() Iterator[ExtendedIPSegme
 //
 // If this series has no prefix length, then this is equivalent to Iterator.
 func (section WrappedIPAddressSection) PrefixBlockIterator() Iterator[ExtendedIPSegmentSeries] {
-	return ipsectionSeriesIterator{section.IPAddressSection.PrefixBlockIterator()}
+	return ipSectionSeriesIterator{section.IPAddressSection.PrefixBlockIterator()}
 }
 
 // ToBlock creates a new series block by changing the segment at the given index to have the given lower and upper value,
