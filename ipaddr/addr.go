@@ -1936,29 +1936,40 @@ func (addr *Address) Wrap() WrappedAddress {
 // While addresses can be compared with the Compare, TrieCompare or Equal methods as well as various provided instances of AddressComparator,
 // they are not comparable with go operators.
 // However, AddressKey instances are comparable with go operators, and thus can be used as map keys.
-func (addr *Address) ToKey() *Key[*Address] {
+func (addr *Address) ToKey() Key[*Address] {
+	key := Key[*Address]{}
+	contents := &key.keyContents
 	if thisAddr := addr.ToIPv4(); thisAddr != nil {
-		contents := &thisAddr.ToKey().keyContents
-		return &Key[*Address]{*contents}
+		key.scheme = ipv4Scheme
+		thisAddr.toIPv4Key(contents)
 	} else if thisAddr := addr.ToIPv6(); thisAddr != nil {
-		contents := &thisAddr.ToKey().keyContents
-		return &Key[*Address]{*contents}
+		key.scheme = ipv6Scheme
+		thisAddr.toIPv6Key(contents)
 	} else if thisAddr := addr.ToMAC(); thisAddr != nil {
-		contents := &thisAddr.ToKey().keyContents
-		return &Key[*Address]{*contents}
-	}
-	return nil
+		if addr.GetSegmentCount() == ExtendedUniqueIdentifier64SegmentCount {
+			key.scheme = eui64Scheme
+		} else {
+			key.scheme = mac48Scheme
+		}
+		thisAddr.toMACKey(contents)
+	} // else key.scheme == adaptiveZeroScheme
+	return key
 }
 
-func (addr *Address) fromKey(key *keyContents) *Address {
-	if thisAddr := addr.ToIPv4(); thisAddr != nil {
-		return thisAddr.fromKey(key).ToAddressBase()
-	} else if thisAddr := addr.ToIPv6(); thisAddr != nil {
-		return thisAddr.fromKey(key).ToAddressBase()
-	} else if thisAddr := addr.ToMAC(); thisAddr != nil {
-		return thisAddr.fromKey(key).ToAddressBase()
+func (addr *Address) fromKey(scheme addressScheme, key *keyContents) *Address {
+	if scheme == ipv4Scheme {
+		ipv4Addr := fromIPv4IPKey(key)
+		return ipv4Addr.ToAddressBase()
+	} else if scheme == ipv6Scheme {
+		ipv6Addr := fromIPv6IPKey(key)
+		return ipv6Addr.ToAddressBase()
+	} else if scheme == eui64Scheme || scheme == mac48Scheme {
+		macAddr := fromMACAddrKey(scheme, key)
+		return macAddr.ToAddressBase()
 	}
-	return nil
+	// scheme == adaptiveZeroScheme
+	zeroAddr := Address{}
+	return zeroAddr.init()
 }
 
 // AddrsMatchUnordered checks if the two slices share the same list of addresses, subnets, or address collections, in any order, using address equality.

@@ -235,8 +235,8 @@ func collect(addrs []string, converter func(string) *ipaddr.Address) []*ipaddr.A
 		addr := converter(str)
 		if addr != nil {
 			key := addr.ToKey()
-			if _, exists := dupChecker[*key]; !exists {
-				dupChecker[*key] = struct{}{}
+			if _, exists := dupChecker[key]; !exists {
+				dupChecker[key] = struct{}{}
 				list = append(list, addr)
 			}
 		}

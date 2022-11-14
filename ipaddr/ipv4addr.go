@@ -1793,17 +1793,46 @@ func (addr *IPv4Address) toMinUpper() *IPv4Address {
 // ToKey creates the associated address key.
 // While addresses can be compared with the Compare, TrieCompare or Equal methods as well as various provided instances of AddressComparator,
 // they are not comparable with go operators.
-// However, Key instances are comparable with go operators, and thus can be used as map keys.
-func (addr *IPv4Address) ToKey() *Key[*IPv4Address] {
+// However, AddressKey instances are comparable with go operators, and thus can be used as map keys.
+func (addr *IPv4Address) ToKey() IPv4AddressKey {
 	addr = addr.init()
-	key := &Key[*IPv4Address]{
-		keyContents{
-			scheme: ipv4Scheme,
-		},
-	}
+	key := IPv4AddressKey{}
 	section := addr.GetSection()
 	divs := section.getDivArray()
-	val := &key.keyContents.vals[0]
+	val := &key.vals
+	for i, div := range divs {
+		seg := div.ToIPv4()
+		newVal := uint64(seg.GetIPv4SegmentValue()) | (uint64(seg.GetIPv4UpperSegmentValue()) << IPv4BitCount)
+		if i > 0 {
+			newVal |= *val << IPv4BitsPerSegment
+		}
+		*val = newVal
+	}
+	return key
+}
+
+func (addr *IPv4Address) toKey() RangeBoundaryKey[*IPv4Address] {
+	return addr.ToKey()
+}
+
+func fromIPv4Key(key IPv4AddressKey) *IPv4Address {
+	keyVal := key.vals
+	return NewIPv4AddressFromRange(
+		func(segmentIndex int) IPv4SegInt {
+			segIndex := (IPv4SegmentCount - 1) - segmentIndex
+			return IPv4SegInt(keyVal >> (segIndex << ipv4BitsToSegmentBitshift))
+
+		}, func(segmentIndex int) IPv4SegInt {
+			segIndex := (2*IPv4SegmentCount - 1) - segmentIndex
+			return IPv4SegInt(keyVal >> (segIndex << ipv4BitsToSegmentBitshift))
+		},
+	)
+}
+
+func (addr *IPv4Address) toIPv4Key(contents *keyContents) {
+	section := addr.GetSection()
+	divs := section.getDivArray()
+	val := &contents.vals[0]
 	for i, div := range divs {
 		seg := div.ToIPv4()
 		if i > 0 {
@@ -1813,15 +1842,16 @@ func (addr *IPv4Address) ToKey() *Key[*IPv4Address] {
 		val.lower |= uint64(seg.GetIPv4SegmentValue())
 		val.upper |= uint64(seg.GetIPv4UpperSegmentValue())
 	}
-	return key
 }
 
-func (addr *IPv4Address) fromKey(key *keyContents) *IPv4Address {
+func fromIPv4IPKey(key *keyContents) *IPv4Address {
 	return NewIPv4AddressFromRange(
 		func(segmentIndex int) IPv4SegInt {
-			return IPv4SegInt(key.vals[0].lower >> (((IPv4SegmentCount - 1) - segmentIndex) << ipv4BitsToSegmentBitshift))
+			segIndex := (IPv4SegmentCount - 1) - segmentIndex
+			return IPv4SegInt(key.vals[0].lower >> (segIndex << ipv4BitsToSegmentBitshift))
 		}, func(segmentIndex int) IPv4SegInt {
-			return IPv4SegInt(key.vals[0].upper >> (((IPv4SegmentCount - 1) - segmentIndex) << ipv4BitsToSegmentBitshift))
+			segIndex := (IPv4SegmentCount - 1) - segmentIndex
+			return IPv4SegInt(key.vals[0].upper >> (segIndex << ipv4BitsToSegmentBitshift))
 		},
 	)
 }

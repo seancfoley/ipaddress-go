@@ -25,10 +25,8 @@ import (
 	"strings"
 )
 
-//
-
 // PrefixBlockConstraint is the generic type constraint used for a prefix block allocator
-type PrefixBlockConstraint[T KeyConstraint[T]] interface {
+type PrefixBlockConstraint[T any] interface {
 	SequentialRangeConstraint[T]
 
 	MergeToPrefixBlocks(...T) []T
@@ -244,7 +242,6 @@ func (alloc *PrefixBlockAllocator[T]) AllocateMultiBitLens(bitLengths ...BitCoun
 	for _, bitLength := range lengths {
 		allocated := alloc.AllocateBitLen(bitLength)
 		if allocated.IsMultiple() || bigIsOne(allocated.GetCount()) {
-			//if allocated != nil { TODO remove
 			result = append(result, AllocatedBlock[T]{
 				blockSize: new(big.Int).Lsh(bigOneConst(), uint(version.GetBitCount()-bitLength)),
 				block:     allocated,

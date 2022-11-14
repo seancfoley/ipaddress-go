@@ -34,10 +34,11 @@ type rangeCache struct {
 }
 
 // SequentialRangeConstraint is the generic type constraint for an IP address sequential range
-type SequentialRangeConstraint[T KeyConstraint[T]] interface {
+type SequentialRangeConstraint[T any] interface {
 	ipAddressType
 
 	comparable
+
 	Increment(int64) T
 	WithoutPrefixLen() T
 	GetLower() T
@@ -65,8 +66,7 @@ type SequentialRangeConstraint[T KeyConstraint[T]] interface {
 		prefixedSegIteratorProducer func(seg *IPAddressSegment, index int) Iterator[*IPAddressSegment],
 	) Iterator[T]
 
-	fromKey(*keyContents) T
-	ToKey() *Key[T]
+	toKey() RangeBoundaryKey[T]
 
 	equalsSameVersion(AddressType) bool
 
@@ -79,7 +79,7 @@ var (
 	_ SequentialRange[*IPv6Address]
 )
 
-// SequentialRange represents an arbitrary range of consecutive IP addresses.
+// SequentialRange represents an arbitrary range of consecutive IP addresses, from a lower address to an upper address, inclusive.
 //
 // Note that IPAddress and IPAddressString allow you to specify a range of values for each segment.
 // That allows you to represent single addresses, any address CIDR prefix subnet (eg 1.2.0.0/16 or 1:2:3:4::/64) or any subnet that can be represented with segment ranges (1.2.0-255.* or 1:2:3:4:*), see
@@ -92,6 +92,9 @@ var (
 // String representations include the full address for both the lower and upper bounds of the range.
 //
 // The zero value is a range from the zero IPAddress to itself.
+//
+// For a range of type SequentialRange[*IPAddress], the range spans from an IPv4 address to another IPv4Address,
+// or from an IPv6 address to another IPv6 address.
 type SequentialRange[T SequentialRangeConstraint[T]] struct {
 	lower,
 	upper T
@@ -872,10 +875,10 @@ func (rng *SequentialRange[T]) Subtract(other *SequentialRange[T]) []*Sequential
 // While address ranges can be compared with the Compare or Equal methods as well as various provided instances of AddressComparator,
 // they are not comparable with go operators.
 // However, IPAddressSeqRangeKey instances are comparable with go operators, and thus can be used as map keys.
-func (rng *SequentialRange[T]) ToKey() *RangeKey[T] {
-	return &RangeKey[T]{
-		lowerKey: *rng.lower.ToKey(),
-		upperKey: *rng.upper.ToKey(),
+func (rng *SequentialRange[T]) ToKey() *SequentialRangeKey[T] {
+	return &SequentialRangeKey[T]{
+		lowerKey: rng.lower.toKey(),
+		upperKey: rng.upper.toKey(),
 	}
 }
 
@@ -905,7 +908,7 @@ func (rng *SequentialRange[T]) IsIPv6() bool { // returns false when lower is ni
 	return false
 }
 
-// ToIPv4 converts to an IPv4AddressSeqRange if this address range is an IPv4 address range.
+// ToIPv4 converts to a SequentialRange[*IPv4Address] if this address range is an IPv4 address range.
 // If not, ToIPv4 returns nil.
 //
 // ToIPv4 can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
@@ -924,7 +927,7 @@ func (rng *SequentialRange[T]) ToIPv4() *SequentialRange[*IPv4Address] {
 	return nil
 }
 
-// ToIPv6 converts to an IPv6AddressSeqRange if this address range is an IPv6 address range.
+// ToIPv6 converts to a SequentialRange[*IPv6Address] if this address range is an IPv6 address range.
 // If not, ToIPv6 returns nil.
 //
 // ToIPv6 can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
@@ -943,7 +946,7 @@ func (rng *SequentialRange[T]) ToIPv6() *SequentialRange[*IPv6Address] {
 	return nil
 }
 
-// ToIP converts to an IPAddressSeqRange, a polymorphic type usable with all IP address sequential ranges.
+// ToIP converts to a SequentialRange[*IPAddress], a polymorphic type usable with all IP address sequential ranges.
 //
 // ToIP can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (rng *SequentialRange[T]) ToIP() *SequentialRange[*IPAddress] {
@@ -1019,7 +1022,13 @@ func NewSequentialRange[T SequentialRangeConstraint[T]](lower, upper T) *Sequent
 	var t T
 	if lower == t { // nil for pointers
 		lower = nilConvert[T]()
+	} else {
+		//TODO NOW when T is *IPAddress, you need to handle a mix of IPv4 and IPv6!
+
+		//TODO NOW also, getting the zero for *IPAddress, we should choose the correct zero when upper is not nil and lower is nil
+		// nilConvert works for zero ranges but not for that case
 	}
+
 	//if lower == nil && upper == nil {
 	//	return &SequentialRange[T]{} // TODO remove
 	//}
@@ -1033,8 +1042,6 @@ func NewIPSeqRange(lower, upper *IPAddress) *SequentialRange[*IPAddress] { // fo
 		lower = zeroIPAddr
 	}
 	return newSequRange(lower, upper)
-	//xxxx
-	//return lower.SpanWithRange(upper)
 }
 
 // NewIPv4SeqRange creates an IPv4 sequential range from the given addresses.
@@ -1044,11 +1051,6 @@ func NewIPv4SeqRange(lower, upper *IPv4Address) *SequentialRange[*IPv4Address] {
 		lower = zeroIPv4
 	}
 	return newSequRange(lower, upper)
-	//xxx
-	//newSeqRange(one.ToIP(), two.ToIP()).ToIPv4()
-	//xxxx
-	//
-	//return lower.SpanWithRange(upper)
 }
 
 // NewIPv6SeqRange creates an IPv6 sequential range from the given addresses.
@@ -1058,8 +1060,6 @@ func NewIPv6SeqRange(lower, upper *IPv6Address) *SequentialRange[*IPv6Address] {
 		lower = zeroIPv6
 	}
 	return newSequRange(lower, upper)
-	//xxxx
-	//return lower.SpanWithRange(upper)
 }
 
 func joinRanges[T SequentialRangeConstraint[T]](ranges []*SequentialRange[T]) []*SequentialRange[T] {

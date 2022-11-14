@@ -1721,13 +1721,6 @@ func newAssocTrieFailure(str string, trie *ipaddr.AssociativeTrie[*ipaddr.Addres
 	}
 }
 
-//func newTrieFailureOld(str string, trie *ipaddr.AddressTrie) failure {
-//	return failure{
-//		str:  str,
-//		trie: trie,
-//	}
-//}
-
 func newAddrFailure(str string, addr *ipaddr.Address) failure {
 	return newSegmentSeriesFailure(str, addr)
 }

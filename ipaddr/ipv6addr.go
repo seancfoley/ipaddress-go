@@ -2167,21 +2167,25 @@ func (addr *IPv6Address) WrapAddress() WrappedAddress {
 // ToKey creates the associated address key.
 // While addresses can be compared with the Compare, TrieCompare or Equal methods as well as various provided instances of AddressComparator,
 // they are not comparable with go operators.
-// However, Key instances are comparable with go operators, and thus can be used as map keys.
-func (addr *IPv6Address) ToKey() *Key[*IPv6Address] {
+// However, AddressKey instances are comparable with go operators, and thus can be used as map keys.
+func (addr *IPv6Address) ToKey() IPv6AddressKey {
 	addr = addr.init()
-	key := &Key[*IPv6Address]{
-		keyContents{
-			scheme: ipv6Scheme,
-			zone:   addr.GetZone(),
-		},
-	}
+	key := IPv6AddressKey{}
+	addr.toIPv6Key(&key.keyContents)
+	return key
+}
+
+func (addr *IPv6Address) toKey() RangeBoundaryKey[*IPv6Address] {
+	return addr.ToKey()
+}
+
+func (addr *IPv6Address) toIPv6Key(contents *keyContents) {
+	contents.zone = addr.GetZone()
 	section := addr.GetSection()
 	divs := section.getDivArray()
 	for i, div := range divs {
 		seg := div.ToIPv6()
-		valIndex := i >> 2
-		val := &key.keyContents.vals[valIndex]
+		val := &contents.vals[i>>2]
 		if i&3 != 0 {
 			val.lower <<= IPv6BitsPerSegment
 			val.upper <<= IPv6BitsPerSegment
@@ -2189,18 +2193,23 @@ func (addr *IPv6Address) ToKey() *Key[*IPv6Address] {
 		val.lower |= uint64(seg.GetIPv6SegmentValue())
 		val.upper |= uint64(seg.GetIPv6UpperSegmentValue())
 	}
-	return key
 }
 
-func (addr *IPv6Address) fromKey(key *keyContents) *IPv6Address {
+func fromIPv6Key(key IPv6AddressKey) *IPv6Address {
+	return fromIPv6IPKey(&key.keyContents)
+}
+
+func fromIPv6IPKey(contents *keyContents) *IPv6Address {
 	return NewIPv6AddressFromZonedRange(
 		func(segmentIndex int) IPv6SegInt {
 			valsIndex := segmentIndex >> 2
-			return IPv6SegInt(key.vals[valsIndex].lower >> ((((IPv6SegmentCount - 1) - segmentIndex) % 4) << ipv6BitsToSegmentBitshift))
+			segIndex := ((IPv6SegmentCount - 1) - segmentIndex) & 0x3
+			return IPv6SegInt(contents.vals[valsIndex].lower >> (segIndex << ipv6BitsToSegmentBitshift))
 		}, func(segmentIndex int) IPv6SegInt {
 			valsIndex := segmentIndex >> 2
-			return IPv6SegInt(key.vals[valsIndex].upper >> ((((IPv6SegmentCount - 1) - segmentIndex) % 4) << ipv6BitsToSegmentBitshift))
+			segIndex := ((IPv6SegmentCount - 1) - segmentIndex) & 0x3
+			return IPv6SegInt(contents.vals[valsIndex].upper >> (segIndex << ipv6BitsToSegmentBitshift))
 		},
-		string(key.zone),
+		string(contents.zone),
 	)
 }

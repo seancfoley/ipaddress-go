@@ -376,7 +376,7 @@ func toAssociativeTrieNode[T TrieKeyConstraint[T], V any](node *tree.BinTrieNode
 
 type emptyValue struct{}
 
-// TrieNode is a node for a compact binary prefix trie whose elements (keys) are prefix block subnets or addresses.
+// TrieNode is a node in a compact binary prefix trie whose elements (keys) are prefix block subnets or addresses.
 type TrieNode[T TrieKeyConstraint[T]] struct {
 	trieNode[T, emptyValue]
 }
@@ -833,9 +833,6 @@ func (node TrieNode[T]) Format(state fmt.State, verb rune) {
 //
 //
 //
-
-// NodeValue represents the value stored with each node in an associative trie.
-//type NodeValue = tree.V
 
 //
 //

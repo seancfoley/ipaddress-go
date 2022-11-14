@@ -1217,43 +1217,75 @@ func (addr *MACAddress) Wrap() WrappedAddress {
 // ToKey creates the associated address key.
 // While addresses can be compared with the Compare, TrieCompare or Equal methods as well as various provided instances of AddressComparator,
 // they are not comparable with go operators.
-// However, Key instances are comparable with go operators, and thus can be used as map keys.
-func (addr *MACAddress) ToKey() *Key[*MACAddress] {
-	addr = addr.init()
-	key := &Key[*MACAddress]{}
-	if addr.GetSegmentCount() == ExtendedUniqueIdentifier64SegmentCount {
-		key.scheme = eui64Scheme
-	} else {
-		key.scheme = mac48Scheme
+// However, AddressKey instances are comparable with go operators, and thus can be used as map keys.
+func (addr *MACAddress) ToKey() MACAddressKey {
+	key := MACAddressKey{
+		additionalByteCount: uint8(addr.GetSegmentCount()) - MediaAccessControlSegmentCount,
 	}
+	section := addr.GetSection()
+	divs := section.getDivArray()
+	lowerVal := &key.vals.lower
+	upperVal := &key.vals.upper
+	for i, div := range divs {
+		seg := div.ToMAC()
+		newLower := uint64(seg.GetMACSegmentValue())
+		newUpper := uint64(seg.GetMACUpperSegmentValue())
+		if i > 0 {
+			newLower |= *lowerVal << MACBitsPerSegment
+			newUpper |= *upperVal << MACBitsPerSegment
+		}
+		*lowerVal = newLower
+		*upperVal = newUpper
+	}
+	return key
+}
+
+func fromMACKey(key MACAddressKey) *MACAddress {
+	additionalByteCount := key.additionalByteCount
+	segCount := int(additionalByteCount) + MediaAccessControlSegmentCount
+	return NewMACAddressFromRangeExt(
+		func(segmentIndex int) MACSegInt {
+			segIndex := (segCount - 1) - segmentIndex
+			return MACSegInt(key.vals.lower >> (segIndex << macBitsToSegmentBitshift))
+		}, func(segmentIndex int) MACSegInt {
+			segIndex := (segCount - 1) - segmentIndex
+			return MACSegInt(key.vals.upper >> (segIndex << macBitsToSegmentBitshift))
+		},
+		additionalByteCount != 0,
+	)
+}
+
+func (addr *MACAddress) toMACKey(contents *keyContents) {
 	section := addr.GetSection()
 	divs := section.getDivArray()
 	for i, div := range divs {
 		seg := div.ToMAC()
-		valIndex := i >> 3
-		val := &key.keyContents.vals[valIndex]
-		if i&3 != 0 {
+		val := &contents.vals[i>>3]
+		if i&7 != 0 {
 			val.lower <<= MACBitsPerSegment
 			val.upper <<= MACBitsPerSegment
 		}
 		val.lower |= uint64(seg.GetMACSegmentValue())
 		val.upper |= uint64(seg.GetMACUpperSegmentValue())
 	}
-	return key
 }
 
-func (addr *MACAddress) fromKey(key *keyContents) *MACAddress {
-	var segCount int
-	if key.scheme == eui64Scheme {
+func fromMACAddrKey(scheme addressScheme, key *keyContents) *MACAddress {
+	segCount := MediaAccessControlSegmentCount
+	isExtended := false
+	if isExtended = scheme == eui64Scheme; isExtended {
 		segCount = ExtendedUniqueIdentifier64SegmentCount
-	} else {
-		segCount = MediaAccessControlSegmentCount
 	}
-	return NewMACAddressFromRange(
+	return NewMACAddressFromRangeExt(
 		func(segmentIndex int) MACSegInt {
-			return MACSegInt(key.vals[0].lower >> (((segCount - 1) - segmentIndex) << macBitsToSegmentBitshift))
+			valsIndex := segmentIndex >> 3
+			segIndex := ((segCount - 1) - segmentIndex) & 0x7
+			return MACSegInt(key.vals[valsIndex].lower >> (segIndex << macBitsToSegmentBitshift))
 		}, func(segmentIndex int) MACSegInt {
-			return MACSegInt(key.vals[0].lower >> (((segCount - 1) - segmentIndex) << macBitsToSegmentBitshift))
+			valsIndex := segmentIndex >> 3
+			segIndex := ((segCount - 1) - segmentIndex) & 0x7
+			return MACSegInt(key.vals[valsIndex].upper >> (segIndex << macBitsToSegmentBitshift))
 		},
+		isExtended,
 	)
 }

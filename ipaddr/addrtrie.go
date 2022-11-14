@@ -206,8 +206,12 @@ func (trie *trieBase[T, V]) toTrie() *tree.BinTrie {
 // The elements of the trie are CIDR prefix blocks or addresses.
 //
 // The zero-value of an AddressTrie is a trie ready for use.  Its root will be nil until an element is added to it.
-// However, once any subnet or address is added to the trie, it will have an assigned root, and any further addition to the trie must match the type and version of the root
+// Once any subnet or address is added to the trie, it will have an assigned root, and any further addition to the trie must match the type and version of the root,
+// in addition to the generic type of the trie's keys.
 // Once there is a root, the root cannot be removed.
+//
+// So, for instance, an instance of ipaddr.Trie[*ipaddr.IPAddress] can contain either IPv4 or IPv6 keys, but not both.
+// Once it has been populated with the first key, all remaining additions must have the same IP version, even if the trie is cleared.
 //
 // Any trie can be copied. If a trie has no root, a copy produces a new zero-valued trie with no root.
 // If a trie has a root, a copy produces a reference to the same trie, much like copying a map or slice.
@@ -647,6 +651,8 @@ func toAddressTrie[T TrieKeyConstraint[T]](trie *tree.BinTrie) *Trie[T] {
 // AssociativeTrie represents a binary address trie in which each added node can be associated with a value.
 // It is an instance of Trie that can also function as a key-value map. The keys are addresses or prefix blocks.
 // Each can be mapped to a value with type specified by the generic type V.
+//
+// All the characteristics of Trie are common to AssociativeTrie.
 //
 // The zero value is a binary trie ready for use.
 type AssociativeTrie[T TrieKeyConstraint[T], V any] struct {
@@ -1189,6 +1195,9 @@ type (
 	IPv4AddressTrie            = Trie[*IPv4Address]
 	IPv6AddressAssociativeTrie = AssociativeTrie[*IPv6Address, any]
 	IPv6AddressTrie            = Trie[*IPv6Address]
+
+	// NodeValue is an alias for the generic node value type for AssociativeAddressTrie, IPv4AddressAssociativeTrie, and IPv6AddressAssociativeTrie
+	NodeValue = any
 )
 
 // NewIPv4AddressTrie constructs an IPv4 address trie with the root as the 0.0.0.0/0 prefix block

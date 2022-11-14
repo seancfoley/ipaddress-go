@@ -36,7 +36,7 @@ var (
 type PrefixLen = *PrefixBitCount
 
 // A PrefixBitCount is the count of bits in a non-nil PrefixLen.
-// For arithmetic, you may wish to use BitCount instead, which you can get from a PrefixLen using the Len method.
+// For arithmetic, you may wish to use the signed integer type BitCount instead, which you can get from a PrefixLen using the Len method.
 type PrefixBitCount uint8
 
 // ToPrefixLen converts the given int to a prefix length

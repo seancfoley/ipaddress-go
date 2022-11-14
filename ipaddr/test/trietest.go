@@ -360,7 +360,7 @@ func (t trieTesterGeneric) partitionForTrie(trie *AddressTrie, subnet *ipaddr.IP
 	}
 	keyAll1 := make(map[ipaddr.Key[*ipaddr.Address]]struct{})
 	for k, v := range keyAll {
-		keyAll1[*k.ToKey()] = v
+		keyAll1[k.ToKey()] = v
 	}
 
 	all2 := make(map[*ipaddr.Address]*AddressTrieNode)
@@ -368,7 +368,7 @@ func (t trieTesterGeneric) partitionForTrie(trie *AddressTrie, subnet *ipaddr.IP
 	ipaddr.PartitionWithSingleBlockSize(subnet).ForEach(func(addr *ipaddr.IPAddress) {
 		node := trie.GetAddedNode(addr.ToAddressBase())
 		all2[addr.ToAddressBase()] = node
-		keyAll2[*addr.ToAddressBase().ToKey()] = struct{}{}
+		keyAll2[addr.ToAddressBase().ToKey()] = struct{}{}
 	})
 
 	// using keys and struct{} allow for deep-equal comparison
@@ -483,8 +483,8 @@ func (t trieTesterGeneric) testRemoveAddrs(tree *AddressTrie, addrs []string, co
 		addr := converter(str)
 		if addr != nil {
 			key := addr.ToKey()
-			if _, exists := dupChecker[*key]; !exists {
-				dupChecker[*key] = struct{}{}
+			if _, exists := dupChecker[key]; !exists {
+				dupChecker[key] = struct{}{}
 				list = append(list, addr)
 				count++
 				tree.Add(addr)
@@ -852,7 +852,7 @@ func (t trieTesterGeneric) testIteratorRem(
 		for iterator.HasNext() {
 			next := iterator.Next()
 			nextAddr := next.GetKey()
-			set[*nextAddr.ToKey()] = struct{}{}
+			set[nextAddr.ToKey()] = struct{}{}
 			actualSize++
 			if !firstTime {
 				func() {
@@ -953,7 +953,7 @@ func (t trieTesterGeneric) testIterator(
 	for iterator.HasNext() {
 		next := iterator.Next()
 		nextAddr := next.GetKey()
-		set[*nextAddr.ToKey()] = struct{}{}
+		set[nextAddr.ToKey()] = struct{}{}
 		actualSize++
 
 		if next.IsAdded() {
@@ -1233,7 +1233,7 @@ func (t trieTesterGeneric) testAdd(trie *AddressTrie, addrs []*ipaddr.Address) {
 }
 
 func (t trieTesterGeneric) testMap(trie *ipaddr.AssociativeTrie[*ipaddr.Address, any], addrs []*ipaddr.Address,
-	valueProducer func(int) any, mapper func(any) any) {
+	valueProducer func(int) any, mapper func(any) any) { //TODO why is the mapper arg here?
 	// put tests
 	trie2 := trie.Clone()
 	trie4 := trie.Clone()

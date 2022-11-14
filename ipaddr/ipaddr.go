@@ -1732,12 +1732,17 @@ func (addr *IPAddress) SpanWithRange(other *IPAddress) *SequentialRange[*IPAddre
 	if thisAddr := addr.ToIPv4(); thisAddr != nil {
 		if oth := other.ToIPv4(); oth != nil {
 			return thisAddr.SpanWithRange(oth).ToIP()
+		} else {
+			// TODO NOW you need to handle a mix of IPv4 and IPv6!  What did this method look like before?
 		}
 	} else if thisAddr := addr.ToIPv6(); thisAddr != nil {
 		if oth := other.ToIPv6(); oth != nil {
 			return thisAddr.SpanWithRange(oth).ToIP()
+		} else {
+			// TODO NOW you need to handle a mix of IPv4 and IPv6!  What did this method look like before?
 		}
 	}
+	// TODO NOW you need to handle a mix of IPv4 and IPv6!  What did this method look like before?
 	return NewSequentialRange(addr.init(), other)
 }
 
@@ -2366,25 +2371,35 @@ func (addr *IPAddress) toMinUpper() *IPAddress {
 // ToKey creates the associated address key.
 // While addresses can be compared with the Compare, TrieCompare or Equal methods as well as various provided instances of AddressComparator,
 // they are not comparable with go operators.
-// However, Key instances are comparable with go operators, and thus can be used as map keys.
-func (addr *IPAddress) ToKey() *Key[*IPAddress] {
+// However, AddressKey instances are comparable with go operators, and thus can be used as map keys.
+func (addr *IPAddress) ToKey() Key[*IPAddress] {
+	key := Key[*IPAddress]{}
+	contents := &key.keyContents
 	if thisAddr := addr.ToIPv4(); thisAddr != nil {
-		contents := &thisAddr.ToKey().keyContents
-		return &Key[*IPAddress]{*contents}
+		key.scheme = ipv4Scheme
+		thisAddr.toIPv4Key(contents)
 	} else if thisAddr := addr.ToIPv6(); thisAddr != nil {
-		contents := &thisAddr.ToKey().keyContents
-		return &Key[*IPAddress]{*contents}
-	}
-	return nil
+		key.scheme = ipv6Scheme
+		thisAddr.toIPv6Key(contents)
+	} // else key.scheme == anySchemeX
+	return key
 }
 
-func (addr *IPAddress) fromKey(key *keyContents) *IPAddress {
-	if thisAddr := addr.ToIPv4(); thisAddr != nil {
-		return thisAddr.fromKey(key).ToIP()
-	} else if thisAddr := addr.ToIPv6(); thisAddr != nil {
-		return thisAddr.fromKey(key).ToIP()
+func (addr *IPAddress) toKey() RangeBoundaryKey[*IPAddress] {
+	return addr.ToKey()
+}
+
+func (addr *IPAddress) fromKey(scheme addressScheme, key *keyContents) *IPAddress {
+	if scheme == ipv4Scheme {
+		ipv4Addr := fromIPv4IPKey(key)
+		return ipv4Addr.ToIP()
+	} else if scheme == ipv6Scheme {
+		ipv6Addr := fromIPv6IPKey(key)
+		return ipv6Addr.ToIP()
 	}
-	return nil
+	// scheme == adaptiveZeroScheme
+	zeroAddr := IPAddress{}
+	return zeroAddr.init()
 }
 
 // IPAddressValueProvider supplies all the values that incorporate an IPAddress instance.
