@@ -623,10 +623,10 @@ func (trie Trie[T]) Format(state fmt.State, verb rune) {
 	trie.trieBase.trie.Format(state, verb)
 }
 
-func TreesString[T TrieKeyConstraint[T]](withNonAddedKeys bool, tries ...*Trie[T]) string {
+func TreesString[T TrieKeyConstraint[T]](withNonAddedKeys bool, tries ...Trie[T]) string {
 	binTries := make([]*tree.BinTrie, 0, len(tries))
 	for _, trie := range tries {
-		binTries = append(binTries, toBinTrie[T](trie))
+		binTries = append(binTries, toBinTrie[T](&trie))
 	}
 	return tree.TreesString(withNonAddedKeys, binTries...)
 }
@@ -1146,10 +1146,10 @@ func (trie AssociativeTrie[T, V]) Format(state fmt.State, verb rune) {
 	trie.trieBase.trie.Format(state, verb)
 }
 
-func AssociativeTreesString[T TrieKeyConstraint[T], V any](withNonAddedKeys bool, tries ...*AssociativeTrie[T, V]) string {
+func AssociativeTreesString[T TrieKeyConstraint[T], V any](withNonAddedKeys bool, tries ...AssociativeTrie[T, V]) string {
 	binTries := make([]*tree.BinTrie, 0, len(tries))
 	for _, trie := range tries {
-		binTries = append(binTries, toAssocBinTrie[T, V](trie))
+		binTries = append(binTries, toAssocBinTrie[T, V](&trie))
 	}
 	return tree.TreesString(withNonAddedKeys, binTries...)
 }
