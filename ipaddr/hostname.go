@@ -19,6 +19,7 @@ package ipaddr
 import (
 	"fmt"
 	"net"
+	"net/netip"
 	"strings"
 	"unsafe"
 
@@ -60,7 +61,7 @@ func NewHostNameParams(str string, params addrstrparam.HostNameParams) *HostName
 }
 
 // NewHostNameFromAddrPort constructs a HostName from an IP address and a port.
-func NewHostNameFromAddrPort(addr *IPAddress, port int) *HostName {
+func NewHostNameFromAddrPort(addr *IPAddress, port uint16) *HostName {
 	portVal := PortInt(port)
 	hostStr := toNormalizedAddrPortString(addr, portVal)
 	parsedHost := parsedHost{
@@ -182,6 +183,27 @@ func NewHostNameFromPrefixedNetIPAddr(addr *net.IPAddr, prefixLen PrefixLen) (ho
 	}
 	hostName = NewHostNameFromAddr(ipAddr)
 	return
+}
+
+func NewHostNameFromNetNetIPAddr(addr netip.Addr) *HostName {
+	ipAddr := NewIPAddressFromNetNetIPAddr(addr)
+	return NewHostNameFromAddr(ipAddr)
+}
+
+func NewHostNameFromNetNetIPPrefix(addr netip.Prefix) (hostName *HostName, err addrerr.AddressValueError) {
+	var ipAddr *IPAddress
+	ipAddr, err = NewIPAddressFromNetNetIPPrefix(addr)
+	if err == nil {
+		hostName = NewHostNameFromAddr(ipAddr)
+	}
+	return
+}
+
+func NewHostNameFromNetNetIPAddrPort(addrPort netip.AddrPort) *HostName {
+	port := addrPort.Port()
+	addr := addrPort.Addr()
+	ipAddr := NewIPAddressFromNetNetIPAddr(addr)
+	return NewHostNameFromAddrPort(ipAddr, port)
 }
 
 var defaultHostParameters = new(addrstrparam.HostNameParamsBuilder).ToParams()

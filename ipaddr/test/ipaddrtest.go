@@ -2840,15 +2840,16 @@ func (t ipAddressTester) testPrefixBitwiseOr(orig string, prefix ipaddr.BitCount
 }
 
 func (t ipAddressTester) testDelimitedCount(str string, expectedCount int) {
-	strs := ipaddr.ParseDelimitedSegments(str)
+	delims := ipaddr.DelimitedAddressString(str)
+	strs := delims.ParseDelimitedSegments()
 	var set []*ipaddr.IPAddress
 	count := 0
 	for strs.HasNext() {
 		set = append(set, t.createAddress(strs.Next()).GetAddress())
 		count++
 	}
-	if count != expectedCount || len(set) != count || count != ipaddr.CountDelimitedAddresses(str) {
-		t.addFailure(newFailure("count mismatch, count: "+strconv.Itoa(count)+" set count: "+strconv.Itoa(len(set))+" calculated count: "+strconv.Itoa(ipaddr.CountDelimitedAddresses(str))+" expected: "+strconv.Itoa(expectedCount), nil))
+	if count != expectedCount || len(set) != count || count != delims.CountDelimitedAddresses() {
+		t.addFailure(newFailure("count mismatch, count: "+strconv.Itoa(count)+" set count: "+strconv.Itoa(len(set))+" calculated count: "+strconv.Itoa(delims.CountDelimitedAddresses())+" expected: "+strconv.Itoa(expectedCount), nil))
 	}
 	t.incrementTestCount()
 }

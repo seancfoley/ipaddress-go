@@ -25,7 +25,7 @@ import "github.com/seancfoley/bintree/tree"
 // but can only be provided with iterators in which parent nodes are visited before their sub-nodes.
 // The caching and retrieval is done in constant-time.
 type CachingTrieIterator[T any] interface {
-	IteratorRem[T]
+	IteratorWithRemove[T]
 
 	// Note: We could theoretically try to make the cached type generic.
 	// But the problem with that is that the iterator methods that return them cannot be generic on their own.
@@ -61,11 +61,11 @@ type addrTrieNodeIteratorRem[T TrieKeyConstraint[T]] struct {
 }
 
 func (iter addrTrieNodeIteratorRem[T]) Next() *TrieNode[T] {
-	return toAddressTrieNodeX[T](iter.TrieNodeIteratorRem.Next())
+	return toAddressTrieNode[T](iter.TrieNodeIteratorRem.Next())
 }
 
 func (iter addrTrieNodeIteratorRem[T]) Remove() *TrieNode[T] {
-	return toAddressTrieNodeX[T](iter.TrieNodeIteratorRem.Remove())
+	return toAddressTrieNode[T](iter.TrieNodeIteratorRem.Remove())
 }
 
 //
@@ -74,7 +74,7 @@ type addrTrieNodeIterator[T TrieKeyConstraint[T]] struct {
 }
 
 func (iter addrTrieNodeIterator[T]) Next() *TrieNode[T] {
-	return toAddressTrieNodeX[T](iter.TrieNodeIterator.Next())
+	return toAddressTrieNode[T](iter.TrieNodeIterator.Next())
 }
 
 //
@@ -83,11 +83,11 @@ type cachingAddressTrieNodeIterator[T TrieKeyConstraint[T]] struct {
 }
 
 func (iter cachingAddressTrieNodeIterator[T]) Next() *TrieNode[T] {
-	return toAddressTrieNodeX[T](iter.CachingTrieNodeIterator.Next())
+	return toAddressTrieNode[T](iter.CachingTrieNodeIterator.Next())
 }
 
 func (iter cachingAddressTrieNodeIterator[T]) Remove() *TrieNode[T] {
-	return toAddressTrieNodeX[T](iter.CachingTrieNodeIterator.Remove())
+	return toAddressTrieNode[T](iter.CachingTrieNodeIterator.Remove())
 }
 
 //////////////////////////////////////////////////////////////////

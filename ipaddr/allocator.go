@@ -68,7 +68,8 @@ func (alloc *PrefixBlockAllocator[T]) GetTotalCount() *big.Int {
 	version := alloc.version
 	for i := len(alloc.blocks) - 1; i >= 0; i-- {
 		if blockCount := len(alloc.blocks[i]); blockCount != 0 {
-			size := BlockSize(uint(version.GetBitCount() - i))
+			hostBitCount := HostBitCount(version.GetBitCount() - i)
+			size := hostBitCount.BlockSize()
 			size.Mul(size, big.NewInt(int64(blockCount)))
 			result.Add(result, size)
 		}
@@ -137,12 +138,12 @@ func (alloc *PrefixBlockAllocator[T]) GetAvailable() (blocks []T) {
 }
 
 // AllocateSize returns a block of sufficient size,
-// the size indicating the number of distinct addresses required in the block,
-// or nil if no such block is available in the allocator,
-// or if the allocated size needs to be zero.
+// the size indicating the number of distinct addresses required in the block.
+// AllocateSize returns nil if no such block is available in the allocator,
+// or if the size required is zero.
 // The returned block will be able to accommodate sizeRequired hosts as well as the reserved count, if any.
 func (alloc *PrefixBlockAllocator[T]) AllocateSize(sizeRequired uint64) T {
-	var bitsRequired int
+	var bitsRequired HostBitCount
 	if alloc.reservedCount < 0 {
 		adjustment := uint64(-alloc.reservedCount)
 		if adjustment >= sizeRequired {
@@ -150,16 +151,21 @@ func (alloc *PrefixBlockAllocator[T]) AllocateSize(sizeRequired uint64) T {
 			return t
 		}
 		sizeRequired -= adjustment
-		bitsRequired = BitsForCount(sizeRequired)
+		bitsRequired = *BitsForCount(sizeRequired)
 	} else if math.MaxUint64-uint64(alloc.reservedCount) < sizeRequired {
 		// 64 bits holds MaxUint64 + 1 addresses
 		sizeRequired += uint64(alloc.reservedCount) // overflow
-		bitsRequired = BitsForCount(sizeRequired) + 64
+		bitsRequired = *BitsForCount(sizeRequired) + 64
 	} else {
 		sizeRequired += uint64(alloc.reservedCount)
-		bitsRequired = BitsForCount(sizeRequired)
+		bRequired := BitsForCount(sizeRequired)
+		if bRequired == nil {
+			var t T
+			return t
+		}
+		bitsRequired = *bRequired
 	}
-	return alloc.AllocateBitLen(bitsRequired)
+	return alloc.AllocateBitLen(BitCount(bitsRequired))
 }
 
 // AllocateSizes returns multiple blocks of sufficient size for the given size required,
@@ -198,7 +204,7 @@ func (alloc *PrefixBlockAllocator[T]) AllocateSizes(blockSizes ...uint64) []Allo
 func (alloc *PrefixBlockAllocator[T]) AllocateBitLen(bitLength BitCount) T {
 	if alloc.totalBlockCount == 0 {
 		var t T
-		return t
+		return t // nil
 	}
 	newPrefixBitCount := alloc.version.GetBitCount() - bitLength
 	var block T
@@ -261,7 +267,8 @@ func (alloc PrefixBlockAllocator[T]) String() string {
 	builder.WriteString("available blocks:\n")
 	for i := len(alloc.blocks) - 1; i >= 0; i-- {
 		if blockCount := len(alloc.blocks[i]); blockCount != 0 {
-			size := BlockSize(uint(version.GetBitCount() - i))
+			hostBitCount := HostBitCount(version.GetBitCount() - i)
+			size := hostBitCount.BlockSize()
 			builder.WriteString(fmt.Sprint(blockCount))
 			if blockCount == 1 {
 				builder.WriteString(" block with prefix length ")
@@ -287,6 +294,7 @@ type (
 	IPv6PrefixBlockAllocator = PrefixBlockAllocator[*IPv6Address]
 )
 
+// AllocatedBlock represents a block of addresses allocated for assignment to hosts
 type AllocatedBlock[T AddressType] struct {
 	blockSize     *big.Int
 	block         T

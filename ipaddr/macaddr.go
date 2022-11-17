@@ -1224,19 +1224,22 @@ func (addr *MACAddress) ToKey() MACAddressKey {
 	}
 	section := addr.GetSection()
 	divs := section.getDivArray()
-	lowerVal := &key.vals.lower
-	upperVal := &key.vals.upper
-	for i, div := range divs {
-		seg := div.ToMAC()
-		newLower := uint64(seg.GetMACSegmentValue())
-		newUpper := uint64(seg.GetMACUpperSegmentValue())
-		if i > 0 {
-			newLower |= *lowerVal << MACBitsPerSegment
-			newUpper |= *upperVal << MACBitsPerSegment
+	var lowerVal, upperVal uint64
+	if addr.IsMultiple() {
+		for _, div := range divs {
+			seg := div.ToMAC()
+			lowerVal = (lowerVal << MACBitsPerSegment) | uint64(seg.GetMACSegmentValue())
+			upperVal = (upperVal << MACBitsPerSegment) | uint64(seg.GetMACUpperSegmentValue())
 		}
-		*lowerVal = newLower
-		*upperVal = newUpper
+	} else {
+		for _, div := range divs {
+			seg := div.ToMAC()
+			lowerVal = (lowerVal << MACBitsPerSegment) | uint64(seg.GetMACSegmentValue())
+		}
+		upperVal = lowerVal
 	}
+	key.vals.lower = lowerVal
+	key.vals.upper = upperVal
 	return key
 }
 
@@ -1258,15 +1261,21 @@ func fromMACKey(key MACAddressKey) *MACAddress {
 func (addr *MACAddress) toMACKey(contents *keyContents) {
 	section := addr.GetSection()
 	divs := section.getDivArray()
-	for i, div := range divs {
-		seg := div.ToMAC()
-		val := &contents.vals[i>>3]
-		if i&7 != 0 {
-			val.lower <<= MACBitsPerSegment
-			val.upper <<= MACBitsPerSegment
+	if addr.IsMultiple() {
+		for i, div := range divs {
+			seg := div.ToMAC()
+			val := &contents.vals[i>>3]
+			val.lower = (val.lower << MACBitsPerSegment) | uint64(seg.GetMACSegmentValue())
+			val.upper = (val.upper << MACBitsPerSegment) | uint64(seg.GetMACUpperSegmentValue())
 		}
-		val.lower |= uint64(seg.GetMACSegmentValue())
-		val.upper |= uint64(seg.GetMACUpperSegmentValue())
+	} else {
+		for i, div := range divs {
+			seg := div.ToMAC()
+			val := &contents.vals[i>>3]
+			newLower := (val.lower << MACBitsPerSegment) | uint64(seg.GetMACSegmentValue())
+			val.lower = newLower
+			val.upper = newLower
+		}
 	}
 }
 

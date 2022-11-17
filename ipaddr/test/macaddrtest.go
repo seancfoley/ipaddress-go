@@ -872,7 +872,8 @@ func (t macAddressTester) testNotContains(cidr1, cidr2 string) {
 }
 
 func (t macAddressTester) testDelimitedCount(str string, expectedCount int) {
-	strs := ipaddr.ParseDelimitedSegments(str)
+	delims := ipaddr.DelimitedAddressString(str)
+	strs := delims.ParseDelimitedSegments()
 	var set []*ipaddr.MACAddress
 	count := 0
 	for strs.HasNext() {
@@ -888,8 +889,8 @@ func (t macAddressTester) testDelimitedCount(str string, expectedCount int) {
 		set = append(set, addr)
 		count++
 	}
-	if count != expectedCount || len(set) != count || count != ipaddr.CountDelimitedAddresses(str) {
-		t.addFailure(newFailure("count mismatch, count: "+strconv.Itoa(count)+" set count: "+strconv.Itoa(len(set))+" calculated count: "+strconv.Itoa(ipaddr.CountDelimitedAddresses(str))+" expected: "+strconv.Itoa(expectedCount), nil))
+	if count != expectedCount || len(set) != count || count != delims.CountDelimitedAddresses() {
+		t.addFailure(newFailure("count mismatch, count: "+strconv.Itoa(count)+" set count: "+strconv.Itoa(len(set))+" calculated count: "+strconv.Itoa(delims.CountDelimitedAddresses())+" expected: "+strconv.Itoa(expectedCount), nil))
 	}
 	t.incrementTestCount()
 }

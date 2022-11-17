@@ -22,6 +22,7 @@ import (
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrstr"
 	"math/big"
 	"net"
+	"net/netip"
 )
 
 const (
@@ -1078,17 +1079,31 @@ func (addr *IPv6Address) GetNetIP() net.IP {
 	return addr.Bytes()
 }
 
+// GetUpperNetIP returns the highest address in this subnet or address as a net.IP
+func (addr *IPv6Address) GetUpperNetIP() net.IP {
+	return addr.UpperBytes()
+}
+
+// GetNetNetIPAddr returns the lowest address in this subnet or address range as a netip.Addr
+func (addr *IPv6Address) GetNetNetIPAddr() netip.Addr {
+	res := addr.init().getNetNetIPAddr()
+	if addr.hasZone() {
+		res = res.WithZone(string(addr.zone))
+	}
+	return res
+}
+
+// GetUpperNetNetIPAddr returns the highest address in this subnet or address range as a netip.Addr
+func (addr *IPv6Address) GetUpperNetNetIPAddr() netip.Addr {
+	return addr.init().getUpperNetNetIPAddr()
+}
+
 // CopyNetIP copies the value of the lowest individual address in the subnet into a net.IP.
 //
 // If the value can fit in the given net.IP slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
 // Otherwise, a new slice is created and returned with the value.
 func (addr *IPv6Address) CopyNetIP(bytes net.IP) net.IP {
 	return addr.CopyBytes(bytes)
-}
-
-// GetUpperNetIP returns the highest address in this subnet or address as a net.IP
-func (addr *IPv6Address) GetUpperNetIP() net.IP {
-	return addr.UpperBytes()
 }
 
 // CopyUpperNetIP copies the value of the highest individual address in the subnet into a net.IP.
@@ -2183,15 +2198,21 @@ func (addr *IPv6Address) toIPv6Key(contents *keyContents) {
 	contents.zone = addr.GetZone()
 	section := addr.GetSection()
 	divs := section.getDivArray()
-	for i, div := range divs {
-		seg := div.ToIPv6()
-		val := &contents.vals[i>>2]
-		if i&3 != 0 {
-			val.lower <<= IPv6BitsPerSegment
-			val.upper <<= IPv6BitsPerSegment
+	if addr.IsMultiple() {
+		for i, div := range divs {
+			seg := div.ToIPv6()
+			val := &contents.vals[i>>2]
+			val.lower = (val.lower << IPv6BitsPerSegment) | uint64(seg.GetIPv6SegmentValue())
+			val.upper = (val.upper << IPv6BitsPerSegment) | uint64(seg.GetIPv6UpperSegmentValue())
 		}
-		val.lower |= uint64(seg.GetIPv6SegmentValue())
-		val.upper |= uint64(seg.GetIPv6UpperSegmentValue())
+	} else {
+		for i, div := range divs {
+			seg := div.ToIPv6()
+			val := &contents.vals[i>>2]
+			newLower := (val.lower << IPv6BitsPerSegment) | uint64(seg.GetIPv6SegmentValue())
+			val.lower = newLower
+			val.upper = newLower
+		}
 	}
 }
 

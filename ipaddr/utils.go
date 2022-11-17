@@ -18,7 +18,6 @@ package ipaddr
 
 import (
 	"fmt"
-	"math"
 	"math/big"
 	"sync/atomic"
 	"unsafe"
@@ -232,26 +231,6 @@ func maxSegInt(a, b SegInt) SegInt {
 		return a
 	}
 	return b
-}
-
-// BitsForCount returns the number of bits required outside the prefix length
-// for a single prefix block to span at least as many addresses as the given count.
-// Mathematically, it is the ceiling of the base 2 logarithm of the given count.
-func BitsForCount(count uint64) (result int) {
-	if count != 0 {
-		countMinusOne := count - 1
-		if (countMinusOne & (0xfff0000000000000)) != 0 { // conversion to float64 will fail
-			count = (countMinusOne >> 53) + 1
-			result = 53
-		}
-		result += math.Ilogb(float64((count << 1) - 1))
-	}
-	return
-}
-
-// BlockSize is the reverse of BitsForCount, the total number of values possible ranging across the given number of bits
-func BlockSize(bits uint) *big.Int {
-	return new(big.Int).Lsh(bigOneConst(), bits)
 }
 
 //  TODO LATER generics: replace all uses of atomicStorePointer with atomic.Pointer, when we move up to 1.19

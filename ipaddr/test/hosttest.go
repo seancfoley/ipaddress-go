@@ -960,11 +960,11 @@ func (t hostTester) testHostAll(hostName *ipaddr.HostName, hostExpected, addrExp
 	if addressExpected != nil && addrHost != nil {
 		if serviceExpected == "" {
 			if portExpected != nil {
-				h2 := ipaddr.NewHostNameFromAddrPort(addrHost, portExpected.Num())
+				h2 := ipaddr.NewHostNameFromAddrPort(addrHost, uint16(portExpected.Port()))
 				if !h2.Equal(hostName) {
 					t.addFailure(newHostFailure("failed: host is "+h2.String(), hostName))
 				}
-				h3 := ipaddr.NewHostNameFromAddrPort(addressExpected, portExpected.Num())
+				h3 := ipaddr.NewHostNameFromAddrPort(addressExpected, uint16(portExpected.Port()))
 				if !h3.Equal(hostName) {
 					t.addFailure(newHostFailure("failed: host is "+h3.String(), hostName))
 				}

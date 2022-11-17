@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"math/big"
 	"net"
+	"net/netip"
 
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrstr"
@@ -709,13 +710,13 @@ func (addr *IPv4Address) AdjustPrefixLenZeroed(prefixLen BitCount) (*IPv4Address
 // If there is no such address, then nil is returned.
 //
 // Examples:
-// 1.2.3.4 returns 1.2.3.4/32
-// 1.2.*.* returns 1.2.0.0/16
-// 1.2.*.0/24 returns 1.2.0.0/16
-// 1.2.*.4 returns nil
-// 1.2.0-1.* returns 1.2.0.0/23
-// 1.2.1-2.* returns nil
-// 1.2.252-255.* returns 1.2.252.0/22
+// 1.2.3.4 returns 1.2.3.4/32,
+// 1.2.*.* returns 1.2.0.0/16,
+// 1.2.*.0/24 returns 1.2.0.0/16,
+// 1.2.*.4 returns nil,
+// 1.2.0-1.* returns 1.2.0.0/23,
+// 1.2.1-2.* returns nil,
+// 1.2.252-255.* returns 1.2.252.0/22,
 // 1.2.3.4/16 returns 1.2.3.4/32
 func (addr *IPv4Address) AssignPrefixForSingleBlock() *IPv4Address {
 	return addr.init().assignPrefixForSingleBlock().ToIPv4()
@@ -727,13 +728,13 @@ func (addr *IPv4Address) AssignPrefixForSingleBlock() *IPv4Address {
 // In other words, this method assigns a prefix length to this subnet matching the largest prefix block in this subnet.
 //
 // Examples:
-// 1.2.3.4 returns 1.2.3.4/32
-// 1.2.*.* returns 1.2.0.0/16
-// 1.2.*.0/24 returns 1.2.0.0/16
-// 1.2.*.4 returns 1.2.*.4/32
-// 1.2.0-1.* returns 1.2.0.0/23
-// 1.2.1-2.* returns 1.2.1-2.0/24
-// 1.2.252-255.* returns 1.2.252.0/22
+// 1.2.3.4 returns 1.2.3.4/32,
+// 1.2.*.* returns 1.2.0.0/16,
+// 1.2.*.0/24 returns 1.2.0.0/16,
+// 1.2.*.4 returns 1.2.*.4/32,
+// 1.2.0-1.* returns 1.2.0.0/23,
+// 1.2.1-2.* returns 1.2.1-2.0/24,
+// 1.2.252-255.* returns 1.2.252.0/22,
 // 1.2.3.4/16 returns 1.2.3.4/32
 func (addr *IPv4Address) AssignMinPrefixForBlock() *IPv4Address {
 	return addr.init().assignMinPrefixForBlock().ToIPv4()
@@ -797,12 +798,12 @@ func (addr *IPv4Address) GetMinPrefixLenForBlock() BitCount {
 // If this segment grouping represents a single value, returns the bit length of this address division series.
 //
 // IP address examples:
-// 1.2.3.4 returns 32
-// 1.2.3.4/16 returns 32
-// 1.2.*.* returns 16
-// 1.2.*.0/24 returns 16
-// 1.2.0.0/16 returns 16
-// 1.2.*.4 returns null
+// 1.2.3.4 returns 32,
+// 1.2.3.4/16 returns 32,
+// 1.2.*.* returns 16,
+// 1.2.*.0/24 returns 16,
+// 1.2.0.0/16 returns 16,
+// 1.2.*.4 returns null,
 // 1.2.252-255.* returns 22
 func (addr *IPv4Address) GetPrefixLenForSingleBlock() PrefixLen {
 	return addr.init().ipAddressInternal.GetPrefixLenForSingleBlock()
@@ -837,6 +838,21 @@ func (addr *IPv4Address) GetNetIP() net.IP {
 	return addr.Bytes()
 }
 
+// GetUpperNetIP returns the highest address in this subnet or address as a net.IP
+func (addr *IPv4Address) GetUpperNetIP() net.IP {
+	return addr.UpperBytes()
+}
+
+// GetNetNetIPAddr returns the lowest address in this subnet or address range as a netip.Addr
+func (addr *IPv4Address) GetNetNetIPAddr() netip.Addr {
+	return addr.init().getNetNetIPAddr()
+}
+
+// GetUpperNetNetIPAddr returns the highest address in this subnet or address range as a netip.Addr
+func (addr *IPv4Address) GetUpperNetNetIPAddr() netip.Addr {
+	return addr.init().getUpperNetNetIPAddr()
+}
+
 // CopyNetIP copies the value of the lowest individual address in the subnet into a net.IP.
 //
 // If the value can fit in the given net.IP slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
@@ -846,11 +862,6 @@ func (addr *IPv4Address) CopyNetIP(ip net.IP) net.IP {
 		ip = ipv4
 	}
 	return addr.CopyBytes(ip)
-}
-
-// GetUpperNetIP returns the highest address in this subnet or address as a net.IP
-func (addr *IPv4Address) GetUpperNetIP() net.IP {
-	return addr.UpperBytes()
 }
 
 // CopyUpperNetIP copies the value of the highest individual address in the subnet into a net.IP.
@@ -1799,15 +1810,20 @@ func (addr *IPv4Address) ToKey() IPv4AddressKey {
 	key := IPv4AddressKey{}
 	section := addr.GetSection()
 	divs := section.getDivArray()
-	val := &key.vals
-	for i, div := range divs {
-		seg := div.ToIPv4()
-		newVal := uint64(seg.GetIPv4SegmentValue()) | (uint64(seg.GetIPv4UpperSegmentValue()) << IPv4BitCount)
-		if i > 0 {
-			newVal |= *val << IPv4BitsPerSegment
+	var newVal uint64
+	if addr.IsMultiple() {
+		for _, div := range divs {
+			seg := div.ToIPv4()
+			newVal = (newVal << IPv4BitsPerSegment) | uint64(seg.GetIPv4SegmentValue()) | (uint64(seg.GetIPv4UpperSegmentValue()) << IPv4BitCount)
 		}
-		*val = newVal
+	} else {
+		for _, div := range divs {
+			seg := div.ToIPv4()
+			newVal = (newVal << IPv4BitsPerSegment) | uint64(seg.GetIPv4SegmentValue())
+		}
+		newVal |= newVal << IPv4BitCount
 	}
+	key.vals = newVal
 	return key
 }
 
@@ -1821,9 +1837,9 @@ func fromIPv4Key(key IPv4AddressKey) *IPv4Address {
 		func(segmentIndex int) IPv4SegInt {
 			segIndex := (IPv4SegmentCount - 1) - segmentIndex
 			return IPv4SegInt(keyVal >> (segIndex << ipv4BitsToSegmentBitshift))
-
-		}, func(segmentIndex int) IPv4SegInt {
-			segIndex := (2*IPv4SegmentCount - 1) - segmentIndex
+		},
+		func(segmentIndex int) IPv4SegInt {
+			segIndex := ((IPv4SegmentCount << 1) - 1) - segmentIndex
 			return IPv4SegInt(keyVal >> (segIndex << ipv4BitsToSegmentBitshift))
 		},
 	)
@@ -1833,14 +1849,18 @@ func (addr *IPv4Address) toIPv4Key(contents *keyContents) {
 	section := addr.GetSection()
 	divs := section.getDivArray()
 	val := &contents.vals[0]
-	for i, div := range divs {
-		seg := div.ToIPv4()
-		if i > 0 {
-			val.lower <<= IPv4BitsPerSegment
-			val.upper <<= IPv4BitsPerSegment
+	if addr.IsMultiple() {
+		for _, div := range divs {
+			seg := div.ToIPv4()
+			val.lower = (val.lower << IPv4BitsPerSegment) | uint64(seg.GetIPv4SegmentValue())
+			val.upper = (val.upper << IPv4BitsPerSegment) | uint64(seg.GetIPv4UpperSegmentValue())
 		}
-		val.lower |= uint64(seg.GetIPv4SegmentValue())
-		val.upper |= uint64(seg.GetIPv4UpperSegmentValue())
+	} else {
+		for _, div := range divs {
+			seg := div.ToIPv4()
+			val.lower = (val.lower << IPv4BitsPerSegment) | uint64(seg.GetIPv4SegmentValue())
+			val.upper = val.lower
+		}
 	}
 }
 

@@ -25,8 +25,8 @@ type Iterator[T any] interface {
 	Next() T
 }
 
-// IteratorRem is an iterator that provides a removal operation
-type IteratorRem[T any] interface { //TODO NOW rename IteratorRemover or IteratorRemove?  But we are not removing the iterator.  IteratorWithRemove?  IterateRemover?  That last one is not bad.   Actually, I sorta like IteratorWithRemove
+// IteratorWithRemove is an iterator that provides a removal operation
+type IteratorWithRemove[T any] interface {
 	Iterator[T]
 
 	// Remove removes the last iterated item from the underlying data structure or collection, and returns that element.
@@ -184,6 +184,9 @@ type addressSeriesIterator struct {
 }
 
 func (iter addressSeriesIterator) Next() ExtendedSegmentSeries {
+	if !iter.HasNext() {
+		return nil
+	}
 	return wrapAddress(iter.Iterator.Next())
 }
 
@@ -193,6 +196,9 @@ type ipaddressSeriesIterator struct {
 }
 
 func (iter ipaddressSeriesIterator) Next() ExtendedIPSegmentSeries {
+	if !iter.HasNext() {
+		return nil
+	}
 	return iter.Iterator.Next().Wrap()
 }
 
@@ -202,6 +208,9 @@ type sectionSeriesIterator struct {
 }
 
 func (iter sectionSeriesIterator) Next() ExtendedSegmentSeries {
+	if !iter.HasNext() {
+		return nil
+	}
 	return wrapSection(iter.Iterator.Next())
 }
 
@@ -211,5 +220,8 @@ type ipSectionSeriesIterator struct {
 }
 
 func (iter ipSectionSeriesIterator) Next() ExtendedIPSegmentSeries {
+	if !iter.HasNext() {
+		return nil
+	}
 	return wrapIPSection(iter.Iterator.Next())
 }

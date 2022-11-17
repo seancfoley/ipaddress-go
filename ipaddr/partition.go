@@ -34,9 +34,12 @@ type Partition[T any] struct {
 	count *big.Int
 }
 
-// ApplyForEach supplies to the given function each element of the given partition,
-// inserting return values into the returned map as directed.
-func ApplyForEachConditionally[T comparable, V any](p *Partition[T], action func(T) (V, bool)) map[T]V {
+type MappedPartition[T comparable, V any] map[T]V
+
+// ApplyForEachConditionally supplies to the given function each element of the given partition,
+// inserting return values into the returned map as directed.  When the action returns true as the second return value,
+// then the other return value is added to the map.
+func ApplyForEachConditionally[T comparable, V any](p *Partition[T], action func(T) (V, bool)) MappedPartition[T, V] {
 	results := make(map[T]V)
 	p.ForEach(func(addr T) {
 		if result, ok := action(addr); ok {
@@ -47,8 +50,8 @@ func ApplyForEachConditionally[T comparable, V any](p *Partition[T], action func
 }
 
 // ApplyForEach supplies to the given function each element of the given partition,
-// inserting return values into the returned map as directed.
-func ApplyForEach[T comparable, V any](p *Partition[T], action func(T) V) map[T]V {
+// inserting return values into the returned map.
+func ApplyForEach[T comparable, V any](p *Partition[T], action func(T) V) MappedPartition[T, V] {
 	results := make(map[T]V)
 	p.ForEach(func(addr T) {
 		results[addr] = action(addr)
@@ -142,20 +145,6 @@ func (p *Partition[T]) predicateForAny(predicate func(address T) bool, returnEar
 	}, returnEarly)
 }
 
-//// PartitionIpv6WithSpanningBlocks partitions the address series into prefix blocks and single addresses.
-////
-//// This method iterates through a list of prefix blocks of different sizes that span the entire subnet.
-//func PartitionIpv6WithSpanningBlocks(newAddr *IPv6Address) IPv6Partition {
-//	return IPv6Partition{PartitionIPWithSpanningBlocks(newAddr.ToIP())}
-//}
-//
-//// PartitionIpv4WithSpanningBlocks partitions the address series into prefix blocks and single addresses.
-////
-//// This method iterates through a list of prefix blocks of different sizes that span the entire subnet.
-//func PartitionIpv4WithSpanningBlocks(newAddr *IPv4Address) IPv4Partition {
-//	return IPv4Partition{PartitionIPWithSpanningBlocks(newAddr.ToIP())}
-//}
-
 // SpanPartitionConstraint is the generic type constraint for IP subnet spanning partitions
 type SpanPartitionConstraint[T any] interface {
 	AddressDivisionSeries
@@ -173,10 +162,10 @@ var (
 	_ SpanPartitionConstraint[*IPv6AddressSection]
 )
 
-// PartitionIPWithSpanningBlocks partitions the address series into prefix blocks and single addresses.
+// PartitionWithSpanningBlocks partitions the address series into prefix blocks and single addresses.
 //
 // This method iterates through a list of prefix blocks of different sizes that span the entire subnet.
-func PartitionIPWithSpanningBlocks[T SpanPartitionConstraint[T]](newAddr T) *Partition[T] {
+func PartitionWithSpanningBlocks[T SpanPartitionConstraint[T]](newAddr T) *Partition[T] {
 	if !newAddr.IsMultiple() {
 		if !newAddr.IsPrefixed() {
 			return &Partition[T]{
@@ -208,21 +197,33 @@ func PartitionIPWithSpanningBlocks[T SpanPartitionConstraint[T]](newAddr T) *Par
 	}
 }
 
-//// PartitionIPv6WithSingleBlockSize partitions the address series into prefix blocks and single addresses.
-////
-//// This method chooses the maximum block size for a list of prefix blocks contained by the address or subnet,
-//// and then iterates to produce blocks of that size.
-//func PartitionIPv6WithSingleBlockSize(newAddr *IPv6Address) IPv6Partition {
-//	return IPv6Partition{PartitionIPWithSingleBlockSize(newAddr.ToIP())}
-//}
+// PartitionIpv6WithSpanningBlocks partitions the IPv6 address into prefix blocks and single addresses.
 //
-//// PartitionIPv4WithSingleBlockSize partitions the address series into prefix blocks and single addresses.
-////
-//// This method chooses the maximum block size for a list of prefix blocks contained by the address or subnet,
-//// and then iterates to produce blocks of that size.
-//func PartitionIPv4WithSingleBlockSize(newAddr *IPv4Address) IPv4Partition {
-//	return IPv4Partition{PartitionIPWithSingleBlockSize(newAddr.ToIP())}
-//}
+// This function is here for backwards compatibility, PartitionWithSpanningBlocks is recommended instead.
+func PartitionIpv6WithSpanningBlocks(newAddr *IPv6Address) *Partition[*IPv6Address] {
+	return PartitionWithSpanningBlocks(newAddr)
+}
+
+// PartitionIpv4WithSpanningBlocks partitions the IPv4 address into prefix blocks and single addresses.
+//
+// This function is here for backwards compatibility, PartitionWithSpanningBlocks is recommended instead.
+func PartitionIpv4WithSpanningBlocks(newAddr *IPv4Address) *Partition[*IPv4Address] {
+	return PartitionWithSpanningBlocks(newAddr)
+}
+
+// PartitionIPv6WithSingleBlockSize partitions the IPv6 address into prefix blocks and single addresses.
+//
+// This function is here for backwards compatibility, PartitionWithSingleBlockSize is recommended instead.
+func PartitionIPv6WithSingleBlockSize(newAddr *IPv6Address) *Partition[*IPv6Address] {
+	return PartitionWithSingleBlockSize(newAddr)
+}
+
+// PartitionIPv4WithSingleBlockSize partitions the IPv4 address into prefix blocks and single addresses.
+//
+// This function is here for backwards compatibility, PartitionWithSingleBlockSize is recommended instead.
+func PartitionIPv4WithSingleBlockSize(newAddr *IPv4Address) *Partition[*IPv4Address] {
+	return PartitionWithSingleBlockSize(newAddr)
+}
 
 // IteratePartitionConstraint is the generic type constraint for IP subnet and IP section iteration partitions
 type IteratePartitionConstraint[T any] interface {
@@ -291,7 +292,5 @@ func PartitionWithSingleBlockSize[T IteratePartitionConstraint[T]](newAddr T) *P
 		count:    newAddr.GetCount(),
 	}
 }
-
-// TODO NOW consider bringing back the old public constructors for partitions - there are 4, seen above
 
 // TODO LATER partition ranges (not just addresses) with spanning blocks

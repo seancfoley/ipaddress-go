@@ -21,6 +21,7 @@ import (
 	"math/big"
 	"math/bits"
 	"net"
+	"net/netip"
 	"sort"
 	"strings"
 	"unsafe"
@@ -477,17 +478,27 @@ func (rng *SequentialRange[T]) GetNetIP() net.IP {
 	return rng.GetLower().GetNetIP()
 }
 
+// GetUpperNetIP returns the upper IP address in the range as a net.IP
+func (rng *SequentialRange[T]) GetUpperNetIP() net.IP {
+	return rng.GetUpper().GetUpperNetIP()
+}
+
+// GetNetNetIPAddr returns the lowest address in this address range as a netip.Addr
+func (rng *SequentialRange[T]) GetNetNetIPAddr() netip.Addr {
+	return rng.GetLower().GetNetNetIPAddr()
+}
+
+// GetUpperNetNetIPAddr returns the highest address in this address range as a netip.Addr
+func (rng *SequentialRange[T]) GetUpperNetNetIPAddr() netip.Addr {
+	return rng.GetUpper().GetUpperNetNetIPAddr()
+}
+
 // CopyNetIP copies the value of the lower IP address in the range into a net.IP.
 //
 // If the value can fit in the given net.IP slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
 // Otherwise, a new slice is created and returned with the value.
 func (rng *SequentialRange[T]) CopyNetIP(bytes net.IP) net.IP {
 	return rng.GetLower().CopyNetIP(bytes) // this changes the arg to 4 bytes if 16 bytes and ipv4
-}
-
-// GetUpperNetIP returns the upper IP address in the range as a net.IP
-func (rng *SequentialRange[T]) GetUpperNetIP() net.IP {
-	return rng.GetUpper().GetUpperNetIP()
 }
 
 // CopyUpperNetIP copies the upper IP address in the range into a net.IP.

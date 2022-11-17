@@ -411,8 +411,8 @@ func main() {
 	fmt.Printf("%v\n\n", merge("1:2:3:4:8000::/65", "1:2:3:4::/66", "1:2:3:4:4000::/66", "1:2:3:5:4000::/66", "1:2:3:5::/66", "1:2:3:5:8000::/65"))
 
 	delim := "1:2,3,4:3:6:4:5,6fff,7,8,99:6:8"
-	delims := ipaddr.ParseDelimitedSegments(delim)
-	delimCount := ipaddr.CountDelimitedAddresses(delim)
+	delims := ipaddr.DelimitedAddressString(delim).ParseDelimitedSegments()
+	delimCount := ipaddr.DelimitedAddressString(delim).CountDelimitedAddresses()
 	i = 0
 	for delims.HasNext() {
 		i++
@@ -420,8 +420,10 @@ func main() {
 	}
 	fmt.Println()
 	delim = "1:3:6:4:5,6fff,7,8,99:6:2,3,4:8"
-	delims = ipaddr.ParseDelimitedSegments(delim)
-	delimCount = ipaddr.CountDelimitedAddresses(delim)
+	delims = ipaddr.DelimitedAddressString(delim).ParseDelimitedSegments()
+	delimCount = ipaddr.DelimitedAddressString(delim).CountDelimitedAddresses()
+	//delims = ipaddr.ParseDelimitedSegments(delim)
+	//delimCount = ipaddr.CountDelimitedAddresses(delim)
 	i = 0
 	for delims.HasNext() {
 		i++
@@ -698,6 +700,14 @@ func main() {
 	}
 	fmt.Println(alloc)
 
+	myaddr := ipaddr.IPAddress{}
+	addr1Lower := myaddr.GetLower()
+	fmt.Println("one is " + addr1Lower.String())
+	//fmt.Println("one to bytes is ", addr1Lower.Bytes())
+	naddr := addr1Lower.GetNetIPAddr()
+	fmt.Println("one to ipaddr is " + naddr.String())
+	faddr, _ := ipaddr.NewIPAddressFromNetIPAddr(naddr)
+	fmt.Println("and back is " + faddr.String())
 	//log2()
 }
 

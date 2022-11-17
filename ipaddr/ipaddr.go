@@ -22,6 +22,7 @@ import (
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrstr"
 	"math/big"
 	"net"
+	"net/netip"
 	"strings"
 	"unsafe"
 )
@@ -228,6 +229,16 @@ func (addr *ipAddressInternal) getNetworkPrefixLen() PrefixLen {
 // GetNetworkPrefixLen is equivalent to the method GetPrefixLen.
 func (addr *ipAddressInternal) GetNetworkPrefixLen() PrefixLen {
 	return addr.getNetworkPrefixLen().copy()
+}
+
+func (addr *ipAddressInternal) getNetNetIPAddr() netip.Addr {
+	netAddr, _ := netip.AddrFromSlice(addr.getBytes())
+	return netAddr
+}
+
+func (addr *ipAddressInternal) getUpperNetNetIPAddr() netip.Addr {
+	netAddr, _ := netip.AddrFromSlice(addr.getUpperBytes())
+	return netAddr
 }
 
 // IncludesZeroHost returns whether the subnet contains an individual address with a host of zero.  If the subnet has no prefix length it returns false.
@@ -675,12 +686,12 @@ func (addr *ipAddressInternal) GetMinPrefixLenForBlock() BitCount {
 // If this segment grouping represents a single value, returns the bit length of this address division series.
 //
 // IP address examples:
-// 1.2.3.4 returns 32
-// 1.2.3.4/16 returns 32
-// 1.2.*.* returns 16
-// 1.2.*.0/24 returns 16
-// 1.2.0.0/16 returns 16
-// 1.2.*.4 returns null
+// 1.2.3.4 returns 32,
+// 1.2.3.4/16 returns 32,
+// 1.2.*.* returns 16,
+// 1.2.*.0/24 returns 16,
+// 1.2.0.0/16 returns 16,
+// 1.2.*.4 returns null,
 // 1.2.252-255.* returns 22
 func (addr *ipAddressInternal) GetPrefixLenForSingleBlock() PrefixLen {
 	return addr.addressInternal.GetPrefixLenForSingleBlock()
@@ -1233,13 +1244,13 @@ func (addr *IPAddress) AdjustPrefixLenZeroed(prefixLen BitCount) (*IPAddress, ad
 // If there is no such address, then nil is returned.
 //
 // Examples:
-// 1.2.3.4 returns 1.2.3.4/32
-// 1.2.*.* returns 1.2.0.0/16
-// 1.2.*.0/24 returns 1.2.0.0/16
-// 1.2.*.4 returns nil
-// 1.2.0-1.* returns 1.2.0.0/23
-// 1.2.1-2.* returns nil
-// 1.2.252-255.* returns 1.2.252.0/22
+// 1.2.3.4 returns 1.2.3.4/32,
+// 1.2.*.* returns 1.2.0.0/16,
+// 1.2.*.0/24 returns 1.2.0.0/16,
+// 1.2.*.4 returns nil,
+// 1.2.0-1.* returns 1.2.0.0/23,
+// 1.2.1-2.* returns nil,
+// 1.2.252-255.* returns 1.2.252.0/22,
 // 1.2.3.4/16 returns 1.2.3.4/32
 func (addr *IPAddress) AssignPrefixForSingleBlock() *IPAddress {
 	return addr.init().assignPrefixForSingleBlock().ToIP()
@@ -1251,13 +1262,13 @@ func (addr *IPAddress) AssignPrefixForSingleBlock() *IPAddress {
 // In other words, this method assigns a prefix length to this subnet matching the largest prefix block in this subnet.
 //
 // Examples:
-// 1.2.3.4 returns 1.2.3.4/32
-// 1.2.*.* returns 1.2.0.0/16
-// 1.2.*.0/24 returns 1.2.0.0/16
-// 1.2.*.4 returns 1.2.*.4/32
-// 1.2.0-1.* returns 1.2.0.0/23
-// 1.2.1-2.* returns 1.2.1-2.0/24
-// 1.2.252-255.* returns 1.2.252.0/22
+// 1.2.3.4 returns 1.2.3.4/32,
+// 1.2.*.* returns 1.2.0.0/16,
+// 1.2.*.0/24 returns 1.2.0.0/16,
+// 1.2.*.4 returns 1.2.*.4/32,
+// 1.2.0-1.* returns 1.2.0.0/23,
+// 1.2.1-2.* returns 1.2.1-2.0/24,
+// 1.2.252-255.* returns 1.2.252.0/22,
 // 1.2.3.4/16 returns 1.2.3.4/32
 func (addr *IPAddress) AssignMinPrefixForBlock() *IPAddress {
 	return addr.init().assignMinPrefixForBlock().ToIP()
@@ -1313,6 +1324,25 @@ func (addr *IPAddress) GetNetIP() net.IP {
 	return addr.Bytes()
 }
 
+// GetUpperNetIP returns the highest address in this subnet or address as a net.IP
+func (addr *IPAddress) GetUpperNetIP() net.IP {
+	return addr.UpperBytes()
+}
+
+// GetNetNetIPAddr returns the lowest address in this subnet or address range as a netip.Addr
+func (addr *IPAddress) GetNetNetIPAddr() netip.Addr {
+	res := addr.init().getNetNetIPAddr()
+	if addr.hasZone() {
+		res = res.WithZone(string(addr.zone))
+	}
+	return res
+}
+
+// GetUpperNetNetIPAddr returns the highest address in this subnet or address range as a netip.Addr
+func (addr *IPAddress) GetUpperNetNetIPAddr() netip.Addr {
+	return addr.init().getUpperNetNetIPAddr()
+}
+
 // CopyNetIP copies the value of the lowest individual address in the subnet into a net.IP.
 //
 // If the value can fit in the given net.IP slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
@@ -1322,11 +1352,6 @@ func (addr *IPAddress) CopyNetIP(ip net.IP) net.IP {
 		return ipv4Addr.CopyNetIP(ip) // this shrinks the arg to 4 bytes if it was 16, we need only 4
 	}
 	return addr.CopyBytes(ip)
-}
-
-// GetUpperNetIP returns the highest address in this subnet or address as a net.IP
-func (addr *IPAddress) GetUpperNetIP() net.IP {
-	return addr.UpperBytes()
 }
 
 // CopyUpperNetIP copies the value of the highest individual address in the subnet into a net.IP.
@@ -2408,7 +2433,9 @@ func addrFromIP(ip net.IP) (addr *IPAddress, err addrerr.AddressValueError) {
 
 func addrFromBytes(ip []byte) (addr *IPAddress, err addrerr.AddressValueError) {
 	addrLen := len(ip)
-	if addrLen <= IPv4ByteCount {
+	if len(ip) == 0 {
+		return &IPAddress{}, nil
+	} else if addrLen <= IPv4ByteCount {
 		var addr4 *IPv4Address
 		addr4, err = NewIPv4AddressFromBytes(ip)
 		addr = addr4.ToIP()
@@ -2433,8 +2460,14 @@ func addrFromPrefixedIP(ip net.IP, prefixLen PrefixLen) (addr *IPAddress, err ad
 	if ipv4 := ip.To4(); ipv4 != nil {
 		ip = ipv4
 	}
+	return addrFromPrefixedBytes(ip, prefixLen)
+}
+
+func addrFromPrefixedBytes(ip []byte, prefixLen PrefixLen) (addr *IPAddress, err addrerr.AddressValueError) {
 	addrLen := len(ip)
-	if addrLen <= IPv4ByteCount {
+	if len(ip) == 0 {
+		return &IPAddress{}, nil
+	} else if addrLen <= IPv4ByteCount {
 		var addr4 *IPv4Address
 		addr4, err = NewIPv4AddressFromPrefixedBytes(ip, prefixLen)
 		addr = addr4.ToIP()
@@ -2446,7 +2479,7 @@ func addrFromPrefixedIP(ip net.IP, prefixLen PrefixLen) (addr *IPAddress, err ad
 		extraCount := len(ip) - IPv6ByteCount
 		if isAllZeros(ip[:extraCount]) {
 			var addr6 *IPv6Address
-			addr6, err = NewIPv6AddressFromBytes(ip[extraCount:])
+			addr6, err = NewIPv6AddressFromPrefixedBytes(ip[extraCount:], prefixLen)
 			addr = addr6.ToIP()
 		} else {
 			err = &addressValueError{addressError: addressError{key: "ipaddress.error.exceeds.size"}}
@@ -2460,7 +2493,9 @@ func addrFromZonedIP(addr *net.IPAddr) (*IPAddress, addrerr.AddressValueError) {
 	if ipv4 := ip.To4(); ipv4 != nil {
 		ip = ipv4
 	}
-	if len(ip) <= IPv4ByteCount {
+	if len(ip) == 0 {
+		return &IPAddress{}, nil
+	} else if len(ip) <= IPv4ByteCount {
 		res, err := NewIPv4AddressFromBytes(ip)
 		return res.ToIP(), err
 	} else if len(ip) <= IPv6ByteCount {
@@ -2476,7 +2511,6 @@ func addrFromZonedIP(addr *net.IPAddr) (*IPAddress, addrerr.AddressValueError) {
 		}
 	}
 	return nil, &addressValueError{addressError: addressError{key: "ipaddress.error.exceeds.size"}}
-
 }
 
 func addrFromPrefixedZonedIP(addr *net.IPAddr, prefixLen PrefixLen) (*IPAddress, addrerr.AddressValueError) {
@@ -2484,7 +2518,9 @@ func addrFromPrefixedZonedIP(addr *net.IPAddr, prefixLen PrefixLen) (*IPAddress,
 	if ipv4 := ip.To4(); ipv4 != nil {
 		ip = ipv4
 	}
-	if len(ip) <= IPv4ByteCount {
+	if len(ip) == 0 {
+		return &IPAddress{}, nil
+	} else if len(ip) <= IPv4ByteCount {
 		res, err := NewIPv4AddressFromPrefixedBytes(ip, prefixLen)
 		return res.ToIP(), err
 	} else if len(ip) <= IPv6ByteCount {
@@ -2500,7 +2536,6 @@ func addrFromPrefixedZonedIP(addr *net.IPAddr, prefixLen PrefixLen) (*IPAddress,
 		}
 	}
 	return nil, &addressValueError{addressError: addressError{key: "ipaddress.error.exceeds.size"}}
-
 }
 
 func isAllZeros(byts []byte) bool {
@@ -2681,6 +2716,41 @@ func NewIPAddressFromNetIPNet(ipnet *net.IPNet) (*IPAddress, addrerr.AddressErro
 		return nil, &incompatibleAddressError{addressError{key: "ipaddress.error.notNetworkMask"}}
 	}
 	return addr.ToPrefixBlockLen(prefLen.bitCount()), nil
+}
+
+func NewIPAddressFromNetNetIPAddr(addr netip.Addr) *IPAddress {
+	if res := addr.AsSlice(); res != nil {
+		if addr.Is6() {
+			if zone := addr.Zone(); zone != "" {
+				addr, _ := NewIPv6AddressFromZonedBytes(res, zone)
+				return addr.ToIP()
+			}
+		}
+		addr, _ := addrFromBytes(res)
+		return addr.ToIP()
+	}
+	// the zero addr
+	return &IPAddress{}
+}
+
+func NewIPAddressFromNetNetIPPrefix(prefixedAddr netip.Prefix) (*IPAddress, addrerr.AddressError) {
+	prefixLen := prefixedAddr.Bits()
+	if prefixLen < 0 {
+		return nil, &addressValueError{addressError: addressError{key: "ipaddress.error.invalidCIDRPrefix"}}
+	}
+	addr := prefixedAddr.Addr()
+	if res := addr.AsSlice(); res != nil {
+		var p PrefixBitCount = PrefixBitCount(prefixLen)
+		if addr.Is6() {
+			if zone := addr.Zone(); zone != "" {
+				addr, _ := NewIPv6AddressFromPrefixedZonedBytes(res, &p, zone)
+				return addr.ToIP(), nil
+			}
+		}
+		addr, _ := addrFromPrefixedBytes(res, &p)
+		return addr.ToIP(), nil
+	}
+	return nil, &addressValueError{addressError: addressError{key: "ipaddress.error.ipVersionIndeterminate"}}
 }
 
 // NewIPAddressFromVals constructs an IPAddress from the provided segment values.

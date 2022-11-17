@@ -119,6 +119,14 @@ func (addr *addressInternal) GetByteCount() int {
 	return section.GetByteCount()
 }
 
+func (addr *addressInternal) getBytes() []byte {
+	return addr.section.getBytes()
+}
+
+func (addr *addressInternal) getUpperBytes() []byte {
+	return addr.section.getUpperBytes()
+}
+
 func (addr *addressInternal) getTrailingBitCount(ones bool) BitCount {
 	return addr.section.GetTrailingBitCount(ones)
 }
@@ -288,12 +296,12 @@ func (addr *addressInternal) GetMinPrefixLenForBlock() BitCount {
 // If this segment grouping represents a single value, returns the bit length of this address.
 //
 // IP address examples:
-// 1.2.3.4 returns 32
-// 1.2.3.4/16 returns 32
-// 1.2.*.* returns 16
-// 1.2.*.0/24 returns 16
-// 1.2.0.0/16 returns 16
-// 1.2.*.4 returns null
+// 1.2.3.4 returns 32,
+// 1.2.3.4/16 returns 32,
+// 1.2.*.* returns 16,
+// 1.2.*.0/24 returns 16,
+// 1.2.0.0/16 returns 16,
+// 1.2.*.4 returns null,
 // 1.2.252-255.* returns 22
 func (addr *addressInternal) GetPrefixLenForSingleBlock() PrefixLen {
 	section := addr.section
@@ -1473,13 +1481,13 @@ func (addr *Address) AdjustPrefixLenZeroed(prefixLen BitCount) (*Address, addrer
 // If there is no such address, then nil is returned.
 //
 // Examples:
-// 1.2.3.4 returns 1.2.3.4/32
-// 1.2.*.* returns 1.2.0.0/16
-// 1.2.*.0/24 returns 1.2.0.0/16
-// 1.2.*.4 returns nil
-// 1.2.0-1.* returns 1.2.0.0/23
-// 1.2.1-2.* returns nil
-// 1.2.252-255.* returns 1.2.252.0/22
+// 1.2.3.4 returns 1.2.3.4/32,
+// 1.2.*.* returns 1.2.0.0/16,
+// 1.2.*.0/24 returns 1.2.0.0/16,
+// 1.2.*.4 returns nil,
+// 1.2.0-1.* returns 1.2.0.0/23,
+// 1.2.1-2.* returns nil,
+// 1.2.252-255.* returns 1.2.252.0/22,
 // 1.2.3.4/16 returns 1.2.3.4/32
 func (addr *Address) AssignPrefixForSingleBlock() *Address {
 	return addr.init().assignPrefixForSingleBlock()
@@ -1491,13 +1499,13 @@ func (addr *Address) AssignPrefixForSingleBlock() *Address {
 // In other words, this method assigns a prefix length to this subnet matching the largest prefix block in this subnet.
 //
 // Examples:
-// 1.2.3.4 returns 1.2.3.4/32
-// 1.2.*.* returns 1.2.0.0/16
-// 1.2.*.0/24 returns 1.2.0.0/16
-// 1.2.*.4 returns 1.2.*.4/32
-// 1.2.0-1.* returns 1.2.0.0/23
-// 1.2.1-2.* returns 1.2.1-2.0/24
-// 1.2.252-255.* returns 1.2.252.0/22
+// 1.2.3.4 returns 1.2.3.4/32,
+// 1.2.*.* returns 1.2.0.0/16,
+// 1.2.*.0/24 returns 1.2.0.0/16,
+// 1.2.*.4 returns 1.2.*.4/32,
+// 1.2.0-1.* returns 1.2.0.0/23,
+// 1.2.1-2.* returns 1.2.1-2.0/24,
+// 1.2.252-255.* returns 1.2.252.0/22,
 // 1.2.3.4/16 returns 1.2.3.4/32
 func (addr *Address) AssignMinPrefixForBlock() *Address {
 	return addr.init().assignMinPrefixForBlock()

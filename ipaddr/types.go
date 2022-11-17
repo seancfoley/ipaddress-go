@@ -35,10 +35,6 @@ var (
 // The zero value, which is nil, indicates that there is no prefix length.
 type PrefixLen = *PrefixBitCount
 
-// A PrefixBitCount is the count of bits in a non-nil PrefixLen.
-// For arithmetic, you may wish to use the signed integer type BitCount instead, which you can get from a PrefixLen using the Len method.
-type PrefixBitCount uint8
-
 // ToPrefixLen converts the given int to a prefix length
 func ToPrefixLen(i int) PrefixLen {
 	res := PrefixBitCount(i)
@@ -52,6 +48,10 @@ func ToPrefixLen(i int) PrefixLen {
 type BitCount = int // using signed integers allows for easier arithmetic
 
 const maxBitCountInternal, minBitCountInternal = math.MaxUint8, 0
+
+// A PrefixBitCount is the count of bits in a non-nil PrefixLen.
+// For arithmetic, you may wish to use the signed integer type BitCount instead, which you can get from a PrefixLen using the Len method.
+type PrefixBitCount uint8
 
 // Len returns the length of the prefix.  If the receiver is nil, representing the absence of a prefix length, returns 0.
 // It will also return 0 if the receiver is a prefix with length of 0.  To distinguish the two, compare the receiver with nil.
@@ -112,6 +112,59 @@ func (p *PrefixBitCount) String() string {
 		return nilString()
 	}
 	return strconv.Itoa(p.bitCount())
+}
+
+// A HostBitCount is the count of bits in a host.
+// For arithmetic, you may wish to use the signed integer type BitCount instead, which you can get from a HostBitCount using the Len method.
+type HostBitCount uint8
+
+// BitsForCount returns the number of bits required outside the prefix length
+// for a single prefix block to span at least as many addresses as the given count.
+// Mathematically, it is the ceiling of the base 2 logarithm of the given count.
+// A count of 0 returns nil.
+func BitsForCount(count uint64) (result *HostBitCount) {
+	if count != 0 {
+		var res HostBitCount
+		countMinusOne := count - 1
+		if (countMinusOne & (0xfff0000000000000)) != 0 { // conversion to float64 will fail
+			count = (countMinusOne >> 53) + 1
+			res = 53
+		}
+		res += HostBitCount(math.Ilogb(float64((count << 1) - 1)))
+		return &res
+	}
+	return nil
+}
+
+// BlockSize is the reverse of BitsForCount, the total number of values possible ranging across the number of host bits.
+// The nil *HostBitCount returns 0.
+func (h *HostBitCount) BlockSize() *big.Int {
+	if h == nil {
+		return bigZero()
+	}
+	return new(big.Int).Lsh(bigOneConst(), uint(*h))
+}
+
+// Len returns the length of the host.  If the receiver is nil, representing the absence of a prefix length, returns 0.
+// It will also return 0 if the receiver is a prefix with length of 0.  To distinguish the two, compare the receiver with nil.
+func (h *HostBitCount) Len() BitCount {
+	if h == nil {
+		return 0
+	}
+	return BitCount(*h)
+}
+
+// String returns the bit count as a base-10 positive integer string, or "<nil>" if the receiver is a nil pointer
+func (h *HostBitCount) String() string {
+	if p == nil {
+		return nilString()
+	}
+	return strconv.Itoa(h.Len())
+}
+
+// IsNil returns true if this is nil, meaning it represents having no host length, or the absence of a host or prefix length
+func (h *HostBitCount) IsNil() bool {
+	return h == nil
 }
 
 var cachedPrefixBitCounts, cachedPrefixLens = initPrefLens()
@@ -194,8 +247,14 @@ func (p *PortNum) Num() PortInt {
 	if p == nil {
 		return 0
 	}
-	//return PortInt(p.port)
 	return PortInt(*p)
+}
+
+func (p *PortNum) Port() PortNum {
+	if p == nil {
+		return 0
+	}
+	return *p
 }
 
 // Equal compares two Port values for equality.

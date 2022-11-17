@@ -20,11 +20,13 @@ import "strings"
 
 const SegmentValueDelimiter = ','
 
+type DelimitedAddressString string
+
 // CountDelimitedAddresses will count the possible combinations, given a string with comma delimiters separating segment elements.
 // It is a counterpart to ParseDelimitedSegments.
 //
 // For example, given "1,2.3.4,5.6" this method will return 4 for the possible combinations: "1.3.4.6", "1.3.5.6", "2.3.4.6" and "2.3.5.6"
-func CountDelimitedAddresses(str string) int {
+func (str DelimitedAddressString) CountDelimitedAddresses() int {
 	segDelimitedCount := 0
 	result := 1
 	strlen := len(str)
@@ -60,12 +62,13 @@ func isDelimitedBoundary(c byte) bool {
 //
 // This method will not validate strings.  Each string produced can be validated using an instance of IPAddressString.
 // Use CountDelimitedAddresses for the count of elements in the iterator.
-func ParseDelimitedSegments(str string) Iterator[string] {
+func (str DelimitedAddressString) ParseDelimitedSegments() Iterator[string] {
 	var parts [][]string
 	var lastSegmentStartIndex, lastPartIndex, lastDelimiterIndex int
 	anyDelimited := false
 	var delimitedList []string
 	strlen := len(str)
+	s := string(str)
 	for i := 0; i < strlen; i++ {
 		c := str[i]
 		if isDelimitedBoundary(c) {
@@ -73,7 +76,7 @@ func ParseDelimitedSegments(str string) Iterator[string] {
 				if parts == nil {
 					parts = make([][]string, 0, IPv6SegmentCount)
 				}
-				parts, delimitedList = addParts(str, parts, lastSegmentStartIndex, lastPartIndex, lastDelimiterIndex, delimitedList, i)
+				parts, delimitedList = addParts(s, parts, lastSegmentStartIndex, lastPartIndex, lastDelimiterIndex, delimitedList, i)
 				lastPartIndex = i
 				delimitedList = nil
 			}
@@ -85,7 +88,7 @@ func ParseDelimitedSegments(str string) Iterator[string] {
 				delimitedList = make([]string, 0, 4)
 			}
 			sub := str[lastDelimiterIndex:i]
-			delimitedList = append(delimitedList, sub)
+			delimitedList = append(delimitedList, string(sub))
 			lastDelimiterIndex = i + 1
 		}
 	}
@@ -94,14 +97,18 @@ func ParseDelimitedSegments(str string) Iterator[string] {
 			if parts == nil {
 				parts = make([][]string, 0, IPv6SegmentCount)
 			}
-			parts, delimitedList = addParts(str, parts, lastSegmentStartIndex, lastPartIndex, lastDelimiterIndex, delimitedList, len(str))
+			parts, delimitedList = addParts(s, parts, lastSegmentStartIndex, lastPartIndex, lastDelimiterIndex, delimitedList, len(str))
 		} else {
-			parts = append(parts, []string{str[lastPartIndex:]})
+			parts = append(parts, []string{s[lastPartIndex:]})
 		}
 		return newDelimitedStringsIterator(parts)
 	}
-	return newSingleStrIterator(str)
+	return newSingleStrIterator(s)
+}
 
+// ParseDelimitedIPSegments will provide an iterator to iterate through the possible combinations, given a string with comma delimiters to denote segment elements,
+func (str DelimitedAddressString) ParseDelimitedIPAddrSegments() Iterator[*IPAddressString] {
+	return ipAddressStringIterator{str.ParseDelimitedSegments()}
 }
 
 func addParts(str string, parts [][]string, lastSegmentStartIndex, lastPartIndex,
@@ -202,10 +209,7 @@ func (it *stringIterator) Next() (res string) {
 	return
 }
 
-func newSingleStrIterator(str string) Iterator[string] {
-	return &singleStringIterator{str: str}
-}
-
+//
 type singleStringIterator struct {
 	str  string
 	done bool
@@ -221,4 +225,20 @@ func (it *singleStringIterator) Next() (res string) {
 		res = it.str
 	}
 	return
+}
+
+func newSingleStrIterator(str string) Iterator[string] {
+	return &singleStringIterator{str: str}
+}
+
+//
+type ipAddressStringIterator struct {
+	Iterator[string]
+}
+
+func (iter ipAddressStringIterator) Next() *IPAddressString {
+	if !iter.HasNext() {
+		return nil
+	}
+	return NewIPAddressString(iter.Iterator.Next())
 }

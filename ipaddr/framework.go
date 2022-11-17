@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"math/big"
 	"net"
+	"net/netip"
 
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
 )
@@ -203,7 +204,8 @@ type StandardDivGroupingType interface {
 
 	// IsAdaptiveZero returns true if the division grouping was originally created as an implicitly zero-valued section or grouping (e.g. IPv4AddressSection{}),
 	// meaning it was not constructed using a constructor function.
-	// Such a grouping, which has no divisions or segments, is convertible to an implicitly zero-valued grouping of any type or version, whether IPv6, IPv4, MAC, etc
+	// Such a grouping, which has no divisions or segments, is convertible to an implicitly zero-valued grouping of any type or version, whether IPv6, IPv4, MAC, or other.
+	// In other words, when a section or grouping is the zero-value, then it is equivalent and convertible to the zero value of any other section or grouping type.
 	IsAdaptiveZero() bool
 
 	// ToDivGrouping converts to an AddressDivisionGrouping, a polymorphic type usable with all address sections and division groupings.
@@ -621,7 +623,7 @@ var _, _, _, _, _ AddressSectionType = &AddressSection{},
 
 // AddressType represents any address, all of which can be represented by the base type Address.
 // This includes IPAddress, IPv4Address, IPv6Address, and MACAddress.
-// You must use the pointers types *Address, *IPAddress, *IPv4Address, *IPv6Address, and *MACAddress when implementing AddressType.
+// You must use the pointer types *Address, *IPAddress, *IPv4Address, *IPv6Address, and *MACAddress when implementing AddressType.
 // It can be useful as a parameter for functions to take any address type, while inside the function you can convert to *Address using ToAddressBase
 type AddressType interface {
 	AddressSegmentSeries
@@ -687,6 +689,12 @@ type IPAddressRange interface {
 	// GetUpperNetIP returns the highest address in this subnet or address range as a net.IP
 	GetUpperNetIP() net.IP
 
+	// GetNetNetIPAddr returns the lowest address in this subnet or address range as a netip.Addr
+	GetNetNetIPAddr() netip.Addr
+
+	// GetUpperNetNetIPAddr returns the highest address in this subnet or address range as a netip.Addr
+	GetUpperNetNetIPAddr() netip.Addr
+
 	// IsSequential returns whether the address item represents a range of addresses that are sequential.
 	//
 	// IP Address sequential ranges are sequential by definition.
@@ -707,7 +715,7 @@ var _, _, _, _, _, _ IPAddressRange = &IPAddress{},
 
 // IPAddressType represents any IP address, all of which can be represented by the base type IPAddress.
 // This includes IPv4Address and IPv6Address.
-// You must use the pointers types *IPAddress, *IPv4Address, and *IPv6Address when implementing IPAddressType.
+// You must use the pointer types *IPAddress, *IPv4Address, and *IPv6Address when implementing IPAddressType.
 type IPAddressType interface {
 	AddressType
 

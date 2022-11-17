@@ -363,7 +363,7 @@ func (t trieTesterGeneric) partitionForTrie(trie *AddressTrie, subnet *ipaddr.IP
 		keyAll1[k.ToKey()] = v
 	}
 
-	all2 := make(map[*ipaddr.Address]*AddressTrieNode)
+	all2 := make(ipaddr.MappedPartition[*ipaddr.Address, *AddressTrieNode])
 	keyAll2 := make(map[ipaddr.Key[*ipaddr.Address]]struct{})
 	ipaddr.PartitionWithSingleBlockSize(subnet).ForEach(func(addr *ipaddr.IPAddress) {
 		node := trie.GetAddedNode(addr.ToAddressBase())
@@ -399,18 +399,18 @@ func (t trieTesterGeneric) partitionForTrie(trie *AddressTrie, subnet *ipaddr.IP
 	}
 
 	trie.Clear()
-	ipaddr.PartitionIPWithSpanningBlocks(subnet).PredicateForEach(IPAddressPredicateAdapter{trie.Add}.IPPredicate)
+	ipaddr.PartitionWithSpanningBlocks(subnet).PredicateForEach(IPAddressPredicateAdapter{trie.Add}.IPPredicate)
 	if trie.Size() != 4 {
 		t.addFailure(newTrieFailure("partition size unexpected "+strconv.Itoa(trie.Size())+", expected 4", trie.Clone()))
 	}
 	trie.Clear()
 	ipaddr.PartitionWithSingleBlockSize(subnet).PredicateForEach(IPAddressPredicateAdapter{trie.Add}.IPPredicate)
-	ipaddr.PartitionIPWithSpanningBlocks(subnet).PredicateForEach(IPAddressPredicateAdapter{trie.Add}.IPPredicate)
+	ipaddr.PartitionWithSpanningBlocks(subnet).PredicateForEach(IPAddressPredicateAdapter{trie.Add}.IPPredicate)
 	if trie.Size() != 18 {
 		t.addFailure(newTrieFailure("partition size unexpected "+strconv.Itoa(trie.Size())+", expected 18", trie.Clone()))
 	}
 	allAreThere := ipaddr.PartitionWithSingleBlockSize(subnet).PredicateForEach(IPAddressPredicateAdapter{trie.Contains}.IPPredicate)
-	allAreThere2 := ipaddr.PartitionIPWithSpanningBlocks(subnet).PredicateForEach(IPAddressPredicateAdapter{trie.Contains}.IPPredicate)
+	allAreThere2 := ipaddr.PartitionWithSpanningBlocks(subnet).PredicateForEach(IPAddressPredicateAdapter{trie.Contains}.IPPredicate)
 	if !(allAreThere && allAreThere2) {
 		t.addFailure(newTrieFailure("partition contains check failing", trie))
 	}
@@ -740,59 +740,59 @@ func (t trieTesterGeneric) testIterationContainmentTree(
 func (t trieTesterGeneric) testIterate(tree *AddressTrie) {
 
 	type triePtr = (*AddressTrie)
-	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorRem[*AddressTrieNode] {
+	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorWithRemove[*AddressTrieNode] {
 		return trie.BlockSizeNodeIterator(true)
 	}, triePtr.Size)
-	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorRem[*AddressTrieNode] {
+	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorWithRemove[*AddressTrieNode] {
 		return trie.BlockSizeAllNodeIterator(true)
 	}, triePtr.NodeSize)
-	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorRem[*AddressTrieNode] {
+	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorWithRemove[*AddressTrieNode] {
 		return trie.BlockSizeNodeIterator(false)
 	}, triePtr.Size)
-	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorRem[*AddressTrieNode] {
+	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorWithRemove[*AddressTrieNode] {
 		return trie.BlockSizeAllNodeIterator(false)
 	}, triePtr.NodeSize)
 
-	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorRem[*AddressTrieNode] {
+	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorWithRemove[*AddressTrieNode] {
 		return trie.BlockSizeCachingAllNodeIterator()
 	}, triePtr.NodeSize)
 
-	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorRem[*AddressTrieNode] {
+	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorWithRemove[*AddressTrieNode] {
 		return trie.NodeIterator(true)
 	}, triePtr.Size)
-	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorRem[*AddressTrieNode] {
+	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorWithRemove[*AddressTrieNode] {
 		return trie.AllNodeIterator(true)
 	}, triePtr.NodeSize)
-	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorRem[*AddressTrieNode] {
+	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorWithRemove[*AddressTrieNode] {
 		return trie.NodeIterator(false)
 	}, triePtr.Size)
-	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorRem[*AddressTrieNode] {
+	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorWithRemove[*AddressTrieNode] {
 		return trie.AllNodeIterator(false)
 	}, triePtr.NodeSize)
 
-	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorRem[*AddressTrieNode] {
+	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorWithRemove[*AddressTrieNode] {
 		return trie.ContainedFirstIterator(true)
 	}, triePtr.Size)
 	t.testIterator(tree, func(trie *AddressTrie) ipaddr.Iterator[*AddressTrieNode] {
 		return trie.ContainedFirstAllNodeIterator(true)
 	}, triePtr.NodeSize)
-	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorRem[*AddressTrieNode] {
+	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorWithRemove[*AddressTrieNode] {
 		return trie.ContainedFirstIterator(false)
 	}, triePtr.Size)
 	t.testIterator(tree, func(trie *AddressTrie) ipaddr.Iterator[*AddressTrieNode] {
 		return trie.ContainedFirstAllNodeIterator(false)
 	}, triePtr.NodeSize)
 
-	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorRem[*AddressTrieNode] {
+	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorWithRemove[*AddressTrieNode] {
 		return trie.ContainingFirstIterator(true)
 	}, triePtr.Size)
-	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorRem[*AddressTrieNode] {
+	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorWithRemove[*AddressTrieNode] {
 		return trie.ContainingFirstAllNodeIterator(true)
 	}, triePtr.NodeSize)
-	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorRem[*AddressTrieNode] {
+	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorWithRemove[*AddressTrieNode] {
 		return trie.ContainingFirstIterator(false)
 	}, triePtr.Size)
-	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorRem[*AddressTrieNode] {
+	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorWithRemove[*AddressTrieNode] {
 		return trie.ContainingFirstAllNodeIterator(false)
 	}, triePtr.NodeSize)
 
@@ -803,7 +803,7 @@ func (t trieTesterGeneric) testIterate(tree *AddressTrie) {
 
 func (t trieTesterGeneric) testIteratorRem(
 	trie *AddressTrie,
-	iteratorFunc func(*AddressTrie) ipaddr.IteratorRem[*AddressTrieNode],
+	iteratorFunc func(*AddressTrie) ipaddr.IteratorWithRemove[*AddressTrieNode],
 	countFunc func(*AddressTrie) int) {
 	// iterate the tree, confirm the size by counting
 	// clone the trie, iterate again, but remove each time, confirm the size
