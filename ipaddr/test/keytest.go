@@ -29,7 +29,6 @@ func (t keyTester) run() {
 				t.testNetIPs(cached)
 				//fmt.Println("trying the keys ", len(cached), " ipv4 ", ipv4Count, " ipv6 ", ipv6Count)
 
-				//../../sdk/go1.19.2/bin/go list -f '{{.Version}}' -m github.com/seancfoley/ipaddress-go@master
 			}
 		}
 	}

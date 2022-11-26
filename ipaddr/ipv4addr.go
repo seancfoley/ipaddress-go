@@ -752,6 +752,9 @@ func (addr *IPv4Address) ToSinglePrefixBlockOrAddress() *IPv4Address {
 }
 
 func (addr *IPv4Address) toSinglePrefixBlockOrAddress() (*IPv4Address, addrerr.IncompatibleAddressError) {
+	if addr == nil {
+		return nil, &incompatibleAddressError{addressError{key: "ipaddress.error.address.not.block"}}
+	}
 	res := addr.ToSinglePrefixBlockOrAddress()
 	if res == nil {
 		return nil, &incompatibleAddressError{addressError{key: "ipaddress.error.address.not.block"}}

@@ -92,7 +92,8 @@ func (t trieTesterGeneric) run() {
 	}
 	notDoneEmptyIPv6 = true
 	notDoneEmptyIPv4 = true
-	for _, treeAddrs := range sampleIPAddressTries {
+	for i, treeAddrs := range sampleIPAddressTries {
+		_ = i
 		addrs := collect(treeAddrs, func(addrStr string) *ipaddr.Address {
 			return t.createAddress(addrStr).GetAddress().ToIPv4().ToAddressBase()
 		})
@@ -191,6 +192,10 @@ func (t trieTesterGeneric) run() {
 
 	t.testString(treeOne)
 	t.testString(treeTwo)
+	t.testString(treeThree)
+	t.testString(treeFour)
+
+	t.testZeroValuedAddedTrees()
 
 	// try deleting the root
 	trieb := NewAddressGenericTrie()
@@ -247,15 +252,100 @@ func (t trieTesterGeneric) run() {
 }
 
 func (t trieTesterGeneric) testString(strs trieStrings) {
-	ipv6Tree := NewIPv6AddressGenericTrie()
-	t.createIPv6SampleTree(ipv6Tree, strs.addrs)
-	treeStr := ipv6Tree.String()
+
+	addrTree := &AddressTrie{}
+	t.createIPSampleTree(addrTree, strs.addrs)
+	treeStr := addrTree.String()
 	if treeStr != strs.treeString {
-		t.addFailure(newTrieFailure("trie string not right, got "+treeStr+" instead of expected "+strs.treeString, ipv6Tree))
+		t.addFailure(newTrieFailure("trie string not right, got "+treeStr+" instead of expected "+strs.treeString, addrTree))
 	}
-	addedString := ipv6Tree.AddedNodesTreeString()
+
+	addedString := addrTree.AddedNodesTreeString()
 	if addedString != strs.addedNodeString {
-		t.addFailure(newTrieFailure("trie string not right, got "+addedString+" instead of expected "+strs.addedNodeString, ipv6Tree))
+		t.addFailure(newTrieFailure("trie string not right, got "+addedString+" instead of expected "+strs.addedNodeString, addrTree))
+	}
+
+	tree := addrTree.ConstructAddedNodesTree()
+	addedNodeTreeStr := tree.String()
+	if addedNodeTreeStr != strs.addedNodeString {
+		t.addFailure(newTrieFailure("assoc trie string not right, got "+addedNodeTreeStr+" instead of expected "+strs.addedNodeString, addrTree))
+	}
+
+	assocTrie := &ipaddr.AssociativeTrie[*ipaddr.Address, int]{}
+	for i, addr := range strs.addrs {
+		addressStr := t.createAddress(addr)
+		address := addressStr.GetAddress()
+		assocTrie.Put(address.ToAddressBase(), i)
+	}
+
+	treeStr = assocTrie.String()
+	addedNodeTreeStr = assocTrie.AddedNodesTreeString()
+	associatedTreeStr := strs.addedNodeToIndexString
+	if addedNodeTreeStr != associatedTreeStr {
+		t.addFailure(newTrieFailure("assoc trie string not right, got "+treeStr+" instead of expected "+strs.addedNodeToIndexString, addrTree))
+	}
+
+	contree := assocTrie.ConstructAddedNodesTree()
+	addedNodeTreeStr = contree.String()
+	if addedNodeTreeStr != associatedTreeStr {
+		t.addFailure(newTrieFailure("assoc trie string not right, got "+addedNodeTreeStr+" instead of expected "+strs.addedNodeToIndexString, addrTree))
+	}
+
+	//ipaddr.AssociativeAddedTree[T, V]
+	//var check func(node ipaddr.AssociativeAddedTreeNode[*ipaddr.Address, int])
+	//check = func(node ipaddr.AssociativeAddedTreeNode[*ipaddr.Address, int]) {
+	//	subNodes := node.GetSubNodes()
+	//	for i := range subNodes {
+	//		if i > 0 {
+	//			fmt.Println(subNodes[i].GetKey().Compare(subNodes[i-1].GetKey()))
+	//		}
+	//		//res[i] = AssociativeAddedTreeNode[T, V]{subNode}
+	//	}
+	//	fmt.Println()
+	//	for _, subNode := range subNodes {
+	//		check(subNode)
+	//	}
+	//}
+	//check(*assocTree.GetRoot())
+
+	t.incrementTestCount()
+}
+
+func (t trieTesterGeneric) testZeroValuedAddedTrees() {
+	addedTree := ipaddr.AddedTree[*ipaddr.IPv4Address]{}
+	t.checkString(addedTree.String(), "\n○ <nil>\n")
+	t.checkString(addedTree.GetRoot().String(), "○ <nil>")
+	t.checkString(addedTree.GetRoot().GetKey().String(), "<nil>")
+	t.checkString(fmt.Sprint(addedTree.GetRoot().GetSubNodes()), "[]")
+	t.checkString(addedTree.GetRoot().TreeString(), "\n○ <nil>\n")
+
+	addedTreeNode := ipaddr.AddedTreeNode[*ipaddr.IPv4Address]{}
+	t.checkString(addedTreeNode.String(), "○ <nil>")
+	t.checkString(addedTreeNode.GetKey().String(), "<nil>")
+	t.checkString(fmt.Sprint(addedTreeNode.GetSubNodes()), "[]")
+	t.checkString(addedTreeNode.TreeString(), "\n○ <nil>\n")
+
+	assocAddedTree := ipaddr.AssociativeAddedTree[*ipaddr.IPv4Address, int]{}
+	t.checkString(assocAddedTree.String(), "\n○ <nil> = 0\n")
+	t.checkString(assocAddedTree.GetRoot().String(), "○ <nil> = 0")
+	t.checkString(assocAddedTree.GetRoot().GetKey().String(), "<nil>")
+	t.checkString(fmt.Sprint(assocAddedTree.GetRoot().GetValue()), "0")
+	t.checkString(fmt.Sprint(assocAddedTree.GetRoot().GetSubNodes()), "[]")
+	t.checkString(assocAddedTree.GetRoot().TreeString(), "\n○ <nil> = 0\n")
+
+	assocAddedTreeNode := ipaddr.AssociativeAddedTreeNode[*ipaddr.IPAddress, float64]{}
+	t.checkString(assocAddedTreeNode.String(), "○ <nil> = 0")
+	t.checkString(assocAddedTreeNode.GetKey().String(), "<nil>")
+	t.checkString(fmt.Sprint(assocAddedTreeNode.GetValue()), "0")
+	t.checkString(fmt.Sprint(assocAddedTreeNode.GetSubNodes()), "[]")
+	t.checkString(assocAddedTreeNode.TreeString(), "\n○ <nil> = 0\n")
+
+	t.incrementTestCount()
+}
+
+func (t trieTesterGeneric) checkString(actual, expected string) {
+	if actual != expected {
+		t.addFailure(newAddressItemFailure(" mismatched strings, expected "+expected+" got "+actual, nil))
 	}
 }
 
@@ -679,6 +769,14 @@ func (t trieTesterGeneric) createIPv4SampleTree(tree *AddressTrie, addrs []strin
 	}
 }
 
+func (t trieTesterGeneric) createIPSampleTree(tree *AddressTrie, addrs []string) {
+	for _, addr := range addrs {
+		addressStr := t.createAddress(addr)
+		address := addressStr.GetAddress()
+		tree.Add(address.ToAddressBase())
+	}
+}
+
 //<R extends AddressTrie<T>, T extends Address>
 func (t trieTesterGeneric) testIterationContainment(tree *AddressTrie) {
 	t.testIterationContainmentTree(tree, func(trie *AddressTrie) ipaddr.CachingTrieIterator[*AddressTrieNode] {
@@ -1043,6 +1141,9 @@ func (t trieTesterGeneric) testContains(trie *AddressTrie) {
 			}
 		}
 		lpm := trie.LongestPrefixMatch(halfwayAddr)
+		//if ok != (lpm != nil) {
+		//	t.addFailure(newTrieFailure("expecting a match for "+halfwayAddr.String(), trie))
+		//}
 		smallestContaining := trie.LongestPrefixMatchNode(halfwayAddr)
 		containing := trie.ElementsContaining(halfwayAddr)
 		elementsContains := trie.ElementContains(halfwayAddr)
@@ -1233,7 +1334,7 @@ func (t trieTesterGeneric) testAdd(trie *AddressTrie, addrs []*ipaddr.Address) {
 }
 
 func (t trieTesterGeneric) testMap(trie *ipaddr.AssociativeTrie[*ipaddr.Address, any], addrs []*ipaddr.Address,
-	valueProducer func(int) any, mapper func(any) any) { //TODO why is the mapper arg here?
+	valueProducer func(int) any, mapper func(any) any) { // seems we used to use the mapper but no now
 	// put tests
 	trie2 := trie.Clone()
 	trie4 := trie.Clone()
@@ -1241,18 +1342,18 @@ func (t trieTesterGeneric) testMap(trie *ipaddr.AssociativeTrie[*ipaddr.Address,
 		trie.Put(addr, valueProducer(i))
 	}
 	for i, addr := range addrs {
-		_, v := trie.Get(addr)
+		v, _ := trie.Get(addr)
 		expected := valueProducer(i)
 		if !reflect.DeepEqual(v, expected) { //reflect deep equal
 			fmt.Println(trie)
 			t.addFailure(newAssocTrieFailure(fmt.Sprintf("got mismatch, got %v, not %v for %v", v, expected, addr), trie))
-			_, v = trie.Get(addr)
+			v, _ = trie.Get(addr)
 		}
 	}
 	// all trie2 from now on
 	trie2.PutTrie(trie.GetRoot())
 	for i, addr := range addrs {
-		_, v := trie2.Get(addr)
+		v, _ := trie2.Get(addr)
 		expected := valueProducer(i)
 		if !reflect.DeepEqual(v, expected) {
 			t.addFailure(newAssocTrieFailure(fmt.Sprintf("got mismatch, got %v, not %v", v, expected), trie2))
@@ -1266,7 +1367,7 @@ func (t trieTesterGeneric) testMap(trie *ipaddr.AssociativeTrie[*ipaddr.Address,
 	}
 	trie2.PutTrie(trie.GetRoot())
 	for i, addr := range addrs {
-		_, v := trie2.Get(addr)
+		v, _ := trie2.Get(addr)
 		expected := valueProducer(i)
 		if !reflect.DeepEqual(v, expected) {
 			t.addFailure(newAssocTrieFailure(fmt.Sprintf("get mismatch, got %v, not %v", v, expected), trie2))
@@ -1289,7 +1390,7 @@ func (t trieTesterGeneric) testMap(trie *ipaddr.AssociativeTrie[*ipaddr.Address,
 
 	}
 	for i, addr := range addrs {
-		exists, _ := trie2.Put(addr, valueProducer(i))
+		_, exists := trie2.Put(addr, valueProducer(i))
 		if exists != (i%2 == 0) {
 			t.addFailure(newAssocTrieFailure("putNew mismatch", trie2))
 		}
@@ -1298,7 +1399,7 @@ func (t trieTesterGeneric) testMap(trie *ipaddr.AssociativeTrie[*ipaddr.Address,
 		t.addFailure(newAssocTrieFailure("got size mismatch, got "+strconv.Itoa(trie.Size())+" not "+strconv.Itoa(len(addrs)), trie2))
 	}
 	for i, addr := range addrs {
-		res, _ := trie2.Put(addr, valueProducer(i+1))
+		_, res := trie2.Put(addr, valueProducer(i+1))
 		if res {
 			t.addFailure(newAssocTrieFailure("putNew mismatch", trie2))
 		}
@@ -1307,19 +1408,19 @@ func (t trieTesterGeneric) testMap(trie *ipaddr.AssociativeTrie[*ipaddr.Address,
 		t.addFailure(newAssocTrieFailure("got size mismatch, got "+strconv.Itoa(trie.Size())+" not "+strconv.Itoa(len(addrs)), trie2))
 	}
 	for i, addr := range addrs {
-		_, v := trie2.Get(addr)
+		v, _ := trie2.Get(addr)
 		expected := valueProducer(i + 1)
 		if !reflect.DeepEqual(v, expected) {
 			t.addFailure(newAssocTrieFailure(fmt.Sprintf("get mismatch, got %v, not %v", v, expected), trie))
 		}
 	}
 	for i, addr := range addrs {
-		_, v := trie2.Put(addr, valueProducer(i))
+		v, _ := trie2.Put(addr, valueProducer(i))
 		expected := valueProducer(i + 1)
 		if !reflect.DeepEqual(v, expected) {
 			t.addFailure(newAssocTrieFailure(fmt.Sprintf("get mismatch, got %v, not %v", v, expected), trie))
 		}
-		_, v = trie2.Get(addr)
+		v, _ = trie2.Get(addr)
 		expected = valueProducer(i)
 		if !reflect.DeepEqual(v, expected) {
 			t.addFailure(newAssocTrieFailure(fmt.Sprintf("get mismatch, got %v, not %v", v, expected), trie))
@@ -1355,7 +1456,7 @@ func (t trieTesterGeneric) testMap(trie *ipaddr.AssociativeTrie[*ipaddr.Address,
 				if !found {
 					t.addFailure(newAssocTrieFailure("got unexpected vals", trie2))
 				}
-				return value, true
+				return value, value != nil
 			}
 		})
 		if node == nil || !node.GetKey().Equal(addr) {
@@ -1369,7 +1470,7 @@ func (t trieTesterGeneric) testMap(trie *ipaddr.AssociativeTrie[*ipaddr.Address,
 		t.addFailure(newAssocTrieFailure("got size mismatch, got "+strconv.Itoa(trie2.Size())+" not "+strconv.Itoa(len(addrs)-k), trie2))
 	}
 	for i, addr := range addrs {
-		_, v := trie2.Get(addr)
+		v, _ := trie2.Get(addr)
 		var expected any
 		if i%2 == 0 {
 			expected = valueProducer(0)
@@ -1385,15 +1486,15 @@ func (t trieTesterGeneric) testMap(trie *ipaddr.AssociativeTrie[*ipaddr.Address,
 		}
 	}
 	for _, addr := range addrs {
-		trie2.RemapIfAbsent(addr, func() (any, bool) {
-			return valueProducer(1), true
+		trie2.RemapIfAbsent(addr, func() any {
+			return valueProducer(1)
 		}) // false
 	}
 	if trie2.Size() != len(addrs) {
 		t.addFailure(newAssocTrieFailure("got size mismatch, got "+strconv.Itoa(trie2.Size())+" not "+strconv.Itoa(len(addrs)), trie2))
 	}
 	for i, addr := range addrs {
-		_, v := trie2.Get(addr)
+		v, _ := trie2.Get(addr)
 		var expected any
 		if i%2 == 0 {
 			expected = valueProducer(0)
@@ -1424,35 +1525,34 @@ func (t trieTesterGeneric) testMap(trie *ipaddr.AssociativeTrie[*ipaddr.Address,
 		t.addFailure(newAssocTrieFailure("got size mismatch, got "+strconv.Itoa(trie2.Size())+" not "+strconv.Itoa(len(addrs)>>1), trie2))
 	}
 
-	for i, addr := range addrs {
-		node := trie2.RemapIfAbsent(addr, func() (any, bool) {
-			return nil, false
-		}) // false
-		if (node == nil) != (i%2 == 0) {
-			t.addFailure(newAssocTrieFailure("got unexpected return, got "+node.String(), trie2))
-		}
-	}
-	if trie2.Size() != (len(addrs) >> 1) {
-		t.addFailure(newAssocTrieFailure("got size mismatch, got "+strconv.Itoa(trie2.Size())+" not "+strconv.Itoa(len(addrs)>>1), trie2))
-	}
+	//for i, addr := range addrs {
+	//	node := trie2.RemapIfAbsent(addr, func() (any, bool) {
+	//		return nil, false
+	//	}) // false
+	//	if (node == nil) != (i%2 == 0) {
+	//		t.addFailure(newAssocTrieFailure("got unexpected return, got "+node.String(), trie2))
+	//	}
+	//}
+	//if trie2.Size() != (len(addrs) >> 1) {
+	//	t.addFailure(newAssocTrieFailure("got size mismatch, got "+strconv.Itoa(trie2.Size())+" not "+strconv.Itoa(len(addrs)>>1), trie2))
+	//}
 
 	for _, addr := range addrs {
-		node := trie2.RemapIfAbsent(addr, func() (any, bool) {
-			return nil, false
+		node := trie2.RemapIfAbsent(addr, func() any {
+			return nil
 		}) // true
 		if node != nil && !node.GetKey().Equal(addr) {
 			t.addFailure(newAssocTrieFailure("got unexpected return, got "+node.String(), trie2))
 		}
-		if node == nil {
-			trie2.Put(addr, nil)
-		}
+		//if node == nil {
+		//	trie2.Put(addr, nil)
+		//}
 	}
 	if trie2.Size() != len(addrs) {
 		t.addFailure(newAssocTrieFailure("got size mismatch, got "+strconv.Itoa(trie2.Size())+" not "+strconv.Itoa(len(addrs)), trie2))
 	}
-
 	for i, addr := range addrs {
-		_, v := trie2.Get(addr)
+		v, _ := trie2.Get(addr)
 		var expected any
 		if i%2 == 0 {
 		} else if i%4 == 1 {
@@ -1471,20 +1571,24 @@ func (t trieTesterGeneric) testMap(trie *ipaddr.AssociativeTrie[*ipaddr.Address,
 	var firstNode *ipaddr.AssociativeTrieNode[*ipaddr.Address, any]
 	func() {
 		defer func() {
-			if r := recover(); r != nil {
-				v := firstNode.GetValue()
-				b, _ := trie2.Put(firstNode.GetKey(), v)
-				if !b {
+			if r := recover(); r != nil { // r is what was passed to panic
+				v := firstNode.GetValue() // firstNode is the node with the value we were remapping
+				_, b := trie2.Put(firstNode.GetKey(), v)
+				if b {
 					t.addFailure(newAssocTrieFailure("should have added", trie2))
 				}
 			}
 		}()
+		// remove the first addr so we should panic
+
 		for _, addr := range addrs {
 			node := trie2.GetAddedNode(addr)
 			firstNode = node
-			trie2.RemapIfAbsent(addr, func() (any, bool) {
-				node.Remove()
-				return valueProducer(1), true
+			// remove the node so we should panic on the remap
+			trie2.Remove(addr)
+			trie2.RemapIfAbsent(addr, func() any {
+				trie2.Add(addr)
+				return valueProducer(1)
 			}) // false
 			t.addFailure(newAssocTrieFailure("should have paniced", trie2))
 		}
@@ -1494,7 +1598,7 @@ func (t trieTesterGeneric) testMap(trie *ipaddr.AssociativeTrie[*ipaddr.Address,
 		defer func() {
 			if r := recover(); r != nil {
 				v := firstNode.GetValue()
-				b, _ := trie2.Put(firstNode.GetKey(), v)
+				_, b := trie2.Put(firstNode.GetKey(), v)
 				if !b {
 					t.addFailure(newAssocTrieFailure("should have added", trie2))
 				}

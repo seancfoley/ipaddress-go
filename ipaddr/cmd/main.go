@@ -709,6 +709,34 @@ func main() {
 	faddr, _ := ipaddr.NewIPAddressFromNetIPAddr(naddr)
 	fmt.Println("and back is " + faddr.String())
 	//log2()
+
+	addedTree := ipaddr.AddedTree[*ipaddr.IPv4Address]{}
+	fmt.Println("\nzero tree is " + addedTree.String())
+	fmt.Println("root is " + addedTree.GetRoot().String())
+	fmt.Println("root key is " + addedTree.GetRoot().GetKey().String())
+	fmt.Println("root subnodes are ", addedTree.GetRoot().GetSubNodes())
+	fmt.Println("root tree string is " + addedTree.GetRoot().TreeString())
+
+	addedTreeNode := ipaddr.AddedTreeNode[*ipaddr.IPv4Address]{}
+	fmt.Println("node is " + addedTreeNode.String())
+	fmt.Println("node key is " + addedTreeNode.GetKey().String())
+	fmt.Println("node subnodes are ", addedTreeNode.GetSubNodes())
+	fmt.Println("node tree string is " + addedTreeNode.TreeString())
+
+	assocAddedTree := ipaddr.AssociativeAddedTree[*ipaddr.IPv4Address, int]{}
+	fmt.Println("\nassoc zero tree is " + assocAddedTree.String())
+	fmt.Println("root is " + assocAddedTree.GetRoot().String())
+	fmt.Println("root key is " + assocAddedTree.GetRoot().GetKey().String())
+	fmt.Println("root value is ", assocAddedTree.GetRoot().GetValue())
+	fmt.Println("root subnodes are ", assocAddedTree.GetRoot().GetSubNodes())
+	fmt.Println("root tree string is " + assocAddedTree.GetRoot().TreeString())
+
+	assocAddedTreeNode := ipaddr.AssociativeAddedTreeNode[*ipaddr.IPAddress, float64]{}
+	fmt.Println("assoc node is " + assocAddedTreeNode.String())
+	fmt.Println("assoc node key is " + assocAddedTreeNode.GetKey().String())
+	fmt.Println("assoc node value is ", assocAddedTreeNode.GetValue())
+	fmt.Println("assoc node subnodes are ", assocAddedTreeNode.GetSubNodes())
+	fmt.Println("assoc node tree string is " + assocAddedTreeNode.TreeString())
 }
 
 func splitIntoBlocks(one, two string) {

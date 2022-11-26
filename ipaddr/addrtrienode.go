@@ -24,6 +24,7 @@ import (
 
 // TrieKeyConstraint is the generic type constraint used for tree keys, which are individual addresses and prefix block subnets
 type TrieKeyConstraint[T AddressType] interface {
+	comparable
 	AddressType
 
 	ToPrefixBlockLen(prefLen BitCount) T
@@ -34,19 +35,9 @@ type TrieKeyConstraint[T AddressType] interface {
 	toSinglePrefixBlockOrAddress() (T, addrerr.IncompatibleAddressError)
 }
 
-var _ TrieKeyConstraint[*IPAddress] = &IPAddress{}
-var _ TrieKeyConstraint[*IPv4Address] = &IPv4Address{}
-var _ TrieKeyConstraint[*IPv6Address] = &IPv6Address{}
-
 type trieKey[T TrieKeyConstraint[T]] struct {
 	address T
 }
-
-var _, _, _, _, _ tree.TrieKey = trieKey[*Address]{},
-	trieKey[*IPAddress]{},
-	trieKey[*IPv4Address]{},
-	trieKey[*IPv6Address]{},
-	trieKey[*MACAddress]{}
 
 func (a trieKey[T]) GetBitCount() tree.BitCount {
 	return a.address.GetBitCount()
@@ -72,7 +63,7 @@ func (a trieKey[T]) GetPrefixLen() tree.PrefixLen {
 // the address key whose prefix of that length matches the prefix of this address key, and the remaining bits span all values.
 //
 // The returned address key will represent all addresses with the same prefix as this one, the prefix "block".
-func (a trieKey[T]) ToPrefixBlockLen(bitCount BitCount) tree.TrieKey {
+func (a trieKey[T]) ToPrefixBlockLen(bitCount BitCount) trieKey[T] {
 	return trieKey[T]{a.address.ToPrefixBlockLen(bitCount)}
 }
 
@@ -99,14 +90,14 @@ func (a trieKey[T]) ToPrefixBlockLen(bitCount BitCount) tree.TrieKey {
 //
 // When comparing 0.0.0.0/0, which has no prefix, to other addresses, the first bit in the other address determines the ordering.
 // If 1 it is larger and if 0 it is smaller than 0.0.0.0/0.
-func (a trieKey[T]) Compare(other tree.TrieKey) int {
-	return a.address.trieCompare(other.(trieKey[T]).address.ToAddressBase())
+func (a trieKey[T]) Compare(other trieKey[T]) int {
+	return a.address.trieCompare(other.address.ToAddressBase())
 }
 
 // MatchBits returns false if we need to keep going and try to match sub-nodes
 // MatchBits returns true if the bits do not match, or the bits match to the very end
-func (a trieKey[T]) MatchBits(key tree.TrieKey, bitIndex int, handleMatch tree.KeyCompareResult) bool {
-	existingAddr := key.(trieKey[T]).address.ToAddressBase()
+func (a trieKey[T]) MatchBits(key trieKey[T], bitIndex int, handleMatch tree.KeyCompareResult) bool {
+	existingAddr := key.address.ToAddressBase()
 	bitsPerSegment := existingAddr.GetBitsPerSegment()
 	bytesPerSegment := existingAddr.GetBytesPerSegment()
 	newAddr := a.address.ToAddressBase()
@@ -132,7 +123,6 @@ func (a trieKey[T]) MatchBits(key tree.TrieKey, bitIndex int, handleMatch tree.K
 	for {
 		existingSegment := existingAddr.getSegment(segmentIndex)
 		newSegment := newAddr.getSegment(segmentIndex)
-		//newSegment := newAddr.GetGenericSegment(segmentIndex).ToSegmentBase()
 		segmentPref := getSegmentPrefLen(existingAddr, existingPref, bitsPerSegment, bitsMatchedSoFar, existingSegment)
 		newSegmentPref := getSegmentPrefLen(newAddr, newPrefLen, bitsPerSegment, bitsMatchedSoFar, newSegment)
 		if segmentPref != nil {
@@ -185,57 +175,57 @@ func (a trieKey[T]) MatchBits(key tree.TrieKey, bitIndex int, handleMatch tree.K
 }
 
 // ToMaxLower changes this key to a new key with a 0 at the first bit beyond the prefix, followed by all ones, and with no prefix length
-func (a trieKey[T]) ToMaxLower() tree.TrieKey {
+func (a trieKey[T]) ToMaxLower() trieKey[T] {
 	return trieKey[T]{a.address.toMaxLower()}
 }
 
 // ToMinUpper changes this key to a new key with a 1 at the first bit beyond the prefix, followed by all zeros, and with no prefix length
-func (a trieKey[T]) ToMinUpper() tree.TrieKey {
+func (a trieKey[T]) ToMinUpper() trieKey[T] {
 	return trieKey[T]{a.address.toMinUpper()}
 }
+
+var (
+	_ tree.BinTrieNode[trieKey[*Address], any]
+	_ tree.BinTrieNode[trieKey[*IPAddress], any]
+	_ tree.BinTrieNode[trieKey[*IPv4Address], any]
+	_ tree.BinTrieNode[trieKey[*IPv6Address], any]
+	_ tree.BinTrieNode[trieKey[*MACAddress], any]
+)
 
 //
 //
 //
 //
 type trieNode[T TrieKeyConstraint[T], V any] struct {
-	binNode tree.BinTrieNode
+	binNode tree.BinTrieNode[trieKey[T], V]
 }
 
 // getKey gets the key used for placing the node in the tree.
 func (node *trieNode[T, V]) getKey() (t T) {
-	if val := node.toBinTrieNode().GetKey(); val != nil {
-		return val.(trieKey[T]).address
-	}
-	return
+	return node.toBinTrieNode().GetKey().address
 }
 
-func (node *trieNode[T, V]) get(addr T) (bool, V) {
+func (node *trieNode[T, V]) get(addr T) (V, bool) {
 	addr = mustBeBlockOrAddress(addr)
-	val := node.toBinTrieNode().Get(trieKey[T]{addr})
-	if val == nil {
-		var v V
-		return false, v
-	}
-	return true, val.(V) //TODO once bintree gets the same changes, it will be parameterized with V and thus this type assertion will disappear - tree.BinTrieNode[T,V]
+	return node.toBinTrieNode().Get(trieKey[T]{addr})
 }
 
-func (node *trieNode[T, V]) lowerAddedNode(addr T) *tree.BinTrieNode {
+func (node *trieNode[T, V]) lowerAddedNode(addr T) *tree.BinTrieNode[trieKey[T], V] {
 	addr = mustBeBlockOrAddress(addr)
 	return node.toBinTrieNode().LowerAddedNode(trieKey[T]{addr})
 }
 
-func (node *trieNode[T, V]) floorAddedNode(addr T) *tree.BinTrieNode {
+func (node *trieNode[T, V]) floorAddedNode(addr T) *tree.BinTrieNode[trieKey[T], V] {
 	addr = mustBeBlockOrAddress(addr)
 	return node.toBinTrieNode().FloorAddedNode(trieKey[T]{addr})
 }
 
-func (node *trieNode[T, V]) higherAddedNode(addr T) *tree.BinTrieNode {
+func (node *trieNode[T, V]) higherAddedNode(addr T) *tree.BinTrieNode[trieKey[T], V] {
 	addr = mustBeBlockOrAddress(addr)
 	return node.toBinTrieNode().HigherAddedNode(trieKey[T]{addr})
 }
 
-func (node *trieNode[T, V]) ceilingAddedNode(addr T) *tree.BinTrieNode {
+func (node *trieNode[T, V]) ceilingAddedNode(addr T) *tree.BinTrieNode[trieKey[T], V] {
 	addr = mustBeBlockOrAddress(addr)
 	return node.toBinTrieNode().CeilingAddedNode(trieKey[T]{addr})
 }
@@ -253,12 +243,12 @@ func (node *trieNode[T, V]) descendingIterator() Iterator[T] {
 }
 
 // nodeIterator iterates through the added nodes of the sub-tree with this node as the root, in forward or reverse tree order.
-func (node *trieNode[T, V]) nodeIterator(forward bool) tree.TrieNodeIteratorRem {
+func (node *trieNode[T, V]) nodeIterator(forward bool) tree.TrieNodeIteratorRem[trieKey[T], V] {
 	return node.toBinTrieNode().NodeIterator(forward)
 }
 
 // allNodeIterator iterates through all the nodes of the sub-tree with this node as the root, in forward or reverse tree order.
-func (node *trieNode[T, V]) allNodeIterator(forward bool) tree.TrieNodeIteratorRem {
+func (node *trieNode[T, V]) allNodeIterator(forward bool) tree.TrieNodeIteratorRem[trieKey[T], V] {
 	return node.toBinTrieNode().AllNodeIterator(forward)
 }
 
@@ -266,7 +256,7 @@ func (node *trieNode[T, V]) allNodeIterator(forward bool) tree.TrieNodeIteratorR
 // in the sub-trie with this node as the root.
 //
 // If lowerSubNodeFirst is true, for blocks of equal size the lower is first, otherwise the reverse order is taken.
-func (node *trieNode[T, V]) blockSizeNodeIterator(lowerSubNodeFirst bool) tree.TrieNodeIteratorRem {
+func (node *trieNode[T, V]) blockSizeNodeIterator(lowerSubNodeFirst bool) tree.TrieNodeIteratorRem[trieKey[T], V] {
 	return node.toBinTrieNode().BlockSizeNodeIterator(lowerSubNodeFirst)
 }
 
@@ -274,29 +264,29 @@ func (node *trieNode[T, V]) blockSizeNodeIterator(lowerSubNodeFirst bool) tree.T
 // in the sub-trie with this node as the root.
 //
 // If lowerSubNodeFirst is true, for blocks of equal size the lower is first, otherwise the reverse order
-func (node *trieNode[T, V]) blockSizeAllNodeIterator(lowerSubNodeFirst bool) tree.TrieNodeIteratorRem {
+func (node *trieNode[T, V]) blockSizeAllNodeIterator(lowerSubNodeFirst bool) tree.TrieNodeIteratorRem[trieKey[T], V] {
 	return node.toBinTrieNode().BlockSizeAllNodeIterator(lowerSubNodeFirst)
 }
 
 // blockSizeCachingAllNodeIterator iterates all nodes, ordered by keys from the largest prefix blocks to smallest and then to individual addresses,
 // in the sub-trie with this node as the root.
-func (node *trieNode[T, V]) blockSizeCachingAllNodeIterator() tree.CachingTrieNodeIterator {
+func (node *trieNode[T, V]) blockSizeCachingAllNodeIterator() tree.CachingTrieNodeIterator[trieKey[T], V] {
 	return node.toBinTrieNode().BlockSizeCachingAllNodeIterator()
 }
 
-func (node *trieNode[T, V]) containingFirstIterator(forwardSubNodeOrder bool) tree.CachingTrieNodeIterator {
+func (node *trieNode[T, V]) containingFirstIterator(forwardSubNodeOrder bool) tree.CachingTrieNodeIterator[trieKey[T], V] {
 	return node.toBinTrieNode().ContainingFirstIterator(forwardSubNodeOrder)
 }
 
-func (node *trieNode[T, V]) containingFirstAllNodeIterator(forwardSubNodeOrder bool) tree.CachingTrieNodeIterator {
+func (node *trieNode[T, V]) containingFirstAllNodeIterator(forwardSubNodeOrder bool) tree.CachingTrieNodeIterator[trieKey[T], V] {
 	return node.toBinTrieNode().ContainingFirstAllNodeIterator(forwardSubNodeOrder)
 }
 
-func (node *trieNode[T, V]) containedFirstIterator(forwardSubNodeOrder bool) tree.TrieNodeIteratorRem {
+func (node *trieNode[T, V]) containedFirstIterator(forwardSubNodeOrder bool) tree.TrieNodeIteratorRem[trieKey[T], V] {
 	return node.toBinTrieNode().ContainedFirstIterator(forwardSubNodeOrder)
 }
 
-func (node *trieNode[T, V]) containedFirstAllNodeIterator(forwardSubNodeOrder bool) tree.TrieNodeIterator {
+func (node *trieNode[T, V]) containedFirstAllNodeIterator(forwardSubNodeOrder bool) tree.TrieNodeIterator[trieKey[T], V] {
 	return node.toBinTrieNode().ContainedFirstAllNodeIterator(forwardSubNodeOrder)
 }
 
@@ -310,12 +300,12 @@ func (node *trieNode[T, V]) removeNode(addr T) bool {
 	return node.toBinTrieNode().RemoveNode(trieKey[T]{addr})
 }
 
-func (node *trieNode[T, V]) removeElementsContainedBy(addr T) *tree.BinTrieNode {
+func (node *trieNode[T, V]) removeElementsContainedBy(addr T) *tree.BinTrieNode[trieKey[T], V] {
 	addr = mustBeBlockOrAddress(addr)
 	return node.toBinTrieNode().RemoveElementsContainedBy(trieKey[T]{addr})
 }
 
-func (node *trieNode[T, V]) elementsContainedBy(addr T) *tree.BinTrieNode {
+func (node *trieNode[T, V]) elementsContainedBy(addr T) *tree.BinTrieNode[trieKey[T], V] {
 	addr = mustBeBlockOrAddress(addr)
 	return node.toBinTrieNode().ElementsContainedBy(trieKey[T]{addr})
 }
@@ -325,12 +315,13 @@ func (node *trieNode[T, V]) elementsContaining(addr T) *containmentPath[T, V] {
 	return toContainmentPathX[T, V](node.toBinTrieNode().ElementsContaining(trieKey[T]{addr}))
 }
 
-func (node *trieNode[T, V]) longestPrefixMatch(addr T) T {
+func (node *trieNode[T, V]) longestPrefixMatch(addr T) (t T) {
 	addr = mustBeBlockOrAddress(addr)
-	return node.toBinTrieNode().LongestPrefixMatch(trieKey[T]{addr}).(trieKey[T]).address
+	key, _ := node.toBinTrieNode().LongestPrefixMatch(trieKey[T]{addr})
+	return key.address
 }
 
-func (node *trieNode[T, V]) longestPrefixMatchNode(addr T) *tree.BinTrieNode {
+func (node *trieNode[T, V]) longestPrefixMatchNode(addr T) *tree.BinTrieNode[trieKey[T], V] {
 	addr = mustBeBlockOrAddress(addr)
 	return node.toBinTrieNode().LongestPrefixMatchNode(trieKey[T]{addr})
 }
@@ -340,25 +331,25 @@ func (node *trieNode[T, V]) elementContains(addr T) bool {
 	return node.toBinTrieNode().ElementContains(trieKey[T]{addr})
 }
 
-func (node *trieNode[T, V]) getNode(addr T) *tree.BinTrieNode {
+func (node *trieNode[T, V]) getNode(addr T) *tree.BinTrieNode[trieKey[T], V] {
 	addr = mustBeBlockOrAddress(addr)
 	return node.toBinTrieNode().GetNode(trieKey[T]{addr})
 }
 
-func (node *trieNode[T, V]) getAddedNode(addr T) *tree.BinTrieNode {
+func (node *trieNode[T, V]) getAddedNode(addr T) *tree.BinTrieNode[trieKey[T], V] {
 	addr = mustBeBlockOrAddress(addr)
 	return node.toBinTrieNode().GetAddedNode(trieKey[T]{addr})
 }
 
-func (node *trieNode[T, V]) toBinTrieNode() *tree.BinTrieNode { //TODO later when BinTrieNode paramterized with [T,V], this will use parameterized BinTrieNode
-	return (*tree.BinTrieNode)(unsafe.Pointer(node))
+func (node *trieNode[T, V]) toBinTrieNode() *tree.BinTrieNode[trieKey[T], V] {
+	return (*tree.BinTrieNode[trieKey[T], V])(unsafe.Pointer(node))
 }
 
-func toAddressTrieNode[T TrieKeyConstraint[T]](node *tree.BinTrieNode) *TrieNode[T] { //TODO later when BinTrieNode paramterized with [T,V], this will use parameterized BinTrieNode
+func toAddressTrieNode[T TrieKeyConstraint[T], V any](node *tree.BinTrieNode[trieKey[T], V]) *TrieNode[T] {
 	return (*TrieNode[T])(unsafe.Pointer(node))
 }
 
-func toAssociativeTrieNode[T TrieKeyConstraint[T], V any](node *tree.BinTrieNode) *AssociativeTrieNode[T, V] { //TODO later when BinTrieNode paramterized with [T,V], this will use parameterized BinTrieNode
+func toAssociativeTrieNode[T TrieKeyConstraint[T], V any](node *tree.BinTrieNode[trieKey[T], V]) *AssociativeTrieNode[T, V] {
 	return (*AssociativeTrieNode[T, V])(unsafe.Pointer(node))
 }
 
@@ -374,15 +365,16 @@ func toAssociativeTrieNode[T TrieKeyConstraint[T], V any](node *tree.BinTrieNode
 //
 //
 
-type emptyValue struct{}
+// using EmptyValueType alters how values are printed in strings
+type emptyValue = tree.EmptyValueType
 
 // TrieNode is a node in a compact binary prefix trie whose elements (keys) are prefix block subnets or addresses.
 type TrieNode[T TrieKeyConstraint[T]] struct {
 	trieNode[T, emptyValue]
 }
 
-func (node *TrieNode[T]) toBinTrieNode() *tree.BinTrieNode { //TODO later when BinTrieNode paramterized with [T,V], this will use parameterized BinTrieNode
-	return (*tree.BinTrieNode)(unsafe.Pointer(node))
+func (node *TrieNode[T]) toBinTrieNode() *tree.BinTrieNode[trieKey[T], emptyValue] {
+	return (*tree.BinTrieNode[trieKey[T], emptyValue])(unsafe.Pointer(node))
 }
 
 // tobase is used to convert the pointer rather than doing a field dereference, so that nil pointer handling can be done in *addressTrieNode
@@ -523,12 +515,12 @@ func (node *TrieNode[T]) DescendingIterator() Iterator[T] {
 
 // NodeIterator returns an iterator that iterates through the added nodes of the sub-tree with this node as the root, in forward or reverse tree order.
 func (node *TrieNode[T]) NodeIterator(forward bool) IteratorWithRemove[*TrieNode[T]] {
-	return addrTrieNodeIteratorRem[T]{node.tobase().nodeIterator(forward)}
+	return addrTrieNodeIteratorRem[T, emptyValue]{node.tobase().nodeIterator(forward)}
 }
 
 // AllNodeIterator returns an iterator that iterates through all the nodes of the sub-tree with this node as the root, in forward or reverse tree order.
 func (node *TrieNode[T]) AllNodeIterator(forward bool) IteratorWithRemove[*TrieNode[T]] {
-	return addrTrieNodeIteratorRem[T]{node.tobase().allNodeIterator(forward)}
+	return addrTrieNodeIteratorRem[T, emptyValue]{node.tobase().allNodeIterator(forward)}
 }
 
 // BlockSizeNodeIterator returns an iterator that iterates the added nodes, ordered by keys from largest prefix blocks to smallest and then to individual addresses,
@@ -536,7 +528,7 @@ func (node *TrieNode[T]) AllNodeIterator(forward bool) IteratorWithRemove[*TrieN
 //
 // If lowerSubNodeFirst is true, for blocks of equal size the lower is first, otherwise the reverse order is taken.
 func (node *TrieNode[T]) BlockSizeNodeIterator(lowerSubNodeFirst bool) IteratorWithRemove[*TrieNode[T]] {
-	return addrTrieNodeIteratorRem[T]{node.tobase().blockSizeNodeIterator(lowerSubNodeFirst)}
+	return addrTrieNodeIteratorRem[T, emptyValue]{node.tobase().blockSizeNodeIterator(lowerSubNodeFirst)}
 }
 
 // BlockSizeAllNodeIterator returns an iterator that iterates all the nodes, ordered by keys from largest prefix blocks to smallest and then to individual addresses,
@@ -544,13 +536,13 @@ func (node *TrieNode[T]) BlockSizeNodeIterator(lowerSubNodeFirst bool) IteratorW
 //
 // If lowerSubNodeFirst is true, for blocks of equal size the lower is first, otherwise the reverse order
 func (node *TrieNode[T]) BlockSizeAllNodeIterator(lowerSubNodeFirst bool) IteratorWithRemove[*TrieNode[T]] {
-	return addrTrieNodeIteratorRem[T]{node.tobase().blockSizeAllNodeIterator(lowerSubNodeFirst)}
+	return addrTrieNodeIteratorRem[T, emptyValue]{node.tobase().blockSizeAllNodeIterator(lowerSubNodeFirst)}
 }
 
 // BlockSizeCachingAllNodeIterator returns an iterator that iterates all nodes, ordered by keys from largest prefix blocks to smallest and then to individual addresses,
 // in the sub-trie with this node as the root.
 func (node *TrieNode[T]) BlockSizeCachingAllNodeIterator() CachingTrieIterator[*TrieNode[T]] {
-	return cachingAddressTrieNodeIterator[T]{node.tobase().blockSizeCachingAllNodeIterator()}
+	return cachingAddressTrieNodeIterator[T, emptyValue]{node.tobase().blockSizeCachingAllNodeIterator()}
 }
 
 // ContainingFirstIterator returns an iterator that does a pre-order binary tree traversal of the added nodes
@@ -570,7 +562,7 @@ func (node *TrieNode[T]) BlockSizeCachingAllNodeIterator() CachingTrieIterator[*
 // The caching allows you to provide iteration context from a parent to its sub-nodes when iterating.
 // The caching and retrieval is done in constant-time.
 func (node *TrieNode[T]) ContainingFirstIterator(forwardSubNodeOrder bool) CachingTrieIterator[*TrieNode[T]] {
-	return cachingAddressTrieNodeIterator[T]{node.tobase().containingFirstIterator(forwardSubNodeOrder)}
+	return cachingAddressTrieNodeIterator[T, emptyValue]{node.tobase().containingFirstIterator(forwardSubNodeOrder)}
 }
 
 // ContainingFirstAllNodeIterator returns an iterator that does a pre-order binary tree traversal of all the nodes
@@ -584,7 +576,7 @@ func (node *TrieNode[T]) ContainingFirstIterator(forwardSubNodeOrder bool) Cachi
 // That allows you to provide iteration context from a parent to its sub-nodes when iterating.
 // The caching and retrieval is done in constant-time.
 func (node *TrieNode[T]) ContainingFirstAllNodeIterator(forwardSubNodeOrder bool) CachingTrieIterator[*TrieNode[T]] {
-	return cachingAddressTrieNodeIterator[T]{node.tobase().containingFirstAllNodeIterator(forwardSubNodeOrder)}
+	return cachingAddressTrieNodeIterator[T, emptyValue]{node.tobase().containingFirstAllNodeIterator(forwardSubNodeOrder)}
 }
 
 // ContainedFirstIterator returns an iterator that does a post-order binary tree traversal of the added nodes
@@ -592,7 +584,7 @@ func (node *TrieNode[T]) ContainingFirstAllNodeIterator(forwardSubNodeOrder bool
 // All added sub-nodes will be visited before their parent nodes.
 // For an address trie this means contained addresses and subnets will be visited before their containing subnet blocks.
 func (node *TrieNode[T]) ContainedFirstIterator(forwardSubNodeOrder bool) IteratorWithRemove[*TrieNode[T]] {
-	return addrTrieNodeIteratorRem[T]{node.tobase().containedFirstIterator(forwardSubNodeOrder)}
+	return addrTrieNodeIteratorRem[T, emptyValue]{node.tobase().containedFirstIterator(forwardSubNodeOrder)}
 }
 
 // ContainedFirstAllNodeIterator returns an iterator that does a post-order binary tree traversal of all the nodes
@@ -600,7 +592,7 @@ func (node *TrieNode[T]) ContainedFirstIterator(forwardSubNodeOrder bool) Iterat
 // All sub-nodes will be visited before their parent nodes.
 // For an address trie this means contained addresses and subnets will be visited before their containing subnet blocks.
 func (node *TrieNode[T]) ContainedFirstAllNodeIterator(forwardSubNodeOrder bool) Iterator[*TrieNode[T]] {
-	return addrTrieNodeIterator[T]{node.tobase().containedFirstAllNodeIterator(forwardSubNodeOrder)}
+	return addrTrieNodeIterator[T, emptyValue]{node.tobase().containedFirstAllNodeIterator(forwardSubNodeOrder)}
 }
 
 // Clone clones the node.
@@ -716,13 +708,13 @@ func (node *TrieNode[T]) ElementsContaining(addr T) *ContainmentPath[T] {
 	return &ContainmentPath[T]{*node.tobase().elementsContaining(addr)}
 }
 
-// LongestPrefixMatch returns the address or subnet with the longest prefix of all the added subnets or the address whose prefix matches the given address.
+// LongestPrefixMatch returns the address or subnet with the longest prefix of all the added subnets and addresses whose prefix matches the given address.
 // This is equivalent to finding the containing subnet or address with the smallest subnet size.
 //
 // If the argument is not a single address nor prefix block, this method will panic.
 // The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
 //
-// Returns nil if no added subnet or address contains the given argument.
+// The second returned argument is false if no added subnet or address contains the given argument.
 //
 // Use ElementContains to check for the existence of a containing address.
 // To get all the containing addresses (subnets with matching prefix), use ElementsContaining.
@@ -846,8 +838,8 @@ type AssociativeTrieNode[T TrieKeyConstraint[T], V any] struct {
 	trieNode[T, V]
 }
 
-func (node *AssociativeTrieNode[T, V]) toBinTrieNode() *tree.BinTrieNode {
-	return (*tree.BinTrieNode)(unsafe.Pointer(node))
+func (node *AssociativeTrieNode[T, V]) toBinTrieNode() *tree.BinTrieNode[trieKey[T], V] {
+	return (*tree.BinTrieNode[trieKey[T], V])(unsafe.Pointer(node))
 }
 
 func (node *AssociativeTrieNode[T, V]) toBase() *trieNode[T, V] {
@@ -906,12 +898,7 @@ func (node *AssociativeTrieNode[T, V]) SetValue(val V) {
 
 // GetValue returns whather there is a value associated with the node, and returns that value.
 func (node *AssociativeTrieNode[T, V]) GetValue() V {
-	val := node.toBinTrieNode().GetValue()
-	if val == nil {
-		var v V
-		return v
-	}
-	return val.(V) //TODO once bintree gets the same changes, it will be parameterized with V and thus this type assertion will disappear - tree.BinTrieNode[T,V]
+	return node.toBinTrieNode().GetValue()
 }
 
 // GetUpperSubNode gets the direct child node whose key is largest in value
@@ -1088,14 +1075,12 @@ func (node *AssociativeTrieNode[T, V]) ContainedFirstAllNodeIterator(forwardSubN
 // Clone clones the node.
 // Keys remain the same, but the parent node and the lower and upper sub-nodes are all set to nil.
 func (node *AssociativeTrieNode[T, V]) Clone() *AssociativeTrieNode[T, V] {
-	//return node.clone().ToAssociative()
 	return toAssociativeTrieNode[T, V](node.toBinTrieNode().Clone())
 }
 
 // CloneTree clones the sub-tree starting with this node as the root.
 // The nodes are cloned, but their keys and values are not cloned.
 func (node *AssociativeTrieNode[T, V]) CloneTree() *AssociativeTrieNode[T, V] {
-	//return node.cloneTree().ToAssociative()
 	return toAssociativeTrieNode[T, V](node.toBinTrieNode().CloneTree())
 }
 
@@ -1285,7 +1270,7 @@ func (node *AssociativeTrieNode[T, V]) GetAddedNode(addr T) *AssociativeTrieNode
 //
 // Returns the value for the given key.
 // Returns nil if the contains no mapping for that key or if the mapped value is nil.
-func (node *AssociativeTrieNode[T, V]) Get(addr T) (bool, V) {
+func (node *AssociativeTrieNode[T, V]) Get(addr T) (V, bool) {
 	return node.toBase().get(addr)
 }
 
@@ -1340,7 +1325,7 @@ func (node AssociativeTrieNode[T, V]) Format(state fmt.State, verb rune) {
 // each node in the path contained by the previous node,
 // the first node corresponding to the shortest prefix match, the last element corresponding to the longest prefix match.
 type containmentPath[T TrieKeyConstraint[T], V any] struct {
-	path tree.Path
+	path tree.Path[trieKey[T], V]
 }
 
 // Count returns the count of containing subnets in the path of containing subnets, starting from this node and moving downwards to sub-nodes.
@@ -1360,7 +1345,7 @@ func (path *containmentPath[T, V]) String() string {
 	return path.path.String()
 }
 
-func toContainmentPathX[T TrieKeyConstraint[T], V any](path *tree.Path) *containmentPath[T, V] {
+func toContainmentPathX[T TrieKeyConstraint[T], V any](path *tree.Path[trieKey[T], V]) *containmentPath[T, V] {
 	return (*containmentPath[T, V])(unsafe.Pointer(path))
 }
 
@@ -1430,13 +1415,12 @@ func (path *ContainmentValuesPath[T, V]) LongestPrefixMatch() *ContainmentValues
 
 // ContainmentPathNode is a node in a ContainmentPath
 type containmentPathNode[T TrieKeyConstraint[T], V any] struct {
-	pathNode tree.PathNode
+	pathNode tree.PathNode[trieKey[T], V]
 }
 
 // GetKey gets the containing block or matching address corresponding to this node
 func (node *containmentPathNode[T, V]) GetKey() T {
-	key := node.pathNode.GetKey()
-	return key.(trieKey[T]).address
+	return node.pathNode.GetKey().address
 }
 
 // Count returns the count of containing subnets in the path of containing subnets, starting from this node and moving downwards to sub-nodes.
@@ -1483,7 +1467,7 @@ func (node *ContainmentPathNode[T]) Previous() *ContainmentPathNode[T] {
 	return toContainmentPathNode[T](node.pathNode.Previous())
 }
 
-func toContainmentPathNode[T TrieKeyConstraint[T]](node *tree.PathNode) *ContainmentPathNode[T] {
+func toContainmentPathNode[T TrieKeyConstraint[T]](node *tree.PathNode[trieKey[T], emptyValue]) *ContainmentPathNode[T] {
 	return (*ContainmentPathNode[T])(unsafe.Pointer(node))
 }
 
@@ -1512,14 +1496,9 @@ func (node *ContainmentValuesPathNode[T, V]) Previous() *ContainmentValuesPathNo
 // GetValue returns the value assigned to the block or address, if the node was an associative node from an associative trie.
 // Otherwise, it returns the zero value.
 func (node *ContainmentValuesPathNode[T, V]) GetValue() V {
-	res := node.pathNode.GetValue()
-	if res == nil {
-		var v V
-		return v
-	}
-	return res.(V)
+	return node.pathNode.GetValue()
 }
 
-func toContainmentValuesPathNode[T TrieKeyConstraint[T], V any](node *tree.PathNode) *ContainmentValuesPathNode[T, V] {
+func toContainmentValuesPathNode[T TrieKeyConstraint[T], V any](node *tree.PathNode[trieKey[T], V]) *ContainmentValuesPathNode[T, V] {
 	return (*ContainmentValuesPathNode[T, V])(unsafe.Pointer(node))
 }

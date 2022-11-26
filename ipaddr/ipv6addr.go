@@ -1006,6 +1006,9 @@ func (addr *IPv6Address) ToSinglePrefixBlockOrAddress() *IPv6Address {
 }
 
 func (addr *IPv6Address) toSinglePrefixBlockOrAddress() (*IPv6Address, addrerr.IncompatibleAddressError) {
+	if addr == nil {
+		return nil, &incompatibleAddressError{addressError{key: "ipaddress.error.address.not.block"}}
+	}
 	res := addr.ToSinglePrefixBlockOrAddress()
 	if res == nil {
 		return nil, &incompatibleAddressError{addressError{key: "ipaddress.error.address.not.block"}}

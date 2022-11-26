@@ -1286,6 +1286,9 @@ func (addr *IPAddress) ToSinglePrefixBlockOrAddress() *IPAddress {
 }
 
 func (addr *IPAddress) toSinglePrefixBlockOrAddress() (*IPAddress, addrerr.IncompatibleAddressError) {
+	if addr == nil {
+		return nil, &incompatibleAddressError{addressError{key: "ipaddress.error.address.not.block"}}
+	}
 	res := addr.ToSinglePrefixBlockOrAddress()
 	if res == nil {
 		return nil, &incompatibleAddressError{addressError{key: "ipaddress.error.address.not.block"}}

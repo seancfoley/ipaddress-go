@@ -400,22 +400,18 @@ func (addr *addressInternal) trieCompare(other *Address) int {
 	}
 }
 
-func trieIncrement[T TrieKeyConstraint[T]](addr T) (T, bool) {
-	res := tree.TrieIncrement(trieKey[T]{addr})
-	if res == nil {
-		var t T
-		return t, false
+func trieIncrement[T TrieKeyConstraint[T]](addr T) (t T, ok bool) {
+	if res, ok := tree.TrieIncrement(trieKey[T]{addr}); ok {
+		return res.address, true
 	}
-	return res.(trieKey[T]).address, true
+	return
 }
 
-func trieDecrement[T TrieKeyConstraint[T]](addr T) (T, bool) {
-	res := tree.TrieDecrement(trieKey[T]{addr})
-	if res == nil {
-		var t T
-		return t, false
+func trieDecrement[T TrieKeyConstraint[T]](addr T) (t T, ok bool) {
+	if res, ok := tree.TrieDecrement(trieKey[T]{addr}); ok {
+		return res.address, true
 	}
-	return res.(trieKey[T]).address, true
+	return
 }
 
 func (addr *addressInternal) toString() string {
@@ -1523,6 +1519,9 @@ func (addr *Address) ToSinglePrefixBlockOrAddress() *Address {
 }
 
 func (addr *Address) toSinglePrefixBlockOrAddress() (*Address, addrerr.IncompatibleAddressError) {
+	if addr == nil {
+		return nil, &incompatibleAddressError{addressError{key: "ipaddress.error.address.not.block"}}
+	}
 	res := addr.ToSinglePrefixBlockOrAddress()
 	if res == nil {
 		return nil, &incompatibleAddressError{addressError{key: "ipaddress.error.address.not.block"}}

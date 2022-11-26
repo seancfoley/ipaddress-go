@@ -28,7 +28,7 @@ type CachingTrieIterator[T any] interface {
 	IteratorWithRemove[T]
 
 	// Note: We could theoretically try to make the cached type generic.
-	// But the problem with that is that the iterator methods that return them cannot be generic on their own.
+	// But the problem with that is that the iterator methods that return them cannot be generic on their own, the whole type would need to specify the cache type.
 	// The other problem is that even if we could, some callers would not care about the caching behaviour and thus would not want to have to specify a cache type.
 
 	tree.CachingIterator
@@ -36,57 +36,49 @@ type CachingTrieIterator[T any] interface {
 
 // addressKeyIterator implements the address key iterator for tries
 type addressKeyIterator[T TrieKeyConstraint[T]] struct {
-	tree.TrieKeyIterator
+	tree.TrieKeyIterator[trieKey[T]]
 }
 
 func (iter addressKeyIterator[T]) Next() (t T) {
-	key := iter.TrieKeyIterator.Next()
-	if key != nil {
-		return key.(trieKey[T]).address
-	}
-	return
+	return iter.TrieKeyIterator.Next().address
 }
 
 func (iter addressKeyIterator[T]) Remove() (t T) {
-	key := iter.TrieKeyIterator.Remove()
-	if key != nil {
-		return key.(trieKey[T]).address
-	}
-	return
+	return iter.TrieKeyIterator.Remove().address
 }
 
 //
-type addrTrieNodeIteratorRem[T TrieKeyConstraint[T]] struct {
-	tree.TrieNodeIteratorRem
+type addrTrieNodeIteratorRem[T TrieKeyConstraint[T], V any] struct {
+	tree.TrieNodeIteratorRem[trieKey[T], V]
 }
 
-func (iter addrTrieNodeIteratorRem[T]) Next() *TrieNode[T] {
+func (iter addrTrieNodeIteratorRem[T, V]) Next() *TrieNode[T] {
 	return toAddressTrieNode[T](iter.TrieNodeIteratorRem.Next())
 }
 
-func (iter addrTrieNodeIteratorRem[T]) Remove() *TrieNode[T] {
+func (iter addrTrieNodeIteratorRem[T, V]) Remove() *TrieNode[T] {
 	return toAddressTrieNode[T](iter.TrieNodeIteratorRem.Remove())
 }
 
 //
-type addrTrieNodeIterator[T TrieKeyConstraint[T]] struct {
-	tree.TrieNodeIterator
+type addrTrieNodeIterator[T TrieKeyConstraint[T], V any] struct {
+	tree.TrieNodeIterator[trieKey[T], V]
 }
 
-func (iter addrTrieNodeIterator[T]) Next() *TrieNode[T] {
+func (iter addrTrieNodeIterator[T, V]) Next() *TrieNode[T] {
 	return toAddressTrieNode[T](iter.TrieNodeIterator.Next())
 }
 
 //
-type cachingAddressTrieNodeIterator[T TrieKeyConstraint[T]] struct {
-	tree.CachingTrieNodeIterator
+type cachingAddressTrieNodeIterator[T TrieKeyConstraint[T], V any] struct {
+	tree.CachingTrieNodeIterator[trieKey[T], V]
 }
 
-func (iter cachingAddressTrieNodeIterator[T]) Next() *TrieNode[T] {
+func (iter cachingAddressTrieNodeIterator[T, V]) Next() *TrieNode[T] {
 	return toAddressTrieNode[T](iter.CachingTrieNodeIterator.Next())
 }
 
-func (iter cachingAddressTrieNodeIterator[T]) Remove() *TrieNode[T] {
+func (iter cachingAddressTrieNodeIterator[T, V]) Remove() *TrieNode[T] {
 	return toAddressTrieNode[T](iter.CachingTrieNodeIterator.Remove())
 }
 
@@ -94,7 +86,7 @@ func (iter cachingAddressTrieNodeIterator[T]) Remove() *TrieNode[T] {
 //////
 
 type associativeAddressTrieNodeIteratorRem[T TrieKeyConstraint[T], V any] struct {
-	tree.TrieNodeIteratorRem
+	tree.TrieNodeIteratorRem[trieKey[T], V]
 }
 
 func (iter associativeAddressTrieNodeIteratorRem[T, V]) Next() *AssociativeTrieNode[T, V] {
@@ -107,7 +99,7 @@ func (iter associativeAddressTrieNodeIteratorRem[T, V]) Remove() *AssociativeTri
 
 //
 type associativeAddressTrieNodeIterator[T TrieKeyConstraint[T], V any] struct {
-	tree.TrieNodeIterator
+	tree.TrieNodeIterator[trieKey[T], V]
 }
 
 func (iter associativeAddressTrieNodeIterator[T, V]) Next() *AssociativeTrieNode[T, V] {
@@ -116,7 +108,7 @@ func (iter associativeAddressTrieNodeIterator[T, V]) Next() *AssociativeTrieNode
 
 //
 type cachingAssociativeAddressTrieNodeIteratorX[T TrieKeyConstraint[T], V any] struct {
-	tree.CachingTrieNodeIterator
+	tree.CachingTrieNodeIterator[trieKey[T], V]
 }
 
 func (iter cachingAssociativeAddressTrieNodeIteratorX[T, V]) Next() *AssociativeTrieNode[T, V] {

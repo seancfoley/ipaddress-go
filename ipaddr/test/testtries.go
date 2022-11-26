@@ -18,12 +18,13 @@ package test
 import "github.com/seancfoley/ipaddress-go/ipaddr"
 
 type trieStrings struct {
-	addrs                       []string
-	treeString, addedNodeString string
+	addrs                                               []string
+	treeString, addedNodeString, addedNodeToIndexString string
 }
 
 var treeOne = trieStrings{
-	addrs: []string{"1::ffff:2:3:5",
+	addrs: []string{
+		"1::ffff:2:3:5",
 		"1::ffff:2:3:4",
 		"1::ffff:2:3:6",
 		"1::ffff:2:3:12",
@@ -79,10 +80,26 @@ var treeOne = trieStrings{
 		"├─● bb::ffff:2:3:32\n" +
 		"├─● bb::ffff:2:3:42\n" +
 		"└─● bb::ffff:2:3:43\n",
+	addedNodeToIndexString: "\n" +
+		"○ ::/0 = 0\n" +
+		"├─● 1::ff:aa:3:4 = 5\n" +
+		"├─● 1::ff:aa:3:12 = 6\n" +
+		"├─● 1::ffff:2:3:4 = 1\n" +
+		"├─● 1::ffff:2:3:5 = 0\n" +
+		"├─● 1::ffff:2:3:6 = 2\n" +
+		"├─● 1::ffff:2:3:12 = 3\n" +
+		"├─● 1::ffff:aa:3:4 = 4\n" +
+		"├─● bb::ffff:2:3:6 = 7\n" +
+		"├─● bb::ffff:2:3:12 = 8\n" +
+		"├─● bb::ffff:2:3:22 = 9\n" +
+		"├─● bb::ffff:2:3:32 = 10\n" +
+		"├─● bb::ffff:2:3:42 = 11\n" +
+		"└─● bb::ffff:2:3:43 = 12\n",
 }
 
 var treeTwo = trieStrings{
-	addrs: []string{"ff80::/8",
+	addrs: []string{
+		"ff80::/8",
 		"ff80:8000::/16",
 		"ff80:8000::/24",
 		"ff80:8000::/32",
@@ -113,6 +130,69 @@ var treeTwo = trieStrings{
 		"      ├─● ff80:8000:c800::\n" +
 		"      └─● ff80:8000:cc00::/38\n" +
 		"        └─● ff80:8000:cc00::/40\n",
+	addedNodeToIndexString: "\n" +
+		"○ ::/0 = 0\n" +
+		"├─● ff80:: = 0\n" +
+		"└─● ff80:8000::/24 = 2\n" +
+		"  └─● ff80:8000::/32 = 3\n" +
+		"    ├─● ff80:8000:: = 1\n" +
+		"    └─● ff80:8000:c000::/34 = 4\n" +
+		"      ├─● ff80:8000:c800:: = 5\n" +
+		"      └─● ff80:8000:cc00::/38 = 6\n" +
+		"        └─● ff80:8000:cc00::/40 = 7\n",
+}
+
+var treeThree = trieStrings{
+	addrs: []string{
+		"192.168.10.0/24",
+		"192.168.10.0/26",
+		"192.168.10.64/27",
+		"192.168.10.96/27",
+		"192.168.10.128/30",
+		"192.168.10.132/30",
+		"192.168.10.136/30",
+	},
+	treeString: "\n" +
+		"○ 0.0.0.0/0 (7)\n" +
+		"└─● 192.168.10.0/24 (7)\n" +
+		"  ├─○ 192.168.10.0/25 (3)\n" +
+		"  │ ├─● 192.168.10.0/26 (1)\n" +
+		"  │ └─○ 192.168.10.64/26 (2)\n" +
+		"  │   ├─● 192.168.10.64/27 (1)\n" +
+		"  │   └─● 192.168.10.96/27 (1)\n" +
+		"  └─○ 192.168.10.128/28 (3)\n" +
+		"    ├─○ 192.168.10.128/29 (2)\n" +
+		"    │ ├─● 192.168.10.128/30 (1)\n" +
+		"    │ └─● 192.168.10.132/30 (1)\n" +
+		"    └─● 192.168.10.136/30 (1)\n",
+	addedNodeString: "\n" +
+		"○ 0.0.0.0/0\n" +
+		"└─● 192.168.10.0/24\n" +
+		"  ├─● 192.168.10.0/26\n" +
+		"  ├─● 192.168.10.64/27\n" +
+		"  ├─● 192.168.10.96/27\n" +
+		"  ├─● 192.168.10.128/30\n" +
+		"  ├─● 192.168.10.132/30\n" +
+		"  └─● 192.168.10.136/30\n",
+	addedNodeToIndexString: "\n" +
+		"○ 0.0.0.0/0 = 0\n" +
+		"└─● 192.168.10.0/24 = 0\n" +
+		"  ├─● 192.168.10.0/26 = 1\n" +
+		"  ├─● 192.168.10.64/27 = 2\n" +
+		"  ├─● 192.168.10.96/27 = 3\n" +
+		"  ├─● 192.168.10.128/30 = 4\n" +
+		"  ├─● 192.168.10.132/30 = 5\n" +
+		"  └─● 192.168.10.136/30 = 6\n",
+}
+
+var treeFour = trieStrings{
+	addrs: []string{},
+	treeString: "\n" +
+		"<nil>\n",
+	addedNodeString: "\n" +
+		"○ <nil>\n",
+	addedNodeToIndexString: "\n" +
+		"○ <nil> = 0\n",
 }
 
 var testIPAddressTries = [][]string{{

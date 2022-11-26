@@ -23,7 +23,7 @@ const SegmentValueDelimiter = ','
 type DelimitedAddressString string
 
 // CountDelimitedAddresses will count the possible combinations, given a string with comma delimiters separating segment elements.
-// It is a counterpart to ParseDelimitedSegments.
+// It is a counterpart to ParseDelimitedSegments, indicating the number of iterated elements from ParseDelimitedSegments.
 //
 // For example, given "1,2.3.4,5.6" this method will return 4 for the possible combinations: "1.3.4.6", "1.3.5.6", "2.3.4.6" and "2.3.5.6"
 func (str DelimitedAddressString) CountDelimitedAddresses() int {
@@ -106,7 +106,7 @@ func (str DelimitedAddressString) ParseDelimitedSegments() Iterator[string] {
 	return newSingleStrIterator(s)
 }
 
-// ParseDelimitedIPSegments will provide an iterator to iterate through the possible combinations, given a string with comma delimiters to denote segment elements,
+// ParseDelimitedIPAddrSegments will provide an iterator to iterate through the possible combinations, given a string with comma delimiters to denote segment elements,
 func (str DelimitedAddressString) ParseDelimitedIPAddrSegments() Iterator[*IPAddressString] {
 	return ipAddressStringIterator{str.ParseDelimitedSegments()}
 }

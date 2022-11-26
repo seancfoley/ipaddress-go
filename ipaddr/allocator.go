@@ -271,10 +271,11 @@ func (alloc PrefixBlockAllocator[T]) String() string {
 			size := hostBitCount.BlockSize()
 			builder.WriteString(fmt.Sprint(blockCount))
 			if blockCount == 1 {
-				builder.WriteString(" block with prefix length ")
+				builder.WriteString(" block")
 			} else {
-				builder.WriteString(" blocks with prefix length ")
+				builder.WriteString(" blocks")
 			}
+			builder.WriteString(" with prefix length ")
 			builder.WriteString(fmt.Sprint(i))
 			builder.WriteString(" size ")
 			builder.WriteString(fmt.Sprint(size))
