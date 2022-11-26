@@ -768,7 +768,7 @@ func (section WrappedAddressSection) ReverseSegments() ExtendedSegmentSeries {
 var _ ExtendedSegmentSeries = WrappedAddress{}
 var _ ExtendedSegmentSeries = WrappedAddressSection{}
 
-// In go, a nil value is not coverted to a nil interface, it is converted to a non-nil interface instance with underlying value nil
+// In go, a nil value is not converted to a nil interface, it is converted to a non-nil interface instance with underlying value nil
 func convAddrToIntf(addr *Address) ExtendedSegmentSeries {
 	if addr == nil {
 		return nil

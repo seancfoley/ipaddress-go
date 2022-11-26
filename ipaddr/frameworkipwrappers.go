@@ -1040,7 +1040,7 @@ func (section WrappedIPAddressSection) ReverseSegments() ExtendedIPSegmentSeries
 var _ ExtendedIPSegmentSeries = WrappedIPAddress{}
 var _ ExtendedIPSegmentSeries = WrappedIPAddressSection{}
 
-// In go, a nil value is not coverted to a nil interface, it is converted to a non-nil interface instance with underlying value nil
+// In go, a nil value is not converted to a nil interface, it is converted to a non-nil interface instance with underlying value nil
 func convIPAddrToIntf(addr *IPAddress) ExtendedIPSegmentSeries {
 	if addr == nil {
 		return nil
