@@ -324,9 +324,9 @@ func (params *addressStringParams) appendSegment(segmentIndex int, builder *stri
 	return res
 }
 
-func (params *addressStringParams) getZoneLength(zone Zone) int {
+func (params *addressStringParams) getZoneLength(zone Zone, sep string) int {
 	if zone != NoZone {
-		return len(zone) + 1 /* zone separator is one char */
+		return len(zone) + len(sep) /* zone separator is one char */
 	}
 	return 0
 }
@@ -335,7 +335,7 @@ func (params *addressStringParams) getZonedStringLength(addr AddressDivisionSeri
 	if addr.GetDivisionCount() > 0 {
 		result := params.getStringLength(addr)
 		if zone != NoZone {
-			result += params.getZoneLength(zone)
+			result += params.getZoneLength(zone, params.zoneSeparator)
 		}
 		return result
 	}
@@ -403,11 +403,11 @@ func (params *addressStringParams) toString(addr AddressDivisionSeries) string {
 //
 func checkLengths(length int, builder *strings.Builder) {
 	//Note: re-enable this when doing development
-	//				 calcMatch := length == builder.length();
-	//				 capMatch := length == builder.capacity();
-	//				if(!calcMatch || !capMatch) {
-	//					throw new IllegalStateException("length is " + builder.length() + ", capacity is " + builder.capacity() + ", expected length is " + length);
-	//				}
+	//calcMatch := length == builder.Len()
+	//capMatch := length == builder.Cap()
+	//if !calcMatch || !capMatch {
+	//	panic(fmt.Sprintf("length is %d, capacity is %d, expected length is %d", builder.Len(), builder.Cap(), length))
+	//}
 }
 
 func (params *addressStringParams) clone() *addressStringParams {
@@ -606,7 +606,7 @@ func (params *ipAddressStringParams) getZonedStringLength(addr AddressDivisionSe
 	if addr.GetDivisionCount() > 0 {
 		result := params.getStringLength(addr)
 		if zone != NoZone {
-			result += params.getZoneLength(zone)
+			result += params.getZoneLength(zone, params.zoneSeparator)
 		}
 		return result
 	}
@@ -797,7 +797,7 @@ func (params *ipv6StringParams) getZonedStringLength(addr *IPv6AddressSection, z
 	if addr.GetDivisionCount() > 0 {
 		result := params.getStringLength(addr)
 		if zone != NoZone {
-			result += params.getZoneLength(zone)
+			result += params.getZoneLength(zone, params.zoneSeparator)
 		}
 		return result
 	}
@@ -860,7 +860,7 @@ func (params *ipv6v4MixedParams) getStringLength(addr *IPv6v4MixedAddressGroupin
 			length++
 		}
 		length += params.getPrefixStringLength(addr)
-		length += ipv6Params.getZoneLength(zone)
+		length += ipv6Params.getZoneLength(zone, ipv6Params.zoneSeparator)
 		length += ipv6Params.getAddressSuffixLength()
 		length += ipv6Params.getAddressLabelLength()
 		return length
