@@ -15,9 +15,9 @@
 //
 
 /*
-IPAddress is a library for handling IP addresses and subnets, both IPv4 and IPv6
+IPAddress is a library for handling IP addresses and subnets, both IPv4 and IPv6.
 
-Benefits of this Library
+# Benefits of this Library
 
  - Parsing of all host name and ipv4/ipv6 address formats in common usage plus some additional formats
  - Parsing and representation of subnets, either those specified by network prefix length or those specified with ranges of segment values.
@@ -35,31 +35,35 @@ Benefits of this Library
  - Integrate with the Go language primitive types and the standard library types net.IP, net.IPAddr, net.IPMask, net.IPNet, net.TCPAddr, net.UDPAddr, and big.Int.
  - Making address manipulations easy, so you do not have to worry about longs/ints/shorts/bytes/bits, signed/unsigned, sign extension, ipv4/v6, masking, iterating, and other implementation details.
 
-Design Overview
+# Design Overview
 
 The core types are [IPAddressString], [HostName], and [MACAddressString] along with the [Address] base type and its associated types [IPAddress], [IPv4Address], [IPv6Address], and [MACAddress], as well as the sequential address type [SequentialRange].
 If you have a textual representation of an IP address, then start with [IPAddressString] or [HostName].  If you have a textual representation of a MAC address, then start with [MACAddressString].
 Note that address instances can represent either a single address or a subnet. If you have either an address or host name, or you have something with a port or service name, then use [HostName].
-If you have numeric bytes or integers, then start with [IPV4Address], [IPV6Address], [IPAddress], or [MACAddress].
+If you have numeric bytes or integers, then start with [IPv4Address], [IPv6Address], [IPAddress], or [MACAddress].
 
 This library allows you to scale down from more specific address types to more generic address types, and then to scale back up again.
-The polymorphism is useful for IP-version ambiguous code.  The most-specific types allow for method sets tailored to address version.
+The polymorphism is useful for IP-version ambiguous code.  The most-specific types allow for method sets tailored to the address version or type.
 You can only scale up to a specific version or address type if the lower level instance was originally derived from an instance of the specific type.
-So, for instance, an [IPv6Address] can be converted to an [IPAddress] using ToIP, or to an [Address] using ToAddressBase, which can then be converted back to [IPAddress] or an [IPv6Address] using ToIPv6.
+So, for instance, an [IPv6Address] can be converted to an [IPAddress] using [IPv6Address.ToIP], or to an [Address] using [IPv6Address.ToAddressBase], which can then be converted back to [IPAddress] or an [IPv6Address] using [Address.ToIP] or [Address.ToIPv6].
 But that [IPv6Address] cannot be scaled back to IPv4.  If you wish to convert that [IPv6Address] to IPv4, you would need to use an implementation of [IPv4AddressConverter].
 
-This library has similarities in design to the [Java IPAddress library](https://github.com/seancfoley/IPAddress).
+This library has similarities in design to the [Java IPAddress library].
 Notable divergences derive from the differences between the Java and Go languages,
 such as the differences in error handling and the lack of inheritance in Go, amongst many other differences.
 Other divergences derive from common Go language idioms and practices which differ from standard Java idioms and practices.
 
-Code Examples
+# Code Examples
 
-For common use-cases, you may wish to go straight to the wiki code examples which cover a wide breadth of common use-cases: https://github.com/seancfoley/ipaddress-go/wiki/Code-Examples
+For common use-cases, you may wish to go straight to the [wiki code examples] which cover a wide breadth of common use-cases.
 
-Further Documentation
+# Further Documentation
 
-https://seancfoley.github.io/IPAddress/
+You can read [further documentation] in more depth.
+
+[Java IPAddress library]: https://github.com/seancfoley/IPAddress
+[wiki code examples]: https://github.com/seancfoley/ipaddress-go/wiki/Code-Examples
+[further documentation]: https://seancfoley.github.io/IPAddress/
 
 */
 package ipaddr

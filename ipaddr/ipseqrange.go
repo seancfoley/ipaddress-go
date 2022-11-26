@@ -88,20 +88,20 @@ var (
 
 // SequentialRange represents an arbitrary range of consecutive IP addresses, from a lower address to an upper address, inclusive.
 //
-// Note that IPAddress and IPAddressString allow you to specify a range of values for each segment.
+// For the generic type T you can choose *IPAddress, *IPv4Address, or *IPv6Address.
+//
+// IPAddress and IPAddressString allow you to specify a range of values for each segment.
 // That allows you to represent single addresses, any address CIDR prefix subnet (eg 1.2.0.0/16 or 1:2:3:4::/64) or any subnet that can be represented with segment ranges (1.2.0-255.* or 1:2:3:4:*), see
-// IPAddressString for details.
+// IPAddressString for details.  IPAddressString and IPAddress cover all potential subnets and addresses that can be represented by a single address string of 4 or less segments for IPv4, and 8 or less segments for IPv6.
 //
-// IPAddressString and IPAddress cover all potential subnets and addresses that can be represented by a single address string of 4 or less segments for IPv4, and 8 or less segments for IPv6.
+// This type allows the representation of any sequential address range, including those that cannot be represented by IPAddress or IPAddressString.
 //
-// This class allows the representation of any sequential address range, including those that cannot be represented by IPAddress.
-//
-// String representations include the full address for both the lower and upper bounds of the range.
+// String representations of this type include the full address for both the lower and upper bounds of the range.
 //
 // The zero value is a range from the zero IPAddress to itself.
 //
 // For a range of type SequentialRange[*IPAddress], the range spans from an IPv4 address to another IPv4Address,
-// or from an IPv6 address to another IPv6 address.
+// or from an IPv6 address to another IPv6 address.  A range cannot include both IPv4 and IPv6 addresses.
 type SequentialRange[T SequentialRangeConstraint[T]] struct {
 	lower,
 	upper T

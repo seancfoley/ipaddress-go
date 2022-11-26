@@ -202,6 +202,8 @@ func (trie *trieBase[T, V]) toTrie() *tree.BinTrie[trieKey[T], V] {
 // The prefixes in used by the prefix trie are the CIDR prefixes, or the full address in the case of individual addresses with no prefix length.
 // The elements of the trie are CIDR prefix blocks or addresses.
 //
+// For the generic type T, you can choose *Address, *IPAddress, *IPv4Address, *IPv6Address, or *MACAddress.
+//
 // The zero-value of an AddressTrie is a trie ready for use.  Its root will be nil until an element is added to it.
 // Once any subnet or address is added to the trie, it will have an assigned root, and any further addition to the trie must match the type and version of the root,
 // in addition to the generic type of the trie's keys.
@@ -651,8 +653,11 @@ func toAddressTrie[T TrieKeyConstraint[T]](trie *tree.BinTrie[trieKey[T], emptyV
 ////////
 
 // AssociativeTrie represents a binary address trie in which each added node can be associated with a value.
-// It is an instance of Trie that can also function as a key-value map. The keys are addresses or prefix blocks.
+// It is an instance of [Trie] that can also function as a key-value map. The keys are addresses or prefix blocks.
 // Each can be mapped to a value with type specified by the generic type V.
+//
+// For the generic type T, you can choose *Address, *IPAddress, *IPv4Address, *IPv6Address, or *MACAddress.
+// The generic value type V can be any type of your choosing.
 //
 // All the characteristics of Trie are common to AssociativeTrie.
 //
@@ -1141,7 +1146,8 @@ func checkBlockOrAddress[T TrieKeyConstraint[T]](addr T) (res T, err addrerr.Inc
 	return addr.toSinglePrefixBlockOrAddress()
 }
 
-// NewTrie constructs an address trie for the given type, without a root.
+// NewTrie constructs an address trie for the given type, without a root.  For the generic type T,
+// you can choose *Address, *IPAddress, *IPv4Address, *IPv6Address, or *MACAddress.
 func NewTrie[T TrieKeyConstraint[T]]() *Trie[T] {
 	return &Trie[T]{}
 }
