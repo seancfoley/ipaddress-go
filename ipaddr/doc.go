@@ -32,7 +32,7 @@ IPAddress is a library for handling IP addresses and subnets, both IPv4 and IPv6
  - Address modifications, such as altering prefix lengths, masking, splitting into sections and segments, splitting into network and host sections, reconstituting from sections and segments
  - Address operations and subnetting, such as obtaining the prefix block subnet for a prefixed address, iterating through subnets, iterating through prefixes, prefix blocks, or segment blocks of subnets, incrementing and decrementing addresses by integer values, reversing address bits for endianness or DNS lookup, set-subtracting subnets from other subnets, subnetting, intersections of subnets, merging subnets, checking containment of addresses in subnets, listing subnets covering a span of addresses
  - Sorting and comparison of host names, addresses, address strings and subnets.  All the address component types are compararable.
- - Integrate with the Go language primitive types and the standard library types net.IP, net.IPAddr, net.IPMask, net.IPNet, net.TCPAddr, net.UDPAddr, and big.Int.
+ - Integrate with the Go language primitive types and the standard library types net.IP, net.IPAddr, net.IPMask, net.IPNet, net.TCPAddr, net.UDPAddr, netip.Addr, netip.Prefix, netip.AddrPort, and math.big.Int.
  - Making address manipulations easy, so you do not have to worry about longs/ints/shorts/bytes/bits, signed/unsigned, sign extension, ipv4/v6, masking, iterating, and other implementation details.
 
 # Design Overview
