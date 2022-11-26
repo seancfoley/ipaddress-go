@@ -298,8 +298,8 @@ func newIPv6SectionFromPrefixedSingle(vals, upperVals IPv6SegmentValueProvider, 
 		segmentCount = 0
 	}
 	segments, isMultiple := createSegments(
-		WrappedIPv6SegmentValueProvider(vals),
-		WrappedIPv6SegmentValueProvider(upperVals),
+		WrapIPv6SegmentValueProvider(vals),
+		WrapIPv6SegmentValueProvider(upperVals),
 		segmentCount,
 		IPv6BitsPerSegment,
 		ipv6Network.getIPAddressCreator(),

@@ -41,7 +41,7 @@ func ToPrefixLen(i int) PrefixLen {
 	return &res
 }
 
-// A BitCount represents a count of bits in an address, section, grouping, segment, or division.
+// BitCount represents a count of bits in an address, section, grouping, segment, or division.
 // Using signed integers allows for easier arithmetic, avoiding bugs.
 // However, all methods adjust bit counts to match address size,
 // so negative bit counts or bit counts larger than address size are meaningless.

@@ -20,7 +20,7 @@ import (
 	"math/big"
 )
 
-// A Partition is a collection of items (such as addresses) partitioned from an original item (such as a subnet).
+// Partition is a collection of items (such as addresses) partitioned from an original item (such as a subnet).
 // Much like an iterator, the elements of a partition can be iterated just once (using the iterator, using ForEach, or using any other iteration),
 // after which it becomes empty.
 type Partition[T any] struct {
@@ -34,6 +34,7 @@ type Partition[T any] struct {
 	count *big.Int
 }
 
+// MappedPartition is a mapping from the key types in a [Partition] to values of a generic type V.
 type MappedPartition[T comparable, V any] map[T]V
 
 // ApplyForEachConditionally supplies to the given function each element of the given partition,

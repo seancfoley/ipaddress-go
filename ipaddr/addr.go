@@ -80,8 +80,8 @@ type addrsCache struct {
 	lower, upper *Address
 }
 
-// IdentifierStr is a string representation of an address or host name.
-type IdentifierStr struct {
+// identifierStr is a string representation of an address or host name.
+type identifierStr struct {
 	idStr HostIdentifierString // MACAddressString or IPAddressString or HostName
 }
 
@@ -90,7 +90,7 @@ type addressCache struct {
 
 	stringCache *stringCache // only used by IPv6 when there is a zone
 
-	identifierStr *IdentifierStr
+	identifierStr *identifierStr
 }
 
 type addressInternal struct {

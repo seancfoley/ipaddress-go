@@ -18,6 +18,8 @@ package ipaddr
 
 import "github.com/seancfoley/bintree/tree"
 
+type Cached = tree.C
+
 // CachingTrieIterator is an iterator of a tree that allows you to cache an object with the
 // lower or upper sub-node of the currently visited node.
 // The cached object can be retrieved later when iterating the sub-node.
@@ -31,7 +33,34 @@ type CachingTrieIterator[T any] interface {
 	// But the problem with that is that the iterator methods that return them cannot be generic on their own, the whole type would need to specify the cache type.
 	// The other problem is that even if we could, some callers would not care about the caching behaviour and thus would not want to have to specify a cache type.
 
-	tree.CachingIterator
+	// GetCached returns an object previously cached with the current iterated node.
+	// After Next has returned a node,
+	// if an object was cached by a call to CacheWithLowerSubNode or CacheWithUpperSubNode
+	// was called when that node's parent was previously returned by Next,
+	// then this returns that cached object.
+	GetCached() Cached
+
+	// CacheWithLowerSubNode caches an object with the lower sub-node of the current iterated node.
+	// After Next has returned a node,
+	// calling this method caches the provided object with the lower sub-node so that it can
+	// be retrieved with GetCached when the lower sub-node is visited later.
+	//
+	// Returns false if it could not be cached, either because the node has since been removed with a call to Remove,
+	// because Next has not been called yet, or because there is no lower sub node for the node previously returned by  Next.
+	//
+	// The caching and retrieval is done in constant time.
+	CacheWithLowerSubNode(Cached) bool
+
+	// CacheWithUpperSubNode caches an object with the upper sub-node of the current iterated node.
+	// After Next has returned a node,
+	// calling this method caches the provided object with the upper sub-node so that it can
+	// be retrieved with GetCached when the upper sub-node is visited later.
+	//
+	// Returns false if it could not be cached, either because the node has since been removed with a call to Remove,
+	// because Next has not been called yet, or because there is no upper sub node for the node previously returned by Next.
+	//
+	// The caching and retrieval is done in constant time.
+	CacheWithUpperSubNode(Cached) bool
 }
 
 // addressKeyIterator implements the address key iterator for tries

@@ -157,8 +157,8 @@ func NewMACSectionFromRange(vals, upperVals MACSegmentValueProvider, segmentCoun
 		segmentCount = 0
 	}
 	segments, isMultiple := createSegments(
-		WrappedMACSegmentValueProvider(vals),
-		WrappedMACSegmentValueProvider(upperVals),
+		WrapMACSegmentValueProvider(vals),
+		WrapMACSegmentValueProvider(upperVals),
 		segmentCount,
 		MACBitsPerSegment,
 		macNetwork.getAddressCreator(),

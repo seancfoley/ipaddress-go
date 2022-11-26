@@ -24,6 +24,7 @@ type RangeBoundaryKey[T any] interface {
 
 // SequentialRangeKey is a representation of SequentialRange that is comparable as defined by the language specification.
 // See https://go.dev/ref/spec#Comparison_operators
+//
 // It can be used as a map key.
 // The zero value is a range from a zero-length address to itself.
 type SequentialRangeKey[T SequentialRangeConstraint[T]] struct {
@@ -52,6 +53,7 @@ func (key SequentialRangeKey[T]) GetUpperKey() RangeBoundaryKey[T] {
 
 // IPv4AddressKey is a representation of an IPv4 address that is comparable as defined by the language specification.
 // See https://go.dev/ref/spec#Comparison_operators
+//
 // It can be used as a map key.  It can be obtained from its originating address instances.
 // The zero value corresponds to the zero-value for IPv4Address.
 // Keys do not incorporate prefix length to ensure that all equal addresses have equal keys.
@@ -103,6 +105,7 @@ func testCompare() {
 
 // IPv6AddressKey is a representation of an IPv6 address that is comparable as defined by the language specification.
 // See https://go.dev/ref/spec#Comparison_operators
+//
 // It can be used as a map key.  It can be obtained from its originating address instances.
 // The zero value corresponds to the zero-value for IPv6Address.
 // Keys do not incorporate prefix length to ensure that all equal addresses have equal keys.
@@ -135,6 +138,7 @@ func IPv6KeyFromRangeKey(key RangeBoundaryKey[*IPv6Address]) IPv6AddressKey {
 
 // MACAddressKey is a representation of a MAC address that is comparable as defined by the language specification.
 // See https://go.dev/ref/spec#Comparison_operators
+//
 // It can be used as a map key.  It can be obtained from its originating address instances.
 // The zero value corresponds to the zero-value for MACAddress.
 // Keys do not incorporate prefix length to ensure that all equal addresses have equal keys.
@@ -176,6 +180,7 @@ const (
 
 // Key is a representation of an address that is comparable as defined by the language specification.
 // See https://go.dev/ref/spec#Comparison_operators
+//
 // It can be used as a map key.  It can be obtained from its originating address instances.
 // The zero value corresponds to the zero-value for its generic address type.
 // Keys do not incorporate prefix length to ensure that all equal addresses have equal keys.
@@ -241,6 +246,7 @@ var (
 
 // PrefixKey is a representation of a prefix length that is comparable as defined by the language specification.
 // See https://go.dev/ref/spec#Comparison_operators
+//
 // It can be used as a map key.
 // The zero value is the absence of a prefix length.
 type PrefixKey struct {

@@ -2760,9 +2760,9 @@ func NewIPAddressFromNetNetIPPrefix(prefixedAddr netip.Prefix) (*IPAddress, addr
 // If the given version is indeterminate, then nil is returned.
 func NewIPAddressFromVals(version IPVersion, lowerValueProvider SegmentValueProvider) *IPAddress {
 	if version.IsIPv4() {
-		return NewIPv4AddressFromVals(WrappedSegmentValueProviderForIPv4(lowerValueProvider)).ToIP()
+		return NewIPv4AddressFromVals(WrapSegmentValueProviderForIPv4(lowerValueProvider)).ToIP()
 	} else if version.IsIPv6() {
-		return NewIPv6AddressFromVals(WrappedSegmentValueProviderForIPv6(lowerValueProvider)).ToIP()
+		return NewIPv6AddressFromVals(WrapSegmentValueProviderForIPv6(lowerValueProvider)).ToIP()
 	}
 	return nil
 }
@@ -2781,13 +2781,13 @@ func NewIPAddressFromPrefixedVals(version IPVersion, lowerValueProvider, upperVa
 func NewIPAddressFromPrefixedZonedVals(version IPVersion, lowerValueProvider, upperValueProvider SegmentValueProvider, prefixLength PrefixLen, zone string) *IPAddress {
 	if version.IsIPv4() {
 		return NewIPv4AddressFromPrefixedRange(
-			WrappedSegmentValueProviderForIPv4(lowerValueProvider),
-			WrappedSegmentValueProviderForIPv4(upperValueProvider),
+			WrapSegmentValueProviderForIPv4(lowerValueProvider),
+			WrapSegmentValueProviderForIPv4(upperValueProvider),
 			prefixLength).ToIP()
 	} else if version.IsIPv6() {
 		return NewIPv6AddressFromPrefixedZonedRange(
-			WrappedSegmentValueProviderForIPv6(lowerValueProvider),
-			WrappedSegmentValueProviderForIPv6(upperValueProvider),
+			WrapSegmentValueProviderForIPv6(lowerValueProvider),
+			WrapSegmentValueProviderForIPv6(upperValueProvider),
 			prefixLength,
 			zone).ToIP()
 	}
@@ -2843,13 +2843,13 @@ func NewIPAddressFromPrefixedSegments(segs []*IPAddressSegment, prefixLength Pre
 func NewIPAddressFromValueProvider(valueProvider IPAddressValueProvider) *IPAddress {
 	if valueProvider.GetIPVersion().IsIPv4() {
 		return NewIPv4AddressFromPrefixedRange(
-			WrappedSegmentValueProviderForIPv4(valueProvider.GetValues()),
-			WrappedSegmentValueProviderForIPv4(valueProvider.GetUpperValues()),
+			WrapSegmentValueProviderForIPv4(valueProvider.GetValues()),
+			WrapSegmentValueProviderForIPv4(valueProvider.GetUpperValues()),
 			valueProvider.GetPrefixLen()).ToIP()
 	} else if valueProvider.GetIPVersion().IsIPv6() {
 		return NewIPv6AddressFromPrefixedZonedRange(
-			WrappedSegmentValueProviderForIPv6(valueProvider.GetValues()),
-			WrappedSegmentValueProviderForIPv6(valueProvider.GetUpperValues()),
+			WrapSegmentValueProviderForIPv6(valueProvider.GetValues()),
+			WrapSegmentValueProviderForIPv6(valueProvider.GetUpperValues()),
 			valueProvider.GetPrefixLen(),
 			valueProvider.GetZone()).ToIP()
 	}

@@ -26,8 +26,8 @@ import (
 type IPv4SegInt = uint8
 type IPv4SegmentValueProvider func(segmentIndex int) IPv4SegInt
 
-// WrappedIPv4SegmentValueProvider converts the given IPv4SegmentValueProvider to a SegmentValueProvider
-func WrappedIPv4SegmentValueProvider(f IPv4SegmentValueProvider) SegmentValueProvider {
+// WrapIPv4SegmentValueProvider converts the given IPv4SegmentValueProvider to a SegmentValueProvider
+func WrapIPv4SegmentValueProvider(f IPv4SegmentValueProvider) SegmentValueProvider {
 	if f == nil {
 		return nil
 	}
@@ -36,9 +36,9 @@ func WrappedIPv4SegmentValueProvider(f IPv4SegmentValueProvider) SegmentValuePro
 	}
 }
 
-// WrappedSegmentValueProviderForIPv4 converts the given SegmentValueProvider to an IPv4SegmentValueProvider
+// WrapSegmentValueProviderForIPv4 converts the given SegmentValueProvider to an IPv4SegmentValueProvider
 // Values that do not fit IPv4SegInt are truncated.
-func WrappedSegmentValueProviderForIPv4(f SegmentValueProvider) IPv4SegmentValueProvider {
+func WrapSegmentValueProviderForIPv4(f SegmentValueProvider) IPv4SegmentValueProvider {
 	if f == nil {
 		return nil
 	}

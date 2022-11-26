@@ -193,8 +193,8 @@ func newIPv4SectionFromPrefixedSingle(vals, upperVals IPv4SegmentValueProvider, 
 		segmentCount = 0
 	}
 	segments, isMultiple := createSegments(
-		WrappedIPv4SegmentValueProvider(vals),
-		WrappedIPv4SegmentValueProvider(upperVals),
+		WrapIPv4SegmentValueProvider(vals),
+		WrapIPv4SegmentValueProvider(upperVals),
 		segmentCount,
 		IPv4BitsPerSegment,
 		ipv4Network.getIPAddressCreator(),

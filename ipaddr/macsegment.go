@@ -25,8 +25,8 @@ import (
 type MACSegInt = uint8
 type MACSegmentValueProvider func(segmentIndex int) MACSegInt
 
-// WrappedMACSegmentValueProvider converts the given MACSegmentValueProvider to a SegmentValueProvider
-func WrappedMACSegmentValueProvider(f MACSegmentValueProvider) SegmentValueProvider {
+// WrapMACSegmentValueProvider converts the given MACSegmentValueProvider to a SegmentValueProvider
+func WrapMACSegmentValueProvider(f MACSegmentValueProvider) SegmentValueProvider {
 	if f == nil {
 		return nil
 	}
@@ -35,9 +35,9 @@ func WrappedMACSegmentValueProvider(f MACSegmentValueProvider) SegmentValueProvi
 	}
 }
 
-// WrappedSegmentValueProviderForMAC converts the given SegmentValueProvider to a MACSegmentValueProvider
+// WrapSegmentValueProviderForMAC converts the given SegmentValueProvider to a MACSegmentValueProvider
 // Values that do not fit MACSegInt are truncated.
-func WrappedSegmentValueProviderForMAC(f SegmentValueProvider) MACSegmentValueProvider {
+func WrapSegmentValueProviderForMAC(f SegmentValueProvider) MACSegmentValueProvider {
 	if f == nil {
 		return nil
 	}

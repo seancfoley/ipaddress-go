@@ -26,8 +26,8 @@ import (
 type IPv6SegInt = uint16
 type IPv6SegmentValueProvider func(segmentIndex int) IPv6SegInt
 
-// WrappedIPv6SegmentValueProvider converts the given IPv6SegmentValueProvider to a SegmentValueProvider
-func WrappedIPv6SegmentValueProvider(f IPv6SegmentValueProvider) SegmentValueProvider {
+// WrapIPv6SegmentValueProvider converts the given IPv6SegmentValueProvider to a SegmentValueProvider
+func WrapIPv6SegmentValueProvider(f IPv6SegmentValueProvider) SegmentValueProvider {
 	if f == nil {
 		return nil
 	}
@@ -36,9 +36,9 @@ func WrappedIPv6SegmentValueProvider(f IPv6SegmentValueProvider) SegmentValuePro
 	}
 }
 
-// WrappedSegmentValueProviderForIPv6 converts the given SegmentValueProvider to an IPv6SegmentValueProvider
+// WrapSegmentValueProviderForIPv6 converts the given SegmentValueProvider to an IPv6SegmentValueProvider
 // Values that do not fit IPv6SegInt are truncated.
-func WrappedSegmentValueProviderForIPv6(f SegmentValueProvider) IPv6SegmentValueProvider {
+func WrapSegmentValueProviderForIPv6(f SegmentValueProvider) IPv6SegmentValueProvider {
 	if f == nil {
 		return nil
 	}

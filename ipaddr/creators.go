@@ -115,7 +115,7 @@ func (creator *ipv6AddressCreator) createAddressInternalFromSection(section *IPA
 		// the originator is assigned to a parsedIPAddress struct in validateHostName or validateIPAddressStr
 		cache := res.cache
 		if cache != nil {
-			cache.identifierStr = &IdentifierStr{originator}
+			cache.identifierStr = &identifierStr{originator}
 		}
 	}
 	return res
@@ -127,7 +127,7 @@ func (creator *ipv6AddressCreator) createAddressInternal(section *AddressSection
 		// the originator is assigned to a parsedIPAddress struct in validateHostName or validateIPAddressStr
 		cache := res.cache
 		if cache != nil {
-			cache.identifierStr = &IdentifierStr{originator}
+			cache.identifierStr = &identifierStr{originator}
 		}
 	}
 	return res
@@ -190,7 +190,7 @@ func (creator *ipv4AddressCreator) createAddressInternalFromSection(section *IPA
 	if originator != nil {
 		cache := res.cache
 		if cache != nil {
-			cache.identifierStr = &IdentifierStr{originator}
+			cache.identifierStr = &identifierStr{originator}
 		}
 	}
 	return res
@@ -201,7 +201,7 @@ func (creator *ipv4AddressCreator) createAddressInternal(section *AddressSection
 	if originator != nil {
 		cache := res.cache
 		if cache != nil {
-			cache.identifierStr = &IdentifierStr{originator}
+			cache.identifierStr = &identifierStr{originator}
 		}
 	}
 	return res
@@ -255,7 +255,7 @@ func (creator *macAddressCreator) createAddressInternal(section *AddressSection,
 	if originator != nil {
 		cache := res.cache
 		if cache != nil {
-			cache.identifierStr = &IdentifierStr{originator}
+			cache.identifierStr = &identifierStr{originator}
 		}
 	}
 	return res
@@ -266,7 +266,7 @@ func (creator *macAddressCreator) createAddressInternalFromSection(section *MACA
 	if originator != nil {
 		cache := res.cache
 		if cache != nil {
-			cache.identifierStr = &IdentifierStr{originator}
+			cache.identifierStr = &identifierStr{originator}
 		}
 	}
 	return res

@@ -403,7 +403,7 @@ func (host *HostName) ToAddresses() (addrs []*IPAddress, err addrerr.AddressErro
 					} else {
 						cache := ipAddr.cache
 						if cache != nil {
-							cache.identifierStr = &IdentifierStr{host}
+							cache.identifierStr = &identifierStr{host}
 						}
 						addrs = append(addrs, ipAddr)
 					}
