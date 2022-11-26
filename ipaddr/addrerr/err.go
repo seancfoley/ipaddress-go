@@ -36,7 +36,7 @@ PrefixLenException
 PositionMismatchException
 */
 
-// AddressError is a type used by all library errors in order to be able to provide internationalized error messages
+// AddressError is a type used by all library errors in order to be able to provide internationalized error messages.
 type AddressError interface {
 	error
 
@@ -48,21 +48,22 @@ type AddressError interface {
 	GetKey() string
 }
 
-// HostIdentifierError represents errors in string formats used to identify hosts
+// HostIdentifierError represents errors in string formats used to identify hosts.
 type HostIdentifierError interface {
 	AddressError
 }
 
-// AddressStringError represents errors in address string formats used to identify addresses
+// AddressStringError represents errors in address string formats used to identify addresses.
 type AddressStringError interface {
 	HostIdentifierError
 }
 
-// HostNameError represents errors in host name string formats used to identify hosts
+// HostNameError represents errors in host name string formats used to identify hosts.
 type HostNameError interface {
 	HostIdentifierError
 
-	GetAddrError() AddressError //returns the underlying address error, or nil if none
+	// GetAddrError returns the underlying address error, or nil if none.
+	GetAddrError() AddressError
 }
 
 // IncompatibleAddressError represents situations when an address, address section, address segment, or address string represents a valid type or format but
@@ -84,7 +85,7 @@ type IncompatibleAddressError interface {
 }
 
 // SizeMismatchError is an error that results from attempting an operation that requires address items of equal size,
-// but the supplied arguments were not equal in size
+// but the supplied arguments were not equal in size.
 type SizeMismatchError interface {
 	IncompatibleAddressError
 }

@@ -26,7 +26,7 @@ import (
 type IPv6SegInt = uint16
 type IPv6SegmentValueProvider func(segmentIndex int) IPv6SegInt
 
-// WrapIPv6SegmentValueProvider converts the given IPv6SegmentValueProvider to a SegmentValueProvider
+// WrapIPv6SegmentValueProvider converts the given IPv6SegmentValueProvider to a SegmentValueProvider.
 func WrapIPv6SegmentValueProvider(f IPv6SegmentValueProvider) SegmentValueProvider {
 	if f == nil {
 		return nil
@@ -36,7 +36,7 @@ func WrapIPv6SegmentValueProvider(f IPv6SegmentValueProvider) SegmentValueProvid
 	}
 }
 
-// WrapSegmentValueProviderForIPv6 converts the given SegmentValueProvider to an IPv6SegmentValueProvider
+// WrapSegmentValueProviderForIPv6 converts the given SegmentValueProvider to an IPv6SegmentValueProvider.
 // Values that do not fit IPv6SegInt are truncated.
 func WrapSegmentValueProviderForIPv6(f SegmentValueProvider) IPv6SegmentValueProvider {
 	if f == nil {
@@ -242,12 +242,12 @@ func (seg *IPv6AddressSegment) CompareSize(other AddressItem) int {
 	return seg.init().compareSize(other)
 }
 
-// GetBitCount returns the number of bits in each value comprising this address item, which is 16
+// GetBitCount returns the number of bits in each value comprising this address item, which is 16.
 func (seg *IPv6AddressSegment) GetBitCount() BitCount {
 	return IPv6BitsPerSegment
 }
 
-// GetByteCount returns the number of bytes required for each value comprising this address item, which is 2
+// GetByteCount returns the number of bytes required for each value comprising this address item, which is 2.
 func (seg *IPv6AddressSegment) GetByteCount() int {
 	return IPv6BytesPerSegment
 }
@@ -269,7 +269,7 @@ func (seg *IPv6AddressSegment) GetUpper() *IPv6AddressSegment {
 	return seg.init().getUpper().ToIPv6()
 }
 
-// IsMultiple returns whether this segment represents multiple values
+// IsMultiple returns whether this segment represents multiple values.
 func (seg *IPv6AddressSegment) IsMultiple() bool {
 	return seg != nil && seg.isMultiple()
 }
@@ -287,7 +287,7 @@ func (seg *IPv6AddressSegment) GetCount() *big.Int {
 	return seg.getCount()
 }
 
-// GetPrefixCountLen returns the count of the number of distinct prefix values for the given prefix length in the range of values of this segment
+// GetPrefixCountLen returns the count of the number of distinct prefix values for the given prefix length in the range of values of this segment.
 func (seg *IPv6AddressSegment) GetPrefixCountLen(segmentPrefixLength BitCount) *big.Int {
 	return seg.init().ipAddressSegmentInternal.GetPrefixCountLen(segmentPrefixLength)
 }
@@ -302,12 +302,12 @@ func (seg *IPv6AddressSegment) IsOneBit(segmentBitIndex BitCount) bool {
 	return seg.init().ipAddressSegmentInternal.IsOneBit(segmentBitIndex)
 }
 
-// Bytes returns the lowest value in the address segment range as a byte slice
+// Bytes returns the lowest value in the address segment range as a byte slice.
 func (seg *IPv6AddressSegment) Bytes() []byte {
 	return seg.init().ipAddressSegmentInternal.Bytes()
 }
 
-// UpperBytes returns the highest value in the address segment range as a byte slice
+// UpperBytes returns the highest value in the address segment range as a byte slice.
 func (seg *IPv6AddressSegment) UpperBytes() []byte {
 	return seg.init().ipAddressSegmentInternal.UpperBytes()
 }
@@ -334,7 +334,7 @@ func (seg *IPv6AddressSegment) GetPrefixValueCount() SegIntCount {
 }
 
 // MatchesWithPrefixMask applies the network mask of the given bit-length to this segment and then compares the result with the given value masked by the same mask,
-//returning true if the resulting range matches the given single value.
+// returning true if the resulting range matches the given single value.
 func (seg *IPv6AddressSegment) MatchesWithPrefixMask(value IPv6SegInt, networkBits BitCount) bool {
 	return seg.init().ipAddressSegmentInternal.MatchesWithPrefixMask(SegInt(value), networkBits)
 }
@@ -435,7 +435,7 @@ func (seg *IPv6AddressSegment) PrefixIterator() Iterator[*IPv6AddressSegment] {
 	return ipv6SegmentIterator{seg.init().prefixIterator()}
 }
 
-// IsPrefixed returns whether this segment has an associated prefix length
+// IsPrefixed returns whether this segment has an associated prefix length.
 func (seg *IPv6AddressSegment) IsPrefixed() bool {
 	return seg != nil && seg.isPrefixed()
 }
@@ -454,7 +454,7 @@ func (seg *IPv6AddressSegment) WithoutPrefixLen() *IPv6AddressSegment {
 // If a segment does not fit into the array because the segment index in the array is out of bounds of the array,
 // then it is not copied.
 //
-// Used to create both IPv4 and MAC segments
+// It is used to create both IPv4 and MAC segments.
 func (seg *IPv6AddressSegment) visitSplitSegments(creator func(index int, value, upperValue SegInt, prefLen PrefixLen)) addrerr.IncompatibleAddressError {
 	if seg.isMultiple() {
 		return seg.visitSplitSegmentsMultiple(creator)
@@ -518,7 +518,7 @@ func lowByteIpv6(value SegInt) SegInt {
 }
 
 // Converts this IPv6 address segment into smaller segments,
-// copying them into the given array starting at the given index
+// copying them into the given array starting at the given index.
 //
 // If a segment does not fit into the array because the segment index in the array is out of bounds of the array,
 // then it is not copied.

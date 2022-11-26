@@ -866,7 +866,7 @@ func (t ipAddressTester) run() {
 
 	// Testing IPv4 addresses represented as dotted-quads
 	// Leading zero's in IPv4 addresses not allowed: some systems treat the leading "0" in ".086" as the start of an octal number
-	// Update: The BNF in RFC-3986 explicitly defines the dec-octet (for IPv4 addresses) not to have a leading zero
+	// Update: The BNF in RFC 3986 explicitly defines the dec-octet (for IPv4 addresses) not to have a leading zero
 	//t.ipv6test(false,"fe80:0000:0000:0000:0204:61ff:254.157.241.086");
 	t.ipv6test(!t.isLenient(), "fe80:0000:0000:0000:0204:61ff:254.157.241.086") //note the 086 is treated as octal when lenient!  So the lenient in this case fails.
 	t.ipv6test(true, "::ffff:192.0.2.128")                                      // this is always OK, since there's a single digit

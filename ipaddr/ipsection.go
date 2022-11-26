@@ -113,7 +113,7 @@ func (section *ipAddressSectionInternal) GetSegment(index int) *IPAddressSegment
 	return section.getDivision(index).ToIP()
 }
 
-// ForEachSegment visits each segment in order from most-significant to least, the most significant with index 0, calling the given function for each, terminating early if the function returns true
+// ForEachSegment visits each segment in order from most-significant to least, the most significant with index 0, calling the given function for each, terminating early if the function returns true.
 // Returns the number of visited segments.
 func (section *ipAddressSectionInternal) ForEachSegment(consumer func(segmentIndex int, segment *IPAddressSegment) (stop bool)) int {
 	divArray := section.getDivArray()
@@ -127,7 +127,7 @@ func (section *ipAddressSectionInternal) ForEachSegment(consumer func(segmentInd
 	return len(divArray)
 }
 
-// GetIPVersion returns the IP version of this IP address section
+// GetIPVersion returns the IP version of this IP address section.
 func (section *ipAddressSectionInternal) GetIPVersion() IPVersion {
 	addrType := section.getAddrType()
 	if addrType.isIPv4() {
@@ -1161,7 +1161,7 @@ func (section *ipAddressSectionInternal) insert(index int, other *IPAddressSecti
 }
 
 // Replaces segments starting from startIndex and ending before endIndex with the segments starting at replacementStartIndex and
-// ending before replacementEndIndex from the replacement section
+// ending before replacementEndIndex from the replacement section.
 func (section *ipAddressSectionInternal) replaceLen(
 	startIndex, endIndex int, replacement *IPAddressSection, replacementStartIndex, replacementEndIndex int, segmentToBitsShift uint) *IPAddressSection {
 
@@ -1334,7 +1334,7 @@ func (section *ipAddressSectionInternal) toIPAddressSection() *IPAddressSection 
 
 //// only needed for godoc / pkgsite
 
-// GetBitCount returns the number of bits in each value comprising this address item
+// GetBitCount returns the number of bits in each value comprising this address item.
 func (section *ipAddressSectionInternal) GetBitCount() BitCount {
 	return section.addressSectionInternal.GetBitCount()
 }
@@ -1350,22 +1350,22 @@ func (section *ipAddressSectionInternal) GetByteCount() int {
 //IPv6v4, Div, Not needed Addr
 //func (grouping *addressDivisionGroupingBase) GetDivisionCount() int {
 
-// IsZero returns whether this section matches exactly the value of zero
+// IsZero returns whether this section matches exactly the value of zero.
 func (section *ipAddressSectionInternal) IsZero() bool {
 	return section.addressSectionInternal.IsZero()
 }
 
-// IncludesZero returns whether this section includes the value of zero within its range
+// IncludesZero returns whether this section includes the value of zero within its range.
 func (section *ipAddressSectionInternal) IncludesZero() bool {
 	return section.addressSectionInternal.IncludesZero()
 }
 
-// IsMax returns whether this section matches exactly the maximum possible value, the value whose bits are all ones
+// IsMax returns whether this section matches exactly the maximum possible value, the value whose bits are all ones.
 func (section *ipAddressSectionInternal) IsMax() bool {
 	return section.addressSectionInternal.IsMax()
 }
 
-// IncludesMax returns whether this section includes the max value, the value whose bits are all ones, within its range
+// IncludesMax returns whether this section includes the max value, the value whose bits are all ones, within its range.
 func (section *ipAddressSectionInternal) IncludesMax() bool {
 	return section.addressSectionInternal.IncludesMax()
 }
@@ -1386,7 +1386,7 @@ func (section *ipAddressSectionInternal) GetSequentialBlockIndex() int {
 	return section.addressSectionInternal.GetSequentialBlockIndex()
 }
 
-// GetSequentialBlockCount provides the count of elements from the sequential block iterator, the minimal number of sequential address sections that comprise this address section
+// GetSequentialBlockCount provides the count of elements from the sequential block iterator, the minimal number of sequential address sections that comprise this address section.
 func (section *ipAddressSectionInternal) GetSequentialBlockCount() *big.Int {
 	return section.addressSectionInternal.GetSequentialBlockCount()
 }
@@ -1451,22 +1451,22 @@ func (section *ipAddressSectionInternal) GetPrefixLenForSingleBlock() PrefixLen 
 	return section.addressSectionInternal.GetPrefixLenForSingleBlock()
 }
 
-// GetValue returns the lowest individual address section in this address section as an integer value
+// GetValue returns the lowest individual address section in this address section as an integer value.
 func (section *ipAddressSectionInternal) GetValue() *big.Int {
 	return section.addressSectionInternal.GetValue()
 }
 
-// GetUpperValue returns the highest individual address section in this address section as an integer value
+// GetUpperValue returns the highest individual address section in this address section as an integer value.
 func (section *ipAddressSectionInternal) GetUpperValue() *big.Int {
 	return section.addressSectionInternal.GetUpperValue()
 }
 
-// Bytes returns the lowest individual address section in this address section as a byte slice
+// Bytes returns the lowest individual address section in this address section as a byte slice.
 func (section *ipAddressSectionInternal) Bytes() []byte {
 	return section.addressSectionInternal.Bytes()
 }
 
-// UpperBytes returns the highest individual address section in this address section as a byte slice
+// UpperBytes returns the highest individual address section in this address section as a byte slice.
 func (section *ipAddressSectionInternal) UpperBytes() []byte {
 	return section.addressSectionInternal.UpperBytes()
 }
@@ -1627,12 +1627,12 @@ func (section *IPAddressSection) GetCount() *big.Int {
 	return section.addressDivisionGroupingBase.getCount()
 }
 
-// IsMultiple returns whether this section represents multiple values
+// IsMultiple returns whether this section represents multiple values.
 func (section *IPAddressSection) IsMultiple() bool {
 	return section != nil && section.isMultiple()
 }
 
-// IsPrefixed returns whether this section has an associated prefix length
+// IsPrefixed returns whether this section has an associated prefix length.
 func (section *IPAddressSection) IsPrefixed() bool {
 	return section != nil && section.isPrefixed()
 }
@@ -1643,7 +1643,7 @@ func (section *IPAddressSection) IsPrefixed() bool {
 //
 // If this has a non-nil prefix length, returns the number of distinct prefix values.
 //
-// If this has a nil prefix length, returns the same value as GetCount
+// If this has a nil prefix length, it returns the same value as GetCount.
 func (section *IPAddressSection) GetPrefixCount() *big.Int {
 	if sect := section.ToIPv4(); sect != nil {
 		return sect.GetPrefixCount()
@@ -1653,7 +1653,7 @@ func (section *IPAddressSection) GetPrefixCount() *big.Int {
 	return section.addressDivisionGroupingBase.GetPrefixCount()
 }
 
-// GetPrefixCountLen returns the number of distinct prefix values in this item for the given prefix length
+// GetPrefixCountLen returns the number of distinct prefix values in this item for the given prefix length.
 func (section *IPAddressSection) GetPrefixCountLen(prefixLen BitCount) *big.Int {
 	if sect := section.ToIPv4(); sect != nil {
 		return sect.GetPrefixCountLen(prefixLen)
@@ -1729,13 +1729,13 @@ func (section *IPAddressSection) IsIPv6() bool {
 	return section != nil && section.matchesIPv6SectionType()
 }
 
-// GetTrailingSection gets the subsection from the series starting from the given index
+// GetTrailingSection gets the subsection from the series starting from the given index.
 // The first segment is at index 0.
 func (section *IPAddressSection) GetTrailingSection(index int) *IPAddressSection {
 	return section.GetSubSection(index, section.GetSegmentCount())
 }
 
-// GetSubSection gets the subsection from the series starting from the given index and ending just before the give endIndex
+// GetSubSection gets the subsection from the series starting from the given index and ending just before the give endIndex.
 // The first segment is at index 0.
 func (section *IPAddressSection) GetSubSection(index, endIndex int) *IPAddressSection {
 	return section.getSubSection(index, endIndex).ToIP()
@@ -1787,7 +1787,7 @@ func (section *IPAddressSection) GetHostMask() *IPAddressSection {
 }
 
 // CopySubSegments copies the existing segments from the given start index until but not including the segment at the given end index,
-// into the given slice, as much as can be fit into the slice, returning the number of segments copied
+// into the given slice, as much as can be fit into the slice, returning the number of segments copied.
 func (section *IPAddressSection) CopySubSegments(start, end int, segs []*IPAddressSegment) (count int) {
 	start, end, targetStart := adjust1To1StartIndices(start, end, section.GetDivisionCount(), len(segs))
 	segs = segs[targetStart:]
@@ -1797,7 +1797,7 @@ func (section *IPAddressSection) CopySubSegments(start, end int, segs []*IPAddre
 }
 
 // CopySegments copies the existing segments into the given slice,
-// as much as can be fit into the slice, returning the number of segments copied
+// as much as can be fit into the slice, returning the number of segments copied.
 func (section *IPAddressSection) CopySegments(segs []*IPAddressSegment) (count int) {
 	return section.ForEachSegment(func(index int, seg *IPAddressSegment) (stop bool) {
 		if stop = index >= len(segs); !stop {
@@ -2129,7 +2129,7 @@ func (section *IPAddressSection) ReverseSegments() *IPAddressSection {
 	return res.ToIP()
 }
 
-// String implements the fmt.Stringer interface, returning the normalized string provided by ToNormalizedString, or "<nil>" if the receiver is a nil pointer
+// String implements the fmt.Stringer interface, returning the normalized string provided by ToNormalizedString, or "<nil>" if the receiver is a nil pointer.
 func (section *IPAddressSection) String() string {
 	if section == nil {
 		return nilString()
@@ -2242,7 +2242,7 @@ func (section *IPAddressSection) ToSegmentedBinaryString() string {
 }
 
 // ToSQLWildcardString create a string similar to that from toNormalizedWildcardString except that
-// it uses SQL wildcards.  It uses '%' instead of '*' and also uses the wildcard '_'..
+// it uses SQL wildcards.  It uses '%' instead of '*' and also uses the wildcard '_'.
 func (section *IPAddressSection) ToSQLWildcardString() string {
 	if section == nil {
 		return nilString()
@@ -2280,7 +2280,7 @@ func (section *IPAddressSection) ToPrefixLenString() string {
 }
 
 // ToSubnetString produces a string with specific formats for subnets.
-// The subnet string looks like 1.2.*.* or 1:2::/16
+// The subnet string looks like 1.2.*.* or 1:2::/16.
 //
 // In the case of IPv4, this means that wildcards are used instead of a network prefix when a network prefix has been supplied.
 // In the case of IPv6, when a network prefix has been supplied, the prefix will be shown and the host section will be compressed with ::.
@@ -2300,7 +2300,7 @@ func (section *IPAddressSection) ToCompressedWildcardString() string {
 	return section.toCompressedWildcardString()
 }
 
-// ToCustomString creates a customized string from this address section according to the given string option parameters
+// ToCustomString creates a customized string from this address section according to the given string option parameters.
 func (section *IPAddressSection) ToCustomString(stringOptions addrstr.IPStringOptions) string {
 	if section == nil {
 		return nilString()

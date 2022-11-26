@@ -43,10 +43,10 @@ type ExtendedIPSegmentSeries interface {
 	// GetSection returns the backing section for this series, comprising all segments.
 	GetSection() *IPAddressSection
 
-	// GetTrailingSection returns an ending subsection of the full address section
+	// GetTrailingSection returns an ending subsection of the full address section.
 	GetTrailingSection(index int) *IPAddressSection
 
-	// GetSubSection returns a subsection of the full address section
+	// GetSubSection returns a subsection of the full address section.
 	GetSubSection(index, endIndex int) *IPAddressSection
 
 	// GetNetworkSection returns an address section containing the segments with the network of the series, the prefix bits.
@@ -90,11 +90,11 @@ type ExtendedIPSegmentSeries interface {
 	GetSegments() []*IPAddressSegment
 
 	// CopySegments copies the existing segments into the given slice,
-	// as much as can be fit into the slice, returning the number of segments copied
+	// as much as can be fit into the slice, returning the number of segments copied.
 	CopySegments(segs []*IPAddressSegment) (count int)
 
 	// CopySubSegments copies the existing segments from the given start index until but not including the segment at the given end index,
-	// into the given slice, as much as can be fit into the slice, returning the number of segments copied
+	// into the given slice, as much as can be fit into the slice, returning the number of segments copied.
 	CopySubSegments(start, end int, segs []*IPAddressSegment) (count int)
 
 	// IsIPv4 returns true if this series originated as an IPv4 series.  If so, use ToIPv4 to convert back to the IPv4-specific type.
@@ -216,7 +216,7 @@ type ExtendedIPSegmentSeries interface {
 
 	// GetUpper returns the series in the range with the highest numeric value,
 	// which will be the same series if it represents a single value.
-	// For example, for "1.2-3.4.5-6", the series "1.3.4.6" is returned.
+	// For example, for the subnet "1.2-3.4.5-6", the address "1.3.4.6" is returned.
 	GetUpper() ExtendedIPSegmentSeries
 
 	// AssignPrefixForSingleBlock returns the equivalent prefix block that matches exactly the range of values in this series.
@@ -341,7 +341,7 @@ type ExtendedIPSegmentSeries interface {
 	// ReverseSegments returns a new series with the segments reversed.
 	ReverseSegments() ExtendedIPSegmentSeries
 
-	// ToCustomString creates a customized string from this series according to the given string option parameters
+	// ToCustomString creates a customized string from this series according to the given string option parameters.
 	ToCustomString(stringOptions addrstr.IPStringOptions) string
 }
 
@@ -553,7 +553,7 @@ func (addr WrappedIPAddress) GetLower() ExtendedIPSegmentSeries {
 
 // GetUpper returns the series in the range with the highest numeric value,
 // which will be the same series if it represents a single value.
-// For example, for "1.2-3.4.5-6", the series "1.3.4.6" is returned.
+// For example, for the subnet "1.2-3.4.5-6", the address "1.3.4.6" is returned.
 func (addr WrappedIPAddress) GetUpper() ExtendedIPSegmentSeries {
 	return wrapIPAddress(addr.IPAddress.GetUpper())
 }
@@ -896,7 +896,7 @@ func (section WrappedIPAddressSection) GetLower() ExtendedIPSegmentSeries {
 
 // GetUpper returns the series in the range with the highest numeric value,
 // which will be the same series if it represents a single value.
-// For example, for "1.2-3.4.5-6", the series "1.3.4.6" is returned.
+// For example, for the subnet "1.2-3.4.5-6", the address "1.3.4.6" is returned.
 func (section WrappedIPAddressSection) GetUpper() ExtendedIPSegmentSeries {
 	return wrapIPSection(section.IPAddressSection.GetUpper())
 }

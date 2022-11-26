@@ -146,7 +146,7 @@ func (p *Partition[T]) predicateForAny(predicate func(address T) bool, returnEar
 	}, returnEarly)
 }
 
-// SpanPartitionConstraint is the generic type constraint for IP subnet spanning partitions
+// SpanPartitionConstraint is the generic type constraint for IP subnet spanning partitions.
 type SpanPartitionConstraint[T any] interface {
 	AddressDivisionSeries
 
@@ -226,7 +226,7 @@ func PartitionIPv4WithSingleBlockSize(newAddr *IPv4Address) *Partition[*IPv4Addr
 	return PartitionWithSingleBlockSize(newAddr)
 }
 
-// IteratePartitionConstraint is the generic type constraint for IP subnet and IP section iteration partitions
+// IteratePartitionConstraint is the generic type constraint for IP subnet and IP section iteration partitions.
 type IteratePartitionConstraint[T any] interface {
 	AddressDivisionSeries
 

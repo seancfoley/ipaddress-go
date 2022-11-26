@@ -296,11 +296,11 @@ func (div *addressLargeDivInternal) toString() string { // this can be moved to 
 }
 
 // Format implements fmt.Formatter interface. It accepts the formats
-// 'v' for the default address and section format (either the normalized or canonical string),
-// 's' (string) for the same,
-// 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
-// 'd' (decimal), 'x' (lowercase hexadecimal), and
-// 'X' (uppercase hexadecimal).
+//  - 'v' for the default address and section format (either the normalized or canonical string),
+//  - 's' (string) for the same,
+//  - 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
+//  - 'd' (decimal), 'x' (lowercase hexadecimal), and
+//  - 'X' (uppercase hexadecimal).
 // Also supported are some of fmt's format flags for integral types.
 // Sign control is not supported since addresses and sections are never negative.
 // '#' for an alternate format is supported, which is leading zero for octal and for hexadecimal,
@@ -356,12 +356,12 @@ type IPAddressLargeDivision struct {
 	addressLargeDivInternal
 }
 
-// GetValue returns the lowest value in the address division range as a big integer
+// GetValue returns the lowest value in the address division range as a big integer.
 func (div *IPAddressLargeDivision) GetValue() *BigDivInt {
 	return new(big.Int).Set(div.getValue())
 }
 
-// GetUpperValue returns the highest value in the address division range as a big integer
+// GetUpperValue returns the highest value in the address division range as a big integer.
 func (div *IPAddressLargeDivision) GetUpperValue() *BigDivInt {
 	return new(big.Int).Set(div.getUpperValue())
 }

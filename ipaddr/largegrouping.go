@@ -196,7 +196,7 @@ func (grouping *largeDivisionGroupingInternal) CopyUpperBytes(bytes []byte) []by
 	return getBytesCopy(bytes, grouping.getUpperBytes())
 }
 
-// Bytes returns the lowest individual division grouping in this grouping as a byte slice
+// Bytes returns the lowest individual division grouping in this grouping as a byte slice.
 func (grouping *largeDivisionGroupingInternal) Bytes() []byte {
 	if grouping.hasNoDivisions() {
 		return emptyBytes
@@ -204,7 +204,7 @@ func (grouping *largeDivisionGroupingInternal) Bytes() []byte {
 	return cloneBytes(grouping.getBytes())
 }
 
-// UpperBytes returns the highest individual division grouping in this grouping as a byte slice
+// UpperBytes returns the highest individual division grouping in this grouping as a byte slice.
 func (grouping *largeDivisionGroupingInternal) UpperBytes() []byte {
 	if grouping.hasNoDivisions() {
 		return emptyBytes
@@ -212,7 +212,7 @@ func (grouping *largeDivisionGroupingInternal) UpperBytes() []byte {
 	return cloneBytes(grouping.getUpperBytes())
 }
 
-// GetValue returns the lowest individual address division grouping in this address division grouping as an integer value
+// GetValue returns the lowest individual address division grouping in this address division grouping as an integer value.
 func (grouping *largeDivisionGroupingInternal) GetValue() *big.Int {
 	res := big.Int{}
 	if grouping.hasNoDivisions() {
@@ -221,7 +221,7 @@ func (grouping *largeDivisionGroupingInternal) GetValue() *big.Int {
 	return res.SetBytes(grouping.getBytes())
 }
 
-// GetUpperValue returns the highest individual address division grouping in this address division grouping as an integer value
+// GetUpperValue returns the highest individual address division grouping in this address division grouping as an integer value.
 func (grouping *largeDivisionGroupingInternal) GetUpperValue() *big.Int {
 	res := big.Int{}
 	if grouping.hasNoDivisions() {
@@ -385,7 +385,7 @@ func (grouping *largeDivisionGroupingInternal) ContainsSinglePrefixBlock(prefixL
 }
 
 // copySubDivisions copies the existing segments from the given start index until but not including the segment at the given end index,
-// into the given slice, as much as can be fit into the slice, returning the number of segments copied
+// into the given slice, as much as can be fit into the slice, returning the number of segments copied.
 func (grouping *largeDivisionGroupingInternal) copySubDivisions(start, end int, divs []*IPAddressLargeDivision) (count int) {
 	if divArray := grouping.getDivArray(); divArray != nil {
 		start, end, targetIndex := adjust1To1Indices(start, end, grouping.GetDivisionCount(), len(divs))
@@ -395,7 +395,7 @@ func (grouping *largeDivisionGroupingInternal) copySubDivisions(start, end int, 
 }
 
 // copyDivisions copies the existing segments from the given start index until but not including the segment at the given end index,
-// into the given slice, as much as can be fit into the slice, returning the number of segments copied
+// into the given slice, as much as can be fit into the slice, returning the number of segments copied.
 func (grouping *largeDivisionGroupingInternal) copyDivisions(divs []*IPAddressLargeDivision) (count int) {
 	if divArray := grouping.getDivArray(); divArray != nil {
 		return divArray.copyDivisions(divs)
@@ -473,7 +473,7 @@ func (grouping *IPAddressLargeDivisionGrouping) GetCount() *big.Int {
 	return grouping.addressDivisionGroupingBase.getCount()
 }
 
-// IsMultiple returns whether this grouping represents multiple values rather than a single value
+// IsMultiple returns whether this grouping represents multiple values rather than a single value.
 func (grouping *IPAddressLargeDivisionGrouping) IsMultiple() bool {
 	return grouping != nil && grouping.isMultiple()
 }
@@ -504,7 +504,7 @@ func (grouping *IPAddressLargeDivisionGrouping) CompareSize(other AddressItem) i
 // String implements the fmt.Stringer interface,
 // returning the normalized string provided by ToNormalizedString if this grouping originated as an address section,
 // or printed as a slice with each division converted to a string by String ( ie "[ div0 div1 ...]"),
-// or "<nil>" if the receiver is a nil pointer
+// or "<nil>" if the receiver is a nil pointer.
 func (grouping *IPAddressLargeDivisionGrouping) String() string {
 	if grouping == nil {
 		return nilString()
@@ -513,7 +513,7 @@ func (grouping *IPAddressLargeDivisionGrouping) String() string {
 }
 
 // IsPrefixed returns whether this division grouping has an associated prefix length.
-// If so, the prefix length is given by GetPrefixLen
+// If so, the prefix length is given by GetPrefixLen.
 func (grouping *IPAddressLargeDivisionGrouping) IsPrefixed() bool {
 	if grouping == nil {
 		return false
@@ -526,7 +526,7 @@ func (grouping *IPAddressLargeDivisionGrouping) GetDivision(index int) *IPAddres
 	return grouping.getDivision(index)
 }
 
-// ForEachDivision visits each segment in order from most-significant to least, the most significant with index 0, calling the given function for each, terminating early if the function returns true
+// ForEachDivision visits each segment in order from most-significant to least, the most significant with index 0, calling the given function for each, terminating early if the function returns true.
 // ForEachDivision returns the number of visited segments.
 func (grouping *IPAddressLargeDivisionGrouping) ForEachDivision(consumer func(divisionIndex int, division *IPAddressLargeDivision) (stop bool)) int {
 	divArray := grouping.getDivArray()
@@ -545,13 +545,13 @@ func (grouping *IPAddressLargeDivisionGrouping) isNil() bool {
 }
 
 // CopySubDivisions copies the existing divisions from the given start index until but not including the division at the given end index,
-// into the given slice, as much as can be fit into the slice, returning the number of divisions copied
+// into the given slice, as much as can be fit into the slice, returning the number of divisions copied.
 func (grouping *IPAddressLargeDivisionGrouping) CopySubDivisions(start, end int, divs []*IPAddressLargeDivision) (count int) {
 	return grouping.copySubDivisions(start, end, divs)
 }
 
 // CopyDivisions copies the existing divisions from the given start index until but not including the division at the given end index,
-// into the given slice, as much as can be fit into the slice, returning the number of divisions copied
+// into the given slice, as much as can be fit into the slice, returning the number of divisions copied.
 func (grouping *IPAddressLargeDivisionGrouping) CopyDivisions(divs []*IPAddressLargeDivision) (count int) {
 	return grouping.copyDivisions(divs)
 }

@@ -900,7 +900,7 @@ func (params *ipv6v4MixedParams) append(builder *strings.Builder, addr *IPv6v4Mi
 		params.ipv4Params.appendSegments(builder, addr.GetIPv4AddressSection())
 
 		/*
-		 * rfc 4038: for bracketed addresses, zone is inside and prefix outside, putting prefix after zone.
+		 * RFC 4038: for bracketed addresses, zone is inside and prefix outside, putting prefix after zone.
 		 *
 		 * Suffixes are things like .in-addr.arpa, .ip6.arpa, .ipv6-literal.net
 		 * which generally convert an address string to a host

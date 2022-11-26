@@ -30,7 +30,7 @@ type bitItem interface {
 	// rounding up if the bit count is not a multiple of 8.
 	GetByteCount() int
 
-	// GetBitCount returns the number of bits in each value comprising this address item
+	// GetBitCount returns the number of bits in each value comprising this address item.
 	GetBitCount() BitCount
 }
 
@@ -41,13 +41,13 @@ type AddressItem interface {
 	// rounding up if the bit count is not a multiple of 8.
 	GetByteCount() int
 
-	// GetBitCount returns the number of bits in each value comprising this address item
+	// GetBitCount returns the number of bits in each value comprising this address item.
 	GetBitCount() BitCount
 
-	// GetValue returns the lowest individual address item in the address item range as an integer value
+	// GetValue returns the lowest individual address item in the address item range as an integer value.
 	GetValue() *big.Int
 
-	// GetUpperValue returns the highest individual address item in the address item range as an integer value
+	// GetUpperValue returns the highest individual address item in the address item range as an integer value.
 	GetUpperValue() *big.Int
 
 	// CopyBytes copies the value of the lowest individual address item in this address item range into a byte slice.
@@ -62,10 +62,10 @@ type AddressItem interface {
 	// Otherwise, a new slice is created and returned with the value.
 	CopyUpperBytes(bytes []byte) []byte
 
-	// Bytes returns the lowest individual address item in the address item range as a byte slice
+	// Bytes returns the lowest individual address item in the address item range as a byte slice.
 	Bytes() []byte
 
-	// UpperBytes returns the highest individual address item in the address item range as a byte slice
+	// UpperBytes returns the highest individual address item in the address item range as a byte slice.
 	UpperBytes() []byte
 
 	// GetCount provides the number of address items represented by this AddressItem, for example the subnet size for IP addresses
@@ -79,16 +79,16 @@ type AddressItem interface {
 	// This is true if and only if both IncludesZero and IncludesMax return true.
 	IsFullRange() bool
 
-	// IncludesZero returns whether this item includes the value of zero within its range
+	// IncludesZero returns whether this item includes the value of zero within its range.
 	IncludesZero() bool
 
-	// IncludesMax returns whether this item includes the max value, the value whose bits are all ones, within its range
+	// IncludesMax returns whether this item includes the max value, the value whose bits are all ones, within its range.
 	IncludesMax() bool
 
-	// IsZero returns whether this address item matches exactly the value of zero
+	// IsZero returns whether this address item matches exactly the value of zero.
 	IsZero() bool
 
-	// IsMax returns whether this address item matches exactly the maximum possible value, the value whose bits are all ones
+	// IsMax returns whether this address item matches exactly the maximum possible value, the value whose bits are all ones.
 	IsMax() bool
 
 	// ContainsPrefixBlock returns whether the values of this item contains the prefix block for the given prefix length.
@@ -138,11 +138,11 @@ type AddressItem interface {
 	fmt.Stringer
 }
 
-// AddressDivisionSeries serves as a common interface to all division groupings and addresses
+// AddressDivisionSeries serves as a common interface to all division groupings, address sections, and addresses.
 type AddressDivisionSeries interface {
 	AddressItem
 
-	// GetDivisionCount returns the number of divisions
+	// GetDivisionCount returns the number of divisions.
 	GetDivisionCount() int
 
 	// GetPrefixCount returns the count of prefixes in this series for its prefix length, or the total count if it has no prefix length
@@ -158,7 +158,7 @@ type AddressDivisionSeries interface {
 	// For the full series to be sequential, the preceding divisions must be single-valued.
 	GetSequentialBlockIndex() int
 
-	// GetSequentialBlockCount provides the count of elements from the sequential block iterator, the minimal number of sequential address division series that comprise this address division series
+	// GetSequentialBlockCount provides the count of elements from the sequential block iterator, the minimal number of sequential address division series that comprise this address division series.
 	GetSequentialBlockCount() *big.Int
 
 	// IsSequential returns  whether the series represents a range of values that are sequential.
@@ -179,7 +179,7 @@ type AddressDivisionSeries interface {
 	// false if this series has no prefix length or a prefix length that differs from a prefix length for which ContainsSinglePrefixBlock returns true.
 	IsSinglePrefixBlock() bool
 
-	// IsPrefixed returns whether this address has an associated prefix length
+	// IsPrefixed returns whether this address has an associated prefix length.
 	IsPrefixed() bool
 
 	// GetPrefixLen returns the prefix length, or nil if there is no prefix length.
@@ -198,7 +198,7 @@ type AddressDivisionSeries interface {
 var _ AddressDivisionSeries = &IPAddressLargeDivisionGrouping{}
 
 // StandardDivGroupingType represents any standard division grouping (division groupings or address sections where all divisions are 64 bits or less)
-// including AddressSection, IPAddressSection, IPv4AddressSection, IPv6AddressSection, MACAddressSection, and AddressDivisionGrouping
+// including [AddressSection], [IPAddressSection], [IPv4AddressSection], [IPv6AddressSection], [MACAddressSection], and [AddressDivisionGrouping]
 type StandardDivGroupingType interface {
 	AddressDivisionSeries
 
@@ -217,7 +217,7 @@ type StandardDivGroupingType interface {
 var _, _ StandardDivGroupingType = &AddressDivisionGrouping{},
 	&IPv6v4MixedAddressGrouping{}
 
-// AddressComponent represents all addresses, address sections, and address segments
+// AddressComponent represents all addresses, address sections, and address segments.
 type AddressComponent interface { //AddressSegment and above, AddressSegmentSeries and above
 	// TestBit returns true if the bit in the lower value of the address component at the given index is 1, where index 0 refers to the least significant bit.
 	// In other words, it computes (bits & (1 << n)) != 0), using the lower value of this address component.
@@ -238,7 +238,7 @@ type AddressComponent interface { //AddressSegment and above, AddressSegmentSeri
 	ToNormalizedString() string
 }
 
-// AddressSegmentSeries serves as a common interface to all address sections and addresses
+// AddressSegmentSeries serves as a common interface to all address sections and addresses.
 type AddressSegmentSeries interface { // Address and above, AddressSection and above, IPAddressSegmentSeries, ExtendedIPSegmentSeries
 	AddressComponent
 
@@ -312,7 +312,7 @@ type AddressSegmentSeries interface { // Address and above, AddressSection and a
 
 var _, _ AddressSegmentSeries = &Address{}, &AddressSection{}
 
-// IPAddressSegmentSeries serves as a common interface to all IP address sections and IP addresses
+// IPAddressSegmentSeries serves as a common interface to all IP address sections and IP addresses.
 type IPAddressSegmentSeries interface { // IPAddress and above, IPAddressSection and above, ExtendedIPSegmentSeries
 	AddressSegmentSeries
 
@@ -364,7 +364,7 @@ type IPAddressSegmentSeries interface { // IPAddress and above, IPAddressSection
 	// If it has no prefix length, it returns true if not multiple, if it contains only a single individual series.
 	IsSingleNetwork() bool
 
-	// GetIPVersion returns the IP version of this IP address or IP address section
+	// GetIPVersion returns the IP version of this IP address or IP address section.
 	GetIPVersion() IPVersion
 
 	// GetBlockMaskPrefixLen returns the prefix length if this IP address or IP address section is equivalent to the mask for a CIDR prefix block.
@@ -403,7 +403,7 @@ type IPAddressSegmentSeries interface { // IPAddress and above, IPAddressSection
 	ToPrefixLenString() string
 
 	// ToSubnetString produces a string with specific formats for subnets.
-	// The subnet string looks like 1.2.*.* or 1:2::/16
+	// The subnet string looks like 1.2.*.* or 1:2::/16.
 	//
 	// In the case of IPv4, this means that wildcards are used instead of a network prefix when a network prefix has been supplied.
 	// In the case of IPv6, when a network prefix has been supplied, the prefix will be shown and the host section will be compressed with ::.
@@ -422,7 +422,7 @@ type IPAddressSegmentSeries interface { // IPAddress and above, IPAddressSection
 	ToSegmentedBinaryString() string
 
 	// ToSQLWildcardString create a string similar to that from toNormalizedWildcardString except that
-	// it uses SQL wildcards.  It uses '%' instead of '*' and also uses the wildcard '_'..
+	// it uses SQL wildcards.  It uses '%' instead of '*' and also uses the wildcard '_'.
 	ToSQLWildcardString() string
 
 	// ToReverseDNSString generates the reverse DNS lookup string,
@@ -434,7 +434,7 @@ type IPAddressSegmentSeries interface { // IPAddress and above, IPAddressSection
 
 var _, _ IPAddressSegmentSeries = &IPAddress{}, &IPAddressSection{}
 
-// IPv6AddressSegmentSeries serves as a common interface to all IPv6 address sections and IPv6 addresses
+// IPv6AddressSegmentSeries serves as a common interface to all IPv6 address sections and IPv6 addresses.
 type IPv6AddressSegmentSeries interface {
 	IPAddressSegmentSeries
 
@@ -472,11 +472,11 @@ type IPv6AddressSegmentSeries interface {
 	GetSegments() []*IPv6AddressSegment
 
 	// CopySegments copies the existing segments into the given slice,
-	// as much as can be fit into the slice, returning the number of segments copied
+	// as much as can be fit into the slice, returning the number of segments copied.
 	CopySegments(segs []*IPv6AddressSegment) (count int)
 
 	// CopySubSegments copies the existing segments from the given start index until but not including the segment at the given end index,
-	// into the given slice, as much as can be fit into the slice, returning the number of segments copied
+	// into the given slice, as much as can be fit into the slice, returning the number of segments copied.
 	CopySubSegments(start, end int, segs []*IPv6AddressSegment) (count int)
 
 	// GetSegment returns the segment at the given index.
@@ -489,14 +489,14 @@ var _, _, _ IPv6AddressSegmentSeries = &IPv6Address{},
 	&IPv6AddressSection{},
 	&EmbeddedIPv6AddressSection{}
 
-// IPv4AddressSegmentSeries serves as a common interface to all IPv4 address sections and IPv4 addresses
+// IPv4AddressSegmentSeries serves as a common interface to all IPv4 address sections and IPv4 addresses.
 type IPv4AddressSegmentSeries interface {
 	IPAddressSegmentSeries
 
-	// GetTrailingSection returns an ending subsection of the full address section
+	// GetTrailingSection returns an ending subsection of the full address section.
 	GetTrailingSection(index int) *IPv4AddressSection
 
-	// GetSubSection returns a subsection of the full address section
+	// GetSubSection returns a subsection of the full address section.
 	GetSubSection(index, endIndex int) *IPv4AddressSection
 
 	// GetNetworkSection returns an address section containing the segments with the network of the series, the prefix bits.
@@ -527,11 +527,11 @@ type IPv4AddressSegmentSeries interface {
 	GetSegments() []*IPv4AddressSegment
 
 	// CopySegments copies the existing segments into the given slice,
-	// as much as can be fit into the slice, returning the number of segments copied
+	// as much as can be fit into the slice, returning the number of segments copied.
 	CopySegments(segs []*IPv4AddressSegment) (count int)
 
 	// CopySubSegments copies the existing segments from the given start index until but not including the segment at the given end index,
-	// into the given slice, as much as can be fit into the slice, returning the number of segments copied
+	// into the given slice, as much as can be fit into the slice, returning the number of segments copied.
 	CopySubSegments(start, end int, segs []*IPv4AddressSegment) (count int)
 
 	// GetSegment returns the segment at the given index.
@@ -542,25 +542,25 @@ type IPv4AddressSegmentSeries interface {
 
 var _, _ IPv4AddressSegmentSeries = &IPv4Address{}, &IPv4AddressSection{}
 
-// MACAddressSegmentSeries serves as a common interface to all MAC address sections and MAC addresses
+// MACAddressSegmentSeries serves as a common interface to all MAC address sections and MAC addresses.
 type MACAddressSegmentSeries interface {
 	AddressSegmentSeries
 
-	// GetTrailingSection returns an ending subsection of the full address section
+	// GetTrailingSection returns an ending subsection of the full address section.
 	GetTrailingSection(index int) *MACAddressSection
 
-	// GetSubSection returns a subsection of the full address section
+	// GetSubSection returns a subsection of the full address section.
 	GetSubSection(index, endIndex int) *MACAddressSection
 
 	// GetSegments returns a slice with the address segments.  The returned slice is not backed by the same array as the receiver.
 	GetSegments() []*MACAddressSegment
 
 	// CopySegments copies the existing segments into the given slice,
-	// as much as can be fit into the slice, returning the number of segments copied
+	// as much as can be fit into the slice, returning the number of segments copied.
 	CopySegments(segs []*MACAddressSegment) (count int)
 
 	// CopySubSegments copies the existing segments from the given start index until but not including the segment at the given end index,
-	// into the given slice, as much as can be fit into the slice, returning the number of segments copied
+	// into the given slice, as much as can be fit into the slice, returning the number of segments copied.
 	CopySubSegments(start, end int, segs []*MACAddressSegment) (count int)
 
 	// GetSegment returns the segment at the given index.
@@ -573,7 +573,7 @@ var _, _ MACAddressSegmentSeries = &MACAddress{}, &MACAddressSection{}
 
 // AddressSectionType represents any address section
 // that can be converted to/from the base type AddressSection,
-// including AddressSection, IPAddressSection, IPv4AddressSection, IPv6AddressSection, and MACAddressSection
+// including [AddressSection], [IPAddressSection], [IPv4AddressSection], [IPv6AddressSection], and [MACAddressSection].
 type AddressSectionType interface {
 	StandardDivGroupingType
 
@@ -613,7 +613,7 @@ type AddressSectionType interface {
 	ToSectionBase() *AddressSection
 }
 
-//Note: if we had an IPAddressSectionType we could add Wrap() WrappedIPAddressSection to it, but I guess not much else
+//Note: if we had an IPAddressSectionType we could add Wrap() WrappedIPAddressSection to it, but I guess not much else.
 
 var _, _, _, _, _ AddressSectionType = &AddressSection{},
 	&IPAddressSection{},
@@ -621,10 +621,10 @@ var _, _, _, _, _ AddressSectionType = &AddressSection{},
 	&IPv6AddressSection{},
 	&MACAddressSection{}
 
-// AddressType represents any address, all of which can be represented by the base type Address.
-// This includes IPAddress, IPv4Address, IPv6Address, and MACAddress.
+// AddressType represents any address, all of which can be represented by the base type [Address].
+// This includes [IPAddress], [IPv4Address], [IPv6Address], and [MACAddress].
 // You must use the pointer types *Address, *IPAddress, *IPv4Address, *IPv6Address, and *MACAddress when implementing AddressType.
-// It can be useful as a parameter for functions to take any address type, while inside the function you can convert to *Address using ToAddressBase
+// It can be useful as a parameter for functions to take any address type, while inside the function you can convert to [Address] using ToAddressBase.
 type AddressType interface {
 	AddressSegmentSeries
 
@@ -656,7 +656,7 @@ type AddressType interface {
 
 var _, _ AddressType = &Address{}, &MACAddress{}
 
-// IPAddressRange represents all IPAddress instances and all IPAddress sequential range instances
+// IPAddressRange represents all IPAddress instances and all IPAddress sequential range instances.
 type IPAddressRange interface {
 	// GetIPVersion returns the IP version of this IP address range
 	GetIPVersion() IPVersion
@@ -668,7 +668,7 @@ type IPAddressRange interface {
 
 	// GetUpperIPAddress returns the address in the subnet or address range with the highest numeric value,
 	// which will be the receiver if it represents a single address.
-	// For example, for "1.2-3.4.5-6", the series "1.3.4.6" is returned.
+	// For example, for the subnet "1.2-3.4.5-6", the address "1.3.4.6" is returned.
 	GetUpperIPAddress() *IPAddress
 
 	// CopyNetIP copies the value of the lowest individual address in the subnet or address range into a net.IP.
@@ -683,16 +683,16 @@ type IPAddressRange interface {
 	// Otherwise, a new slice is created and returned with the value.
 	CopyUpperNetIP(bytes net.IP) net.IP
 
-	// GetNetIP returns the lowest address in this subnet or address range as a net.IP
+	// GetNetIP returns the lowest address in this subnet or address range as a net.IP.
 	GetNetIP() net.IP
 
-	// GetUpperNetIP returns the highest address in this subnet or address range as a net.IP
+	// GetUpperNetIP returns the highest address in this subnet or address range as a net.IP.
 	GetUpperNetIP() net.IP
 
-	// GetNetNetIPAddr returns the lowest address in this subnet or address range as a netip.Addr
+	// GetNetNetIPAddr returns the lowest address in this subnet or address range as a netip.Addr.
 	GetNetNetIPAddr() netip.Addr
 
-	// GetUpperNetNetIPAddr returns the highest address in this subnet or address range as a netip.Addr
+	// GetUpperNetNetIPAddr returns the highest address in this subnet or address range as a netip.Addr.
 	GetUpperNetNetIPAddr() netip.Addr
 
 	// IsSequential returns whether the address item represents a range of addresses that are sequential.
@@ -713,8 +713,8 @@ var _, _, _, _, _, _ IPAddressRange = &IPAddress{},
 	&SequentialRange[*IPv4Address]{},
 	&SequentialRange[*IPv6Address]{}
 
-// IPAddressType represents any IP address, all of which can be represented by the base type IPAddress.
-// This includes IPv4Address and IPv6Address.
+// IPAddressType represents any IP address, all of which can be represented by the base type [IPAddress].
+// This includes [IPv4Address] and [IPv6Address].
 // You must use the pointer types *IPAddress, *IPv4Address, and *IPv6Address when implementing IPAddressType.
 type IPAddressType interface {
 	AddressType
@@ -782,12 +782,13 @@ var _, _, _ IPAddressSeqRangeType = &SequentialRange[*IPAddress]{},
 // HostIdentifierString represents a string that is used to identify a host.
 type HostIdentifierString interface {
 
-	// ToNormalizedString provides a normalized String representation for the host identified by this HostIdentifierString instance
+	// ToNormalizedString provides a normalized String representation for the host identified by this HostIdentifierString instance.
 	ToNormalizedString() string
 
-	// IsValid returns whether the wrapped string is a valid identifier for a host
+	// IsValid returns whether the wrapped string is a valid identifier for a host.
 	IsValid() bool
 
+	// Wrap wraps the identifier string into the extended type that is polymorphic with other identifier strings.
 	Wrap() ExtendedIdentifierString
 
 	fmt.Stringer

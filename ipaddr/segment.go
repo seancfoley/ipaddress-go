@@ -25,7 +25,7 @@ import (
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrstr"
 )
 
-// SegInt is an integer type for holding generic address segment values.  It is at least as large as all address segment values: IPv6SegInt, IPv4SegInt, MACSegInt
+// SegInt is an integer type for holding generic address segment values.  It is at least as large as all address segment values: [IPv6SegInt], [IPv4SegInt], [MACSegInt].
 type SegInt = uint32 // must be at least uint16 to handle IPv6, at least 32 to handle single segment IPv4, and no larger than 64 because we use bits.TrailingZeros64.  IP address segment code uses bits.TrailingZeros32 and bits.LeadingZeros32, so it cannot be larger than 32.
 
 const SegIntSize = 32 // must match the bit count of SegInt
@@ -154,7 +154,7 @@ func (seg *addressSegmentInternal) toAddressSegment() *AddressSegment {
 	return (*AddressSegment)(unsafe.Pointer(seg))
 }
 
-// GetSegmentValue returns the lower value of the segment value range
+// GetSegmentValue returns the lower value of the segment value range.
 func (seg *addressSegmentInternal) GetSegmentValue() SegInt {
 	vals := seg.divisionValues
 	if vals == nil {
@@ -163,7 +163,7 @@ func (seg *addressSegmentInternal) GetSegmentValue() SegInt {
 	return vals.getSegmentValue()
 }
 
-// GetUpperSegmentValue returns the upper value of the segment value range
+// GetUpperSegmentValue returns the upper value of the segment value range.
 func (seg *addressSegmentInternal) GetUpperSegmentValue() SegInt {
 	vals := seg.divisionValues
 	if vals == nil {
@@ -189,7 +189,7 @@ func (seg *addressSegmentInternal) MatchesValsWithMask(lowerValue, upperValue, m
 	return seg.matchesValsWithMask(DivInt(lowerValue), DivInt(upperValue), DivInt(mask))
 }
 
-// GetPrefixCountLen returns the count of the number of distinct prefix values for the given prefix length in the range of values of this segment
+// GetPrefixCountLen returns the count of the number of distinct prefix values for the given prefix length in the range of values of this segment.
 func (seg *addressSegmentInternal) GetPrefixCountLen(segmentPrefixLength BitCount) *big.Int {
 	return bigZero().SetUint64(seg.GetPrefixValueCountLen(segmentPrefixLength))
 }
@@ -632,7 +632,7 @@ func (seg *addressSegmentInternal) isReversibleRange(perByte bool) (isReversible
 
 //// only needed for godoc / pkgsite
 
-// GetBitCount returns the number of bits in each value comprising this address item
+// GetBitCount returns the number of bits in each value comprising this address item.
 func (seg *addressSegmentInternal) GetBitCount() BitCount {
 	return seg.addressDivisionInternal.GetBitCount()
 }
@@ -642,22 +642,22 @@ func (seg *addressSegmentInternal) GetByteCount() int {
 	return seg.addressDivisionInternal.GetByteCount()
 }
 
-// GetValue returns the lowest value in the address segment range as a big integer
+// GetValue returns the lowest value in the address segment range as a big integer.
 func (seg *addressSegmentInternal) GetValue() *BigDivInt {
 	return seg.addressDivisionInternal.GetValue()
 }
 
-// GetUpperValue returns the highest value in the address segment range as a big integer
+// GetUpperValue returns the highest value in the address segment range as a big integer.
 func (seg *addressSegmentInternal) GetUpperValue() *BigDivInt {
 	return seg.addressDivisionInternal.GetUpperValue()
 }
 
-// Bytes returns the lowest value in the address segment range as a byte slice
+// Bytes returns the lowest value in the address segment range as a byte slice.
 func (seg *addressSegmentInternal) Bytes() []byte {
 	return seg.addressDivisionInternal.Bytes()
 }
 
-// UpperBytes returns the highest value in the address segment range as a byte slice
+// UpperBytes returns the highest value in the address segment range as a byte slice.
 func (seg *addressSegmentInternal) UpperBytes() []byte {
 	return seg.addressDivisionInternal.UpperBytes()
 }
@@ -678,22 +678,22 @@ func (seg *addressSegmentInternal) CopyUpperBytes(bytes []byte) []byte {
 	return seg.addressDivisionInternal.CopyUpperBytes(bytes)
 }
 
-// IsZero returns whether this segment matches exactly the value of zero
+// IsZero returns whether this segment matches exactly the value of zero.
 func (seg *addressSegmentInternal) IsZero() bool {
 	return seg.addressDivisionInternal.IsZero()
 }
 
-// IncludesZero returns whether this segment includes the value of zero within its range
+// IncludesZero returns whether this segment includes the value of zero within its range.
 func (seg *addressSegmentInternal) IncludesZero() bool {
 	return seg.addressDivisionInternal.IncludesZero()
 }
 
-// IsMax returns whether this segment matches exactly the maximum possible value, the value whose bits are all ones
+// IsMax returns whether this segment matches exactly the maximum possible value, the value whose bits are all ones.
 func (seg *addressSegmentInternal) IsMax() bool {
 	return seg.addressDivisionInternal.IsMax()
 }
 
-// IncludesMax returns whether this segment includes the max value, the value whose bits are all ones, within its range
+// IncludesMax returns whether this segment includes the max value, the value whose bits are all ones, within its range.
 func (seg *addressSegmentInternal) IncludesMax() bool {
 	return seg.addressDivisionInternal.IncludesMax()
 }
@@ -705,7 +705,7 @@ func (seg *addressSegmentInternal) IsFullRange() bool {
 	return seg.addressDivisionInternal.IsFullRange()
 }
 
-// ContainsPrefixBlock returns whether the segment range includes the block of values for the given prefix length
+// ContainsPrefixBlock returns whether the segment range includes the block of values for the given prefix length.
 func (seg *addressSegmentInternal) ContainsPrefixBlock(prefixLen BitCount) bool {
 	return seg.addressDivisionInternal.ContainsPrefixBlock(prefixLen)
 }
@@ -820,7 +820,7 @@ func (seg *addressSegmentInternal) GetUpper() *AddressSegment {
 	return seg.getUpper()
 }
 
-// IsMultiple returns whether this segment represents multiple values
+// IsMultiple returns whether this segment represents multiple values.
 func (seg *AddressSegment) IsMultiple() bool {
 	return seg != nil && seg.isMultiple()
 }

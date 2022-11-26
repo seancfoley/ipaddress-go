@@ -22,7 +22,7 @@ import (
 	"unsafe"
 )
 
-// TrieKeyConstraint is the generic type constraint used for tree keys, which are individual addresses and prefix block subnets
+// TrieKeyConstraint is the generic type constraint used for tree keys, which are individual addresses and prefix block subnets.
 type TrieKeyConstraint[T AddressType] interface {
 	comparable
 	AddressType
@@ -94,8 +94,8 @@ func (a trieKey[T]) Compare(other trieKey[T]) int {
 	return a.address.trieCompare(other.address.ToAddressBase())
 }
 
-// MatchBits returns false if we need to keep going and try to match sub-nodes
-// MatchBits returns true if the bits do not match, or the bits match to the very end
+// MatchBits returns false if we need to keep going and try to match sub-nodes.
+// MatchBits returns true if the bits do not match, or the bits match to the very end.
 func (a trieKey[T]) MatchBits(key trieKey[T], bitIndex int, handleMatch tree.KeyCompareResult) bool {
 	existingAddr := key.address.ToAddressBase()
 	bitsPerSegment := existingAddr.GetBitsPerSegment()
@@ -174,12 +174,12 @@ func (a trieKey[T]) MatchBits(key trieKey[T], bitIndex int, handleMatch tree.Key
 	}
 }
 
-// ToMaxLower changes this key to a new key with a 0 at the first bit beyond the prefix, followed by all ones, and with no prefix length
+// ToMaxLower changes this key to a new key with a 0 at the first bit beyond the prefix, followed by all ones, and with no prefix length.
 func (a trieKey[T]) ToMaxLower() trieKey[T] {
 	return trieKey[T]{a.address.toMaxLower()}
 }
 
-// ToMinUpper changes this key to a new key with a 1 at the first bit beyond the prefix, followed by all zeros, and with no prefix length
+// ToMinUpper changes this key to a new key with a 1 at the first bit beyond the prefix, followed by all zeros, and with no prefix length.
 func (a trieKey[T]) ToMinUpper() trieKey[T] {
 	return trieKey[T]{a.address.toMinUpper()}
 }
@@ -200,7 +200,7 @@ type trieNode[T TrieKeyConstraint[T], V any] struct {
 	binNode tree.BinTrieNode[trieKey[T], V]
 }
 
-// getKey gets the key used for placing the node in the tree.
+// getKey gets the key used for placing the node in the trie.
 func (node *trieNode[T, V]) getKey() (t T) {
 	return node.toBinTrieNode().GetKey().address
 }
@@ -230,7 +230,7 @@ func (node *trieNode[T, V]) ceilingAddedNode(addr T) *tree.BinTrieNode[trieKey[T
 	return node.toBinTrieNode().CeilingAddedNode(trieKey[T]{addr})
 }
 
-// iterator returns an iterator that iterates through the elements of the sub-tree with this node as the root.
+// iterator returns an iterator that iterates through the elements of the sub-trie with this node as the root.
 // The iteration is in sorted element order.
 func (node *trieNode[T, V]) iterator() Iterator[T] {
 	return addressKeyIterator[T]{node.toBinTrieNode().Iterator()}
@@ -242,12 +242,12 @@ func (node *trieNode[T, V]) descendingIterator() Iterator[T] {
 	return addressKeyIterator[T]{node.toBinTrieNode().DescendingIterator()}
 }
 
-// nodeIterator iterates through the added nodes of the sub-tree with this node as the root, in forward or reverse tree order.
+// nodeIterator iterates through the added nodes of the sub-trie with this node as the root, in forward or reverse tree order.
 func (node *trieNode[T, V]) nodeIterator(forward bool) tree.TrieNodeIteratorRem[trieKey[T], V] {
 	return node.toBinTrieNode().NodeIterator(forward)
 }
 
-// allNodeIterator iterates through all the nodes of the sub-tree with this node as the root, in forward or reverse tree order.
+// allNodeIterator iterates through all the nodes of the sub-trie with this node as the root, in forward or reverse tree order.
 func (node *trieNode[T, V]) allNodeIterator(forward bool) tree.TrieNodeIteratorRem[trieKey[T], V] {
 	return node.toBinTrieNode().AllNodeIterator(forward)
 }
@@ -382,42 +382,42 @@ func (node *TrieNode[T]) tobase() *trieNode[T, emptyValue] {
 	return (*trieNode[T, emptyValue])(unsafe.Pointer(node))
 }
 
-// GetKey gets the key used to place the node in the tree.
+// GetKey gets the key used to place the node in the trie.
 func (node *TrieNode[T]) GetKey() T {
 	return node.tobase().getKey()
 }
 
-// IsRoot returns whether this node is the root of the backing tree.
+// IsRoot returns whether this node is the root of the trie.
 func (node *TrieNode[T]) IsRoot() bool {
 	return node.toBinTrieNode().IsRoot()
 }
 
 // IsAdded returns whether the node was "added".
-// Some binary tree nodes are considered "added" and others are not.
-// Those nodes created for key elements added to the tree are "added" nodes.
+// Some binary trie nodes are considered "added" and others are not.
+// Those nodes created for key elements added to the trie are "added" nodes.
 // Those that are not added are those nodes created to serve as junctions for the added nodes.
-// Only added elements contribute to the size of a tree.
+// Only added elements contribute to the size of a trie.
 // When removing nodes, non-added nodes are removed automatically whenever they are no longer needed,
 // which is when an added node has less than two added sub-nodes.
 func (node *TrieNode[T]) IsAdded() bool {
 	return node.toBinTrieNode().IsAdded()
 }
 
-// SetAdded makes this node an added node, which is equivalent to adding the corresponding key to the tree.
+// SetAdded makes this node an added node, which is equivalent to adding the corresponding key to the trie.
 // If the node is already an added node, this method has no effect.
-// You cannot set an added node to non-added, for that you should Remove the node from the tree by calling Remove.
-// A non-added node will only remain in the tree if it needs to in the tree.
+// You cannot set an added node to non-added, for that you should Remove the node from the trie by calling Remove.
+// A non-added node will only remain in the trie if it needs to be in the trie.
 func (node *TrieNode[T]) SetAdded() {
 	node.toBinTrieNode().SetAdded()
 }
 
-// Clear removes this node and all sub-nodes from the tree, after which isEmpty() will return true.
+// Clear removes this node and all sub-nodes from the trie, after which isEmpty() will return true.
 func (node *TrieNode[T]) Clear() {
 	node.toBinTrieNode().Clear()
 }
 
-// IsLeaf returns whether this node is in the tree (a node for which IsAdded is true)
-// and there are no elements in the sub-tree with this node as the root.
+// IsLeaf returns whether this node is in the trie (a node for which IsAdded is true)
+// and there are no elements in the sub-trie with this node as the root.
 func (node *TrieNode[T]) IsLeaf() bool {
 	return node.toBinTrieNode().IsLeaf()
 }
@@ -437,24 +437,24 @@ func (node *TrieNode[T]) GetParent() *TrieNode[T] {
 	return toAddressTrieNode[T](node.toBinTrieNode().GetParent())
 }
 
-// PreviousAddedNode returns the previous node in the tree that is an added node, following the tree order in reverse,
+// PreviousAddedNode returns the previous node in the trie that is an added node, following the trie order in reverse,
 // or nil if there is no such node.
 func (node *TrieNode[T]) PreviousAddedNode() *TrieNode[T] {
 	return toAddressTrieNode[T](node.toBinTrieNode().PreviousAddedNode())
 }
 
-// NextAddedNode returns the next node in the tree that is an added node, following the tree order,
+// NextAddedNode returns the next node in the trie that is an added node, following the trie order,
 // or nil if there is no such node.
 func (node *TrieNode[T]) NextAddedNode() *TrieNode[T] {
 	return toAddressTrieNode[T](node.toBinTrieNode().NextAddedNode())
 }
 
-// NextNode returns the node that follows this node following the tree order
+// NextNode returns the node that follows this node following the trie order.
 func (node *TrieNode[T]) NextNode() *TrieNode[T] {
 	return toAddressTrieNode[T](node.toBinTrieNode().NextNode())
 }
 
-// PreviousNode eturns the node that precedes this node following the tree order.
+// PreviousNode eturns the node that precedes this node following the trie order.
 func (node *TrieNode[T]) PreviousNode() *TrieNode[T] {
 	return toAddressTrieNode[T](node.toBinTrieNode().PreviousNode())
 }
@@ -465,18 +465,18 @@ func (node *TrieNode[T]) FirstNode() *TrieNode[T] {
 }
 
 // FirstAddedNode returns the first (the lowest valued) added node in the sub-trie originating from this node
-// or nil if there are no added entries in this tree or sub-trie
+// or nil if there are no added entries in this trie or sub-trie.
 func (node *TrieNode[T]) FirstAddedNode() *TrieNode[T] {
 	return toAddressTrieNode[T](node.toBinTrieNode().FirstAddedNode())
 }
 
-// LastNode returns the last (the highest valued) node in the sub-trie originating from this node
+// LastNode returns the last (the highest valued) node in the sub-trie originating from this node.
 func (node *TrieNode[T]) LastNode() *TrieNode[T] {
 	return toAddressTrieNode[T](node.toBinTrieNode().LastNode())
 }
 
 // LastAddedNode returns the last (the highest valued) added node in the sub-trie originating from this node,
-// or nil if there are no added entries in this tree or sub-trie
+// or nil if there are no added entries in this trie or sub-trie.
 func (node *TrieNode[T]) LastAddedNode() *TrieNode[T] {
 	return toAddressTrieNode[T](node.toBinTrieNode().LastAddedNode())
 }
@@ -501,7 +501,7 @@ func (node *TrieNode[T]) CeilingAddedNode(addr T) *TrieNode[T] {
 	return toAddressTrieNode[T](node.tobase().ceilingAddedNode(addr))
 }
 
-// Iterator returns an iterator that iterates through the elements of the sub-tree with this node as the root.
+// Iterator returns an iterator that iterates through the elements of the sub-trie with this node as the root.
 // The iteration is in sorted element order.
 func (node *TrieNode[T]) Iterator() Iterator[T] {
 	return node.tobase().iterator()
@@ -513,12 +513,12 @@ func (node *TrieNode[T]) DescendingIterator() Iterator[T] {
 	return node.tobase().descendingIterator()
 }
 
-// NodeIterator returns an iterator that iterates through the added nodes of the sub-tree with this node as the root, in forward or reverse tree order.
+// NodeIterator returns an iterator that iterates through the added nodes of the sub-trie with this node as the root, in forward or reverse trie order.
 func (node *TrieNode[T]) NodeIterator(forward bool) IteratorWithRemove[*TrieNode[T]] {
 	return addrTrieNodeIteratorRem[T, emptyValue]{node.tobase().nodeIterator(forward)}
 }
 
-// AllNodeIterator returns an iterator that iterates through all the nodes of the sub-tree with this node as the root, in forward or reverse tree order.
+// AllNodeIterator returns an iterator that iterates through all the nodes of the sub-trie with this node as the root, in forward or reverse trie order.
 func (node *TrieNode[T]) AllNodeIterator(forward bool) IteratorWithRemove[*TrieNode[T]] {
 	return addrTrieNodeIteratorRem[T, emptyValue]{node.tobase().allNodeIterator(forward)}
 }
@@ -534,7 +534,7 @@ func (node *TrieNode[T]) BlockSizeNodeIterator(lowerSubNodeFirst bool) IteratorW
 // BlockSizeAllNodeIterator returns an iterator that iterates all the nodes, ordered by keys from largest prefix blocks to smallest and then to individual addresses,
 // in the sub-trie with this node as the root.
 //
-// If lowerSubNodeFirst is true, for blocks of equal size the lower is first, otherwise the reverse order
+// If lowerSubNodeFirst is true, for blocks of equal size the lower is first, otherwise the reverse order.
 func (node *TrieNode[T]) BlockSizeAllNodeIterator(lowerSubNodeFirst bool) IteratorWithRemove[*TrieNode[T]] {
 	return addrTrieNodeIteratorRem[T, emptyValue]{node.tobase().blockSizeAllNodeIterator(lowerSubNodeFirst)}
 }
@@ -545,7 +545,7 @@ func (node *TrieNode[T]) BlockSizeCachingAllNodeIterator() CachingTrieIterator[*
 	return cachingAddressTrieNodeIterator[T, emptyValue]{node.tobase().blockSizeCachingAllNodeIterator()}
 }
 
-// ContainingFirstIterator returns an iterator that does a pre-order binary tree traversal of the added nodes
+// ContainingFirstIterator returns an iterator that does a pre-order binary trie traversal of the added nodes
 // of the sub-trie with this node as the root.
 //
 // All added nodes will be visited before their added sub-nodes.
@@ -565,7 +565,7 @@ func (node *TrieNode[T]) ContainingFirstIterator(forwardSubNodeOrder bool) Cachi
 	return cachingAddressTrieNodeIterator[T, emptyValue]{node.tobase().containingFirstIterator(forwardSubNodeOrder)}
 }
 
-// ContainingFirstAllNodeIterator returns an iterator that does a pre-order binary tree traversal of all the nodes
+// ContainingFirstAllNodeIterator returns an iterator that does a pre-order binary trie traversal of all the nodes
 // of the sub-trie with this node as the root.
 //
 // All nodes will be visited before their sub-nodes.
@@ -579,7 +579,7 @@ func (node *TrieNode[T]) ContainingFirstAllNodeIterator(forwardSubNodeOrder bool
 	return cachingAddressTrieNodeIterator[T, emptyValue]{node.tobase().containingFirstAllNodeIterator(forwardSubNodeOrder)}
 }
 
-// ContainedFirstIterator returns an iterator that does a post-order binary tree traversal of the added nodes
+// ContainedFirstIterator returns an iterator that does a post-order binary trie traversal of the added nodes
 // of the sub-trie with this node as the root.
 // All added sub-nodes will be visited before their parent nodes.
 // For an address trie this means contained addresses and subnets will be visited before their containing subnet blocks.
@@ -587,7 +587,7 @@ func (node *TrieNode[T]) ContainedFirstIterator(forwardSubNodeOrder bool) Iterat
 	return addrTrieNodeIteratorRem[T, emptyValue]{node.tobase().containedFirstIterator(forwardSubNodeOrder)}
 }
 
-// ContainedFirstAllNodeIterator returns an iterator that does a post-order binary tree traversal of all the nodes
+// ContainedFirstAllNodeIterator returns an iterator that does a post-order binary trie traversal of all the nodes
 // of the sub-trie with this node as the root.
 // All sub-nodes will be visited before their parent nodes.
 // For an address trie this means contained addresses and subnets will be visited before their containing subnet blocks.
@@ -601,7 +601,7 @@ func (node *TrieNode[T]) Clone() *TrieNode[T] {
 	return toAddressTrieNode[T](node.toBinTrieNode().Clone())
 }
 
-// CloneTree clones the sub-tree starting with this node as the root.
+// CloneTree clones the sub-trie starting with this node as the root.
 // The nodes are cloned, but their keys and values are not cloned.
 func (node *TrieNode[T]) CloneTree() *TrieNode[T] {
 	return toAddressTrieNode[T](node.toBinTrieNode().CloneTree())
@@ -618,12 +618,12 @@ func (node *TrieNode[T]) Compare(other *TrieNode[T]) int {
 	return node.toBinTrieNode().Compare(other.toBinTrieNode())
 }
 
-// Equal returns whether the address and and mapped value match those of the given node
+// Equal returns whether the address and and mapped value match those of the given node.
 func (node *TrieNode[T]) Equal(other *TrieNode[T]) bool {
 	return node.toBinTrieNode().Equal(other.toBinTrieNode())
 }
 
-// TreeEqual returns whether the sub-tree represented by this node as the root node matches the given sub-tree
+// TreeEqual returns whether the sub-tree represented by this node as the root node matches the given sub-trie.
 func (node *TrieNode[T]) TreeEqual(other *TrieNode[T]) bool {
 	return node.toBinTrieNode().TreeEqual(other.toBinTrieNode())
 }
@@ -779,22 +779,22 @@ func (node *TrieNode[T]) NodeSize() int {
 	return node.toBinTrieNode().NodeSize()
 }
 
-// Size returns the number of elements in the tree.
+// Size returns the number of elements in the trie.
 // Only nodes for which IsAdded returns true are counted.
 // When zero is returned, IsEmpty returns true.
 func (node *TrieNode[T]) Size() int {
 	return node.toBinTrieNode().Size()
 }
 
-// IsEmpty returns whether the size is 0
+// IsEmpty returns whether the size is 0.
 func (node *TrieNode[T]) IsEmpty() bool {
 	return node.Size() == 0
 }
 
-// TreeString returns a visual representation of the sub-tree with this node as the root, with one node per line.
+// TreeString returns a visual representation of the sub-trie with this node as the root, with one node per line.
 //
-// withNonAddedKeys: whether to show nodes that are not added nodes
-// withSizes: whether to include the counts of added nodes in each sub-tree
+//  - withNonAddedKeys: whether to show nodes that are not added nodes.
+//  - withSizes: whether to include the counts of added nodes in each sub-trie.
 func (node *TrieNode[T]) TreeString(withNonAddedKeys, withSizes bool) string {
 	return node.toBinTrieNode().TreeString(withNonAddedKeys, withSizes)
 }
@@ -846,31 +846,31 @@ func (node *AssociativeTrieNode[T, V]) toBase() *trieNode[T, V] {
 	return (*trieNode[T, V])(unsafe.Pointer(node))
 }
 
-// GetKey gets the key used for placing the node in the tree.
+// GetKey gets the key used for placing the node in the trie.
 func (node *AssociativeTrieNode[T, V]) GetKey() T {
 	return node.toBase().getKey()
 }
 
-// IsRoot returns whether this is the root of the backing tree.
+// IsRoot returns whether this is the root of the backing trie.
 func (node *AssociativeTrieNode[T, V]) IsRoot() bool {
 	return node.toBinTrieNode().IsRoot()
 }
 
 // IsAdded returns whether the node was "added".
-// Some binary tree nodes are considered "added" and others are not.
-// Those nodes created for key elements added to the tree are "added" nodes.
+// Some binary trie nodes are considered "added" and others are not.
+// Those nodes created for key elements added to the trie are "added" nodes.
 // Those that are not added are those nodes created to serve as junctions for the added nodes.
-// Only added elements contribute to the size of a tree.
+// Only added elements contribute to the size of a trie.
 // When removing nodes, non-added nodes are removed automatically whenever they are no longer needed,
 // which is when an added node has less than two added sub-nodes.
 func (node *AssociativeTrieNode[T, V]) IsAdded() bool {
 	return node.toBinTrieNode().IsAdded()
 }
 
-// SetAdded makes this node an added node, which is equivalent to adding the corresponding key to the tree.
+// SetAdded makes this node an added node, which is equivalent to adding the corresponding key to the trie.
 // If the node is already an added node, this method has no effect.
-// You cannot set an added node to non-added, for that you should Remove the node from the tree by calling Remove.
-// A non-added node will only remain in the tree if it needs to in the tree.
+// You cannot set an added node to non-added, for that you should Remove the node from the trie by calling Remove.
+// A non-added node will only remain in the trie if it needs to be in the trie.
 func (node *AssociativeTrieNode[T, V]) SetAdded() {
 	node.toBinTrieNode().SetAdded()
 }
@@ -886,12 +886,12 @@ func (node *AssociativeTrieNode[T, V]) IsLeaf() bool {
 	return node.toBinTrieNode().IsLeaf()
 }
 
-// ClearValue makes the value associated with this node the nil value
+// ClearValue makes the value associated with this node the zero-value of V.
 func (node *AssociativeTrieNode[T, V]) ClearValue() {
 	node.toBinTrieNode().ClearValue()
 }
 
-// SetValue sets the value associated with this node
+// SetValue sets the value associated with this node.
 func (node *AssociativeTrieNode[T, V]) SetValue(val V) {
 	node.toBinTrieNode().SetValue(val)
 }
@@ -901,12 +901,12 @@ func (node *AssociativeTrieNode[T, V]) GetValue() V {
 	return node.toBinTrieNode().GetValue()
 }
 
-// GetUpperSubNode gets the direct child node whose key is largest in value
+// GetUpperSubNode gets the direct child node whose key is largest in value.
 func (node *AssociativeTrieNode[T, V]) GetUpperSubNode() *AssociativeTrieNode[T, V] {
 	return toAssociativeTrieNode[T, V](node.toBinTrieNode().GetUpperSubNode())
 }
 
-// GetLowerSubNode gets the direct child node whose key is smallest in value
+// GetLowerSubNode gets the direct child node whose key is smallest in value.
 func (node *AssociativeTrieNode[T, V]) GetLowerSubNode() *AssociativeTrieNode[T, V] {
 	return toAssociativeTrieNode[T, V](node.toBinTrieNode().GetLowerSubNode())
 }
@@ -916,44 +916,44 @@ func (node *AssociativeTrieNode[T, V]) GetParent() *AssociativeTrieNode[T, V] {
 	return toAssociativeTrieNode[T, V](node.toBinTrieNode().GetParent())
 }
 
-// PreviousAddedNode returns the first added node that precedes this node following the tree order
+// PreviousAddedNode returns the first added node that precedes this node following the trie order.
 func (node *AssociativeTrieNode[T, V]) PreviousAddedNode() *AssociativeTrieNode[T, V] {
 	return toAssociativeTrieNode[T, V](node.toBinTrieNode().PreviousAddedNode())
 }
 
-// NextAddedNode returns the first added node that follows this node following the tree order
+// NextAddedNode returns the first added node that follows this node following the trie order.
 func (node *AssociativeTrieNode[T, V]) NextAddedNode() *AssociativeTrieNode[T, V] {
 	return toAssociativeTrieNode[T, V](node.toBinTrieNode().NextAddedNode())
 }
 
-// NextNode returns the node that follows this node following the tree order
+// NextNode returns the node that follows this node following the trie order.
 func (node *AssociativeTrieNode[T, V]) NextNode() *AssociativeTrieNode[T, V] {
 	return toAssociativeTrieNode[T, V](node.toBinTrieNode().NextNode())
 }
 
-// PreviousNode returns the node that precedes this node following the tree order.
+// PreviousNode returns the node that precedes this node following the trie order.
 func (node *AssociativeTrieNode[T, V]) PreviousNode() *AssociativeTrieNode[T, V] {
 	return toAssociativeTrieNode[T, V](node.toBinTrieNode().PreviousNode())
 }
 
-// FirstNode returns the first (the lowest valued) node in the sub-trie originating from this node
+// FirstNode returns the first (the lowest valued) node in the sub-trie originating from this node.
 func (node *AssociativeTrieNode[T, V]) FirstNode() *AssociativeTrieNode[T, V] {
 	return toAssociativeTrieNode[T, V](node.toBinTrieNode().FirstNode())
 }
 
 // FirstAddedNode returns the first (the lowest valued) added node in the sub-trie originating from this node
-// or nil if there are no added entries in this tree or sub-trie
+// or nil if there are no added entries in this trie or sub-trie.
 func (node *AssociativeTrieNode[T, V]) FirstAddedNode() *AssociativeTrieNode[T, V] {
 	return toAssociativeTrieNode[T, V](node.toBinTrieNode().FirstAddedNode())
 }
 
-// LastNode returns the last (the highest valued) node in the sub-trie originating from this node
+// LastNode returns the last (the highest valued) node in the sub-trie originating from this node.
 func (node *AssociativeTrieNode[T, V]) LastNode() *AssociativeTrieNode[T, V] {
 	return toAssociativeTrieNode[T, V](node.toBinTrieNode().LastNode())
 }
 
 // LastAddedNode returns the last (the highest valued) added node in the sub-trie originating from this node,
-// or nil if there are no added entries in this tree or sub-trie
+// or nil if there are no added entries in this trie or sub-trie.
 func (node *AssociativeTrieNode[T, V]) LastAddedNode() *AssociativeTrieNode[T, V] {
 	return toAssociativeTrieNode[T, V](node.toBinTrieNode().LastAddedNode())
 }
@@ -978,7 +978,7 @@ func (node *AssociativeTrieNode[T, V]) CeilingAddedNode(addr T) *AssociativeTrie
 	return toAssociativeTrieNode[T, V](node.toBase().ceilingAddedNode(addr))
 }
 
-// Iterator returns an iterator that iterates through the elements of the sub-tree with this node as the root.
+// Iterator returns an iterator that iterates through the elements of the sub-trie with this node as the root.
 // The iteration is in sorted element order.
 func (node *AssociativeTrieNode[T, V]) Iterator() Iterator[T] {
 	return node.toBase().iterator()
@@ -990,12 +990,12 @@ func (node *AssociativeTrieNode[T, V]) DescendingIterator() Iterator[T] {
 	return node.toBase().descendingIterator()
 }
 
-// NodeIterator returns an iterator that iterates through the added nodes of the sub-tree with this node as the root, in forward or reverse tree order.
+// NodeIterator returns an iterator that iterates through the added nodes of the sub-trie with this node as the root, in forward or reverse trie order.
 func (node *AssociativeTrieNode[T, V]) NodeIterator(forward bool) IteratorWithRemove[*AssociativeTrieNode[T, V]] {
 	return associativeAddressTrieNodeIteratorRem[T, V]{node.toBase().nodeIterator(forward)}
 }
 
-// AllNodeIterator returns an iterator that iterates through all the nodes of the sub-tree with this node as the root, in forward or reverse tree order.
+// AllNodeIterator returns an iterator that iterates through all the nodes of the sub-trie with this node as the root, in forward or reverse trie order.
 func (node *AssociativeTrieNode[T, V]) AllNodeIterator(forward bool) IteratorWithRemove[*AssociativeTrieNode[T, V]] {
 	return associativeAddressTrieNodeIteratorRem[T, V]{node.toBase().allNodeIterator(forward)}
 }
@@ -1011,7 +1011,7 @@ func (node *AssociativeTrieNode[T, V]) BlockSizeNodeIterator(lowerSubNodeFirst b
 // BlockSizeAllNodeIterator returns an iterator that iterates all the nodes, ordered by keys from largest prefix blocks to smallest and then to individual addresses,
 // in the sub-trie with this node as the root.
 //
-// If lowerSubNodeFirst is true, for blocks of equal size the lower is first, otherwise the reverse order
+// If lowerSubNodeFirst is true, for blocks of equal size the lower is first, otherwise the reverse order.
 func (node *AssociativeTrieNode[T, V]) BlockSizeAllNodeIterator(lowerSubNodeFirst bool) IteratorWithRemove[*AssociativeTrieNode[T, V]] {
 	return associativeAddressTrieNodeIteratorRem[T, V]{node.toBase().blockSizeAllNodeIterator(lowerSubNodeFirst)}
 }
@@ -1022,7 +1022,7 @@ func (node *AssociativeTrieNode[T, V]) BlockSizeCachingAllNodeIterator() Caching
 	return cachingAssociativeAddressTrieNodeIteratorX[T, V]{node.toBase().blockSizeCachingAllNodeIterator()}
 }
 
-// ContainingFirstIterator returns an iterator that does a pre-order binary tree traversal of the added nodes
+// ContainingFirstIterator returns an iterator that does a pre-order binary trie traversal of the added nodes
 // of the sub-trie with this node as the root.
 //
 // All added nodes will be visited before their added sub-nodes.
@@ -1042,7 +1042,7 @@ func (node *AssociativeTrieNode[T, V]) ContainingFirstIterator(forwardSubNodeOrd
 	return cachingAssociativeAddressTrieNodeIteratorX[T, V]{node.toBase().containingFirstIterator(forwardSubNodeOrder)}
 }
 
-// ContainingFirstAllNodeIterator returns an iterator that does a pre-order binary tree traversal of all the nodes
+// ContainingFirstAllNodeIterator returns an iterator that does a pre-order binary trie traversal of all the nodes
 // of the sub-trie with this node as the root.
 //
 // All nodes will be visited before their sub-nodes.
@@ -1056,7 +1056,7 @@ func (node *AssociativeTrieNode[T, V]) ContainingFirstAllNodeIterator(forwardSub
 	return cachingAssociativeAddressTrieNodeIteratorX[T, V]{node.toBase().containingFirstAllNodeIterator(forwardSubNodeOrder)}
 }
 
-// ContainedFirstIterator returns an iterator that does a post-order binary tree traversal of the added nodes
+// ContainedFirstIterator returns an iterator that does a post-order binary trie traversal of the added nodes
 // of the sub-trie with this node as the root.
 // All added sub-nodes will be visited before their parent nodes.
 // For an address trie this means contained addresses and subnets will be visited before their containing subnet blocks.
@@ -1064,7 +1064,7 @@ func (node *AssociativeTrieNode[T, V]) ContainedFirstIterator(forwardSubNodeOrde
 	return associativeAddressTrieNodeIteratorRem[T, V]{node.toBase().containedFirstIterator(forwardSubNodeOrder)}
 }
 
-// ContainedFirstAllNodeIterator returns an iterator that does a post-order binary tree traversal of all the nodes
+// ContainedFirstAllNodeIterator returns an iterator that does a post-order binary trie traversal of all the nodes
 // of the sub-trie with this node as the root.
 // All sub-nodes will be visited before their parent nodes.
 // For an address trie this means contained addresses and subnets will be visited before their containing subnet blocks.
@@ -1078,7 +1078,7 @@ func (node *AssociativeTrieNode[T, V]) Clone() *AssociativeTrieNode[T, V] {
 	return toAssociativeTrieNode[T, V](node.toBinTrieNode().Clone())
 }
 
-// CloneTree clones the sub-tree starting with this node as the root.
+// CloneTree clones the sub-trie starting with this node as the root.
 // The nodes are cloned, but their keys and values are not cloned.
 func (node *AssociativeTrieNode[T, V]) CloneTree() *AssociativeTrieNode[T, V] {
 	return toAssociativeTrieNode[T, V](node.toBinTrieNode().CloneTree())
@@ -1095,22 +1095,22 @@ func (node *AssociativeTrieNode[T, V]) Compare(other *AssociativeTrieNode[T, V])
 	return node.toBinTrieNode().Compare(other.toBinTrieNode())
 }
 
-// Equal returns whether the key and mapped value match those of the given node
+// Equal returns whether the key and mapped value match those of the given node.
 func (node *AssociativeTrieNode[T, V]) Equal(other *AssociativeTrieNode[T, V]) bool {
 	return node.toBinTrieNode().Equal(other.toBinTrieNode())
 }
 
-// TreeEqual returns whether the sub-tree represented by this node as the root node matches the given sub-tree
+// TreeEqual returns whether the sub-trie represented by this node as the root node matches the given sub-trie.
 func (node *AssociativeTrieNode[T, V]) TreeEqual(other *AssociativeTrieNode[T, V]) bool {
 	return node.toBinTrieNode().TreeEqual(other.toBinTrieNode())
 }
 
-// DeepEqual returns whether the key is equal to that of the given node and the value is deep equal to that of the given node
+// DeepEqual returns whether the key is equal to that of the given node and the value is deep equal to that of the given node.
 func (node *AssociativeTrieNode[T, V]) DeepEqual(other *AssociativeTrieNode[T, V]) bool {
 	return node.toBinTrieNode().DeepEqual(other.toBinTrieNode())
 }
 
-// TreeDeepEqual returns whether the sub-tree represented by this node as the root node matches the given sub-tree, matching with Compare on the keys and reflect.DeepEqual on the values
+// TreeDeepEqual returns whether the sub-trie represented by this node as the root node matches the given sub-trie, matching with Compare on the keys and reflect.DeepEqual on the values.
 func (node *AssociativeTrieNode[T, V]) TreeDeepEqual(other *AssociativeTrieNode[T, V]) bool {
 	return node.toBinTrieNode().TreeDeepEqual(other.toBinTrieNode())
 }
@@ -1187,7 +1187,7 @@ func (node *AssociativeTrieNode[T, V]) ElementsContainedBy(addr T) *AssociativeT
 
 // ElementsContaining finds the trie nodes in the trie, with this sub-node as the root,
 // containing the given key and returns them as a linked list.
-// Only added nodes are added to the linked list
+// Only added nodes are added to the linked list.
 //
 // If the argument is not a single address nor prefix block, this method will panic.
 //
@@ -1279,22 +1279,22 @@ func (node *AssociativeTrieNode[T, V]) NodeSize() int {
 	return node.toBinTrieNode().NodeSize()
 }
 
-// Size returns the number of elements in the tree.
+// Size returns the number of elements in the trie.
 // Only nodes for which IsAdded returns true are counted.
 // When zero is returned, IsEmpty returns true.
 func (node *AssociativeTrieNode[T, V]) Size() int {
 	return node.toBinTrieNode().Size()
 }
 
-// IsEmpty returns whether the size is 0
+// IsEmpty returns whether the size is 0.
 func (node *AssociativeTrieNode[T, V]) IsEmpty() bool {
 	return node.Size() == 0
 }
 
-// TreeString returns a visual representation of the sub-tree with this node as the root, with one node per line.
+// TreeString returns a visual representation of the sub-trie with this node as the root, with one node per line.
 //
-// withNonAddedKeys: whether to show nodes that are not added nodes
-// withSizes: whether to include the counts of added nodes in each sub-tree
+//  - withNonAddedKeys: whether to show nodes that are not added nodes
+//  - withSizes: whether to include the counts of added nodes in each sub-trie
 func (node *AssociativeTrieNode[T, V]) TreeString(withNonAddedKeys, withSizes bool) string {
 	return node.toBinTrieNode().TreeString(withNonAddedKeys, withSizes)
 }
@@ -1308,7 +1308,7 @@ func (node *AssociativeTrieNode[T, V]) String() string {
 // For some reason Format must be here and not in addressTrieNode for nil node.
 // It panics in fmt code either way, but if in here then it is handled by a recover() call in fmt properly in the debugger.
 
-// Format implements the fmt.Formatter interface
+// Format implements the fmt.Formatter interface.
 func (node AssociativeTrieNode[T, V]) Format(state fmt.State, verb rune) {
 	node.toBase().binNode.Format(state, verb)
 }

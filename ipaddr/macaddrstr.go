@@ -25,7 +25,7 @@ import (
 
 var defaultMACAddrParameters = new(addrstrparam.MACAddressStringParamsBuilder).ToParams()
 
-// NewMACAddressStringParams constructs a MACAddressString that will parse the given string according to the given parameters
+// NewMACAddressStringParams constructs a MACAddressString that will parse the given string according to the given parameters.
 func NewMACAddressStringParams(str string, params addrstrparam.MACAddressStringParams) *MACAddressString {
 	var p addrstrparam.MACAddressStringParams
 	if params == nil {
@@ -36,7 +36,7 @@ func NewMACAddressStringParams(str string, params addrstrparam.MACAddressStringP
 	return parseMACAddressString(str, p)
 }
 
-// NewMACAddressString constructs a MACAddressString that will parse the given string according to the default parameters
+// NewMACAddressString constructs a MACAddressString that will parse the given string according to the default parameters.
 func NewMACAddressString(str string) *MACAddressString {
 	return parseMACAddressString(str, defaultMACAddrParameters)
 }
@@ -122,7 +122,7 @@ func (addrStr *MACAddressString) GetValidationOptions() addrstrparam.MACAddressS
 
 // String implements the fmt.Stringer interface,
 // returning the original string used to create this MACAddressString (altered by strings.TrimSpace),
-// or "<nil>" if the receiver is a nil pointer
+// or "<nil>" if the receiver is a nil pointer.
 func (addrStr *MACAddressString) String() string {
 	if addrStr == nil {
 		return nilString()
@@ -170,7 +170,7 @@ func (addrStr *MACAddressString) ToAddress() (*MACAddress, addrerr.AddressError)
 }
 
 // IsPrefixed returns whether this address has an associated prefix length,
-// which for MAC means that the string represents the set of all addresses with the same prefix
+// which for MAC means that the string represents the set of all addresses with the same prefix.
 func (addrStr *MACAddressString) IsPrefixed() bool {
 	return addrStr.getPrefixLen() != nil
 }

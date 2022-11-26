@@ -22,19 +22,19 @@ type DivisionType interface {
 
 	getAddrType() addrType
 
-	// getStringAsLower caches the string from getDefaultLowerString
+	// getStringAsLower caches the string from getDefaultLowerString.
 	getStringAsLower() string
 
 	// GetString produces a string that avoids wildcards when a prefix length is part of the string.  Equivalent to GetWildcardString when the prefix length is not part of the string.
 	GetString() string
 
-	// GetWildcardString produces a string that uses wildcards and avoids prefix length
+	// GetWildcardString produces a string that uses wildcards and avoids prefix length.
 	GetWildcardString() string
 
 	// IsSinglePrefix determines if the division has a single prefix for the given prefix length.  You can call GetPrefixCountLen to get the count of prefixes.
 	IsSinglePrefix(BitCount) bool
 
-	// methods for string generation used by the string params and string writer
+	// methods for string generation used by the string params and string writer.
 	divStringProvider
 }
 
@@ -52,7 +52,7 @@ type StandardDivisionType interface {
 
 var _ StandardDivisionType = &AddressDivision{}
 
-// AddressSegmentType serves as a common interface to all segments
+// AddressSegmentType serves as a common interface to all segments, including [AddressSegment], [IPAddressSegment], [IPv6AddressSegment], [IPv4AddressSegment] and [MACAddressSegment].
 type AddressSegmentType interface {
 	AddressComponent
 
@@ -68,10 +68,10 @@ type AddressSegmentType interface {
 	// Contains returns whether this segment is same type and version as the given segment and whether it contains all values in the given segment.
 	Contains(AddressSegmentType) bool
 
-	// GetSegmentValue returns the lower value of the segment value range as a SegInt
+	// GetSegmentValue returns the lower value of the segment value range as a SegInt.
 	GetSegmentValue() SegInt
 
-	// GetUpperSegmentValue returns the upper value of the segment value range as a SegInt
+	// GetUpperSegmentValue returns the upper value of the segment value range as a SegInt.
 	GetUpperSegmentValue() SegInt
 
 	// ToSegmentBase converts to an AddressSegment, a polymorphic type usable with all address segments.

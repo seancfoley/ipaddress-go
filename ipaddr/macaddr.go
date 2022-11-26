@@ -216,7 +216,7 @@ func (addr *MACAddress) IsMultiple() bool {
 	return addr != nil && addr.isMultiple()
 }
 
-// IsPrefixed returns whether this address has an associated prefix length
+// IsPrefixed returns whether this address has an associated prefix length.
 func (addr *MACAddress) IsPrefixed() bool {
 	return addr != nil && addr.isPrefixed()
 }
@@ -261,12 +261,12 @@ func (addr *MACAddress) checkIdentity(section *MACAddressSection) *MACAddress {
 	return newMACAddress(section)
 }
 
-// GetValue returns the lowest address in this subnet or address as an integer value
+// GetValue returns the lowest address in this subnet or address as an integer value.
 func (addr *MACAddress) GetValue() *big.Int {
 	return addr.init().section.GetValue()
 }
 
-// GetUpperValue returns the highest address in this subnet or address as an integer value
+// GetUpperValue returns the highest address in this subnet or address as an integer value.
 func (addr *MACAddress) GetUpperValue() *big.Int {
 	return addr.init().section.GetUpperValue()
 }
@@ -285,22 +285,22 @@ func (addr *MACAddress) GetUpper() *MACAddress {
 	return addr.init().getUpper().ToMAC()
 }
 
-// Uint64Value returns the lowest address in the address collection as a uint64
+// Uint64Value returns the lowest address in the address collection as a uint64.
 func (addr *MACAddress) Uint64Value() uint64 {
 	return addr.GetSection().Uint64Value()
 }
 
-// UpperUint64Value returns the highest address in the address collection as a uint64
+// UpperUint64Value returns the highest address in the address collection as a uint64.
 func (addr *MACAddress) UpperUint64Value() uint64 {
 	return addr.GetSection().UpperUint64Value()
 }
 
-// GetHardwareAddr returns the lowest address in this address or address collection as a net.HardwareAddr
+// GetHardwareAddr returns the lowest address in this address or address collection as a net.HardwareAddr.
 func (addr *MACAddress) GetHardwareAddr() net.HardwareAddr {
 	return addr.Bytes()
 }
 
-// CopyHardwareAddr copies the value of the lowest individual address in the address collection into a net.HardwareAddr
+// CopyHardwareAddr copies the value of the lowest individual address in the address collection into a net.HardwareAddr.
 //
 // If the value can fit in the given net.HardwareAddr, the value is copied into that slice and a length-adjusted sub-slice is returned.
 // Otherwise, a new net.HardwareAddr is created and returned with the value.
@@ -308,12 +308,12 @@ func (addr *MACAddress) CopyHardwareAddr(bytes net.HardwareAddr) net.HardwareAdd
 	return addr.CopyBytes(bytes)
 }
 
-// GetUpperHardwareAddr returns the highest address in this address or address collection as a net.HardwareAddr
+// GetUpperHardwareAddr returns the highest address in this address or address collection as a net.HardwareAddr.
 func (addr *MACAddress) GetUpperHardwareAddr() net.HardwareAddr {
 	return addr.UpperBytes()
 }
 
-// CopyUpperHardwareAddr copies the value of the highest individual address in the address collection into a net.HardwareAddr
+// CopyUpperHardwareAddr copies the value of the highest individual address in the address collection into a net.HardwareAddr.
 //
 // If the value can fit in the given net.HardwareAddr, the value is copied into that slice and a length-adjusted sub-slice is returned.
 // Otherwise, a new net.HardwareAddr is created and returned with the value.
@@ -321,17 +321,17 @@ func (addr *MACAddress) CopyUpperHardwareAddr(bytes net.HardwareAddr) net.Hardwa
 	return addr.CopyUpperBytes(bytes)
 }
 
-// Bytes returns the lowest address in this address or address collection as a byte slice
+// Bytes returns the lowest address in this address or address collection as a byte slice.
 func (addr *MACAddress) Bytes() []byte {
 	return addr.init().section.Bytes()
 }
 
-// UpperBytes returns the highest address in this address or address collection as a byte slice
+// UpperBytes returns the highest address in this address or address collection as a byte slice.
 func (addr *MACAddress) UpperBytes() []byte {
 	return addr.init().section.UpperBytes()
 }
 
-// CopyBytes copies the value of the lowest individual address in the address collection into a byte slice
+// CopyBytes copies the value of the lowest individual address in the address collection into a byte slice.
 //
 // If the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
 // Otherwise, a new slice is created and returned with the value.
@@ -352,7 +352,7 @@ func (addr *MACAddress) GetSection() *MACAddressSection {
 	return addr.init().section.ToMAC()
 }
 
-// GetTrailingSection gets the subsection from the series starting from the given index
+// GetTrailingSection gets the subsection from the series starting from the given index.
 // The first segment is at index 0.
 func (addr *MACAddress) GetTrailingSection(index int) *MACAddressSection {
 	return addr.GetSection().GetTrailingSection(index)
@@ -365,13 +365,13 @@ func (addr *MACAddress) GetSubSection(index, endIndex int) *MACAddressSection {
 }
 
 // CopySubSegments copies the existing segments from the given start index until but not including the segment at the given end index,
-// into the given slice, as much as can be fit into the slice, returning the number of segments copied
+// into the given slice, as much as can be fit into the slice, returning the number of segments copied.
 func (addr *MACAddress) CopySubSegments(start, end int, segs []*MACAddressSegment) (count int) {
 	return addr.GetSection().CopySubSegments(start, end, segs)
 }
 
 // CopySegments copies the existing segments into the given slice,
-// as much as can be fit into the slice, returning the number of segments copied
+// as much as can be fit into the slice, returning the number of segments copied.
 func (addr *MACAddress) CopySegments(segs []*MACAddressSegment) (count int) {
 	return addr.GetSection().CopySegments(segs)
 }
@@ -393,18 +393,18 @@ func (addr *MACAddress) GetSegmentCount() int {
 	return addr.GetDivisionCount()
 }
 
-// ForEachSegment visits each segment in order from most-significant to least, the most significant with index 0, calling the given function for each, terminating early if the function returns true
+// ForEachSegment visits each segment in order from most-significant to least, the most significant with index 0, calling the given function for each, terminating early if the function returns true.
 // Returns the number of visited segments.
 func (addr *MACAddress) ForEachSegment(consumer func(segmentIndex int, segment *MACAddressSegment) (stop bool)) int {
 	return addr.GetSection().ForEachSegment(consumer)
 }
 
-// GetGenericDivision returns the segment at the given index as a DivisionType
+// GetGenericDivision returns the segment at the given index as a DivisionType.
 func (addr *MACAddress) GetGenericDivision(index int) DivisionType {
 	return addr.init().getDivision(index)
 }
 
-// GetGenericSegment returns the segment at the given index as an AddressSegmentType
+// GetGenericSegment returns the segment at the given index as an AddressSegmentType.
 func (addr *MACAddress) GetGenericSegment(index int) AddressSegmentType {
 	return addr.init().getSegment(index)
 }
@@ -422,17 +422,17 @@ func (addr *MACAddress) IsOneBit(bitIndex BitCount) bool {
 	return addr.init().isOneBit(bitIndex)
 }
 
-// IsMax returns whether this address matches exactly the maximum possible value, the address whose bits are all ones
+// IsMax returns whether this address matches exactly the maximum possible value, the address whose bits are all ones.
 func (addr *MACAddress) IsMax() bool {
 	return addr.init().section.IsMax()
 }
 
-// IncludesMax returns whether this address includes the max address, the address whose bits are all ones, within its range
+// IncludesMax returns whether this address includes the max address, the address whose bits are all ones, within its range.
 func (addr *MACAddress) IncludesMax() bool {
 	return addr.init().section.IncludesMax()
 }
 
-// GetDivisionCount returns the segment count, implementing the interface AddressDivisionSeries
+// GetDivisionCount returns the segment count, implementing the interface AddressDivisionSeries.
 func (addr *MACAddress) GetDivisionCount() int {
 	return addr.init().getDivisionCount()
 }
@@ -785,7 +785,7 @@ func (addr *MACAddress) GetSequentialBlockIndex() int {
 	return addr.init().getSequentialBlockIndex()
 }
 
-// GetSequentialBlockCount provides the count of elements from the sequential block iterator, the minimal number of sequential address ranges that comprise this address collection
+// GetSequentialBlockCount provides the count of elements from the sequential block iterator, the minimal number of sequential address ranges that comprise this address collection.
 func (addr *MACAddress) GetSequentialBlockCount() *big.Int {
 	return addr.init().getSequentialBlockCount()
 }
@@ -851,7 +851,7 @@ func (addr *MACAddress) ReverseSegments() *MACAddress {
 	return addr.checkIdentity(addr.GetSection().ReverseSegments())
 }
 
-// ReplaceLen replaces segments starting from startIndex and ending before endIndex with the same number of segments starting at replacementStartIndex from the replacement section
+// ReplaceLen replaces segments starting from startIndex and ending before endIndex with the same number of segments starting at replacementStartIndex from the replacement section.
 // Mappings to or from indices outside the range of this or the replacement address are skipped.
 func (addr *MACAddress) ReplaceLen(startIndex, endIndex int, replacement *MACAddress, replacementIndex int) *MACAddress {
 	replacementSegCount := replacement.GetSegmentCount()
@@ -874,7 +874,7 @@ func (addr *MACAddress) ReplaceLen(startIndex, endIndex int, replacement *MACAdd
 	return addr.init().checkIdentity(addr.GetSection().ReplaceLen(startIndex, endIndex, replacement.GetSection(), replacementIndex, replacementIndex+count))
 }
 
-// Replace replaces segments starting from startIndex with segments from the replacement section
+// Replace replaces segments starting from startIndex with segments from the replacement section.
 func (addr *MACAddress) Replace(startIndex int, replacement *MACAddressSection) *MACAddress {
 	// We must do a 1 to 1 adjustment of indices before calling the section replace which would do an adjustment of indices not 1 to 1.
 	startIndex, endIndex, replacementIndex :=
@@ -1013,7 +1013,7 @@ func (addr *MACAddress) ToEUI64(asMAC bool) (*MACAddress, addrerr.IncompatibleAd
 	return nil, &incompatibleAddressError{addressError{key: "ipaddress.mac.error.not.eui.convertible"}}
 }
 
-// String implements the fmt.Stringer interface, returning the canonical string provided by ToCanonicalString, or "<nil>" if the receiver is a nil pointer
+// String implements the fmt.Stringer interface, returning the canonical string provided by ToCanonicalString, or "<nil>" if the receiver is a nil pointer.
 func (addr *MACAddress) String() string {
 	if addr == nil {
 		return nilString()
@@ -1022,11 +1022,11 @@ func (addr *MACAddress) String() string {
 }
 
 // Format implements fmt.Formatter interface. It accepts the formats
-// 'v' for the default address and section format (either the normalized or canonical string),
-// 's' (string) for the same,
-// 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
-// 'd' (decimal), 'x' (lowercase hexadecimal), and
-// 'X' (uppercase hexadecimal).
+//  - 'v' for the default address and section format (either the normalized or canonical string),
+//  - 's' (string) for the same,
+//  - 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
+//  - 'd' (decimal), 'x' (lowercase hexadecimal), and
+//  - 'X' (uppercase hexadecimal).
 // Also supported are some of fmt's format flags for integral types.
 // Sign control is not supported since addresses and sections are never negative.
 // '#' for an alternate format is supported, which is leading zero for octal and for hexadecimal,
@@ -1163,7 +1163,7 @@ func (addr *MACAddress) ToColonDelimitedString() string {
 	return addr.init().GetSection().ToColonDelimitedString()
 }
 
-// ToCustomString creates a customized string from this address or address collection according to the given string option parameters
+// ToCustomString creates a customized string from this address or address collection according to the given string option parameters.
 func (addr *MACAddress) ToCustomString(stringOptions addrstr.StringOptions) string {
 	if addr == nil {
 		return nilString()

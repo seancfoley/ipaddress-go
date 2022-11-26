@@ -261,12 +261,12 @@ func (section *MACAddressSection) getCachedCount() *big.Int {
 	})
 }
 
-// IsMultiple returns  whether this section represents multiple values
+// IsMultiple returns whether this section represents multiple values.
 func (section *MACAddressSection) IsMultiple() bool {
 	return section != nil && section.isMultiple()
 }
 
-// IsPrefixed returns whether this section has an associated prefix length
+// IsPrefixed returns whether this section has an associated prefix length.
 func (section *MACAddressSection) IsPrefixed() bool {
 	return section != nil && section.isPrefixed()
 }
@@ -277,14 +277,14 @@ func (section *MACAddressSection) IsPrefixed() bool {
 //
 // If this has a non-nil prefix length, returns the number of distinct prefix values.
 //
-// If this has a nil prefix length, returns the same value as GetCount
+// If this has a nil prefix length, returns the same value as GetCount.
 func (section *MACAddressSection) GetPrefixCount() *big.Int {
 	return section.cachePrefixCount(func() *big.Int {
 		return section.GetPrefixCountLen(section.getPrefixLen().bitCount())
 	})
 }
 
-// GetPrefixCountLen returns the number of distinct prefix values in this item for the given prefix length
+// GetPrefixCountLen returns the number of distinct prefix values in this item for the given prefix length.
 func (section *MACAddressSection) GetPrefixCountLen(prefixLen BitCount) *big.Int {
 	if prefixLen <= 0 {
 		return bigOne()
@@ -396,7 +396,7 @@ func (section *MACAddressSection) GetSegment(index int) *MACAddressSegment {
 	return section.getDivision(index).ToMAC()
 }
 
-// ForEachSegment visits each segment in order from most-significant to least, the most significant with index 0, calling the given function for each, terminating early if the function returns true
+// ForEachSegment visits each segment in order from most-significant to least, the most significant with index 0, calling the given function for each, terminating early if the function returns true.
 // Returns the number of visited segments.
 func (section *MACAddressSection) ForEachSegment(consumer func(segmentIndex int, segment *MACAddressSegment) (stop bool)) int {
 	divArray := section.getDivArray()
@@ -445,7 +445,7 @@ func (section *MACAddressSection) GetSubSection(index, endIndex int) *MACAddress
 }
 
 // CopySegments copies the existing segments into the given slice,
-// as much as can be fit into the slice, returning the number of segments copied
+// as much as can be fit into the slice, returning the number of segments copied.
 func (section *MACAddressSection) CopySegments(segs []*MACAddressSegment) (count int) {
 	return section.ForEachSegment(func(index int, seg *MACAddressSegment) (stop bool) {
 		if stop = index >= len(segs); !stop {
@@ -456,7 +456,7 @@ func (section *MACAddressSection) CopySegments(segs []*MACAddressSegment) (count
 }
 
 // CopySubSegments copies the existing segments from the given start index until but not including the segment at the given end index,
-// into the given slice, as much as can be fit into the slice, returning the number of segments copied
+// into the given slice, as much as can be fit into the slice, returning the number of segments copied.
 func (section *MACAddressSection) CopySubSegments(start, end int, segs []*MACAddressSegment) (count int) {
 	start, end, targetStart := adjust1To1StartIndices(start, end, section.GetDivisionCount(), len(segs))
 	segs = segs[targetStart:]
@@ -486,12 +486,12 @@ func (section *MACAddressSection) GetUpper() *MACAddressSection {
 	return section.getUpper().ToMAC()
 }
 
-// Uint64Value returns the lowest indiviudal address section in the address section collection as a uint64
+// Uint64Value returns the lowest indiviudal address section in the address section collection as a uint64.
 func (section *MACAddressSection) Uint64Value() uint64 {
 	return section.getLongValue(true)
 }
 
-// UpperUint64Value returns the highest indiviudal address section in the address section collection as a uint64
+// UpperUint64Value returns the highest indiviudal address section in the address section collection as a uint64.
 func (section *MACAddressSection) UpperUint64Value() uint64 {
 	return section.getLongValue(false)
 }
@@ -695,13 +695,13 @@ func (section *MACAddressSection) Insert(index int, other *MACAddressSection) *M
 	return section.ReplaceLen(index, index, other, 0, other.GetSegmentCount())
 }
 
-// Replace replaces the segments of this section starting at the given index with the given replacement segments
+// Replace replaces the segments of this section starting at the given index with the given replacement segments.
 func (section *MACAddressSection) Replace(index int, replacement *MACAddressSection) *MACAddressSection {
 	return section.ReplaceLen(index, index+replacement.GetSegmentCount(), replacement, 0, replacement.GetSegmentCount())
 }
 
 // ReplaceLen replaces segments starting from startIndex and ending before endIndex with the segments starting at replacementStartIndex and
-// ending before replacementEndIndex from the replacement section
+// ending before replacementEndIndex from the replacement section.
 func (section *MACAddressSection) ReplaceLen(startIndex, endIndex int, replacement *MACAddressSection, replacementStartIndex, replacementEndIndex int) *MACAddressSection {
 	return section.replaceLen(startIndex, endIndex, replacement.ToSectionBase(), replacementStartIndex, replacementEndIndex, macBitsToSegmentBitshift).ToMAC()
 }
@@ -808,7 +808,7 @@ func (section *MACAddressSection) ToCompressedString() string {
 		})
 }
 
-// ToDottedString produces the dotted hexadecimal format aaaa.bbbb.cccc
+// ToDottedString produces the dotted hexadecimal format "aaaa.bbbb.cccc".
 func (section *MACAddressSection) ToDottedString() (string, addrerr.IncompatibleAddressError) {
 	if section == nil {
 		return nilString(), nil
@@ -864,7 +864,7 @@ func (section *MACAddressSection) GetDottedGrouping() (*AddressDivisionGrouping,
 	return grouping, nil
 }
 
-// ToSpaceDelimitedString produces a string delimited by spaces: aa bb cc dd ee ff
+// ToSpaceDelimitedString produces a string delimited by spaces: "aa bb cc dd ee ff".
 func (section *MACAddressSection) ToSpaceDelimitedString() string {
 	if section == nil {
 		return nilString()
@@ -879,7 +879,7 @@ func (section *MACAddressSection) ToSpaceDelimitedString() string {
 		})
 }
 
-// ToDashedString produces a string delimited by dashes: aa-bb-cc-dd-ee-ff.
+// ToDashedString produces a string delimited by dashes: "aa-bb-cc-dd-ee-ff".
 // For range segments, '|' is used: 11-22-33|44-55-66
 // It returns the same string as ToCanonicalString.
 func (section *MACAddressSection) ToDashedString() string {
@@ -889,8 +889,8 @@ func (section *MACAddressSection) ToDashedString() string {
 	return section.ToCanonicalString()
 }
 
-// ToColonDelimitedString produces a string delimited by colons: aa:bb:cc:dd:ee:ff
-// For range segments, '-' is used: 11:22:33-44:55:66
+// ToColonDelimitedString produces a string delimited by colons: "aa:bb:cc:dd:ee:ff".
+// For range segments, '-' is used: "11:22:33-44:55:66".
 // It returns the same string as ToNormalizedString.
 func (section *MACAddressSection) ToColonDelimitedString() string {
 	if section == nil {
@@ -899,7 +899,7 @@ func (section *MACAddressSection) ToColonDelimitedString() string {
 	return section.ToNormalizedString()
 }
 
-// String implements the fmt.Stringer interface, returning the normalized string provided by ToNormalizedString, or "<nil>" if the receiver is a nil pointer
+// String implements the fmt.Stringer interface, returning the normalized string provided by ToNormalizedString, or "<nil>" if the receiver is a nil pointer.
 func (section *MACAddressSection) String() string {
 	if section == nil {
 		return nilString()

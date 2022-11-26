@@ -106,7 +106,7 @@ func (p *PrefixBitCount) Compare(other PrefixLen) int {
 	return p.bitCount() - other.bitCount()
 }
 
-// String returns the bit count as a base-10 positive integer string, or "<nil>" if the receiver is a nil pointer
+// String returns the bit count as a base-10 positive integer string, or "<nil>" if the receiver is a nil pointer.
 func (p *PrefixBitCount) String() string {
 	if p == nil {
 		return nilString()
@@ -114,7 +114,7 @@ func (p *PrefixBitCount) String() string {
 	return strconv.Itoa(p.bitCount())
 }
 
-// A HostBitCount is the count of bits in a host.
+// HostBitCount is the count of bits in a host.
 // For arithmetic, you may wish to use the signed integer type BitCount instead, which you can get from a HostBitCount using the Len method.
 type HostBitCount uint8
 
@@ -154,7 +154,7 @@ func (h *HostBitCount) Len() BitCount {
 	return BitCount(*h)
 }
 
-// String returns the bit count as a base-10 positive integer string, or "<nil>" if the receiver is a nil pointer
+// String returns the bit count as a base-10 positive integer string, or "<nil>" if the receiver is a nil pointer.
 func (h *HostBitCount) String() string {
 	if p == nil {
 		return nilString()
@@ -228,7 +228,7 @@ type Port = *PortNum
 
 type PortInt = int // using signed integers allows for easier arithmetic
 
-// A PortNum is the port number for a non-nil Port
+// PortNum is the port number for a non-nil Port.  For arithmetic, you might wish to use the signed integer type PortInt instead.
 type PortNum uint16
 
 func (p *PortNum) portNum() PortInt {
@@ -283,7 +283,7 @@ func (p *PortNum) Compare(other Port) int {
 	return p.portNum() - other.portNum()
 }
 
-// String returns the bit count as a base-10 positive integer string, or "<nil>" if the receiver is a nil pointer
+// String returns the bit count as a base-10 positive integer string, or "<nil>" if the receiver is a nil pointer.
 func (p *PortNum) String() string {
 	if p == nil {
 		return nilString()

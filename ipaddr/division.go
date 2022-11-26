@@ -242,16 +242,16 @@ func (div *addressDivisionInternal) String() string {
 // It uses a string prefix for octal or hex (0 or 0x), and does not use the wildcard '*', because division size is variable, so '*' is ambiguous.
 // GetWildcardString() is more appropriate in context with other segments or divisions.  It does not use a string prefix and uses '*' for full-range segments.
 // GetString() is more appropriate in context with prefix lengths, it uses zeros instead of wildcards for prefix block ranges.
-func (div *addressDivisionInternal) toString() string { // this can be moved to addressDivisionBase when we have ContainsPrefixBlock and similar methods implemented for big.Int in the base
+func (div *addressDivisionInternal) toString() string { // this can be moved to addressDivisionBase when we have ContainsPrefixBlock and similar methods implemented for big.Int in the base.
 	return toString(div.toAddressDivision())
 }
 
 // Format implements fmt.Formatter interface. It accepts the formats
-// 'v' for the default address and section format (either the normalized or canonical string),
-// 's' (string) for the same,
-// 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
-// 'd' (decimal), 'x' (lowercase hexadecimal), and
-// 'X' (uppercase hexadecimal).
+//  - 'v' for the default address and section format (either the normalized or canonical string),
+//  - 's' (string) for the same,
+//  - 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
+//  - 'd' (decimal), 'x' (lowercase hexadecimal), and
+//  - 'X' (uppercase hexadecimal).
 // Also supported are some of fmt's format flags for integral types.
 // Sign control is not supported since addresses and sections are never negative.
 // '#' for an alternate format is supported, which is leading zero for octal and for hexadecimal,
@@ -282,12 +282,12 @@ func (div *addressDivisionInternal) isPrefixed() bool {
 	return div.getDivisionPrefixLength() != nil
 }
 
-// return whether the division range includes the block of values for the given prefix length
+// return whether the division range includes the block of values for the given prefix length.
 func (div *addressDivisionInternal) containsPrefixBlock(divisionPrefixLen BitCount) bool {
 	return div.isPrefixBlockVals(div.getDivisionValue(), div.getUpperDivisionValue(), divisionPrefixLen)
 }
 
-// Returns whether the division range includes the block of values for its prefix length
+// Returns whether the division range includes the block of values for its prefix length.
 func (div *addressDivisionInternal) isPrefixBlockVals(divisionValue, upperValue DivInt, divisionPrefixLen BitCount) bool {
 	return isPrefixBlockVals(divisionValue, upperValue, divisionPrefixLen, div.GetBitCount())
 }
@@ -375,7 +375,7 @@ func (div *addressDivisionInternal) GetPrefixLenForSingleBlock() PrefixLen {
 }
 
 // return whether the division range includes the block of values for the division prefix length,
-// or false if the division has no prefix length
+// or false if the division has no prefix length.
 func (div *addressDivisionInternal) isPrefixBlock() bool {
 	prefLen := div.getDivisionPrefixLength()
 	return prefLen != nil && div.containsPrefixBlock(prefLen.bitCount())
@@ -540,12 +540,12 @@ func (div *addressDivisionInternal) getCount() *big.Int {
 	return bigZero().SetUint64((div.getUpperDivisionValue() - div.getDivisionValue()) + 1)
 }
 
-// IsSinglePrefix returns true if the division value range spans just a single prefix value for the given prefix length
+// IsSinglePrefix returns true if the division value range spans just a single prefix value for the given prefix length.
 func (div *addressDivisionInternal) IsSinglePrefix(divisionPrefixLength BitCount) bool {
 	return div.isSinglePrefix(div.getDivisionValue(), div.getUpperDivisionValue(), divisionPrefixLength)
 }
 
-// GetPrefixCountLen returns the number of distinct prefixes in the division value range for the given prefix length
+// GetPrefixCountLen returns the number of distinct prefixes in the division value range for the given prefix length.
 func (div *addressDivisionInternal) GetPrefixCountLen(divisionPrefixLength BitCount) *big.Int {
 	if div.IsFullRange() {
 		return bigZero().Add(bigOneConst(), bigZero().SetUint64(div.getMaxValue()))
@@ -845,7 +845,7 @@ func (div *addressDivisionInternal) getDefaultRangeSeparatorString() string {
 
 //// only needed for godoc / pkgsite
 
-// GetBitCount returns the number of bits in each value comprising this address item
+// GetBitCount returns the number of bits in each value comprising this address item.
 func (div *addressDivisionInternal) GetBitCount() BitCount {
 	return div.addressDivisionBase.GetBitCount()
 }
@@ -856,22 +856,22 @@ func (div *addressDivisionInternal) GetByteCount() int {
 	return div.addressDivisionBase.GetByteCount()
 }
 
-// GetValue returns the lowest value in the address division range as a big integer
+// GetValue returns the lowest value in the address division range as a big integer.
 func (div *addressDivisionInternal) GetValue() *BigDivInt {
 	return div.addressDivisionBase.GetValue()
 }
 
-// GetUpperValue returns the highest value in the address division range as a big integer
+// GetUpperValue returns the highest value in the address division range as a big integer.
 func (div *addressDivisionInternal) GetUpperValue() *BigDivInt {
 	return div.addressDivisionBase.GetUpperValue()
 }
 
-// Bytes returns the lowest value in the address division range as a byte slice
+// Bytes returns the lowest value in the address division range as a byte slice.
 func (div *addressDivisionInternal) Bytes() []byte {
 	return div.addressDivisionBase.Bytes()
 }
 
-// UpperBytes returns the highest value in the address division range as a byte slice
+// UpperBytes returns the highest value in the address division range as a byte slice.
 func (div *addressDivisionInternal) UpperBytes() []byte {
 	return div.addressDivisionBase.UpperBytes()
 }
@@ -892,22 +892,22 @@ func (div *addressDivisionInternal) CopyUpperBytes(bytes []byte) []byte {
 	return div.addressDivisionBase.CopyUpperBytes(bytes)
 }
 
-// IsZero returns whether this division matches exactly the value of zero
+// IsZero returns whether this division matches exactly the value of zero.
 func (div *addressDivisionInternal) IsZero() bool {
 	return div.addressDivisionBase.IsZero()
 }
 
-// IncludesZero returns whether this item includes the value of zero within its range
+// IncludesZero returns whether this item includes the value of zero within its range.
 func (div *addressDivisionInternal) IncludesZero() bool {
 	return div.addressDivisionBase.IncludesZero()
 }
 
-// IsMax returns whether this division matches exactly the maximum possible value, the value whose bits are all ones
+// IsMax returns whether this division matches exactly the maximum possible value, the value whose bits are all ones.
 func (div *addressDivisionInternal) IsMax() bool {
 	return div.addressDivisionBase.IsMax()
 }
 
-// IncludesMax returns whether this division includes the max value, the value whose bits are all ones, within its range
+// IncludesMax returns whether this division includes the max value, the value whose bits are all ones, within its range.
 func (div *addressDivisionInternal) IncludesMax() bool {
 	return div.addressDivisionBase.IncludesMax()
 }
@@ -980,17 +980,17 @@ type AddressDivision struct {
 
 //Note: many of the methods below are not public to addressDivisionInternal because segments have corresponding methods using segment values
 
-// GetDivisionValue returns the lower division value in the range
+// GetDivisionValue returns the lower division value in the range.
 func (div *AddressDivision) GetDivisionValue() DivInt {
 	return div.getDivisionValue()
 }
 
-// GetUpperDivisionValue returns the upper division value in the range
+// GetUpperDivisionValue returns the upper division value in the range.
 func (div *AddressDivision) GetUpperDivisionValue() DivInt {
 	return div.getUpperDivisionValue()
 }
 
-// IsMultiple returns  whether this division represents a sequential range of values, vs a single value
+// IsMultiple returns  whether this division represents a sequential range of values, vs a single value.
 func (div *AddressDivision) IsMultiple() bool {
 	return div != nil && div.isMultiple()
 }

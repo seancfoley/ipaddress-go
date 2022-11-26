@@ -87,6 +87,7 @@ func (network *ipv6AddressNetwork) GetPrefixedHostMask(prefLen BitCount) *IPAddr
 
 var _ IPAddressNetwork = &ipv6AddressNetwork{}
 
+// IPv6AddressNetwork is the implementation of IPAddressNetwork for IPv6
 type IPv6AddressNetwork struct {
 	*ipv6AddressNetwork
 }
@@ -163,6 +164,7 @@ func (network *ipv4AddressNetwork) GetPrefixedHostMask(prefLen BitCount) *IPAddr
 
 var _ IPAddressNetwork = &ipv4AddressNetwork{}
 
+// IPv4AddressNetwork is the implementation of IPAddressNetwork for IPv4
 type IPv4AddressNetwork struct {
 	*ipv4AddressNetwork
 }

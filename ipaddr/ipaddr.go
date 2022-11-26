@@ -629,7 +629,7 @@ func (addr *ipAddressInternal) GetPrefixLen() PrefixLen {
 //
 // It is similar to IsPrefixBlock but returns false when there are multiple prefixes.
 //
-// For instance, 1.*.*.* /16 return false for this method and returns true for IsPrefixBlock
+// For instance, "1.*.*.* /16" returns false for this method and returns true for IsPrefixBlock.
 func (addr *ipAddressInternal) IsSinglePrefixBlock() bool {
 	return addr.addressInternal.IsSinglePrefixBlock()
 }
@@ -686,13 +686,13 @@ func (addr *ipAddressInternal) GetMinPrefixLenForBlock() BitCount {
 // If this segment grouping represents a single value, returns the bit length of this address division series.
 //
 // IP address examples:
-// 1.2.3.4 returns 32,
-// 1.2.3.4/16 returns 32,
-// 1.2.*.* returns 16,
-// 1.2.*.0/24 returns 16,
-// 1.2.0.0/16 returns 16,
-// 1.2.*.4 returns null,
-// 1.2.252-255.* returns 22
+//  - 1.2.3.4 returns 32
+//  - 1.2.3.4/16 returns 32
+//  - 1.2.*.* returns 16
+//  - 1.2.*.0/24 returns 16
+//  - 1.2.0.0/16 returns 16
+//  - 1.2.*.4 returns null
+//  - 1.2.252-255.* returns 22
 func (addr *ipAddressInternal) GetPrefixLenForSingleBlock() PrefixLen {
 	return addr.addressInternal.GetPrefixLenForSingleBlock()
 }
@@ -838,6 +838,7 @@ var zeroIPAddr = createIPAddress(zeroSection, NoZone)
 // IPAddress represents an IP address or subnet, either IPv4 or IPv6 (except for the zero-IPAddress which is neither).
 // An IP address is composed of range-valued segments and can optionally have an associated prefix length.
 // The zero value IPAddress has no segments, neither IPv4 nor IPv6, which is not compatible with zero value for IPv4 or IPv6, those being 0.0.0.0 and :: respectively.
+// The zero value is also known as the adaptive zero.
 type IPAddress struct {
 	ipAddressInternal
 }
@@ -881,11 +882,11 @@ func (addr *IPAddress) IsMultiple() bool {
 }
 
 // Format implements fmt.Formatter interface. It accepts the formats
-// 'v' for the default address and section format (either the normalized or canonical string),
-// 's' (string) for the same,
-// 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
-// 'd' (decimal), 'x' (lowercase hexadecimal), and
-// 'X' (uppercase hexadecimal).
+//  - 'v' for the default address and section format (either the normalized or canonical string),
+//  - 's' (string) for the same,
+//  - 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
+//  - 'd' (decimal), 'x' (lowercase hexadecimal), and
+//  - 'X' (uppercase hexadecimal).
 // Also supported are some of fmt's format flags for integral types.
 // Sign control is not supported since addresses and sections are never negative.
 // '#' for an alternate format is supported, which is leading zero for octal and for hexadecimal,
@@ -896,7 +897,7 @@ func (addr IPAddress) Format(state fmt.State, verb rune) {
 	addr.init().format(state, verb)
 }
 
-// String implements the fmt.Stringer interface, returning the canonical string provided by ToCanonicalString, or "<nil>" if the receiver is a nil pointer
+// String implements the fmt.Stringer interface, returning the canonical string provided by ToCanonicalString, or "<nil>" if the receiver is a nil pointer.
 func (addr *IPAddress) String() string {
 	if addr == nil {
 		return nilString()
@@ -909,13 +910,13 @@ func (addr *IPAddress) GetSection() *IPAddressSection {
 	return addr.init().section.ToIP()
 }
 
-// GetTrailingSection gets the subsection from the series starting from the given index
+// GetTrailingSection gets the subsection from the series starting from the given index.
 // The first segment is at index 0.
 func (addr *IPAddress) GetTrailingSection(index int) *IPAddressSection {
 	return addr.GetSection().GetTrailingSection(index)
 }
 
-// GetSubSection gets the subsection from the series starting from the given index and ending just before the give endIndex
+// GetSubSection gets the subsection from the series starting from the given index and ending just before the give endIndex.
 // The first segment is at index 0.
 func (addr *IPAddress) GetSubSection(index, endIndex int) *IPAddressSection {
 	return addr.GetSection().GetSubSection(index, endIndex)
@@ -966,13 +967,13 @@ func (addr *IPAddress) GetHostMask() *IPAddress {
 }
 
 // CopySubSegments copies the existing segments from the given start index until but not including the segment at the given end index,
-// into the given slice, as much as can be fit into the slice, returning the number of segments copied
+// into the given slice, as much as can be fit into the slice, returning the number of segments copied.
 func (addr *IPAddress) CopySubSegments(start, end int, segs []*IPAddressSegment) (count int) {
 	return addr.GetSection().CopySubSegments(start, end, segs)
 }
 
 // CopySegments copies the existing segments into the given slice,
-// as much as can be fit into the slice, returning the number of segments copied
+// as much as can be fit into the slice, returning the number of segments copied.
 func (addr *IPAddress) CopySegments(segs []*IPAddressSegment) (count int) {
 	return addr.GetSection().CopySegments(segs)
 }
@@ -994,23 +995,23 @@ func (addr *IPAddress) GetSegmentCount() int {
 	return addr.getDivisionCount()
 }
 
-// ForEachSegment visits each segment in order from most-significant to least, the most significant with index 0, calling the given function for each, terminating early if the function returns true
+// ForEachSegment visits each segment in order from most-significant to least, the most significant with index 0, calling the given function for each, terminating early if the function returns true.
 // Returns the number of visited segments.
 func (addr *IPAddress) ForEachSegment(consumer func(segmentIndex int, segment *IPAddressSegment) (stop bool)) int {
 	return addr.GetSection().ForEachSegment(consumer)
 }
 
-// GetGenericDivision returns the segment at the given index as a DivisionType
+// GetGenericDivision returns the segment at the given index as a DivisionType.
 func (addr *IPAddress) GetGenericDivision(index int) DivisionType {
 	return addr.getDivision(index)
 }
 
-// GetGenericSegment returns the segment at the given index as an AddressSegmentType
+// GetGenericSegment returns the segment at the given index as an AddressSegmentType.
 func (addr *IPAddress) GetGenericSegment(index int) AddressSegmentType {
 	return addr.getSegment(index)
 }
 
-// GetDivisionCount returns the segment count
+// GetDivisionCount returns the segment count.
 func (addr *IPAddress) GetDivisionCount() int {
 	return addr.getDivisionCount()
 }
@@ -1040,22 +1041,22 @@ func (addr *IPAddress) GetByteCount() int {
 // GetLowerIPAddress returns the address in the subnet or address collection with the lowest numeric value,
 // which will be the receiver if it represents a single address.
 // For example, for "1.2-3.4.5-6", the series "1.2.4.5" is returned.
-// GetLowerIPAddress implements the IPAddressRange interface, and is equivalent to GetLower()
+// GetLowerIPAddress implements the IPAddressRange interface, and is equivalent to [GetLower].
 func (addr *IPAddress) GetLowerIPAddress() *IPAddress {
 	return addr.GetLower()
 }
 
 // GetUpperIPAddress returns the address in the subnet or address collection with the highest numeric value,
 // which will be the receiver if it represents a single address.
-// For example, for "1.2-3.4.5-6", the series "1.3.4.6" is returned.
-// GetUpperIPAddress implements the IPAddressRange interface, and is equivalent to GetUpper()
+// For example, for the subnet "1.2-3.4.5-6", the address "1.3.4.6" is returned.
+// GetUpperIPAddress implements the IPAddressRange interface, and is equivalent to [GetUpper].
 func (addr *IPAddress) GetUpperIPAddress() *IPAddress {
 	return addr.GetUpper()
 }
 
 // GetLower returns the lowest address in the subnet range,
 // which will be the receiver if it represents a single address.
-// For example, for "1.2-3.4.5-6", the series "1.2.4.5" is returned.
+// For example, for the subnet "1.2-3.4.5-6", the address "1.2.4.5" is returned.
 func (addr *IPAddress) GetLower() *IPAddress {
 	return addr.init().getLower().ToIP()
 }
@@ -1171,7 +1172,7 @@ func (addr *IPAddress) ToBlock(segmentIndex int, lower, upper SegInt) *IPAddress
 	return addr.init().toBlock(segmentIndex, lower, upper).ToIP()
 }
 
-// IsPrefixed returns whether this address has an associated prefix length
+// IsPrefixed returns whether this address has an associated prefix length.
 func (addr *IPAddress) IsPrefixed() bool {
 	return addr != nil && addr.isPrefixed()
 }
@@ -1244,14 +1245,14 @@ func (addr *IPAddress) AdjustPrefixLenZeroed(prefixLen BitCount) (*IPAddress, ad
 // If there is no such address, then nil is returned.
 //
 // Examples:
-// 1.2.3.4 returns 1.2.3.4/32,
-// 1.2.*.* returns 1.2.0.0/16,
-// 1.2.*.0/24 returns 1.2.0.0/16,
-// 1.2.*.4 returns nil,
-// 1.2.0-1.* returns 1.2.0.0/23,
-// 1.2.1-2.* returns nil,
-// 1.2.252-255.* returns 1.2.252.0/22,
-// 1.2.3.4/16 returns 1.2.3.4/32
+//  - 1.2.3.4 returns 1.2.3.4/32
+//  - 1.2.*.* returns 1.2.0.0/16
+//  - 1.2.*.0/24 returns 1.2.0.0/16
+//  - 1.2.*.4 returns nil
+//  - 1.2.0-1.* returns 1.2.0.0/23
+//  - 1.2.1-2.* returns nil
+//  - 1.2.252-255.* returns 1.2.252.0/22
+//  - 1.2.3.4/16 returns 1.2.3.4/32
 func (addr *IPAddress) AssignPrefixForSingleBlock() *IPAddress {
 	return addr.init().assignPrefixForSingleBlock().ToIP()
 }
@@ -1262,14 +1263,14 @@ func (addr *IPAddress) AssignPrefixForSingleBlock() *IPAddress {
 // In other words, this method assigns a prefix length to this subnet matching the largest prefix block in this subnet.
 //
 // Examples:
-// 1.2.3.4 returns 1.2.3.4/32,
-// 1.2.*.* returns 1.2.0.0/16,
-// 1.2.*.0/24 returns 1.2.0.0/16,
-// 1.2.*.4 returns 1.2.*.4/32,
-// 1.2.0-1.* returns 1.2.0.0/23,
-// 1.2.1-2.* returns 1.2.1-2.0/24,
-// 1.2.252-255.* returns 1.2.252.0/22,
-// 1.2.3.4/16 returns 1.2.3.4/32
+//  - 1.2.3.4 returns 1.2.3.4/32
+//  - 1.2.*.* returns 1.2.0.0/16
+//  - 1.2.*.0/24 returns 1.2.0.0/16
+//  - 1.2.*.4 returns 1.2.*.4/32
+//  - 1.2.0-1.* returns 1.2.0.0/23
+//  - 1.2.1-2.* returns 1.2.1-2.0/24
+//  - 1.2.252-255.* returns 1.2.252.0/22
+//  - 1.2.3.4/16 returns 1.2.3.4/32
 func (addr *IPAddress) AssignMinPrefixForBlock() *IPAddress {
 	return addr.init().assignMinPrefixForBlock().ToIP()
 }
@@ -1296,17 +1297,17 @@ func (addr *IPAddress) toSinglePrefixBlockOrAddress() (*IPAddress, addrerr.Incom
 	return res, nil
 }
 
-// GetValue returns the lowest address in this subnet or address as an integer value
+// GetValue returns the lowest address in this subnet or address as an integer value.
 func (addr *IPAddress) GetValue() *big.Int {
 	return addr.init().section.GetValue()
 }
 
-// GetUpperValue returns the highest address in this subnet or address as an integer value
+// GetUpperValue returns the highest address in this subnet or address as an integer value.
 func (addr *IPAddress) GetUpperValue() *big.Int {
 	return addr.init().section.GetUpperValue()
 }
 
-// GetNetIPAddr returns the lowest address in this subnet or address as a net.IPAddr
+// GetNetIPAddr returns the lowest address in this subnet or address as a net.IPAddr.
 func (addr *IPAddress) GetNetIPAddr() *net.IPAddr {
 	return &net.IPAddr{
 		IP:   addr.GetNetIP(),
@@ -1314,7 +1315,7 @@ func (addr *IPAddress) GetNetIPAddr() *net.IPAddr {
 	}
 }
 
-// GetUpperNetIPAddr returns the highest address in this subnet or address as a net.IPAddr
+// GetUpperNetIPAddr returns the highest address in this subnet or address as a net.IPAddr.
 func (addr *IPAddress) GetUpperNetIPAddr() *net.IPAddr {
 	return &net.IPAddr{
 		IP:   addr.GetUpperNetIP(),
@@ -1322,17 +1323,17 @@ func (addr *IPAddress) GetUpperNetIPAddr() *net.IPAddr {
 	}
 }
 
-// GetNetIP returns the lowest address in this subnet or address as a net.IP
+// GetNetIP returns the lowest address in this subnet or address as a net.IP.
 func (addr *IPAddress) GetNetIP() net.IP {
 	return addr.Bytes()
 }
 
-// GetUpperNetIP returns the highest address in this subnet or address as a net.IP
+// GetUpperNetIP returns the highest address in this subnet or address as a net.IP.
 func (addr *IPAddress) GetUpperNetIP() net.IP {
 	return addr.UpperBytes()
 }
 
-// GetNetNetIPAddr returns the lowest address in this subnet or address range as a netip.Addr
+// GetNetNetIPAddr returns the lowest address in this subnet or address range as a netip.Addr.
 func (addr *IPAddress) GetNetNetIPAddr() netip.Addr {
 	res := addr.init().getNetNetIPAddr()
 	if addr.hasZone() {
@@ -1341,7 +1342,7 @@ func (addr *IPAddress) GetNetNetIPAddr() netip.Addr {
 	return res
 }
 
-// GetUpperNetNetIPAddr returns the highest address in this subnet or address range as a netip.Addr
+// GetUpperNetNetIPAddr returns the highest address in this subnet or address range as a netip.Addr.
 func (addr *IPAddress) GetUpperNetNetIPAddr() netip.Addr {
 	return addr.init().getUpperNetNetIPAddr()
 }
@@ -1368,17 +1369,17 @@ func (addr *IPAddress) CopyUpperNetIP(ip net.IP) net.IP {
 	return addr.CopyUpperBytes(ip)
 }
 
-// Bytes returns the lowest address in this subnet or address as a byte slice
+// Bytes returns the lowest address in this subnet or address as a byte slice.
 func (addr *IPAddress) Bytes() []byte {
 	return addr.init().section.Bytes()
 }
 
-// UpperBytes returns the highest address in this subnet or address as a byte slice
+// UpperBytes returns the highest address in this subnet or address as a byte slice.
 func (addr *IPAddress) UpperBytes() []byte {
 	return addr.init().section.UpperBytes()
 }
 
-// CopyBytes copies the value of the lowest individual address in the subnet into a byte slice
+// CopyBytes copies the value of the lowest individual address in the subnet into a byte slice.
 //
 // If the value can fit in the given slice, the value is copied into that slice and a length-adjusted sub-slice is returned.
 // Otherwise, a new slice is created and returned with the value.
@@ -1394,12 +1395,12 @@ func (addr *IPAddress) CopyUpperBytes(bytes []byte) []byte {
 	return addr.init().section.CopyUpperBytes(bytes)
 }
 
-// IsMax returns whether this address matches exactly the maximum possible value, the address whose bits are all ones
+// IsMax returns whether this address matches exactly the maximum possible value, the address whose bits are all ones.
 func (addr *IPAddress) IsMax() bool {
 	return addr.init().section.IsMax()
 }
 
-// IncludesMax returns whether this address includes the max address, the address whose bits are all ones, within its range
+// IncludesMax returns whether this address includes the max address, the address whose bits are all ones, within its range.
 func (addr *IPAddress) IncludesMax() bool {
 	return addr.init().section.IncludesMax()
 }
@@ -1476,7 +1477,6 @@ func (addr *IPAddress) CompareSize(other AddressItem) int { // this is here to t
 //
 // The comparison is intended for individual addresses and CIDR prefix blocks.
 // If an address is neither an individual address nor a prefix block, it is treated like one:
-//
 //   - ranges that occur inside the prefix length are ignored, only the lower value is used.
 //   - ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
 func (addr *IPAddress) TrieCompare(other *IPAddress) (int, addrerr.IncompatibleAddressError) {
@@ -1495,7 +1495,6 @@ func (addr *IPAddress) TrieCompare(other *IPAddress) (int, addrerr.IncompatibleA
 // TrieIncrement returns the next address or block according to address trie ordering
 //
 // If an address is neither an individual address nor a prefix block, it is treated like one:
-//
 //   - ranges that occur inside the prefix length are ignored, only the lower value is used.
 //   - ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
 func (addr *IPAddress) TrieIncrement() *IPAddress {
@@ -1508,7 +1507,6 @@ func (addr *IPAddress) TrieIncrement() *IPAddress {
 // TrieDecrement returns the previous address or block according to address trie ordering
 //
 // If an address is neither an individual address nor a prefix block, it is treated like one:
-//
 //   - ranges that occur inside the prefix length are ignored, only the lower value is used.
 //   - ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
 func (addr *IPAddress) TrieDecrement() *IPAddress {
@@ -1547,7 +1545,7 @@ func (addr *IPAddress) IsIPv6() bool {
 	return addr != nil && addr.isIPv6()
 }
 
-// GetIPVersion returns the IP version of this IP address
+// GetIPVersion returns the IP version of this IP address.
 func (addr *IPAddress) GetIPVersion() IPVersion {
 	if addr == nil {
 		return IndeterminateIPVersion
@@ -1652,7 +1650,7 @@ func (addr *IPAddress) PrefixBlockIterator() Iterator[*IPAddress] {
 // The segments following remain the same in all iterated addresses.
 //
 // For instance, given the IPv4 subnet 1-2.3-4.5-6.7, given the count argument 2,
-// it will iterate through 1.3.5-6.7, 1.4.5-6.7, 2.3.5-6.7, 2.4.5-6.7
+// it will iterate through 1.3.5-6.7, 1.4.5-6.7, 2.3.5-6.7, and 2.4.5-6.7.
 func (addr *IPAddress) BlockIterator(segmentCount int) Iterator[*IPAddress] {
 	return ipAddrIterator{addr.init().blockIterator(segmentCount)}
 }
@@ -1661,7 +1659,7 @@ func (addr *IPAddress) BlockIterator(segmentCount int) Iterator[*IPAddress] {
 //
 // Practically, this means finding the count of segments for which the segments that follow are not full range, and then using BlockIterator with that segment count.
 //
-// For instance, given the IPv4 subnet 1-2.3-4.5-6.7-8, it will iterate through 1.3.5.7-8, 1.3.6.7-8, 1.4.5.7-8, 1.4.6.7-8, 2.3.5.7-8, 2.3.6.7-8, 2.4.6.7-8, 2.4.6.7-8.
+// For instance, given the IPv4 subnet 1-2.3-4.5-6.7-8, it will iterate through 1.3.5.7-8, 1.3.6.7-8, 1.4.5.7-8, 1.4.6.7-8, 2.3.5.7-8, 2.3.6.7-8, 2.4.6.7-8, and 2.4.6.7-8.
 //
 // Use GetSequentialBlockCount to get the number of iterated elements.
 func (addr *IPAddress) SequentialBlockIterator() Iterator[*IPAddress] {
@@ -1677,7 +1675,7 @@ func (addr *IPAddress) GetSequentialBlockIndex() int {
 	return addr.getSequentialBlockIndex()
 }
 
-// GetSequentialBlockCount provides the count of elements from the sequential block iterator, the minimal number of sequential subnets that comprise this subnet
+// GetSequentialBlockCount provides the count of elements from the sequential block iterator, the minimal number of sequential subnets that comprise this subnet.
 func (addr *IPAddress) GetSequentialBlockCount() *big.Int {
 	return addr.getSequentialBlockCount()
 }
@@ -1696,7 +1694,7 @@ func (addr *IPAddress) rangeIterator(
 	return ipAddrIterator{addr.ipAddressInternal.rangeIterator(upper.ToIP(), valsAreMultiple, prefixLen, segProducer, segmentIteratorProducer, segValueComparator, networkSegmentIndex, hostSegmentIndex, prefixedSegIteratorProducer)}
 }
 
-// ToSequentialRange creates a sequential range instance from the lowest and highest addresses in this subnet
+// ToSequentialRange creates a sequential range instance from the lowest and highest addresses in this subnet.
 //
 // The two will represent the same set of individual addresses if and only if IsSequential is true.
 // To get a series of ranges that represent the same set of individual addresses use the SequentialBlockIterator (or PrefixIterator),
@@ -1755,7 +1753,7 @@ func (addr *IPAddress) Increment(increment int64) *IPAddress {
 }
 
 // SpanWithRange returns an IPAddressSeqRange instance that spans this subnet to the given subnet.
-// If the other address is a different version than this, then the other is ignored, and the result is equivalent to calling ToSequentialRange
+// If the other address is a different version than this, then the other is ignored, and the result is equivalent to calling ToSequentialRange.
 func (addr *IPAddress) SpanWithRange(other *IPAddress) *SequentialRange[*IPAddress] {
 	return NewSequentialRange(addr.init(), other)
 }
@@ -1766,7 +1764,7 @@ func (addr *IPAddress) SpanWithRange(other *IPAddress) *SequentialRange[*IPAddre
 // If the mask is a different version than this, then an error is returned.
 //
 // If this represents multiple addresses, and applying the mask to all addresses creates a set of addresses
-// that cannot be represented as a sequential range within each segment, then an error is returned
+// that cannot be represented as a sequential range within each segment, then an error is returned.
 func (addr *IPAddress) Mask(other *IPAddress) (masked *IPAddress, err addrerr.IncompatibleAddressError) {
 	return addr.maskPrefixed(other, true)
 }
@@ -1794,7 +1792,7 @@ func (addr *IPAddress) maskPrefixed(other *IPAddress, retainPrefix bool) (*IPAdd
 // If the given address is a different version than this, then an error is returned.
 //
 // If this is a subnet representing multiple addresses, and applying the operations to all addresses creates a set of addresses
-// that cannot be represented as a sequential range within each segment, then an error is returned
+// that cannot be represented as a sequential range within each segment, then an error is returned.
 func (addr *IPAddress) BitwiseOr(other *IPAddress) (masked *IPAddress, err addrerr.IncompatibleAddressError) {
 	return addr.bitwiseOrPrefixed(other, true)
 }
@@ -1889,8 +1887,7 @@ func (addr *IPAddress) IsAnyLocal() bool {
 	return addr.section != nil && addr.IsZero()
 }
 
-// IsLoopback returns whether this address is a loopback address, such as
-// [::1] (aka [0:0:0:0:0:0:0:1]) or 127.0.0.1
+// IsLoopback returns whether this address is a loopback address,  such as "::1" or "127.0.0.1".
 func (addr *IPAddress) IsLoopback() bool {
 	if thisAddr := addr.ToIPv4(); thisAddr != nil {
 		return thisAddr.IsLoopback()
@@ -1900,7 +1897,7 @@ func (addr *IPAddress) IsLoopback() bool {
 	return false
 }
 
-// IsMulticast returns whether this address or subnet is entirely multicast
+// IsMulticast returns whether this address or subnet is entirely multicast.
 func (addr *IPAddress) IsMulticast() bool {
 	if thisAddr := addr.ToIPv4(); thisAddr != nil {
 		return thisAddr.IsMulticast()
@@ -1924,7 +1921,7 @@ func versionsMatch(one, two *IPAddress) bool {
 //	return true
 //}
 
-// MergeToSequentialBlocks merges this with the list of addresses to produce the smallest array of sequential blocks
+// MergeToSequentialBlocks merges this with the list of addresses to produce the smallest array of sequential blocks.
 //
 // The resulting slice is sorted from lowest address value to highest, regardless of the size of each prefix block.
 // Arguments that are not the same IP version are ignored.
@@ -2156,7 +2153,7 @@ func (addr *IPAddress) ToSegmentedBinaryString() string {
 }
 
 // ToSQLWildcardString create a string similar to that from toNormalizedWildcardString except that
-// it uses SQL wildcards.  It uses '%' instead of '*' and also uses the wildcard '_'..
+// it uses SQL wildcards.  It uses '%' instead of '*' and also uses the wildcard '_'.
 func (addr *IPAddress) ToSQLWildcardString() string {
 	if addr == nil {
 		return nilString()
@@ -2194,7 +2191,7 @@ func (addr *IPAddress) ToPrefixLenString() string {
 }
 
 // ToSubnetString produces a string with specific formats for subnets.
-// The subnet string looks like 1.2.*.* or 1:2::/16
+// The subnet string looks like 1.2.*.* or 1:2::/16.
 //
 // In the case of IPv4, this means that wildcards are used instead of a network prefix when a network prefix has been supplied.
 // In the case of IPv6, when a network prefix has been supplied, the prefix will be shown and the host section will be compressed with ::.
@@ -2250,7 +2247,7 @@ func (addr *IPAddress) ToBinaryString(with0bPrefix bool) (string, addrerr.Incomp
 // ToUNCHostName Generates the Microsoft UNC path component for this address.  See https://ipv6-literal.com/
 //
 // For IPv4 it is the canonical string.
-// For IPv6, it is the canonical string but with colons replaced by dashes, percent signs with the letter “s”, and then appended with the root domain .ipv6-literal.net
+// For IPv6, it is the canonical string but with colons replaced by dashes, percent signs with the letter “s”, and then appended with the root domain ".ipv6-literal.net".
 func (addr *IPAddress) ToUNCHostName() string {
 	if addr == nil {
 		return nilString()
@@ -2262,7 +2259,7 @@ func (addr *IPAddress) ToUNCHostName() string {
 	return addr.ToCanonicalString()
 }
 
-// ToCustomString creates a customized string from this address or subnet according to the given string option parameters
+// ToCustomString creates a customized string from this address or subnet according to the given string option parameters.
 func (addr *IPAddress) ToCustomString(stringOptions addrstr.IPStringOptions) string {
 	if addr == nil {
 		return nilString()

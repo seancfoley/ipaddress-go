@@ -176,7 +176,7 @@ func adjustIndices(
 }
 
 // copySubDivisions copies the existing segments from the given start index until but not including the segment at the given end index,
-// into the given slice, as much as can be fit into the slice, returning the number of segments copied
+// into the given slice, as much as can be fit into the slice, returning the number of segments copied.
 func (grouping *addressDivisionGroupingInternal) copySubDivisions(start, end int, divs []*AddressDivision) (count int) {
 	if divArray := grouping.getDivArray(); divArray != nil {
 		start, end, targetIndex := adjust1To1Indices(start, end, grouping.GetDivisionCount(), len(divs))
@@ -186,7 +186,7 @@ func (grouping *addressDivisionGroupingInternal) copySubDivisions(start, end int
 }
 
 // copyDivisions copies the existing segments from the given start index until but not including the segment at the given end index,
-// into the given slice, as much as can be fit into the slice, returning the number of segments copied
+// into the given slice, as much as can be fit into the slice, returning the number of segments copied.
 func (grouping *addressDivisionGroupingInternal) copyDivisions(divs []*AddressDivision) (count int) {
 	if divArray := grouping.getDivArray(); divArray != nil {
 		return divArray.copyDivisions(divs)
@@ -258,7 +258,7 @@ func (grouping *addressDivisionGroupingInternal) GetPrefixCount() *big.Int {
 	return grouping.addressDivisionGroupingBase.GetPrefixCount()
 }
 
-// GetPrefixCountLen returns the number of distinct prefix values in this item for the given prefix length
+// GetPrefixCountLen returns the number of distinct prefix values in this item for the given prefix length.
 func (grouping *addressDivisionGroupingInternal) GetPrefixCountLen(prefixLen BitCount) *big.Int {
 	if section := grouping.toAddressSection(); section != nil {
 		return section.GetPrefixCountLen(prefixLen)
@@ -351,11 +351,11 @@ func (grouping *addressDivisionGroupingInternal) matchesMACSectionType() bool {
 }
 
 // Format implements fmt.Formatter interface. It accepts the formats
-// 'v' for the default address and section format (either the normalized or canonical string),
-// 's' (string) for the same,
-// 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
-// 'd' (decimal), 'x' (lowercase hexadecimal), and
-// 'X' (uppercase hexadecimal).
+//  - 'v' for the default address and section format (either the normalized or canonical string),
+//  - 's' (string) for the same,
+//  - 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
+//  - 'd' (decimal), 'x' (lowercase hexadecimal), and
+//  - 'X' (uppercase hexadecimal).
 // Also supported are some of fmt's format flags for integral types.
 // Sign control is not supported since addresses and sections are never negative.
 // '#' for an alternate format is supported, which is leading zero for octal and for hexadecimal,
@@ -621,7 +621,7 @@ func cachePrefLenSingleBlock(cache *valueCache, prefLen PrefixLen, calc func() *
 	return *res
 }
 
-// GetValue returns the lowest individual address division grouping in this address division grouping as an integer value
+// GetValue returns the lowest individual address division grouping in this address division grouping as an integer value.
 func (grouping *addressDivisionGroupingInternal) GetValue() *big.Int {
 	if grouping.hasNoDivisions() {
 		return bigZero()
@@ -629,7 +629,7 @@ func (grouping *addressDivisionGroupingInternal) GetValue() *big.Int {
 	return bigZero().SetBytes(grouping.getBytes())
 }
 
-// GetUpperValue returns the highest individual address division grouping in this address division grouping as an integer value
+// GetUpperValue returns the highest individual address division grouping in this address division grouping as an integer value.
 func (grouping *addressDivisionGroupingInternal) GetUpperValue() *big.Int {
 	if grouping.hasNoDivisions() {
 		return bigZero()
@@ -637,7 +637,7 @@ func (grouping *addressDivisionGroupingInternal) GetUpperValue() *big.Int {
 	return bigZero().SetBytes(grouping.getUpperBytes())
 }
 
-// Bytes returns the lowest individual division grouping in this grouping as a byte slice
+// Bytes returns the lowest individual division grouping in this grouping as a byte slice.
 func (grouping *addressDivisionGroupingInternal) Bytes() []byte {
 	if grouping.hasNoDivisions() {
 		return emptyBytes
@@ -645,7 +645,7 @@ func (grouping *addressDivisionGroupingInternal) Bytes() []byte {
 	return cloneBytes(grouping.getBytes())
 }
 
-// UpperBytes returns the highest individual division grouping in this grouping as a byte slice
+// UpperBytes returns the highest individual division grouping in this grouping as a byte slice.
 func (grouping *addressDivisionGroupingInternal) UpperBytes() []byte {
 	if grouping.hasNoDivisions() {
 		return emptyBytes
@@ -906,7 +906,7 @@ func (grouping *addressDivisionGroupingInternal) createNewPrefixedDivisions(bits
 
 //// only needed for godoc / pkgsite
 
-// GetBitCount returns the number of bits in each value comprising this address item
+// GetBitCount returns the number of bits in each value comprising this address item.
 func (grouping *addressDivisionGroupingInternal) GetBitCount() BitCount {
 	return grouping.addressDivisionGroupingBase.GetBitCount()
 }
@@ -917,32 +917,32 @@ func (grouping *addressDivisionGroupingInternal) GetByteCount() int {
 	return grouping.addressDivisionGroupingBase.GetByteCount()
 }
 
-// GetGenericDivision returns the division at the given index as a DivisionType implementation
+// GetGenericDivision returns the division at the given index as a DivisionType implementation.
 func (grouping *addressDivisionGroupingInternal) GetGenericDivision(index int) DivisionType {
 	return grouping.addressDivisionGroupingBase.GetGenericDivision(index)
 }
 
-// GetDivisionCount returns the number of divisions in this grouping
+// GetDivisionCount returns the number of divisions in this grouping.
 func (grouping *addressDivisionGroupingInternal) GetDivisionCount() int {
 	return grouping.addressDivisionGroupingBase.GetDivisionCount()
 }
 
-// IsZero returns whether this grouping matches exactly the value of zero
+// IsZero returns whether this grouping matches exactly the value of zero.
 func (grouping *addressDivisionGroupingInternal) IsZero() bool {
 	return grouping.addressDivisionGroupingBase.IsZero()
 }
 
-// IncludesZero returns whether this grouping includes the value of zero within its range
+// IncludesZero returns whether this grouping includes the value of zero within its range.
 func (grouping *addressDivisionGroupingInternal) IncludesZero() bool {
 	return grouping.addressDivisionGroupingBase.IncludesZero()
 }
 
-// IsMax returns whether this grouping matches exactly the maximum possible value, the value whose bits are all ones
+// IsMax returns whether this grouping matches exactly the maximum possible value, the value whose bits are all ones.
 func (grouping *addressDivisionGroupingInternal) IsMax() bool {
 	return grouping.addressDivisionGroupingBase.IsMax()
 }
 
-// IncludesMax returns whether this grouping includes the max value, the value whose bits are all ones, within its range
+// IncludesMax returns whether this grouping includes the max value, the value whose bits are all ones, within its range.
 func (grouping *addressDivisionGroupingInternal) IncludesMax() bool {
 	return grouping.addressDivisionGroupingBase.IncludesMax()
 }
@@ -963,7 +963,7 @@ func (grouping *addressDivisionGroupingInternal) GetSequentialBlockIndex() int {
 	return grouping.addressDivisionGroupingBase.GetSequentialBlockIndex()
 }
 
-// GetSequentialBlockCount provides the count of elements from the sequential block iterator, the minimal number of sequential address division groupings that comprise this address division grouping
+// GetSequentialBlockCount provides the count of elements from the sequential block iterator, the minimal number of sequential address division groupings that comprise this address division grouping.
 func (grouping *addressDivisionGroupingInternal) GetSequentialBlockCount() *big.Int {
 	return grouping.addressDivisionGroupingBase.GetSequentialBlockCount()
 }
@@ -1079,7 +1079,7 @@ func (grouping *AddressDivisionGrouping) IsMultiple() bool {
 	return grouping != nil && grouping.isMultiple()
 }
 
-// IsPrefixed returns whether this grouping has an associated prefix length
+// IsPrefixed returns whether this grouping has an associated prefix length.
 func (grouping *AddressDivisionGrouping) IsPrefixed() bool {
 	if grouping == nil {
 		return false
@@ -1088,13 +1088,13 @@ func (grouping *AddressDivisionGrouping) IsPrefixed() bool {
 }
 
 // CopySubDivisions copies the existing divisions from the given start index until but not including the division at the given end index,
-// into the given slice, as much as can be fit into the slice, returning the number of divisions copied
+// into the given slice, as much as can be fit into the slice, returning the number of divisions copied.
 func (grouping *AddressDivisionGrouping) CopySubDivisions(start, end int, divs []*AddressDivision) (count int) {
 	return grouping.copySubDivisions(start, end, divs)
 }
 
 // CopyDivisions copies the existing divisions from the given start index until but not including the division at the given end index,
-// into the given slice, as much as can be fit into the slice, returning the number of divisions copied
+// into the given slice, as much as can be fit into the slice, returning the number of divisions copied.
 func (grouping *AddressDivisionGrouping) CopyDivisions(divs []*AddressDivision) (count int) {
 	return grouping.copyDivisions(divs)
 }
@@ -1210,7 +1210,7 @@ func (grouping *AddressDivisionGrouping) GetDivision(index int) *AddressDivision
 	return grouping.getDivision(index)
 }
 
-// ForEachDivision visits each segment in order from most-significant to least, the most significant with index 0, calling the given function for each, terminating early if the function returns true
+// ForEachDivision visits each segment in order from most-significant to least, the most significant with index 0, calling the given function for each, terminating early if the function returns true.
 // ForEachDivision returns the number of visited segments.
 func (grouping *AddressDivisionGrouping) ForEachDivision(consumer func(divisionIndex int, division *AddressDivision) (stop bool)) int {
 	divArray := grouping.getDivArray()
@@ -1227,7 +1227,7 @@ func (grouping *AddressDivisionGrouping) ForEachDivision(consumer func(divisionI
 // String implements the fmt.Stringer interface,
 // returning the normalized string provided by ToNormalizedString if this grouping originated as an address section,
 // or printed as a slice with each division converted to a string by String ( ie "[ div0 div1 ...]"),
-// or "<nil>" if the receiver is a nil pointer
+// or "<nil>" if the receiver is a nil pointer.
 func (grouping *AddressDivisionGrouping) String() string {
 	if grouping == nil {
 		return nilString()

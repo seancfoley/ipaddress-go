@@ -16,26 +16,26 @@
 
 package ipaddr
 
-// ExtendedIdentifierString is a common interface for strings that identify hosts, namely IPAddressString, MACAddressString, and HostName
+// ExtendedIdentifierString is a common interface for strings that identify hosts, namely [IPAddressString], [MACAddressString], and [HostName].
 type ExtendedIdentifierString interface {
 	HostIdentifierString
 
-	// GetAddress returns the identified address or nil if none
+	// GetAddress returns the identified address or nil if none.
 	GetAddress() AddressType
 
-	// ToAddress returns the identified address or an error
+	// ToAddress returns the identified address or an error.
 	ToAddress() (AddressType, error)
 
-	// Unwrap returns the wrapped IPAddressString, MACAddressString or HostName as an interface, HostIdentifierString
+	// Unwrap returns the wrapped [IPAddressString], [MACAddressString] or [HostName] as an interface, HostIdentifierString.
 	Unwrap() HostIdentifierString
 }
 
-// WrappedIPAddressString wraps an IPAddressString to get an ExtendedIdentifierString
+// WrappedIPAddressString wraps an IPAddressString to get an ExtendedIdentifierString, an extended polymorphic type.
 type WrappedIPAddressString struct {
 	*IPAddressString
 }
 
-// Unwrap returns the wrapped IPAddressString as an interface, HostIdentifierString
+// Unwrap returns the wrapped IPAddressString as an interface, HostIdentifierString.
 func (w WrappedIPAddressString) Unwrap() HostIdentifierString {
 	res := w.IPAddressString
 	if res == nil {
@@ -44,7 +44,7 @@ func (w WrappedIPAddressString) Unwrap() HostIdentifierString {
 	return res
 }
 
-// ToAddress returns the identified address or an error
+// ToAddress returns the identified address or an error.
 func (w WrappedIPAddressString) ToAddress() (AddressType, error) {
 	addr, err := w.IPAddressString.ToAddress()
 	if err != nil {
@@ -53,7 +53,7 @@ func (w WrappedIPAddressString) ToAddress() (AddressType, error) {
 	return addr, nil
 }
 
-// GetAddress returns the identified address or nil if none
+// GetAddress returns the identified address or nil if none.
 func (w WrappedIPAddressString) GetAddress() AddressType {
 	if addr := w.IPAddressString.GetAddress(); addr != nil {
 		return addr
@@ -61,12 +61,12 @@ func (w WrappedIPAddressString) GetAddress() AddressType {
 	return nil
 }
 
-// WrappedMACAddressString wraps a MACAddressString to get an ExtendedIdentifierString
+// WrappedMACAddressString wraps a MACAddressString to get an ExtendedIdentifierString.
 type WrappedMACAddressString struct {
 	*MACAddressString
 }
 
-// Unwrap returns the wrapped MACAddressString as an interface, HostIdentifierString
+// Unwrap returns the wrapped MACAddressString as an interface, HostIdentifierString.
 func (w WrappedMACAddressString) Unwrap() HostIdentifierString {
 	res := w.MACAddressString
 	if res == nil {
@@ -75,7 +75,7 @@ func (w WrappedMACAddressString) Unwrap() HostIdentifierString {
 	return res
 }
 
-// ToAddress returns the identified address or an error
+// ToAddress returns the identified address or an error.
 func (w WrappedMACAddressString) ToAddress() (AddressType, error) {
 	addr, err := w.MACAddressString.ToAddress()
 	if err != nil {
@@ -84,7 +84,7 @@ func (w WrappedMACAddressString) ToAddress() (AddressType, error) {
 	return addr, nil
 }
 
-// GetAddress returns the identified address or nil if none
+// GetAddress returns the identified address or nil if none.
 func (w WrappedMACAddressString) GetAddress() AddressType {
 	if addr := w.MACAddressString.GetAddress(); addr != nil {
 		return addr
@@ -92,12 +92,12 @@ func (w WrappedMACAddressString) GetAddress() AddressType {
 	return nil
 }
 
-// WrappedHostName wraps a HostName to get an ExtendedIdentifierString
+// WrappedHostName wraps a HostName to get an ExtendedIdentifierString.
 type WrappedHostName struct {
 	*HostName
 }
 
-// Unwrap returns the wrapped HostName as an interface, HostIdentifierString
+// Unwrap returns the wrapped HostName as an interface, HostIdentifierString.
 func (w WrappedHostName) Unwrap() HostIdentifierString {
 	res := w.HostName
 	if res == nil {
@@ -106,7 +106,7 @@ func (w WrappedHostName) Unwrap() HostIdentifierString {
 	return res
 }
 
-// ToAddress returns the identified address or an error
+// ToAddress returns the identified address or an error.
 func (w WrappedHostName) ToAddress() (AddressType, error) {
 	addr, err := w.HostName.ToAddress()
 	if err != nil {
@@ -115,7 +115,7 @@ func (w WrappedHostName) ToAddress() (AddressType, error) {
 	return addr, nil
 }
 
-// GetAddress returns the identified address or nil if none
+// GetAddress returns the identified address or nil if none.
 func (w WrappedHostName) GetAddress() AddressType {
 	if addr := w.HostName.GetAddress(); addr != nil {
 		return addr

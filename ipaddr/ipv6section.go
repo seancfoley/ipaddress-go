@@ -384,7 +384,7 @@ func (section *IPv6AddressSection) CompareSize(other AddressItem) int {
 	return section.compareSize(other)
 }
 
-// GetIPVersion returns IPv6, the IP version of this address section
+// GetIPVersion returns IPv6, the IP version of this address section.
 func (section *IPv6AddressSection) GetIPVersion() IPVersion {
 	return IPv6
 }
@@ -426,12 +426,12 @@ func (section *IPv6AddressSection) getCachedCount() *big.Int {
 	})
 }
 
-// IsMultiple returns  whether this section represents multiple values
+// IsMultiple returns  whether this section represents multiple values.
 func (section *IPv6AddressSection) IsMultiple() bool {
 	return section != nil && section.isMultiple()
 }
 
-// IsPrefixed returns whether this section has an associated prefix length
+// IsPrefixed returns whether this section has an associated prefix length.
 func (section *IPv6AddressSection) IsPrefixed() bool {
 	return section != nil && section.isPrefixed()
 }
@@ -451,14 +451,14 @@ func (section *IPv6AddressSection) GetBlockCount(segments int) *big.Int {
 //
 // If this has a non-nil prefix length, returns the number of distinct prefix values.
 //
-// If this has a nil prefix length, returns the same value as GetCount
+// If this has a nil prefix length, returns the same value as GetCount.
 func (section *IPv6AddressSection) GetPrefixCount() *big.Int {
 	return section.cachePrefixCount(func() *big.Int {
 		return section.GetPrefixCountLen(section.getPrefixLen().bitCount())
 	})
 }
 
-// GetPrefixCountLen returns the number of distinct prefix values in this item for the given prefix length
+// GetPrefixCountLen returns the number of distinct prefix values in this item for the given prefix length.
 func (section *IPv6AddressSection) GetPrefixCountLen(prefixLen BitCount) *big.Int {
 	if prefixLen <= 0 {
 		return bigOne()
@@ -487,7 +487,7 @@ func (section *IPv6AddressSection) GetSegment(index int) *IPv6AddressSegment {
 	return section.getDivision(index).ToIPv6()
 }
 
-// ForEachSegment visits each segment in order from most-significant to least, the most significant with index 0, calling the given function for each, terminating early if the function returns true
+// ForEachSegment visits each segment in order from most-significant to least, the most significant with index 0, calling the given function for each, terminating early if the function returns true.
 // Returns the number of visited segments.
 func (section *IPv6AddressSection) ForEachSegment(consumer func(segmentIndex int, segment *IPv6AddressSegment) (stop bool)) int {
 	divArray := section.getDivArray()
@@ -559,7 +559,7 @@ func (section *IPv6AddressSection) GetHostMask() *IPv6AddressSection {
 }
 
 // CopySubSegments copies the existing segments from the given start index until but not including the segment at the given end index,
-// into the given slice, as much as can be fit into the slice, returning the number of segments copied
+// into the given slice, as much as can be fit into the slice, returning the number of segments copied.
 func (section *IPv6AddressSection) CopySubSegments(start, end int, segs []*IPv6AddressSegment) (count int) {
 	start, end, targetStart := adjust1To1StartIndices(start, end, section.GetDivisionCount(), len(segs))
 	segs = segs[targetStart:]
@@ -569,7 +569,7 @@ func (section *IPv6AddressSection) CopySubSegments(start, end int, segs []*IPv6A
 }
 
 // CopySegments copies the existing segments into the given slice,
-// as much as can be fit into the slice, returning the number of segments copied
+// as much as can be fit into the slice, returning the number of segments copied.
 func (section *IPv6AddressSection) CopySegments(segs []*IPv6AddressSegment) (count int) {
 	return section.ForEachSegment(func(index int, seg *IPv6AddressSegment) (stop bool) {
 		if stop = index >= len(segs); !stop {
@@ -591,7 +591,7 @@ func (section *IPv6AddressSection) GetSegments() (res []*IPv6AddressSegment) {
 // If the sections do not have a comparable number of segments, an error is returned.
 //
 // If this represents multiple addresses, and applying the mask to all addresses creates a set of addresses
-// that cannot be represented as a sequential range within each segment, then an error is returned
+// that cannot be represented as a sequential range within each segment, then an error is returned.
 func (section *IPv6AddressSection) Mask(other *IPv6AddressSection) (res *IPv6AddressSection, err addrerr.IncompatibleAddressError) {
 	return section.maskPrefixed(other, true)
 }
@@ -610,7 +610,7 @@ func (section *IPv6AddressSection) maskPrefixed(other *IPv6AddressSection, retai
 // The operation is applied to all individual addresses and the result is returned.
 //
 // If this represents multiple address sections, and applying the operation to all sections creates a set of sections
-// that cannot be represented as a sequential range within each segment, then an error is returned
+// that cannot be represented as a sequential range within each segment, then an error is returned.
 func (section *IPv6AddressSection) BitwiseOr(other *IPv6AddressSection) (res *IPv6AddressSection, err addrerr.IncompatibleAddressError) {
 	return section.bitwiseOrPrefixed(other, true)
 }
@@ -1193,7 +1193,7 @@ func (section *IPv6AddressSection) checkSectionCounts(sections []*IPv6AddressSec
 }
 
 //
-// MergeToSequentialBlocks merges this with the list of sections to produce the smallest array of sequential blocks
+// MergeToSequentialBlocks merges this with the list of sections to produce the smallest array of sequential blocks.
 //
 // The resulting slice is sorted from lowest address value to highest, regardless of the size of each prefix block.
 func (section *IPv6AddressSection) MergeToSequentialBlocks(sections ...*IPv6AddressSection) ([]*IPv6AddressSection, addrerr.SizeMismatchError) {
@@ -1269,13 +1269,13 @@ func (section *IPv6AddressSection) Insert(index int, other *IPv6AddressSection) 
 	return section.insert(index, other.ToIP(), ipv6BitsToSegmentBitshift).ToIPv6()
 }
 
-// Replace replaces the segments of this section starting at the given index with the given replacement segments
+// Replace replaces the segments of this section starting at the given index with the given replacement segments.
 func (section *IPv6AddressSection) Replace(index int, replacement *IPv6AddressSection) *IPv6AddressSection {
 	return section.ReplaceLen(index, index+replacement.GetSegmentCount(), replacement, 0, replacement.GetSegmentCount())
 }
 
 // ReplaceLen replaces the segments starting from startIndex and ending before endIndex with the segments starting at replacementStartIndex and
-//ending before replacementEndIndex from the replacement section
+// ending before replacementEndIndex from the replacement section.
 func (section *IPv6AddressSection) ReplaceLen(startIndex, endIndex int, replacement *IPv6AddressSection, replacementStartIndex, replacementEndIndex int) *IPv6AddressSection {
 	return section.replaceLen(startIndex, endIndex, replacement.ToIP(), replacementStartIndex, replacementEndIndex, ipv6BitsToSegmentBitshift).ToIPv6()
 }
@@ -1321,7 +1321,7 @@ var (
 					SetExpandedSegments(true).ToOptions()
 )
 
-// String implements the fmt.Stringer interface, returning the normalized string provided by ToNormalizedString, or "<nil>" if the receiver is a nil pointer
+// String implements the fmt.Stringer interface, returning the normalized string provided by ToNormalizedString, or "<nil>" if the receiver is a nil pointer.
 func (section *IPv6AddressSection) String() string {
 	if section == nil {
 		return nilString()
@@ -1524,7 +1524,7 @@ func (section *IPv6AddressSection) ToSegmentedBinaryString() string {
 }
 
 // ToSQLWildcardString create a string similar to that from toNormalizedWildcardString except that
-// it uses SQL wildcards.  It uses '%' instead of '*' and also uses the wildcard '_'..
+// it uses SQL wildcards.  It uses '%' instead of '*' and also uses the wildcard '_'.
 func (section *IPv6AddressSection) ToSQLWildcardString() string {
 	if section == nil {
 		return nilString()
@@ -1557,7 +1557,7 @@ func (section *IPv6AddressSection) ToFullString() string {
 
 // ToReverseDNSString generates the reverse DNS lookup string,
 // returning an error if this address section is a multiple-valued section for which the range cannot be represented.
-// For 2001:db8::567:89ab it is b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa
+// For 2001:db8::567:89ab it is "b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa".
 func (section *IPv6AddressSection) ToReverseDNSString() (string, addrerr.IncompatibleAddressError) {
 	if section == nil {
 		return nilString(), nil
@@ -1589,9 +1589,9 @@ func (section *IPv6AddressSection) ToPrefixLenString() string {
 }
 
 // ToSubnetString produces a string with specific formats for subnets.
-// The subnet string looks like 1.2.*.* or 1:2::/16
+// The subnet string looks like "1.2.*.*" or "1:2::/16".
 //
-// In the case of IPv6, when a network prefix has been supplied, the prefix will be shown and the host section will be compressed with ::.
+// In the case of IPv6, when a network prefix has been supplied, the prefix will be shown and the host section will be compressed with "::".
 func (section *IPv6AddressSection) ToSubnetString() string {
 	if section == nil {
 		return nilString()
@@ -1662,7 +1662,7 @@ func (section *IPv6AddressSection) toCompressedWildcardStringZoned(zone Zone) st
 	return section.toNormalizedZonedString(wildcardCompressedParams, zone)
 }
 
-// ToCustomString creates a customized string from this address section according to the given string option parameters
+// ToCustomString creates a customized string from this address section according to the given string option parameters.
 //
 // Errors can result from split digits with ranged values, or mixed IPv4/v6 with ranged values, when the segment ranges are incompatible.
 func (section *IPv6AddressSection) ToCustomString(stringOptions addrstr.IPv6StringOptions) (string, addrerr.IncompatibleAddressError) {
@@ -1787,7 +1787,7 @@ func (section *IPv6AddressSection) getEmbeddedIPv4AddressSection() (*IPv4Address
 	return sect.GetIPv4AddressSection(), nil
 }
 
-// GetIPv4AddressSection produces an IPv4 address section from a sequence of bytes in this IPv6 address section
+// GetIPv4AddressSection produces an IPv4 address section from a sequence of bytes in this IPv6 address section.
 func (section *IPv6AddressSection) GetIPv4AddressSection(startByteIndex, endByteIndex int) (*IPv4AddressSection, addrerr.IncompatibleAddressError) {
 	if startByteIndex == IPv6MixedOriginalSegmentCount<<1 && endByteIndex == (section.GetSegmentCount()<<1) {
 		return section.getEmbeddedIPv4AddressSection()
@@ -1837,7 +1837,7 @@ type embeddedIPv6AddressSection struct {
 	*IPv6AddressSection
 }
 
-// EmbeddedIPv6AddressSection represents the initial IPv6 section of an IPv6v4MixedAddressGrouping
+// EmbeddedIPv6AddressSection represents the initial IPv6 section of an IPv6v4MixedAddressGrouping.
 type EmbeddedIPv6AddressSection struct {
 	embeddedIPv6AddressSection
 	encompassingSection *IPv6AddressSection
@@ -1958,12 +1958,12 @@ func (grouping *IPv6v4MixedAddressGrouping) GetCount() *big.Int {
 	return cnt.Add(cnt, grouping.GetIPv4AddressSection().GetCount())
 }
 
-// IsMultiple returns  whether this grouping represents multiple values
+// IsMultiple returns  whether this grouping represents multiple values.
 func (grouping *IPv6v4MixedAddressGrouping) IsMultiple() bool {
 	return grouping != nil && grouping.isMultiple()
 }
 
-// IsPrefixed returns whether this grouping has an associated prefix length
+// IsPrefixed returns whether this grouping has an associated prefix length.
 func (grouping *IPv6v4MixedAddressGrouping) IsPrefixed() bool {
 	return grouping != nil && grouping.isPrefixed()
 }
@@ -1996,7 +1996,7 @@ func (grouping *IPv6v4MixedAddressGrouping) GetIPv4AddressSection() *IPv4Address
 
 // String implements the fmt.Stringer interface,
 // as a slice string with each division converted to a string by String ( ie "[ div0 div1 ...]"),
-// or "<nil>" if the receiver is a nil pointer
+// or "<nil>" if the receiver is a nil pointer.
 func (grouping *IPv6v4MixedAddressGrouping) String() string {
 	if grouping == nil {
 		return nilString()
@@ -2017,9 +2017,9 @@ func (grouping *IPv6v4MixedAddressGrouping) String() string {
 // When called by a function in the fmt package, nil values are detected before this method is called, avoiding a panic when calling this method.
 
 // Format implements fmt.Formatter interface. It accepts the formats
-// 'v' for the default address and section format (either the normalized or canonical string),
-// 's' (string) for the same
-// 'q' for a quoted string
+//  - 'v' for the default address and section format (either the normalized or canonical string),
+//  - 's' (string) for the same
+//  - 'q' for a quoted string
 func (grouping IPv6v4MixedAddressGrouping) Format(state fmt.State, verb rune) {
 	var str string
 	switch verb {

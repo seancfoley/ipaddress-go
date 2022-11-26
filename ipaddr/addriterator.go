@@ -16,16 +16,16 @@
 
 package ipaddr
 
-// Iterator iterates collections, such as subnets and sequential address ranges
+// Iterator iterates collections, such as subnets and sequential address ranges.
 type Iterator[T any] interface {
-	// HasNext returns true if there is another address to iterate, false otherwise
+	// HasNext returns true if there is another address to iterate, false otherwise.
 	HasNext() bool
 
 	// Next returns the next item, or the zero value for T if there is none left.
 	Next() T
 }
 
-// IteratorWithRemove is an iterator that provides a removal operation
+// IteratorWithRemove is an iterator that provides a removal operation.
 type IteratorWithRemove[T any] interface {
 	Iterator[T]
 

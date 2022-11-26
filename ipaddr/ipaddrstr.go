@@ -72,34 +72,22 @@ var defaultIPAddrParameters = new(addrstrparam.IPAddressStringParamsBuilder).ToP
 // Both IPv4 and IPv6 are supported.
 //
 // Subnets are supported:
-//
 //  • wildcards '*' and ranges '-' (for example 1.*.2-3.4), useful for working with subnets
-//
 //  • the wildcard '*' can span multiple segments, so you can represent all addresses with '*', all IPv4 with '*.*', or all IPv6 with '*:*'
-//
 //  • SQL wildcards '%' and '_', although '%' is considered an SQL wildcard only when it is not considered an IPv6 zone indicator
-//
 //  • CIDR network prefix length addresses, like 1.2.0.0/16, which is equivalent to 1.2.*.* (all-zero hosts are the full subnet, non-zero hosts are single addresses)
-//
 //  • address/mask pairs, in which the mask is applied to the address, like 1.2.3.4/255.255.0.0, which is also equivalent to 1.2.*.*
 //
 //
 // You can combine these variations, such as 1.*.2-3.4/255.255.255.0
 //
 // IPv6 is fully supported:
-//
 //  • IPv6 addresses like ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff
-//
 //  • IPv6 zones or scope identifiers, like ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff%zone
-//
 //  • IPv6 mixed addresses are supported, which are addresses for which the last two IPv6 segments are represented as IPv4, like ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255
-//
 //  • IPv6 compressed addresses like ::1
-//
 //  • A single value of 32 hex digits like 00aa00bb00cc00dd00ee00ff00aa00bb with or without a preceding hex delimiter 0x
-//
-//  • A base 85 address comprising 20 base 85 digits like 4)+k&amp;C#VzJ4br&gt;0wv%Yp as in rfc 1924 https://tools.ietf.org/html/rfc1924
-//
+//  • A base 85 address comprising 20 base 85 digits like 4)+k&amp;C#VzJ4br&gt;0wv%Yp as in RFC 1924 https://tools.ietf.org/html/rfc1924
 //  • Binary, preceded by 0b, either with binary segments that comprise all 16 bits like ::0b0000111100001111 or a single segment address of 0b followed by 128 binary bits.
 //
 //
@@ -108,17 +96,11 @@ var defaultIPAddrParameters = new(addrstrparam.IPAddressStringParamsBuilder).ToP
 //
 // This class support all address formats of the C routine inet_pton and the Java method java.net.InetAddress.getByName.
 // This class supports all IPv4 address formats of the C routine inet_aton as follows:
-//
 //  • IPv4 hex: 0x1.0x2.0x3.0x4 (0x prefix)
-//
 //  • IPv4 octal: 01.02.03.0234.  Note this clashes with the same address interpreted as dotted decimal
-//
 //  • 3-part IPv4: 1.2.3 (which is interpreted as 1.2.0.3 (ie the third part covers the last two)
-//
 //  • 2-part IPv4: 1.2 (which is interpreted as 1.0.0.2 (ie the 2nd part covers the last 3)
-//
 //  • 1-part IPv4: 1 (which is interpreted as 0.0.0.1 (ie the number represents all 4 segments, and can be any number of digits less than the 32 digits which would be interpreted as IPv6)
-//
 //  • hex or octal variants of 1, 2, and 3 part, such as 0xffffffff (which is interpreted as 255.255.255.255)
 //
 // Also supported are binary segments of a 0b followed by binary digits like 0b1.0b1010.2.3, or a single segment address of 0b followed by all 32 bits.
@@ -133,9 +115,7 @@ var defaultIPAddrParameters = new(addrstrparam.IPAddressStringParamsBuilder).ToP
 // IPv4AddressStringParametersBuilder.allowLeadingZeros(boolean)
 //
 // Some Additional Formats:
-//
 //  • empty strings are interpreted as the zero-address or the loopback
-//
 //  • as noted previously, the single wildcard address "*" represents all addresses both ipv4 and ipv6,
 // although you need to give it some help when converting to IPAddress by specifying the IP version in GetVersionedAddress(IPVersion) or ToVersionedAddress(IPVersion).
 //
@@ -151,11 +131,8 @@ var defaultIPAddrParameters = new(addrstrparam.IPAddressStringParamsBuilder).ToP
 // Most address strings can be converted to an IPAddress object using GetAddress or ToAddress.  In most cases the IP version is determined by the string itself.
 //
 // There are a few exceptions, cases in which the version is unknown or ambiguous, for which GetAddress returns nil:
-//
 //  • strings which do not represent valid addresses (eg "bla")
-//
 //  • the "all" address "*" which represents all IPv4 and IPv6 addresses.  For this string you can provide the IPv4/IPv6 version to GetVersionedAddress() to get an address representing either all IPv4 or all IPv6 addresses.
-//
 //  • empty string "" is interpreted as the zero-address, or optionally the default loopback address.  You can provide the ipv4/ipv6 version to GetVersionedAddress() to get the version of your choice.
 //
 //
@@ -163,10 +140,8 @@ var defaultIPAddrParameters = new(addrstrparam.IPAddressStringParamsBuilder).ToP
 // An IPAddress instance requires that all segments can be represented as a range of values.
 //
 // There are only two unusual circumstances when this can occur:
-//
 //  • using masks on subnets specified with wildcard or range characters causing non-sequential segments such as the final IPv4 segment of 0.0.0.* with mask 0.0.0.128,
 //  this example translating to the two addresses 0.0.0.0 and 0.0.0.128, so the last IPv4 segment cannot be represented as a sequential range of values.
-//
 //  • using wildcards or range characters in the IPv4 section of an IPv6 mixed address causing non-sequential segments such as the last IPv6 segment of ::ffff:0.0.*.0,
 //  this example translating to the addresses ::ffff:0:100, ::ffff:0:200, , ::ffff:0:300, ..., so the last IPv6 segment cannot be represented as a sequential range of values.
 //
@@ -176,9 +151,9 @@ var defaultIPAddrParameters = new(addrstrparam.IPAddressStringParamsBuilder).ToP
 // An IPAddressString object represents a single IP address representation that cannot be changed after construction.
 // Some of the derived state is created upon demand and cached, such as the derived IPAddress instances.
 //
-// This class has a few methods with analogs in IPAddress, such as Contains(), GetSequentialRange(),
-// PrefixEquals(), IsIPv4(), and IsIPv6().
-// Such methods are provided to make creating the IPAddress instance unnecessary when no such IPAddress instance is needed for other reasons.
+// This class has a few methods with analogs in [IPAddress], such as Contains, GetSequentialRange,
+// PrefixEqual, IsIPv4, and IsIPv6.
+// Such methods are provided to make creating the IPAddress instance unnecessary when no such [IPAddress] instance is needed for other reasons.
 type IPAddressString struct {
 	str             string
 	addressProvider ipAddressProvider
@@ -203,7 +178,7 @@ func (addrStr *IPAddressString) GetValidationOptions() addrstrparam.IPAddressStr
 }
 
 // IsPrefixed returns whether this address string has an associated prefix length.
-// If so, the prefix length is given by GetNetworkPrefixLen()
+// If so, the prefix length is given by GetNetworkPrefixLen.
 func (addrStr *IPAddressString) IsPrefixed() bool {
 	return addrStr.getNetworkPrefixLen() != nil
 }
@@ -211,13 +186,13 @@ func (addrStr *IPAddressString) IsPrefixed() bool {
 // GetNetworkPrefixLen returns the associated network prefix length.
 //
 // If this address is a valid address with an associated network prefix length then this returns that prefix length, otherwise returns nil.
-// The prefix length may be expressed explicitly with the notation "/xx" where xx is a decimal value, or it may be expressed implicitly as a network mask such as "/255.255.0.0"
+// The prefix length may be expressed explicitly with the notation "/xx" where xx is a decimal value, or it may be expressed implicitly as a network mask such as "/255.255.0.0".
 func (addrStr *IPAddressString) GetNetworkPrefixLen() PrefixLen {
 	return addrStr.getNetworkPrefixLen().copy()
 }
 
 // If this address is a valid address with an associated network prefix length then this returns that prefix length, otherwise returns nil.
-// The prefix length may be expressed explicitly with the notation "/xx" where xx is a decimal value, or it may be expressed implicitly as a network mask such as "/255.255.0.0"
+// The prefix length may be expressed explicitly with the notation "/xx" where xx is a decimal value, or it may be expressed implicitly as a network mask such as "/255.255.0.0".
 func (addrStr *IPAddressString) getNetworkPrefixLen() PrefixLen {
 	addrStr = addrStr.init()
 	if addrStr.IsValid() {
@@ -226,7 +201,7 @@ func (addrStr *IPAddressString) getNetworkPrefixLen() PrefixLen {
 	return nil
 }
 
-// GetMask returns the mask, if any, that was provided with this address string
+// GetMask returns the mask, if any, that was provided with this address string.
 func (addrStr *IPAddressString) GetMask() *IPAddress {
 	addrStr = addrStr.init()
 	if addrStr.IsValid() {
@@ -235,8 +210,8 @@ func (addrStr *IPAddressString) GetMask() *IPAddress {
 	return nil
 }
 
-// IsAllAddresses returns true if the string represents all IP addresses, such as the string "*"
-// You can denote all IPv4 addresses with *.*, or all IPv6 addresses with *:*
+// IsAllAddresses returns true if the string represents all IP addresses, such as the string "*".
+// You can denote all IPv4 addresses with *.*, or all IPv6 addresses with *:*.
 func (addrStr *IPAddressString) IsAllAddresses() bool {
 	addrStr = addrStr.init()
 	return addrStr.IsValid() && addrStr.addressProvider.isProvidingAllAddresses()
@@ -248,13 +223,13 @@ func (addrStr *IPAddressString) IsEmpty() bool {
 	return addrStr.IsValid() && addrStr.addressProvider.isProvidingEmpty()
 }
 
-// IsIPv4 returns true if the address is IPv4
+// IsIPv4 returns true if the address is IPv4.
 func (addrStr *IPAddressString) IsIPv4() bool {
 	addrStr = addrStr.init()
 	return addrStr.IsValid() && addrStr.addressProvider.isProvidingIPv4()
 }
 
-// IsIPv6 returns true if the address is IPv6
+// IsIPv6 returns true if the address is IPv6.
 func (addrStr *IPAddressString) IsIPv6() bool {
 	addrStr = addrStr.init()
 	return addrStr.IsValid() && addrStr.addressProvider.isProvidingIPv6()
@@ -266,7 +241,7 @@ func (addrStr *IPAddressString) IsMixedIPv6() bool {
 	return addrStr.IsIPv6() && addrStr.addressProvider.isProvidingMixedIPv6()
 }
 
-// IsBase85IPv6 returns whether this address string represents an IPv6 address, returns whether the string was base 85
+// IsBase85IPv6 returns whether this address string represents an IPv6 address, returns whether the string was base 85.
 func (addrStr *IPAddressString) IsBase85IPv6() bool {
 	return addrStr.IsIPv6() && addrStr.addressProvider.isProvidingBase85IPv6()
 }
@@ -276,7 +251,7 @@ func (addrStr *IPAddressString) IsIPv4Mapped() bool {
 	return addrStr.IsIPv6() && ipv4MappedPrefix.PrefixEqual(addrStr)
 }
 
-// GetIPVersion returns the IP address version if this represents a valid IP address, otherwise it returns nil
+// GetIPVersion returns the IP address version if this represents a valid IP address, otherwise it returns nil.
 func (addrStr *IPAddressString) GetIPVersion() IPVersion {
 	if addrStr.IsValid() {
 		return addrStr.addressProvider.getProviderIPVersion()
@@ -284,7 +259,7 @@ func (addrStr *IPAddressString) GetIPVersion() IPVersion {
 	return IndeterminateIPVersion
 }
 
-// IsLoopback returns whether this string represents a loopback IP address.
+// IsLoopback returns whether this address string represents a loopback address,  such as "::1" or "127.0.0.1".
 func (addrStr *IPAddressString) IsLoopback() bool {
 	val := addrStr.GetAddress()
 	return val != nil && val.IsLoopback()
@@ -298,7 +273,7 @@ func (addrStr *IPAddressString) IsZero() bool {
 
 // String implements the fmt.Stringer interface,
 // returning the original string used to create this IPAddressString (altered by strings.TrimSpace),
-// or "<nil>" if the receiver is a nil pointer
+// or "<nil>" if the receiver is a nil pointer.
 func (addrStr *IPAddressString) String() string {
 	if addrStr == nil {
 		return nilString()
@@ -398,7 +373,7 @@ func (addrStr *IPAddressString) GetVersionedAddress(version IPVersion) *IPAddres
 // When this object represents an ipv4 or ipv6 address, it returns that address if and only if that address matches the provided version.
 //
 // If the string used to construct this object is an invalid format,
-// or a format that does not match the provided version, then an error is returned
+// or a format that does not match the provided version, then an error is returned.
 func (addrStr *IPAddressString) ToVersionedAddress(version IPVersion) (*IPAddress, addrerr.AddressError) {
 	provider, err := addrStr.getAddressProvider()
 	if err != nil {

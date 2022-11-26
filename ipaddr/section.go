@@ -385,11 +385,12 @@ func (section *addressSectionInternal) GetGenericSegment(index int) AddressSegme
 	return section.GetSegment(index)
 }
 
+// GetSegmentCount returns the segment count.
 func (section *addressSectionInternal) GetSegmentCount() int {
 	return section.GetDivisionCount()
 }
 
-// ForEachSegment visits each segment in order from most-significant to least, the most significant with index 0, calling the given function for each, terminating early if the function returns true
+// ForEachSegment visits each segment in order from most-significant to least, the most significant with index 0, calling the given function for each, terminating early if the function returns true.
 // Returns the number of visited segments.
 func (section *addressSectionInternal) ForEachSegment(consumer func(segmentIndex int, segment *AddressSegment) (stop bool)) int {
 	divArray := section.getDivArray()
@@ -403,7 +404,7 @@ func (section *addressSectionInternal) ForEachSegment(consumer func(segmentIndex
 	return len(divArray)
 }
 
-// GetBitCount returns the number of bits in each value comprising this address item
+// GetBitCount returns the number of bits in each value comprising this address item.
 func (section *addressSectionInternal) GetBitCount() BitCount {
 	divLen := section.GetDivisionCount()
 	if divLen == 0 {
@@ -412,7 +413,7 @@ func (section *addressSectionInternal) GetBitCount() BitCount {
 	return getSegmentsBitCount(section.getDivision(0).GetBitCount(), section.GetSegmentCount())
 }
 
-// GetByteCount returns the number of bytes required for each value comprising this address item
+// GetByteCount returns the number of bytes required for each value comprising this address item.
 func (section *addressSectionInternal) GetByteCount() int {
 	return int((section.GetBitCount() + 7) >> 3)
 }
@@ -454,7 +455,7 @@ func (section *addressSectionInternal) IsOneBit(prefixBitIndex BitCount) bool {
 	return segment.IsOneBit(segmentBitIndex)
 }
 
-// Gets the subsection from the series starting from the given index and ending just before the give endIndex
+// Gets the subsection from the series starting from the given index and ending just before the give endIndex.
 // The first segment is at index 0.
 func (section *addressSectionInternal) getSubSection(index, endIndex int) *AddressSection {
 	if index < 0 {
@@ -728,7 +729,7 @@ func (section *addressSectionInternal) replace(
 }
 
 // Replaces segments starting from startIndex and ending before endIndex with the segments starting at replacementStartIndex and
-//ending before replacementEndIndex from the replacement section
+// ending before replacementEndIndex from the replacement section.
 func (section *addressSectionInternal) replaceLen(startIndex, endIndex int, replacement *AddressSection, replacementStartIndex, replacementEndIndex int, segmentToBitsShift uint) *AddressSection {
 	segmentCount := section.GetSegmentCount()
 	startIndex, endIndex, replacementStartIndex, replacementEndIndex =
@@ -1224,11 +1225,11 @@ var (
 // When called by a function in the fmt package, nil values are detected before this method is called, avoiding a panic when calling this method.
 
 // Format implements fmt.Formatter interface. It accepts the formats
-// 'v' for the default address and section format (either the normalized or canonical string),
-// 's' (string) for the same,
-// 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
-// 'd' (decimal), 'x' (lowercase hexadecimal), and
-// 'X' (uppercase hexadecimal).
+//  - 'v' for the default address and section format (either the normalized or canonical string),
+//  - 's' (string) for the same,
+//  - 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
+//  - 'd' (decimal), 'x' (lowercase hexadecimal), and
+//  - 'X' (uppercase hexadecimal).
 // Also supported are some of fmt's format flags for integral types.
 // Sign control is not supported since addresses and sections are never negative.
 // '#' for an alternate format is supported, which is leading zero for octal and for hexadecimal,
@@ -1779,7 +1780,7 @@ func (section *addressSectionInternal) sequentialBlockIterator() Iterator[*Addre
 	return section.blockIterator(section.GetSequentialBlockIndex())
 }
 
-// GetSequentialBlockCount provides the count of elements from the sequential block iterator, the minimal number of sequential address sections that comprise this address section
+// GetSequentialBlockCount provides the count of elements from the sequential block iterator, the minimal number of sequential address sections that comprise this address section.
 func (section *addressSectionInternal) GetSequentialBlockCount() *big.Int {
 	sequentialSegCount := section.GetSequentialBlockIndex()
 	return section.GetPrefixCountLen(BitCount(sequentialSegCount) * section.GetBitsPerSegment())
@@ -1898,12 +1899,12 @@ func (section *addressSectionInternal) toMACAddressSection() *MACAddressSection 
 
 //// only needed for godoc / pkgsite
 
-// IsZero returns whether this section matches exactly the value of zero
+// IsZero returns whether this section matches exactly the value of zero.
 func (section *addressSectionInternal) IsZero() bool {
 	return section.addressDivisionGroupingInternal.IsZero()
 }
 
-// IncludesZero returns whether this section includes the value of zero within its range
+// IncludesZero returns whether this section includes the value of zero within its range.
 func (section *addressSectionInternal) IncludesZero() bool {
 	return section.addressDivisionGroupingInternal.IncludesZero()
 }
@@ -2021,22 +2022,22 @@ func (section *addressSectionInternal) GetPrefixLenForSingleBlock() PrefixLen {
 	return section.addressDivisionGroupingInternal.GetPrefixLenForSingleBlock()
 }
 
-// GetValue returns the lowest individual address section in this address section as an integer value
+// GetValue returns the lowest individual address section in this address section as an integer value.
 func (section *addressSectionInternal) GetValue() *big.Int {
 	return section.addressDivisionGroupingInternal.GetValue()
 }
 
-// GetUpperValue returns the highest individual address section in this address section as an integer value
+// GetUpperValue returns the highest individual address section in this address section as an integer value.
 func (section *addressSectionInternal) GetUpperValue() *big.Int {
 	return section.addressDivisionGroupingInternal.GetUpperValue()
 }
 
-// Bytes returns the lowest individual address section in this address section as a byte slice
+// Bytes returns the lowest individual address section in this address section as a byte slice.
 func (section *addressSectionInternal) Bytes() []byte {
 	return section.addressDivisionGroupingInternal.Bytes()
 }
 
-// UpperBytes returns the highest individual address section in this address section as a byte slice
+// UpperBytes returns the highest individual address section in this address section as a byte slice.
 func (section *addressSectionInternal) UpperBytes() []byte {
 	return section.addressDivisionGroupingInternal.UpperBytes()
 }
@@ -2194,7 +2195,7 @@ func (section *AddressSection) GetCount() *big.Int {
 	return section.addressDivisionGroupingBase.getCount()
 }
 
-// IsMultiple returns  whether this segment represents multiple values
+// IsMultiple returns whether this section represents multiple values.
 func (section *AddressSection) IsMultiple() bool {
 	return section != nil && section.isMultiple()
 }
@@ -2217,7 +2218,7 @@ func (section *AddressSection) GetPrefixCount() *big.Int {
 	return section.addressDivisionGroupingBase.GetPrefixCount()
 }
 
-// GetPrefixCountLen returns the number of distinct prefix values in this item for the given prefix length
+// GetPrefixCountLen returns the number of distinct prefix values in this item for the given prefix length.
 func (section *AddressSection) GetPrefixCountLen(prefixLen BitCount) *big.Int {
 	if sect := section.ToIPv4(); sect != nil {
 		return sect.GetPrefixCountLen(prefixLen)
@@ -2254,7 +2255,7 @@ func (section *AddressSection) GetSubSection(index, endIndex int) *AddressSectio
 }
 
 // CopySubSegments copies the existing segments from the given start index until but not including the segment at the given end index,
-// into the given slice, as much as can be fit into the slice, returning the number of segments copied
+// into the given slice, as much as can be fit into the slice, returning the number of segments copied.
 func (section *AddressSection) CopySubSegments(start, end int, segs []*AddressSegment) (count int) {
 	start, end, targetStart := adjust1To1StartIndices(start, end, section.GetDivisionCount(), len(segs))
 	segs = segs[targetStart:]
@@ -2264,7 +2265,7 @@ func (section *AddressSection) CopySubSegments(start, end int, segs []*AddressSe
 }
 
 // CopySegments copies the existing segments into the given slice,
-// as much as can be fit into the slice, returning the number of segments copied
+// as much as can be fit into the slice, returning the number of segments copied.
 func (section *AddressSection) CopySegments(segs []*AddressSegment) (count int) {
 	return section.ForEachSegment(func(index int, seg *AddressSegment) (stop bool) {
 		if stop = index >= len(segs); !stop {
@@ -2295,7 +2296,7 @@ func (section *AddressSection) GetUpper() *AddressSection {
 	return section.getUpper()
 }
 
-// IsPrefixed returns whether this section has an associated prefix length
+// IsPrefixed returns whether this section has an associated prefix length.
 func (section *AddressSection) IsPrefixed() bool {
 	return section != nil && section.isPrefixed()
 }
@@ -2469,7 +2470,7 @@ func (section *AddressSection) ToIPv4() *IPv4AddressSection {
 // ToMAC can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (section *AddressSection) ToMAC() *MACAddressSection {
 	if section.IsMAC() {
-		return (*MACAddressSection)(unsafe.Pointer(section))
+		return (*MACAddressSection)(section)
 	}
 	return nil
 }
@@ -2591,7 +2592,7 @@ func (section *AddressSection) ReverseSegments() *AddressSection {
 	return res
 }
 
-// String implements the fmt.Stringer interface, returning the normalized string provided by ToNormalizedString, or "<nil>" if the receiver is a nil pointer
+// String implements the fmt.Stringer interface, returning the normalized string provided by ToNormalizedString, or "<nil>" if the receiver is a nil pointer.
 func (section *AddressSection) String() string {
 	if section == nil {
 		return nilString()
@@ -2609,7 +2610,7 @@ func (section *AddressSection) String() string {
 // http://tools.ietf.org/html/rfc5952
 //
 // For MAC, it uses the canonical standardized IEEE 802 MAC address representation of xx-xx-xx-xx-xx-xx.  An example is "01-23-45-67-89-ab".
-// For range segments, '|' is used: 11-22-33|44-55-66
+// For range segments, '|' is used: "11-22-33|44-55-66".
 func (section *AddressSection) ToCanonicalString() string {
 	if section == nil {
 		return nilString()
@@ -2688,7 +2689,7 @@ func (section *AddressSection) ToBinaryString(with0bPrefix bool) (string, addrer
 	return section.toBinaryString(with0bPrefix)
 }
 
-// ToCustomString creates a customized string from this address section according to the given string option parameters
+// ToCustomString creates a customized string from this address section according to the given string option parameters.
 func (section *AddressSection) ToCustomString(stringOptions addrstr.StringOptions) string {
 	if section == nil {
 		return nilString()

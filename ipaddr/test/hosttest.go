@@ -71,7 +71,7 @@ func (t hostTester) run() {
 	t.testMatches(true, "1:2:3:4:5:6:1.2.3.4/1:2:3:4:5:6:0.0.0.0", "1:2:3:4:5:6::")
 	t.testMatches(true, "1:2:3:4:5:6:1.2.3.4/1:2:3:4:5:0:0.0.0.0", "1:2:3:4:5::")
 	t.testMatches(true, "[1:2:3:4:5:6::%y]", "1:2:3:4:5:6::%y")
-	t.testMatches(true, "[1:2:3:4:5:6::%25y]", "1:2:3:4:5:6::%y") //see rfc 6874 about %25
+	t.testMatches(true, "[1:2:3:4:5:6::%25y]", "1:2:3:4:5:6::%y") //see RFC 6874 about %25
 	t.testMatches(true, "[1:2:3:4:5:6::]/32", "1:2:3:4:5:6::/32")
 	t.testMatches(true, "[1:2::]/32", "1:2::/32")
 	t.testMatches(true, "[1:ff00::]/24", "1:ff00::/24")

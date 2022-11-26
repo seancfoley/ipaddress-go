@@ -18,7 +18,6 @@ package ipaddr
 
 import (
 	"fmt"
-	//"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
 	"math"
 	"math/big"
 	"sort"
@@ -51,7 +50,7 @@ type PrefixBlockAllocator[T PrefixBlockConstraint[T]] struct {
 	totalBlockCount int
 }
 
-// GetBlockCount returns the count of available blocks in this allocator
+// GetBlockCount returns the count of available blocks in this allocator.
 func (alloc *PrefixBlockAllocator[T]) GetBlockCount() int {
 	return alloc.totalBlockCount
 }
@@ -96,7 +95,7 @@ func (alloc *PrefixBlockAllocator[T]) GetReserved() (reservedCount int) {
 	return alloc.reservedCount
 }
 
-// AddAvailable provides the given blocks to the allocator for allocating
+// AddAvailable provides the given blocks to the allocator for allocating.
 func (alloc *PrefixBlockAllocator[T]) AddAvailable(blocks ...T) {
 	if len(blocks) == 0 {
 		return
@@ -203,7 +202,7 @@ func (alloc *PrefixBlockAllocator[T]) AllocateSizes(blockSizes ...uint64) []Allo
 
 // AllocateBitLen allocates a block with the given bit-length,
 // the bit-length being the number of bits extending beyond the prefix length,
-// or nil if no such block is available in the allocator
+// or nil if no such block is available in the allocator.
 // The reserved count is ignored when allocating by bit-length.
 func (alloc *PrefixBlockAllocator[T]) AllocateBitLen(bitLength BitCount) T {
 	if alloc.totalBlockCount == 0 {
@@ -263,7 +262,7 @@ func (alloc *PrefixBlockAllocator[T]) AllocateMultiBitLens(bitLengths ...BitCoun
 	return result
 }
 
-// String returns a string showing the counts of available blocks for each prefix size in the allocator
+// String returns a string showing the counts of available blocks for each prefix size in the allocator.
 func (alloc PrefixBlockAllocator[T]) String() string {
 	var builder strings.Builder
 	version := alloc.version
@@ -299,34 +298,34 @@ type (
 	IPv6PrefixBlockAllocator = PrefixBlockAllocator[*IPv6Address]
 )
 
-// AllocatedBlock represents a block of addresses allocated for assignment to hosts
+// AllocatedBlock represents a block of addresses allocated for assignment to hosts.
 type AllocatedBlock[T AddressType] struct {
 	blockSize     *big.Int
 	block         T
 	reservedCount int
 }
 
-// GetAddress returns the block
+// GetAddress returns the block.
 func (alloc AllocatedBlock[T]) GetAddress() T {
 	return alloc.block
 }
 
-// GetSize returns the number of hosts for which this block was allocated
+// GetSize returns the number of hosts for which this block was allocated.
 func (alloc AllocatedBlock[T]) GetSize() *big.Int {
 	return alloc.blockSize
 }
 
-// GetCount returns the total number of addresses within the block
+// GetCount returns the total number of addresses within the block.
 func (alloc AllocatedBlock[T]) GetCount() *big.Int {
 	return alloc.block.GetCount()
 }
 
-// GetReservedCount returns the number of reserved addresses with the block
+// GetReservedCount returns the number of reserved addresses with the block.
 func (alloc AllocatedBlock[T]) GetReservedCount() int {
 	return alloc.reservedCount
 }
 
-// String returns a string representation of the allocated block
+// String returns a string representation of the allocated block.
 func (alloc AllocatedBlock[T]) String() string {
 	if alloc.reservedCount > 0 {
 		return fmt.Sprint(alloc.block, " for ", alloc.blockSize, " hosts and ",

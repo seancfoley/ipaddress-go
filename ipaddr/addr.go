@@ -196,7 +196,7 @@ func (addr *addressInternal) isMultiple() bool {
 	return addr.section != nil && addr.section.isMultiple()
 }
 
-// isPrefixed returns whether this address has an associated prefix length
+// isPrefixed returns whether this address has an associated prefix length.
 func (addr *addressInternal) isPrefixed() bool {
 	return addr.section != nil && addr.section.IsPrefixed()
 }
@@ -235,7 +235,7 @@ func (addr *addressInternal) getPrefixLen() PrefixLen {
 //
 // It is similar to IsPrefixBlock but returns false when there are multiple prefixes.
 //
-// For instance, 1.*.*.* /16 return false for this method and returns true for IsPrefixBlock
+// For instance, "1.*.*.* /16" returns false for this method and returns true for IsPrefixBlock.
 func (addr *addressInternal) IsSinglePrefixBlock() bool {
 	prefLen := addr.getPrefixLen()
 	return prefLen != nil && addr.section.IsSinglePrefixBlock()
@@ -296,13 +296,13 @@ func (addr *addressInternal) GetMinPrefixLenForBlock() BitCount {
 // If this segment grouping represents a single value, returns the bit length of this address.
 //
 // IP address examples:
-// 1.2.3.4 returns 32,
-// 1.2.3.4/16 returns 32,
-// 1.2.*.* returns 16,
-// 1.2.*.0/24 returns 16,
-// 1.2.0.0/16 returns 16,
-// 1.2.*.4 returns null,
-// 1.2.252-255.* returns 22
+//  - 1.2.3.4 returns 32
+//  - 1.2.3.4/16 returns 32
+//  - 1.2.*.* returns 16
+//  - 1.2.*.0/24 returns 16
+//  - 1.2.0.0/16 returns 16
+//  - 1.2.*.4 returns null
+//  - 1.2.252-255.* returns 22
 func (addr *addressInternal) GetPrefixLenForSingleBlock() PrefixLen {
 	section := addr.section
 	if section == nil {
@@ -528,7 +528,7 @@ func (addr *addressInternal) toMinUpper() *Address {
 	return addr.checkIdentity(addr.section.toMinUpper())
 }
 
-// IsZero returns whether this address matches exactly the value of zero
+// IsZero returns whether this address matches exactly the value of zero.
 func (addr *addressInternal) IsZero() bool {
 	section := addr.section
 	if section == nil {
@@ -537,7 +537,7 @@ func (addr *addressInternal) IsZero() bool {
 	return section.IsZero()
 }
 
-// IncludesZero returns whether this address includes the zero address within its range
+// IncludesZero returns whether this address includes the zero address within its range.
 func (addr *addressInternal) IncludesZero() bool {
 	section := addr.section
 	if section == nil {
@@ -1094,7 +1094,7 @@ var zeroAddr = createAddress(zeroSection, NoZone)
 // You can also use the methods IsIPv6, IsIP, IsIPv4, and IsMAC,
 // which will return true if and only if the corresponding method ToIPv6, ToIP, ToIPv4, and ToMAC returns non-nil, respectively.
 //
-// The zero value for an Address is an address with no segments and no associated address version or type.
+// The zero value for an Address is an address with no segments and no associated address version or type, also known as the adaptive zero.
 type Address struct {
 	addressInternal
 }
@@ -1125,7 +1125,7 @@ func (addr *Address) IsMultiple() bool {
 	return addr != nil && addr.isMultiple()
 }
 
-// IsPrefixed returns whether this address has an associated prefix length
+// IsPrefixed returns whether this address has an associated prefix length.
 func (addr *Address) IsPrefixed() bool {
 	return addr != nil && addr.isPrefixed()
 }
@@ -1216,7 +1216,7 @@ func (addr *Address) TrieCompare(other *Address) (int, addrerr.IncompatibleAddre
 	return 0, &incompatibleAddressError{addressError{key: "ipaddress.error.mismatched.bit.size"}}
 }
 
-// TrieIncrement returns the next address or block according to address trie ordering
+// TrieIncrement returns the next address or block according to address trie ordering.
 //
 // If an address is neither an individual address nor a prefix block, it is treated like one:
 //
@@ -1229,7 +1229,7 @@ func (addr *Address) TrieIncrement() *Address {
 	return nil
 }
 
-// TrieDecrement returns the previous or block address according to address trie ordering
+// TrieDecrement returns the previous or block address according to address trie ordering.
 //
 // If an address is neither an individual address nor a prefix block, it is treated like one:
 //
@@ -1247,26 +1247,26 @@ func (addr *Address) GetSection() *AddressSection {
 	return addr.init().section
 }
 
-// GetTrailingSection gets the subsection from the series starting from the given index
+// GetTrailingSection gets the subsection from the series starting from the given index.
 // The first segment is at index 0.
 func (addr *Address) GetTrailingSection(index int) *AddressSection {
 	return addr.GetSection().GetTrailingSection(index)
 }
 
-// GetSubSection gets the subsection from the series starting from the given index and ending just before the give endIndex
+// GetSubSection gets the subsection from the series starting from the given index and ending just before the give endIndex.
 // The first segment is at index 0.
 func (addr *Address) GetSubSection(index, endIndex int) *AddressSection {
 	return addr.GetSection().GetSubSection(index, endIndex)
 }
 
 // CopySubSegments copies the existing segments from the given start index until but not including the segment at the given end index,
-// into the given slice, as much as can be fit into the slice, returning the number of segments copied
+// into the given slice, as much as can be fit into the slice, returning the number of segments copied.
 func (addr *Address) CopySubSegments(start, end int, segs []*AddressSegment) (count int) {
 	return addr.GetSection().CopySubSegments(start, end, segs)
 }
 
 // CopySegments copies the existing segments into the given slice,
-// as much as can be fit into the slice, returning the number of segments copied
+// as much as can be fit into the slice, returning the number of segments copied.
 func (addr *Address) CopySegments(segs []*AddressSegment) (count int) {
 	return addr.GetSection().CopySegments(segs)
 }
@@ -1289,7 +1289,7 @@ func (addr *Address) GetSegmentCount() int {
 	return addr.getDivisionCount()
 }
 
-// ForEachSegment visits each segment in order from most-significant to least, the most significant with index 0, calling the given function for each, terminating early if the function returns true
+// ForEachSegment visits each segment in order from most-significant to least, the most significant with index 0, calling the given function for each, terminating early if the function returns true.
 // Returns the number of visited segments.
 func (addr *Address) ForEachSegment(consumer func(segmentIndex int, segment *AddressSegment) (stop bool)) int {
 	return addr.GetSection().ForEachSegment(consumer)
@@ -1336,27 +1336,27 @@ func (addr *Address) GetLower() *Address {
 
 // GetUpper returns the address in the subnet or address collection with the highest numeric value,
 // which will be the receiver if it represents a single address.
-// For example, for "1.2-3.4.5-6", the series "1.3.4.6" is returned.
+// For example, for the subnet "1.2-3.4.5-6", the address "1.3.4.6" is returned.
 func (addr *Address) GetUpper() *Address {
 	return addr.init().getUpper()
 }
 
-// GetValue returns the lowest address in this subnet or address collection as an integer value
+// GetValue returns the lowest address in this subnet or address collection as an integer value.
 func (addr *Address) GetValue() *big.Int {
 	return addr.init().section.GetValue()
 }
 
-// GetUpperValue returns the highest address in this subnet or address collection as an integer value
+// GetUpperValue returns the highest address in this subnet or address collection as an integer value.
 func (addr *Address) GetUpperValue() *big.Int {
 	return addr.init().section.GetUpperValue()
 }
 
-// Bytes returns the lowest address in this subnet or address collection as a byte slice
+// Bytes returns the lowest address in this subnet or address collection as a byte slice.
 func (addr *Address) Bytes() []byte {
 	return addr.init().section.Bytes()
 }
 
-// UpperBytes returns the highest address in this subnet or address collection as a byte slice
+// UpperBytes returns the highest address in this subnet or address collection as a byte slice.
 func (addr *Address) UpperBytes() []byte {
 	return addr.init().section.UpperBytes()
 }
@@ -1377,12 +1377,12 @@ func (addr *Address) CopyUpperBytes(bytes []byte) []byte {
 	return addr.init().section.CopyUpperBytes(bytes)
 }
 
-// IsMax returns whether this address matches exactly the maximum possible value, the address whose bits are all ones
+// IsMax returns whether this address matches exactly the maximum possible value, the address whose bits are all ones.
 func (addr *Address) IsMax() bool {
 	return addr.init().section.IsMax()
 }
 
-// IncludesMax returns whether this address includes the max address, the address whose bits are all ones, within its range
+// IncludesMax returns whether this address includes the max address, the address whose bits are all ones, within its range.
 func (addr *Address) IncludesMax() bool {
 	return addr.init().section.IncludesMax()
 }
@@ -1477,14 +1477,14 @@ func (addr *Address) AdjustPrefixLenZeroed(prefixLen BitCount) (*Address, addrer
 // If there is no such address, then nil is returned.
 //
 // Examples:
-// 1.2.3.4 returns 1.2.3.4/32,
-// 1.2.*.* returns 1.2.0.0/16,
-// 1.2.*.0/24 returns 1.2.0.0/16,
-// 1.2.*.4 returns nil,
-// 1.2.0-1.* returns 1.2.0.0/23,
-// 1.2.1-2.* returns nil,
-// 1.2.252-255.* returns 1.2.252.0/22,
-// 1.2.3.4/16 returns 1.2.3.4/32
+//  - 1.2.3.4 returns 1.2.3.4/32
+//  - 1.2.*.* returns 1.2.0.0/16
+//  - 1.2.*.0/24 returns 1.2.0.0/16
+//  - 1.2.*.4 returns nil
+//  - 1.2.0-1.* returns 1.2.0.0/23
+//  - 1.2.1-2.* returns nil
+//  - 1.2.252-255.* returns 1.2.252.0/22
+//  - 1.2.3.4/16 returns 1.2.3.4/32
 func (addr *Address) AssignPrefixForSingleBlock() *Address {
 	return addr.init().assignPrefixForSingleBlock()
 }
@@ -1495,14 +1495,14 @@ func (addr *Address) AssignPrefixForSingleBlock() *Address {
 // In other words, this method assigns a prefix length to this subnet matching the largest prefix block in this subnet.
 //
 // Examples:
-// 1.2.3.4 returns 1.2.3.4/32,
-// 1.2.*.* returns 1.2.0.0/16,
-// 1.2.*.0/24 returns 1.2.0.0/16,
-// 1.2.*.4 returns 1.2.*.4/32,
-// 1.2.0-1.* returns 1.2.0.0/23,
-// 1.2.1-2.* returns 1.2.1-2.0/24,
-// 1.2.252-255.* returns 1.2.252.0/22,
-// 1.2.3.4/16 returns 1.2.3.4/32
+//  - 1.2.3.4 returns 1.2.3.4/32
+//  - 1.2.*.* returns 1.2.0.0/16
+//  - 1.2.*.0/24 returns 1.2.0.0/16
+//  - 1.2.*.4 returns 1.2.*.4/32
+//  - 1.2.0-1.* returns 1.2.0.0/23
+//  - 1.2.1-2.* returns 1.2.1-2.0/24
+//  - 1.2.252-255.* returns 1.2.252.0/22
+//  - 1.2.3.4/16 returns 1.2.3.4/32
 func (addr *Address) AssignMinPrefixForBlock() *Address {
 	return addr.init().assignMinPrefixForBlock()
 }
@@ -1597,7 +1597,7 @@ func (addr *Address) GetSequentialBlockIndex() int {
 	return addr.getSequentialBlockIndex()
 }
 
-// GetSequentialBlockCount provides the count of elements from the sequential block iterator, the minimal number of sequential subnets that comprise this subnet
+// GetSequentialBlockCount provides the count of elements from the sequential block iterator, the minimal number of sequential subnets that comprise this subnet.
 func (addr *Address) GetSequentialBlockCount() *big.Int {
 	return addr.getSequentialBlockCount()
 }
@@ -1664,7 +1664,7 @@ func (addr *Address) ReverseSegments() *Address {
 	return addr.init().reverseSegments()
 }
 
-// IsMulticast returns whether this address is multicast
+// IsMulticast returns whether this address is multicast.
 func (addr *Address) IsMulticast() bool {
 	if thisAddr := addr.ToIPv4(); thisAddr != nil {
 		return thisAddr.IsMulticast()
@@ -1676,7 +1676,7 @@ func (addr *Address) IsMulticast() bool {
 	return false
 }
 
-// IsLocal returns whether the address can be considered a local address (as opposed to a global one)
+// IsLocal returns whether the address can be considered a local address (as opposed to a global one).
 func (addr *Address) IsLocal() bool {
 	if thisAddr := addr.ToIPv4(); thisAddr != nil {
 		return thisAddr.IsLocal()
@@ -1707,11 +1707,11 @@ func (addr *Address) GetTrailingBitCount(ones bool) BitCount {
 }
 
 // Format implements fmt.Formatter interface. It accepts the formats
-// 'v' for the default address and section format (either the normalized or canonical string),
-// 's' (string) for the same,
-// 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
-// 'd' (decimal), 'x' (lowercase hexadecimal), and
-// 'X' (uppercase hexadecimal).
+//  - 'v' for the default address and section format (either the normalized or canonical string),
+//  - 's' (string) for the same,
+//  - 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
+//  - 'd' (decimal), 'x' (lowercase hexadecimal), and
+//  - 'X' (uppercase hexadecimal).
 // Also supported are some of fmt's format flags for integral types.
 // Sign control is not supported since addresses and sections are never negative.
 // '#' for an alternate format is supported, which is leading zero for octal and for hexadecimal,
@@ -1722,7 +1722,7 @@ func (addr Address) Format(state fmt.State, verb rune) {
 	addr.init().format(state, verb)
 }
 
-// String implements the fmt.Stringer interface, returning the canonical string provided by ToCanonicalString, or "<nil>" if the receiver is a nil pointer
+// String implements the fmt.Stringer interface, returning the canonical string provided by ToCanonicalString, or "<nil>" if the receiver is a nil pointer.
 func (addr *Address) String() string {
 	if addr == nil {
 		return nilString()
@@ -1837,7 +1837,7 @@ func (addr *Address) ToBinaryString(with0bPrefix bool) (string, addrerr.Incompat
 	return addr.init().toBinaryString(with0bPrefix)
 }
 
-// ToCustomString creates a customized string from this address or subnet according to the given string option parameters
+// ToCustomString creates a customized string from this address or subnet according to the given string option parameters.
 func (addr *Address) ToCustomString(stringOptions addrstr.StringOptions) string {
 	if addr == nil {
 		return nilString()

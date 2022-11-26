@@ -298,7 +298,7 @@ func (seg *ipAddressSegmentInternal) toIPAddressSegment() *IPAddressSegment {
 
 //// only needed for godoc / pkgsite
 
-// GetBitCount returns the number of bits in each value comprising this address item
+// GetBitCount returns the number of bits in each value comprising this address item.
 func (seg *ipAddressSegmentInternal) GetBitCount() BitCount {
 	return seg.addressSegmentInternal.GetBitCount()
 }
@@ -308,22 +308,22 @@ func (seg *ipAddressSegmentInternal) GetByteCount() int {
 	return seg.addressSegmentInternal.GetByteCount()
 }
 
-// GetValue returns the lowest value in the address segment range as a big integer
+// GetValue returns the lowest value in the address segment range as a big integer.
 func (seg *ipAddressSegmentInternal) GetValue() *BigDivInt {
 	return seg.addressSegmentInternal.GetValue()
 }
 
-// GetUpperValue returns the highest value in the address segment range as a big integer
+// GetUpperValue returns the highest value in the address segment range as a big integer.
 func (seg *ipAddressSegmentInternal) GetUpperValue() *BigDivInt {
 	return seg.addressSegmentInternal.GetUpperValue()
 }
 
-// Bytes returns the lowest value in the address segment range as a byte slice
+// Bytes returns the lowest value in the address segment range as a byte slice.
 func (seg *ipAddressSegmentInternal) Bytes() []byte {
 	return seg.addressSegmentInternal.Bytes()
 }
 
-// UpperBytes returns the highest value in the address segment range as a byte slice
+// UpperBytes returns the highest value in the address segment range as a byte slice.
 func (seg *ipAddressSegmentInternal) UpperBytes() []byte {
 	return seg.addressSegmentInternal.UpperBytes()
 }
@@ -344,22 +344,22 @@ func (seg *ipAddressSegmentInternal) CopyUpperBytes(bytes []byte) []byte {
 	return seg.addressSegmentInternal.CopyUpperBytes(bytes)
 }
 
-// IsZero returns whether this segment matches exactly the value of zero
+// IsZero returns whether this segment matches exactly the value of zero.
 func (seg *ipAddressSegmentInternal) IsZero() bool {
 	return seg.addressSegmentInternal.IsZero()
 }
 
-// IncludesZero returns whether this segment includes the value of zero within its range
+// IncludesZero returns whether this segment includes the value of zero within its range.
 func (seg *ipAddressSegmentInternal) IncludesZero() bool {
 	return seg.addressSegmentInternal.IncludesZero()
 }
 
-// IsMax returns whether this segment matches exactly the maximum possible value, the value whose bits are all ones
+// IsMax returns whether this segment matches exactly the maximum possible value, the value whose bits are all ones.
 func (seg *ipAddressSegmentInternal) IsMax() bool {
 	return seg.addressSegmentInternal.IsMax()
 }
 
-// IncludesMax returns whether this segment includes the max value, the value whose bits are all ones, within its range
+// IncludesMax returns whether this segment includes the max value, the value whose bits are all ones, within its range.
 func (seg *ipAddressSegmentInternal) IncludesMax() bool {
 	return seg.addressSegmentInternal.IncludesMax()
 }
@@ -371,7 +371,7 @@ func (seg *ipAddressSegmentInternal) IsFullRange() bool {
 	return seg.addressSegmentInternal.IsFullRange()
 }
 
-// ContainsPrefixBlock returns whether the division range includes the block of values for the given prefix length
+// ContainsPrefixBlock returns whether the division range includes the block of values for the given prefix length.
 func (seg *ipAddressSegmentInternal) ContainsPrefixBlock(prefixLen BitCount) bool {
 	return seg.addressSegmentInternal.ContainsPrefixBlock(prefixLen)
 }
@@ -422,12 +422,12 @@ func (seg *ipAddressSegmentInternal) PrefixEqual(other AddressSegmentType, prefi
 	return seg.addressSegmentInternal.PrefixEqual(other, prefixLength)
 }
 
-// GetSegmentValue returns the lower value of the segment value range
+// GetSegmentValue returns the lower value of the segment value range.
 func (seg *ipAddressSegmentInternal) GetSegmentValue() SegInt {
 	return seg.addressSegmentInternal.GetSegmentValue()
 }
 
-// GetUpperSegmentValue returns the upper value of the segment value range
+// GetUpperSegmentValue returns the upper value of the segment value range.
 func (seg *ipAddressSegmentInternal) GetUpperSegmentValue() SegInt {
 	return seg.addressSegmentInternal.GetUpperSegmentValue()
 }
@@ -449,17 +449,17 @@ func (seg *ipAddressSegmentInternal) MatchesValsWithMask(lowerValue, upperValue,
 	return seg.addressSegmentInternal.MatchesValsWithMask(lowerValue, upperValue, mask)
 }
 
-// GetPrefixCountLen returns the count of the number of distinct prefix values for the given prefix length in the range of values of this segment
+// GetPrefixCountLen returns the count of the number of distinct prefix values for the given prefix length in the range of values of this segment.
 func (seg *ipAddressSegmentInternal) GetPrefixCountLen(segmentPrefixLength BitCount) *big.Int {
 	return seg.addressSegmentInternal.GetPrefixCountLen(segmentPrefixLength)
 }
 
-// GetPrefixValueCountLen returns the same value as GetPrefixCountLen as an integer
+// GetPrefixValueCountLen returns the same value as GetPrefixCountLen as an integer.
 func (seg *ipAddressSegmentInternal) GetPrefixValueCountLen(segmentPrefixLength BitCount) SegIntCount {
 	return seg.addressSegmentInternal.GetPrefixValueCountLen(segmentPrefixLength)
 }
 
-// GetValueCount returns the same value as GetCount as an integer
+// GetValueCount returns the same value as GetCount as an integer.
 func (seg *ipAddressSegmentInternal) GetValueCount() SegIntCount {
 	return seg.addressSegmentInternal.GetValueCount()
 }
@@ -543,7 +543,7 @@ func (seg *IPAddressSegment) GetUpper() *IPAddressSegment {
 	return seg.getUpper().ToIP()
 }
 
-// IsMultiple returns whether this segment represents multiple values
+// IsMultiple returns whether this segment represents multiple values.
 func (seg *IPAddressSegment) IsMultiple() bool {
 	return seg != nil && seg.isMultiple()
 }
@@ -604,7 +604,7 @@ func (seg *IPAddressSegment) CompareSize(other AddressItem) int {
 	return seg.compareSize(other)
 }
 
-// ContainsPrefixBlock returns whether the division range includes the block of values for the given prefix length
+// ContainsPrefixBlock returns whether the division range includes the block of values for the given prefix length.
 func (seg *IPAddressSegment) ContainsPrefixBlock(divisionPrefixLen BitCount) bool {
 	return seg.containsPrefixBlock(divisionPrefixLen)
 }
@@ -672,7 +672,7 @@ func (seg *IPAddressSegment) PrefixIterator() Iterator[*IPAddressSegment] {
 	return ipSegmentIterator{seg.prefixIterator()}
 }
 
-// IsPrefixed returns whether this section has an associated prefix length
+// IsPrefixed returns whether this section has an associated prefix length.
 func (seg *IPAddressSegment) IsPrefixed() bool {
 	return seg != nil && seg.isPrefixed()
 }

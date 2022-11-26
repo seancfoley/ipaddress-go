@@ -105,7 +105,7 @@ func (div *addressDivisionBase) getDivisionPrefixLength() PrefixLen {
 	return vals.getDivisionPrefixLength()
 }
 
-// GetBitCount returns the number of bits in each value comprising this address item
+// GetBitCount returns the number of bits in each value comprising this address item.
 func (div *addressDivisionBase) GetBitCount() BitCount {
 	vals := div.divisionValues
 	if vals == nil {
@@ -124,7 +124,7 @@ func (div *addressDivisionBase) GetByteCount() int {
 	return vals.getByteCount()
 }
 
-// GetValue returns the lowest value in the address division range as a big integer
+// GetValue returns the lowest value in the address division range as a big integer.
 func (div *addressDivisionBase) GetValue() *BigDivInt {
 	vals := div.divisionValues
 	if vals == nil {
@@ -133,7 +133,7 @@ func (div *addressDivisionBase) GetValue() *BigDivInt {
 	return vals.getValue()
 }
 
-// GetUpperValue returns the highest value in the address division range as a big integer
+// GetUpperValue returns the highest value in the address division range as a big integer.
 func (div *addressDivisionBase) GetUpperValue() *BigDivInt {
 	vals := div.divisionValues
 	if vals == nil {
@@ -142,7 +142,7 @@ func (div *addressDivisionBase) GetUpperValue() *BigDivInt {
 	return vals.getUpperValue()
 }
 
-// Bytes returns the lowest value in the address division range as a byte slice
+// Bytes returns the lowest value in the address division range as a byte slice.
 func (div *addressDivisionBase) Bytes() []byte {
 	if div.divisionValues == nil {
 		return emptyBytes
@@ -150,7 +150,7 @@ func (div *addressDivisionBase) Bytes() []byte {
 	return div.getBytes()
 }
 
-// UpperBytes returns the highest value in the address division range as a byte slice
+// UpperBytes returns the highest value in the address division range as a byte slice.
 func (div *addressDivisionBase) UpperBytes() []byte {
 	if div.divisionValues == nil {
 		return emptyBytes
@@ -229,12 +229,12 @@ func (div *addressDivisionBase) GetPrefixCountLen(prefixLength BitCount) *big.In
 	return upper
 }
 
-// IsZero returns whether this division matches exactly the value of zero
+// IsZero returns whether this division matches exactly the value of zero.
 func (div *addressDivisionBase) IsZero() bool {
 	return !div.isMultiple() && div.IncludesZero()
 }
 
-// IncludesZero returns whether this item includes the value of zero within its range
+// IncludesZero returns whether this item includes the value of zero within its range.
 func (div *addressDivisionBase) IncludesZero() bool {
 	vals := div.divisionValues
 	if vals == nil {
@@ -243,12 +243,12 @@ func (div *addressDivisionBase) IncludesZero() bool {
 	return vals.includesZero()
 }
 
-// IsMax returns whether this address matches exactly the maximum possible value, the value whose bits are all ones
+// IsMax returns whether this address matches exactly the maximum possible value, the value whose bits are all ones.
 func (div *addressDivisionBase) IsMax() bool {
 	return !div.isMultiple() && div.includesMax()
 }
 
-// IncludesMax returns whether this division includes the max value, the value whose bits are all ones, within its range
+// IncludesMax returns whether this division includes the max value, the value whose bits are all ones, within its range.
 func (div *addressDivisionBase) IncludesMax() bool {
 	vals := div.divisionValues
 	if vals == nil {
@@ -285,7 +285,7 @@ func (div *addressDivisionBase) matchesStructure(other DivisionType) (res bool, 
 // It uses a string prefix for octal or hex (0 or 0x), and does not use the wildcard '*', because division size is variable, so '*' is ambiguous.
 // GetWildcardString() is more appropriate in context with other segments or divisions.  It does not use a string prefix and uses '*' for full-range segments.
 // GetString() is more appropriate in context with prefix lengths, it uses zeros instead of wildcards for prefix block ranges.
-func toString(div DivisionType) string { // this can be moved to addressDivisionBase when we have ContainsPrefixBlock and similar methods implemented for big.Int in the base
+func toString(div DivisionType) string { // this can be moved to addressDivisionBase when we have ContainsPrefixBlock and similar methods implemented for big.Int in the base.
 	radix := div.getDefaultTextualRadix()
 	var opts addrstr.IPStringOptions
 	switch radix {

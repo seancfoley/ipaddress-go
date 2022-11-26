@@ -259,7 +259,7 @@ func (seg *MACAddressSegment) GetUpper() *MACAddressSegment {
 	return seg.init().getUpper().ToMAC()
 }
 
-// IsMultiple returns whether this segment represents multiple values
+// IsMultiple returns whether this segment represents multiple values.
 func (seg *MACAddressSegment) IsMultiple() bool {
 	return seg != nil && seg.isMultiple()
 }
@@ -277,12 +277,12 @@ func (seg *MACAddressSegment) GetCount() *big.Int {
 	return seg.getCount()
 }
 
-// Bytes returns the lowest value in the address segment range as a byte slice
+// Bytes returns the lowest value in the address segment range as a byte slice.
 func (seg *MACAddressSegment) Bytes() []byte {
 	return seg.init().addressSegmentInternal.Bytes()
 }
 
-// UpperBytes returns the highest value in the address segment range as a byte slice
+// UpperBytes returns the highest value in the address segment range as a byte slice.
 func (seg *MACAddressSegment) UpperBytes() []byte {
 	return seg.init().addressSegmentInternal.UpperBytes()
 }
@@ -303,12 +303,12 @@ func (seg *MACAddressSegment) CopyUpperBytes(bytes []byte) []byte {
 	return seg.init().addressSegmentInternal.CopyUpperBytes(bytes)
 }
 
-// GetPrefixCountLen returns the count of the number of distinct prefix values for the given prefix length in the range of values of this segment
+// GetPrefixCountLen returns the count of the number of distinct prefix values for the given prefix length in the range of values of this segment.
 func (seg *MACAddressSegment) GetPrefixCountLen(segmentPrefixLength BitCount) *big.Int {
 	return seg.init().addressSegmentInternal.GetPrefixCountLen(segmentPrefixLength)
 }
 
-// GetPrefixValueCountLen returns the same value as GetPrefixCountLen as an integer
+// GetPrefixValueCountLen returns the same value as GetPrefixCountLen as an integer.
 func (seg *MACAddressSegment) GetPrefixValueCountLen(segmentPrefixLength BitCount) SegIntCount {
 	return seg.init().addressSegmentInternal.GetPrefixValueCountLen(segmentPrefixLength)
 }

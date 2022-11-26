@@ -26,7 +26,7 @@ import (
 type IPv4SegInt = uint8
 type IPv4SegmentValueProvider func(segmentIndex int) IPv4SegInt
 
-// WrapIPv4SegmentValueProvider converts the given IPv4SegmentValueProvider to a SegmentValueProvider
+// WrapIPv4SegmentValueProvider converts the given IPv4SegmentValueProvider to a SegmentValueProvider.
 func WrapIPv4SegmentValueProvider(f IPv4SegmentValueProvider) SegmentValueProvider {
 	if f == nil {
 		return nil
@@ -36,7 +36,7 @@ func WrapIPv4SegmentValueProvider(f IPv4SegmentValueProvider) SegmentValueProvid
 	}
 }
 
-// WrapSegmentValueProviderForIPv4 converts the given SegmentValueProvider to an IPv4SegmentValueProvider
+// WrapSegmentValueProviderForIPv4 converts the given SegmentValueProvider to an IPv4SegmentValueProvider.
 // Values that do not fit IPv4SegInt are truncated.
 func WrapSegmentValueProviderForIPv4(f SegmentValueProvider) IPv4SegmentValueProvider {
 	if f == nil {
@@ -239,12 +239,12 @@ func (seg *IPv4AddressSegment) PrefixEqual(other AddressSegmentType, prefixLengt
 	return seg.init().ipAddressSegmentInternal.PrefixEqual(other, prefixLength)
 }
 
-// GetBitCount returns the number of bits in each value comprising this address item, which is 8
+// GetBitCount returns the number of bits in each value comprising this address item, which is 8.
 func (seg *IPv4AddressSegment) GetBitCount() BitCount {
 	return IPv4BitsPerSegment
 }
 
-// GetByteCount returns the number of bytes required for each value comprising this address item, which is 1
+// GetByteCount returns the number of bytes required for each value comprising this address item, which is 1.
 func (seg *IPv4AddressSegment) GetByteCount() int {
 	return IPv4BytesPerSegment
 }
@@ -266,7 +266,7 @@ func (seg *IPv4AddressSegment) GetUpper() *IPv4AddressSegment {
 	return seg.init().getUpper().ToIPv4()
 }
 
-// IsMultiple returns whether this segment represents multiple values
+// IsMultiple returns whether this segment represents multiple values.
 func (seg *IPv4AddressSegment) IsMultiple() bool {
 	return seg != nil && seg.isMultiple()
 }
@@ -284,7 +284,7 @@ func (seg *IPv4AddressSegment) GetCount() *big.Int {
 	return seg.getCount()
 }
 
-// GetPrefixCountLen returns the count of the number of distinct prefix values for the given prefix length in the range of values of this segment
+// GetPrefixCountLen returns the count of the number of distinct prefix values for the given prefix length in the range of values of this segment.
 func (seg *IPv4AddressSegment) GetPrefixCountLen(segmentPrefixLength BitCount) *big.Int {
 	return seg.init().ipAddressSegmentInternal.GetPrefixCountLen(segmentPrefixLength)
 }
@@ -299,12 +299,12 @@ func (seg *IPv4AddressSegment) IsOneBit(segmentBitIndex BitCount) bool {
 	return seg.init().ipAddressSegmentInternal.IsOneBit(segmentBitIndex)
 }
 
-// Bytes returns the lowest value in the address segment range as a byte slice
+// Bytes returns the lowest value in the address segment range as a byte slice.
 func (seg *IPv4AddressSegment) Bytes() []byte {
 	return seg.init().ipAddressSegmentInternal.Bytes()
 }
 
-// UpperBytes returns the highest value in the address segment range as a byte slice
+// UpperBytes returns the highest value in the address segment range as a byte slice.
 func (seg *IPv4AddressSegment) UpperBytes() []byte {
 	return seg.init().ipAddressSegmentInternal.UpperBytes()
 }
@@ -432,7 +432,7 @@ func (seg *IPv4AddressSegment) PrefixIterator() Iterator[*IPv4AddressSegment] {
 	return ipv4SegmentIterator{seg.init().prefixIterator()}
 }
 
-// IsPrefixed returns whether this segment has an associated prefix length
+// IsPrefixed returns whether this segment has an associated prefix length.
 func (seg *IPv4AddressSegment) IsPrefixed() bool {
 	return seg != nil && seg.isPrefixed()
 }

@@ -141,7 +141,7 @@ func (grouping *addressDivisionGroupingBase) GetGenericDivision(index int) Divis
 	return grouping.divisions.getGenericDivision(index)
 }
 
-// GetDivisionCount returns the number of divisions in this grouping
+// GetDivisionCount returns the number of divisions in this grouping.
 func (grouping *addressDivisionGroupingBase) GetDivisionCount() int {
 	divisions := grouping.divisions
 	if divisions != nil {
@@ -150,7 +150,7 @@ func (grouping *addressDivisionGroupingBase) GetDivisionCount() int {
 	return 0
 }
 
-// IsZero returns whether this grouping matches exactly the value of zero
+// IsZero returns whether this grouping matches exactly the value of zero.
 func (grouping *addressDivisionGroupingBase) IsZero() bool {
 	divCount := grouping.GetDivisionCount()
 	for i := 0; i < divCount; i++ {
@@ -161,7 +161,7 @@ func (grouping *addressDivisionGroupingBase) IsZero() bool {
 	return true
 }
 
-// IncludesZero returns whether this grouping includes the value of zero within its range
+// IncludesZero returns whether this grouping includes the value of zero within its range.
 func (grouping *addressDivisionGroupingBase) IncludesZero() bool {
 	divCount := grouping.GetDivisionCount()
 	for i := 0; i < divCount; i++ {
@@ -172,7 +172,7 @@ func (grouping *addressDivisionGroupingBase) IncludesZero() bool {
 	return true
 }
 
-// IsMax returns whether this grouping matches exactly the maximum possible value, the value whose bits are all ones
+// IsMax returns whether this grouping matches exactly the maximum possible value, the value whose bits are all ones.
 func (grouping *addressDivisionGroupingBase) IsMax() bool {
 	divCount := grouping.GetDivisionCount()
 	for i := 0; i < divCount; i++ {
@@ -183,7 +183,7 @@ func (grouping *addressDivisionGroupingBase) IsMax() bool {
 	return true
 }
 
-// IncludesMax returns whether this grouping includes the max value, the value whose bits are all ones, within its range
+// IncludesMax returns whether this grouping includes the max value, the value whose bits are all ones, within its range.
 func (grouping *addressDivisionGroupingBase) IncludesMax() bool {
 	divCount := grouping.GetDivisionCount()
 	for i := 0; i < divCount; i++ {
@@ -221,7 +221,7 @@ func (grouping *addressDivisionGroupingBase) GetSequentialBlockIndex() int {
 	return divCount
 }
 
-// GetSequentialBlockCount provides the count of elements from the sequential block iterator, the minimal number of sequential address division groupings that comprise this address division grouping
+// GetSequentialBlockCount provides the count of elements from the sequential block iterator, the minimal number of sequential address division groupings that comprise this address division grouping.
 func (grouping *addressDivisionGroupingBase) GetSequentialBlockCount() *big.Int {
 	sequentialSegCount := grouping.GetSequentialBlockIndex()
 	prefixLen := BitCount(0)
@@ -323,7 +323,7 @@ func (grouping *addressDivisionGroupingBase) GetPrefixCount() *big.Int {
 	return grouping.cachePrefixCount(grouping.getPrefixCountBig)
 }
 
-// GetPrefixCountLen returns the number of distinct prefix values in this item for the given prefix length
+// GetPrefixCountLen returns the number of distinct prefix values in this item for the given prefix length.
 func (grouping *addressDivisionGroupingBase) GetPrefixCountLen(prefixLen BitCount) *big.Int {
 	return grouping.calcCount(func() *big.Int { return grouping.getPrefixCountLenBig(prefixLen) })
 }

@@ -19,21 +19,21 @@ package ipaddr
 import "math/big"
 
 var (
-	// CountComparator compares by count first, then by value
+	// CountComparator compares by count first, then by value.
 	CountComparator = AddressComparator{countComparator{}}
 
-	// HighValueComparator compares by high value first, then low, then count
+	// HighValueComparator compares by high value first, then low, then count.
 	HighValueComparator = AddressComparator{valueComparator{compareHighValue: true}}
 
-	// LowValueComparator compares by low value first, then high, then count
+	// LowValueComparator compares by low value first, then high, then count.
 	LowValueComparator = AddressComparator{valueComparator{}}
 
 	// With the reverse comparators, ordering with the secondary values (higher or lower) follow a reverse ordering than the primary values (lower or higher)
 
-	// ReverseHighValueComparator is like HighValueComparator but when comparing the low value, reverses the comparison
+	// ReverseHighValueComparator is like HighValueComparator but when comparing the low value, reverses the comparison.
 	ReverseHighValueComparator = AddressComparator{valueComparator{compareHighValue: true, flipSecond: true}}
 
-	// ReverseLowValueComparator is like LowValueComparator but when comparing the high value, reverses the comparison
+	// ReverseLowValueComparator is like LowValueComparator but when comparing the high value, reverses the comparison.
 	ReverseLowValueComparator = AddressComparator{valueComparator{flipSecond: true}}
 )
 
@@ -285,7 +285,7 @@ func (comp AddressComparator) CompareAddresses(one, two AddressType) int {
 	return result
 }
 
-// CompareAddressSections compares any two address sections (including from different versions or address types)
+// CompareAddressSections compares any two address sections (including from different versions or address types).
 // It returns a negative integer, zero, or a positive integer if address item one is less than, equal, or greater than address item two.
 func (comp AddressComparator) CompareAddressSections(one, two AddressSectionType) int {
 	oneIsNil, oneGroupingType := checkSectionType(one)
@@ -320,7 +320,7 @@ func unwrapWrapper(item AddressDivisionSeries) AddressDivisionSeries {
 	return item
 }
 
-// CompareSeries compares any two address division series (including from different versions or address types)
+// CompareSeries compares any two address division series (including from different versions or address types).
 // It returns a negative integer, zero, or a positive integer if address item one is less than, equal, or greater than address item two.
 func (comp AddressComparator) CompareSeries(one, two AddressDivisionSeries) int {
 	one = unwrapWrapper(one)
@@ -360,7 +360,7 @@ func (comp AddressComparator) CompareSeries(one, two AddressDivisionSeries) int 
 	return comp.getCompComp().compareParts(one, two)
 }
 
-// CompareSegments compares any two address segments (including from different versions or address types)
+// CompareSegments compares any two address segments (including from different versions or address types).
 // It returns a negative integer, zero, or a positive integer if address item one is less than, equal, or greater than address item two.
 func (comp AddressComparator) CompareSegments(one, two AddressSegmentType) int {
 	oneIsNil, oneDivType := checkSegmentType(one)
@@ -386,7 +386,7 @@ func (comp AddressComparator) CompareSegments(one, two AddressSegmentType) int {
 		twoSeg.GetUpperSegmentValue(), twoSeg.GetSegmentValue())
 }
 
-// CompareDivisions compares any two address divisions (including from different versions or address types)
+// CompareDivisions compares any two address divisions (including from different versions or address types).
 // It returns a negative integer, zero, or a positive integer if address item one is less than, equal, or greater than address item two.
 func (comp AddressComparator) CompareDivisions(one, two DivisionType) int {
 	if addrSeg1, ok := one.(AddressSegmentType); ok {

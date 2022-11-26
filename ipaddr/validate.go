@@ -4198,7 +4198,7 @@ func checkSpecialHosts(str string, addrLen int, hostQualifier *parsedHostIdentif
 	}
 
 	//Note: could support bitstring labels and support subnets in them, however they appear to be generally unused in the real world
-	//rfc 2673
+	//RFC 2673
 	//arpa: https://www.ibm.com/support/knowledgecenter/SSLTBW_1.13.0/com.ibm.zos.r13.halz002/f1a1b3b1220.htm
 	//Also, support partial dns lookups and map then to the associated subnet with prefix length, which I think we may
 	//already do for ipv4 but not for ipv6, ipv4 uses the prefix notation d.c.b.a/x but ipv6 uses fewer nibbles

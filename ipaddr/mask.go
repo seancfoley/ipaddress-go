@@ -28,15 +28,15 @@ var (
 	defaultNonSequentialOrMasker = bitwiseOrerBase{}
 )
 
-// Masker is used to mask (apply bitwise conjunction) division and segment values
+// Masker is used to mask (apply bitwise conjunction) division and segment values.
 type Masker interface {
-	// GetMaskedLower provides the lowest masked value, which is not necessarily the lowest value masked
+	// GetMaskedLower provides the lowest masked value, which is not necessarily the lowest value masked.
 	GetMaskedLower(value, maskValue uint64) uint64
 
-	// GetMaskedUpper provides the highest masked value, which is not necessarily the highest value masked
+	// GetMaskedUpper provides the highest masked value, which is not necessarily the highest value masked.
 	GetMaskedUpper(upperValue, maskValue uint64) uint64
 
-	// IsSequential returns whether masking all values in the range results in a sequential set of values
+	// IsSequential returns whether masking all values in the range results in a sequential set of values.
 	IsSequential() bool
 }
 
@@ -44,17 +44,17 @@ type maskerBase struct {
 	isSequentialVal bool
 }
 
-// GetMaskedLower provides the lowest masked value, which is not necessarily the lowest value masked
+// GetMaskedLower provides the lowest masked value, which is not necessarily the lowest value masked.
 func (masker maskerBase) GetMaskedLower(value, maskValue uint64) uint64 {
 	return value & maskValue
 }
 
-// GetMaskedUpper provides the highest masked value, which is not necessarily the highest value masked
+// GetMaskedUpper provides the highest masked value, which is not necessarily the highest value masked.
 func (masker maskerBase) GetMaskedUpper(upperValue, maskValue uint64) uint64 {
 	return upperValue & maskValue
 }
 
-// IsSequential returns whether masking all values in the range results in a sequential set of values
+// IsSequential returns whether masking all values in the range results in a sequential set of values.
 func (masker maskerBase) IsSequential() bool {
 	return masker.isSequentialVal
 }
@@ -77,12 +77,12 @@ type fullRangeMasker struct {
 	fullRangeBit int
 }
 
-// GetMaskedLower provides the lowest masked value, which is not necessarily the lowest value masked
+// GetMaskedLower provides the lowest masked value, which is not necessarily the lowest value masked.
 func (masker fullRangeMasker) GetMaskedLower(value, maskValue uint64) uint64 {
 	return masker.maskerBase.GetMaskedLower(value & ^masker.upperMask, maskValue)
 }
 
-// GetMaskedUpper provides the highest masked value, which is not necessarily the highest value masked
+// GetMaskedUpper provides the highest masked value, which is not necessarily the highest value masked.
 func (masker fullRangeMasker) GetMaskedUpper(upperValue, maskValue uint64) uint64 {
 	return masker.maskerBase.GetMaskedUpper(upperValue|masker.upperMask, maskValue)
 }
@@ -97,12 +97,12 @@ type specificValueMasker struct {
 	lower, upper uint64
 }
 
-// GetMaskedLower provides the lowest masked value, which is not necessarily the lowest value masked
+// GetMaskedLower provides the lowest masked value, which is not necessarily the lowest value masked.
 func (masker specificValueMasker) GetMaskedLower(value, maskValue uint64) uint64 {
 	return masker.maskerBase.GetMaskedLower(value, maskValue)
 }
 
-// GetMaskedUpper provides the highest masked value, which is not necessarily the highest value masked
+// GetMaskedUpper provides the highest masked value, which is not necessarily the highest value masked.
 func (masker specificValueMasker) GetMaskedUpper(upperValue, maskValue uint64) uint64 {
 	return masker.maskerBase.GetMaskedUpper(upperValue, maskValue)
 }
@@ -110,7 +110,7 @@ func (masker specificValueMasker) GetMaskedUpper(upperValue, maskValue uint64) u
 // Extended maskers for handling > 64 bits
 
 //
-// ExtendedMasker handles value masking for divisions with bit counts larger than 64 bits
+// ExtendedMasker handles value masking for divisions with bit counts larger than 64 bits.
 type ExtendedMasker interface {
 	Masker
 
@@ -123,12 +123,12 @@ type extendedMaskerBase struct {
 	maskerBase
 }
 
-// GetExtendedMaskedLower provides the lowest masked value, which is not necessarily the lowest value masked
+// GetExtendedMaskedLower provides the lowest masked value, which is not necessarily the lowest value masked.
 func (masker extendedMaskerBase) GetExtendedMaskedLower(extendedValue, extendedMaskValue uint64) uint64 {
 	return extendedValue & extendedMaskValue
 }
 
-// GetExtendedMaskedUpper provides the highest masked value, which is not necessarily the highest value masked
+// GetExtendedMaskedUpper provides the highest masked value, which is not necessarily the highest value masked.
 func (masker extendedMaskerBase) GetExtendedMaskedUpper(extendedUpperValue, extendedMaskValue uint64) uint64 {
 	return extendedUpperValue & extendedMaskValue
 }
@@ -158,22 +158,22 @@ type extendedFullRangeMasker struct {
 	upperMask, extendedUpperMask uint64
 }
 
-// GetMaskedLower provides the lowest masked value, which is not necessarily the lowest value masked
+// GetMaskedLower provides the lowest masked value, which is not necessarily the lowest value masked.
 func (masker extendedFullRangeMasker) GetMaskedLower(value, maskValue uint64) uint64 {
 	return masker.extendedMaskerBase.GetMaskedLower(value & ^masker.upperMask, maskValue)
 }
 
-// GetMaskedUpper provides the highest masked value, which is not necessarily the highest value masked
+// GetMaskedUpper provides the highest masked value, which is not necessarily the highest value masked.
 func (masker extendedFullRangeMasker) GetMaskedUpper(upperValue, maskValue uint64) uint64 {
 	return masker.extendedMaskerBase.GetMaskedUpper(upperValue|masker.upperMask, maskValue)
 }
 
-// GetExtendedMaskedLower provides the lowest masked value, which is not necessarily the lowest value masked
+// GetExtendedMaskedLower provides the lowest masked value, which is not necessarily the lowest value masked.
 func (masker extendedFullRangeMasker) GetExtendedMaskedLower(extendedValue, extendedMaskValue uint64) uint64 {
 	return masker.extendedMaskerBase.GetExtendedMaskedLower(extendedValue & ^masker.extendedUpperMask, extendedMaskValue)
 }
 
-// GetExtendedMaskedUpper provides the highest masked value, which is not necessarily the highest value masked
+// GetExtendedMaskedUpper provides the highest masked value, which is not necessarily the highest value masked.
 func (masker extendedFullRangeMasker) GetExtendedMaskedUpper(extendedUpperValue, extendedMaskValue uint64) uint64 {
 	return masker.extendedMaskerBase.GetExtendedMaskedUpper(extendedUpperValue|masker.extendedUpperMask, extendedMaskValue)
 }
@@ -235,15 +235,15 @@ func (masker wrappedMasker) GetMaskedUpper(upperValue, maskValue uint64) uint64 
 //
 //
 //
-// BitwiseOrer is used for bitwise disjunction applied to division and segment values
+// BitwiseOrer is used for bitwise disjunction applied to division and segment values.
 type BitwiseOrer interface {
-	// GetOredLower provides the lowest value after the disjunction, which is not necessarily the lowest value apriori
+	// GetOredLower provides the lowest value after the disjunction, which is not necessarily the lowest value apriori.
 	GetOredLower(value, maskValue uint64) uint64
 
-	// GetOredUpper provides the highest value after the disjunction, which is not necessarily the highest value apriori
+	// GetOredUpper provides the highest value after the disjunction, which is not necessarily the highest value apriori.
 	GetOredUpper(upperValue, maskValue uint64) uint64
 
-	// IsSequential returns whether applying bitwise disjunction to all values in the range results in a sequential set of values
+	// IsSequential returns whether applying bitwise disjunction to all values in the range results in a sequential set of values.
 	IsSequential() bool
 }
 
@@ -259,7 +259,7 @@ func (masker bitwiseOrerBase) GetOredUpper(upperValue, maskValue uint64) uint64 
 	return upperValue | maskValue
 }
 
-// IsSequential returns whether masking all values in the range results in a sequential set of values
+// IsSequential returns whether masking all values in the range results in a sequential set of values.
 func (masker bitwiseOrerBase) IsSequential() bool {
 	return masker.isSequentialVal
 }

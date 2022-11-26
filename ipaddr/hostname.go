@@ -44,12 +44,12 @@ func parseHostName(str string, params addrstrparam.HostNameParams) *HostName {
 	return res
 }
 
-// NewHostName constructs a HostName that will parse the given string according to the default parameters
+// NewHostName constructs a HostName that will parse the given string according to the default parameters.
 func NewHostName(str string) *HostName {
 	return parseHostName(str, defaultHostParameters)
 }
 
-// NewHostNameParams constructs a HostName that will parse the given string according to the given parameters
+// NewHostNameParams constructs a HostName that will parse the given string according to the given parameters.
 func NewHostNameParams(str string, params addrstrparam.HostNameParams) *HostName {
 	var prms addrstrparam.HostNameParams
 	if params == nil {
@@ -185,11 +185,13 @@ func NewHostNameFromPrefixedNetIPAddr(addr *net.IPAddr, prefixLen PrefixLen) (ho
 	return
 }
 
+// NewHostNameFromNetNetIPAddr constructs a host name from a netip.Addr.
 func NewHostNameFromNetNetIPAddr(addr netip.Addr) *HostName {
 	ipAddr := NewIPAddressFromNetNetIPAddr(addr)
 	return NewHostNameFromAddr(ipAddr)
 }
 
+// NewHostNameFromNetNetIPPrefix constructs a host name from a netip.Prefix.
 func NewHostNameFromNetNetIPPrefix(addr netip.Prefix) (hostName *HostName, err addrerr.AddressValueError) {
 	var ipAddr *IPAddress
 	ipAddr, err = NewIPAddressFromNetNetIPPrefix(addr)
@@ -199,6 +201,7 @@ func NewHostNameFromNetNetIPPrefix(addr netip.Prefix) (hostName *HostName, err a
 	return
 }
 
+// NewHostNameFromNetNetIPAddrPort constructs a host name from a netip.AddrPort.
 func NewHostNameFromNetNetIPAddrPort(addrPort netip.AddrPort) *HostName {
 	port := addrPort.Port()
 	addr := addrPort.Addr()
@@ -224,15 +227,15 @@ type hostCache struct {
 // It can also include a port number or service name (which maps to a port).
 // It can include a prefix length or mask for either an ipaddress or host name string.  An IPv6 address can have an IPv6 zone.
 //
-// Supported formats
+// Supported Formats
 //
 // You can use all host or address formats supported by nmap and all address formats supported by IPAddressString.
 // All manners of domain names are supported. When adding a prefix length or mask to a host name string, it is to denote the subnet of the resolved address.
 //
 // Validation is done separately from DNS resolution to avoid unnecessary DNS lookups.
 //
-// See rfc 3513, 2181, 952, 1035, 1034, 1123, 5890 or the list of rfcs for IPAddress.  For IPv6 addresses in host, see rfc 2732 specifying [] notation
-// and 3986 and 4038 (combining IPv6 [] with prefix or zone) and SMTP rfc 2821 for alternative uses of [] for both IPv4 and IPv6
+// See RFC 3513, RFC 2181, RFC 952, RFC 1035, RFC 1034, RFC 1123, RFC 5890 or the list of rfcs for IPAddress.  For IPv6 addresses in host, see RFC 2732 specifying [] notation
+// and RFC 3986 and RFC 4038 (combining IPv6 [] with prefix or zone) and SMTP RFC 2821 for alternative uses of [] for both IPv4 and IPv6.
 type HostName struct {
 	str           string
 	parsedHost    *parsedHost
@@ -268,7 +271,7 @@ func (host *HostName) Validate() addrerr.HostNameError {
 
 // String implements the fmt.Stringer interface,
 // returning the original string used to create this HostName (altered by strings.TrimSpace if a host name and not an address),
-// or "<nil>" if the receiver is a nil pointer
+// or "<nil>" if the receiver is a nil pointer.
 func (host *HostName) String() string {
 	if host == nil {
 		return nilString()
@@ -327,7 +330,7 @@ func (host *HostName) IsEmpty() bool {
 // Otherwise, returns nil.
 // GetAddress is similar to ToAddress but does not return any errors.
 //
-// If you wish to get the represented address while avoiding DNS resolution, use AsAddress or AsAddressString
+// If you wish to get the represented address while avoiding DNS resolution, use AsAddress or AsAddressString.
 func (host *HostName) GetAddress() *IPAddress {
 	addr, _ := host.ToAddress()
 	return addr
@@ -496,7 +499,7 @@ func (host *HostName) AsAddressString() *IPAddressString {
 	return nil
 }
 
-// GetPort returns the port if a port was supplied, otherwise it returns nil
+// GetPort returns the port if a port was supplied, otherwise it returns nil.
 func (host *HostName) GetPort() Port {
 	host = host.init()
 	if host.IsValid() {
@@ -505,7 +508,7 @@ func (host *HostName) GetPort() Port {
 	return nil
 }
 
-// GetService returns the service name if a service name was supplied (which is typically mapped to a port), otherwise it returns an empty string
+// GetService returns the service name if a service name was supplied (which is typically mapped to a port), otherwise it returns an empty string.
 func (host *HostName) GetService() string {
 	host = host.init()
 	if host.IsValid() {
@@ -683,9 +686,9 @@ func (host *HostName) GetNormalizedLabels() []string {
 //
 // If an address, returns the address string normalized, but without port, service, prefix, mask, or brackets for IPv6.
 //
-// To get a normalized string encompassing all details, use toNormalizedString()
+// To get a normalized string encompassing all details, use ToNormalizedString.
 //
-// If not a valid host, returns the zero string
+// If not a valid host, returns the zero string.
 func (host *HostName) GetHost() string {
 	host = host.init()
 	if host.IsValid() {
@@ -746,25 +749,24 @@ func (host *HostName) ResolvesToSelf() bool {
 }
 
 // IsSelf returns whether this represents a host or address representing the same host.
-// Also see isLocalHost and IsLoopback
+// Also see IsLocalHost and IsLoopback.
 func (host *HostName) IsSelf() bool {
 	return host.IsLocalHost() || host.IsLoopback()
 }
 
-// IsLocalHost returns whether this host is "localhost"
+// IsLocalHost returns whether this host is "localhost".
 func (host *HostName) IsLocalHost() bool {
 	return host.IsValid() && strings.EqualFold(host.str, "localhost")
 }
 
-// IsLoopback returns whether this host has the loopback address, such as
-// [::1] (aka [0:0:0:0:0:0:0:1]) or 127.0.0.1
+// IsLoopback returns whether this host has the loopback address, such as "::1" or "127.0.0.1".
 //
-// Also see isSelf()
+// Also see IsSelf.
 func (host *HostName) IsLoopback() bool {
 	return host.IsAddress() && host.AsAddress().IsLoopback()
 }
 
-// ToNetTCPAddrService returns the TCPAddr if this HostName both resolves to an address and has an associated service or port, otherwise returns nil
+// ToNetTCPAddrService returns the TCPAddr if this HostName both resolves to an address and has an associated service or port, otherwise returns nil.
 func (host *HostName) ToNetTCPAddrService(serviceMapper func(string) Port) *net.TCPAddr {
 	if host.IsValid() {
 		port := host.GetPort()
@@ -793,7 +795,7 @@ func (host *HostName) ToNetTCPAddr() *net.TCPAddr {
 	return host.ToNetTCPAddrService(nil)
 }
 
-// ToNetUDPAddrService returns the UDPAddr if this HostName both resolves to an address and has an associated service or port
+// ToNetUDPAddrService returns the UDPAddr if this HostName both resolves to an address and has an associated service or port.
 func (host *HostName) ToNetUDPAddrService(serviceMapper func(string) Port) *net.UDPAddr {
 	tcpAddr := host.ToNetTCPAddrService(serviceMapper)
 	if tcpAddr != nil {
@@ -806,12 +808,12 @@ func (host *HostName) ToNetUDPAddrService(serviceMapper func(string) Port) *net.
 	return nil
 }
 
-// ToNetUDPAddr returns the UDPAddr if this HostName both resolves to an address and has an associated port
+// ToNetUDPAddr returns the UDPAddr if this HostName both resolves to an address and has an associated port.
 func (host *HostName) ToNetUDPAddr(serviceMapper func(string) Port) *net.UDPAddr {
 	return host.ToNetUDPAddrService(serviceMapper)
 }
 
-// ToNetIP is similar to ToAddress but returns the resulting address as a net.IP
+// ToNetIP is similar to ToAddress but returns the resulting address as a net.IP.
 func (host *HostName) ToNetIP() net.IP {
 	if addr, err := host.ToAddress(); addr != nil && err == nil {
 		return addr.GetNetIP()
@@ -819,7 +821,7 @@ func (host *HostName) ToNetIP() net.IP {
 	return nil
 }
 
-// ToNetIPAddr is similar to ToAddress but returns the resulting address as a net.IPAddr
+// ToNetIPAddr is similar to ToAddress but returns the resulting address as a net.IPAddr.
 func (host *HostName) ToNetIPAddr() *net.IPAddr {
 	if addr, err := host.ToAddress(); addr != nil && err == nil {
 		return &net.IPAddr{
@@ -949,7 +951,7 @@ func (host *HostName) Compare(other *HostName) int {
 }
 
 // Wrap wraps this host name, returning a WrappedHostName, an implementation of ExtendedIdentifierString,
-// which can be used to write code that works with a host identifier string including IPAddressString, MACAddressString, and HostName.
+// which can be used to write code that works with a host identifier string including [IPAddressString], [MACAddressString], and [HostName].
 func (host *HostName) Wrap() ExtendedIdentifierString {
 	return WrappedHostName{host}
 }

@@ -27,7 +27,7 @@ import (
 type ExtendedSegmentSeries interface {
 	AddressSegmentSeries
 
-	// Unwrap returns the wrapped address or address section as an interface, AddressSegmentSeries
+	// Unwrap returns the wrapped address or address section as an interface, AddressSegmentSeries.
 	Unwrap() AddressSegmentSeries
 
 	// Equal returns whether the given address series is equal to this address series.
@@ -43,10 +43,10 @@ type ExtendedSegmentSeries interface {
 	// GetSection returns the backing section for this series, comprising all segments.
 	GetSection() *AddressSection
 
-	// GetTrailingSection returns an ending subsection of the full address section
+	// GetTrailingSection returns an ending subsection of the full address section.
 	GetTrailingSection(index int) *AddressSection
 
-	// GetSubSection returns a subsection of the full address section
+	// GetSubSection returns a subsection of the full address section.
 	GetSubSection(index, endIndex int) *AddressSection
 
 	// GetSegment returns the segment at the given index.
@@ -58,11 +58,11 @@ type ExtendedSegmentSeries interface {
 	GetSegments() []*AddressSegment
 
 	// CopySegments copies the existing segments into the given slice,
-	// as much as can be fit into the slice, returning the number of segments copied
+	// as much as can be fit into the slice, returning the number of segments copied.
 	CopySegments(segs []*AddressSegment) (count int)
 
 	// CopySubSegments copies the existing segments from the given start index until but not including the segment at the given end index,
-	// into the given slice, as much as can be fit into the slice, returning the number of segments copied
+	// into the given slice, as much as can be fit into the slice, returning the number of segments copied.
 	CopySubSegments(start, end int, segs []*AddressSegment) (count int)
 
 	// IsIP returns true if this series originated as an IPv4 or IPv6 series, or a zero-length IP series.  If so, use ToIP to convert back to the IP-specific type.
@@ -247,16 +247,16 @@ type ExtendedSegmentSeries interface {
 	// ReverseSegments returns a new series with the segments reversed.
 	ReverseSegments() ExtendedSegmentSeries
 
-	// ToCustomString creates a customized string from this series according to the given string option parameters
+	// ToCustomString creates a customized string from this series according to the given string option parameters.
 	ToCustomString(stringOptions addrstr.StringOptions) string
 }
 
-// WrappedAddress is the implementation of ExtendedSegmentSeries for addresses
+// WrappedAddress is the implementation of ExtendedSegmentSeries for addresses.
 type WrappedAddress struct {
 	*Address
 }
 
-// Unwrap returns the wrapped address as an interface, AddressSegmentSeries
+// Unwrap returns the wrapped address as an interface, AddressSegmentSeries.
 func (addr WrappedAddress) Unwrap() AddressSegmentSeries {
 	res := addr.Address
 	if res == nil {
@@ -510,12 +510,12 @@ func (addr WrappedAddress) ReverseSegments() ExtendedSegmentSeries {
 	return wrapAddress(addr.Address.ReverseSegments())
 }
 
-// WrappedAddressSection is the implementation of ExtendedSegmentSeries for address sections
+// WrappedAddressSection is the implementation of ExtendedSegmentSeries for address sections.
 type WrappedAddressSection struct {
 	*AddressSection
 }
 
-// Unwrap returns the wrapped address section as an interface, AddressSegmentSeries
+// Unwrap returns the wrapped address section as an interface, AddressSegmentSeries.
 func (section WrappedAddressSection) Unwrap() AddressSegmentSeries {
 	res := section.AddressSection
 	if res == nil {
@@ -768,7 +768,7 @@ func (section WrappedAddressSection) ReverseSegments() ExtendedSegmentSeries {
 var _ ExtendedSegmentSeries = WrappedAddress{}
 var _ ExtendedSegmentSeries = WrappedAddressSection{}
 
-// In go, a nil value is not converted to a nil interface, it is converted to a non-nil interface instance with underlying value nil
+// In go, a nil value is not converted to a nil interface, it is converted to a non-nil interface instance with underlying value nil.
 func convAddrToIntf(addr *Address) ExtendedSegmentSeries {
 	if addr == nil {
 		return nil
