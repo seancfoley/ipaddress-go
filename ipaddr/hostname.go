@@ -17,7 +17,6 @@
 package ipaddr
 
 import (
-	"fmt"
 	"net"
 	"net/netip"
 	"strings"
@@ -472,8 +471,8 @@ func (host *HostName) ToAddresses() (addrs []*IPAddress, err addrerr.AddressErro
 						}
 					}
 				}
-				fmt.Printf("resolved addrs %v\n", addrs)
-				fmt.Println()
+				//fmt.Printf("resolved addrs %v\n", addrs)
+				//fmt.Println()
 			}
 		}
 		data = &resolveData{addrs, err}
