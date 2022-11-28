@@ -43,7 +43,7 @@ type AddressStringParams interface {
 	// AllowsEmpty indicates whether it allows zero-length address strings: ""
 	AllowsEmpty() bool
 
-	// AllowsSingleSegment allows an address to be specified as a single value, eg ffffffff, without the standard use of segments like 1.2.3.4 or 1:2:4:3:5:6:7:8
+	// AllowsSingleSegment allows an address to be specified as a single value, eg ffffffff, without the standard use of segments like "1.2.3.4" or "1:2:4:3:5:6:7:8"
 	AllowsSingleSegment() bool
 
 	// AllowsAll indicates if we allow the string of just the wildcard "*" to denote all addresses of all version.
@@ -88,13 +88,13 @@ var (
 		noInferredBoundary: true,
 	}
 
-	// WildcardOnly - use this to support addresses like 1.*.3.4 or 1::*:3 or 1.2_.3.4 or 1::a__:3
+	// WildcardOnly - use this to support addresses like "1.*.3.4" or "1::*:3" or "1.2_.3.4" or "1::a__:3"
 	WildcardOnly RangeParams = &rangeParameters{
 		noValueRange:   true,
 		noReverseRange: true,
 	}
 
-	// WildcardAndRange - use this to support addresses supported by the default wildcard options and also addresses like 1.2-3.3.4 or 1:0-ff::
+	// WildcardAndRange - use this to support addresses supported by the default wildcard options and also addresses like "1.2-3.3.4" or "1:0-ff::".
 	WildcardAndRange RangeParams = &rangeParameters{}
 )
 
@@ -177,7 +177,7 @@ func (builder *RangeParamsBuilder) GetMACParentBuilder() *MACAddressStringFormat
 	return nil
 }
 
-// AllowWildcard dictates whether '*' is allowed to denote segments covering all possible segment values
+// AllowWildcard dictates whether '*' is allowed to denote segments covering all possible segment values.
 func (builder *RangeParamsBuilder) AllowWildcard(allow bool) *RangeParamsBuilder {
 	builder.noWildcard = !allow
 	return builder
@@ -309,7 +309,7 @@ type AddressStringFormatParamsBuilder struct {
 	rangeParamsBuilder RangeParamsBuilder
 }
 
-// ToParams returns an immutable AddressStringFormatParams instance built by this builder
+// ToParams returns an immutable AddressStringFormatParams instance built by this builder.
 func (builder *AddressStringFormatParamsBuilder) ToParams() AddressStringFormatParams {
 	result := &builder.addressStringFormatParameters
 	result.rangeParams = *builder.rangeParamsBuilder.ToParams().(*rangeParameters)
