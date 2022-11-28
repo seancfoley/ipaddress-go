@@ -95,7 +95,7 @@ type AllStrOption string
 
 const (
 	// AllAddresses is the default, indicating the all address string refers to all addresses of all IP versions.
-	AllAddresses AllStrOption = "" // the default for Go
+	AllAddresses AllStrOption = "" // the default
 
 	// AllPreferredIPVersion indicates the all address string refers to all addresses of the preferred IP version.
 	AllPreferredIPVersion AllStrOption = "preferred"
@@ -278,7 +278,7 @@ func (builder *IPAddressStringParamsBuilder) GetParentBuilder() *HostNameParamsB
 func (builder *IPAddressStringParamsBuilder) ToParams() IPAddressStringParams {
 	// We do not return a pointer to builder.params because that would make it possible to change a ipAddressStringParameters
 	// by continuing to use the same builder,
-	// and we want immutable objects for thread-safety,
+	// and we want immutable objects for concurrency-safety,
 	// so we cannot allow it
 	result := builder.params
 	result.addressStringParameters = *builder.AddressStringParamsBuilder.ToParams().(*addressStringParameters)

@@ -210,9 +210,9 @@ func (section *MACAddressSection) Compare(item AddressItem) int {
 
 // CompareSize compares the counts of two items, the number of individual items represented.
 //
-// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether this section represents more individual address sections than another.
+// Rather than calculating counts with GetCount, there can be more efficient ways of determining whether this section represents more individual address sections than another.
 //
-// CompareSize returns a positive integer if this address section has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
+// CompareSize returns a positive integer if this address section has a larger count than the one given, zero if they are the same, or a negative integer if the other has a larger count.
 func (section *MACAddressSection) CompareSize(other AddressItem) int {
 	if section == nil {
 		if isNilItem(other) {
@@ -338,7 +338,7 @@ func (section *MACAddressSection) SetPrefixLen(prefixLen BitCount) *MACAddressSe
 // If this address section has a prefix length, and the prefix length is increased when setting the new prefix length, the bits moved within the prefix become zero.
 // If this address section has a prefix length, and the prefix length is decreased when setting the new prefix length, the bits moved outside the prefix become zero.
 //
-// In other words, bits that move from one side of the prefix length to the other (ie bits moved into the prefix or outside the prefix) are zeroed.
+// In other words, bits that move from one side of the prefix length to the other (bits moved into the prefix or outside the prefix) are zeroed.
 //
 // If the result cannot be zeroed because zeroing out bits results in a non-contiguous segment, an error is returned.
 func (section *MACAddressSection) SetPrefixLenZeroed(prefixLen BitCount) (*MACAddressSection, addrerr.IncompatibleAddressError) {
@@ -391,7 +391,7 @@ func (section *MACAddressSection) AssignMinPrefixForBlock() *MACAddressSection {
 
 // GetSegment returns the segment at the given index.
 // The first segment is at index 0.
-// GetSegment will panic given a negative index or index larger than the segment count.
+// GetSegment will panic given a negative index or an index matching or larger than the segment count.
 func (section *MACAddressSection) GetSegment(index int) *MACAddressSegment {
 	return section.getDivision(index).ToMAC()
 }
@@ -752,7 +752,7 @@ func (section *MACAddressSection) ToBinaryString(with0bPrefix bool) (string, add
 // ToCanonicalString produces a canonical string for the address section.
 //
 // For MAC, it uses the canonical standardized IEEE 802 MAC address representation of xx-xx-xx-xx-xx-xx.  An example is "01-23-45-67-89-ab".
-// For range segments, '|' is used: 11-22-33|44-55-66
+// For range segments, '|' is used: "11-22-33|44-55-66".
 func (section *MACAddressSection) ToCanonicalString() string {
 	if section == nil {
 		return nilString()
@@ -769,8 +769,8 @@ func (section *MACAddressSection) ToCanonicalString() string {
 
 // ToNormalizedString produces a normalized string for the address section.
 //
-// For MAC, it differs from the canonical string.  It uses the most common representation of MAC addresses: xx:xx:xx:xx:xx:xx.  An example is "01:23:45:67:89:ab".
-// For range segments, '-' is used: 11:22:33-44:55:66
+// For MAC, it differs from the canonical string.  It uses the most common representation of MAC addresses: "xx:xx:xx:xx:xx:xx".  An example is "01:23:45:67:89:ab".
+// For range segments, '-' is used: "11:22:33-44:55:66".
 func (section *MACAddressSection) ToNormalizedString() string {
 	if section == nil {
 		return nilString()
@@ -787,8 +787,8 @@ func (section *MACAddressSection) ToNormalizedString() string {
 }
 
 // ToNormalizedWildcardString produces the normalized string.
-func (addr *MACAddressSection) ToNormalizedWildcardString() string {
-	return addr.ToNormalizedString()
+func (section *MACAddressSection) ToNormalizedWildcardString() string {
+	return section.ToNormalizedString()
 }
 
 // ToCompressedString produces a short representation of this address section while remaining within the confines of standard representation(s) of the address.
@@ -880,7 +880,7 @@ func (section *MACAddressSection) ToSpaceDelimitedString() string {
 }
 
 // ToDashedString produces a string delimited by dashes: "aa-bb-cc-dd-ee-ff".
-// For range segments, '|' is used: 11-22-33|44-55-66
+// For range segments, '|' is used: "11-22-33|44-55-66".
 // It returns the same string as ToCanonicalString.
 func (section *MACAddressSection) ToDashedString() string {
 	if section == nil {
@@ -899,7 +899,7 @@ func (section *MACAddressSection) ToColonDelimitedString() string {
 	return section.ToNormalizedString()
 }
 
-// String implements the fmt.Stringer interface, returning the normalized string provided by ToNormalizedString, or "<nil>" if the receiver is a nil pointer.
+// String implements the [fmt.Stringer] interface, returning the normalized string provided by ToNormalizedString, or "<nil>" if the receiver is a nil pointer.
 func (section *MACAddressSection) String() string {
 	if section == nil {
 		return nilString()

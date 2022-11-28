@@ -37,6 +37,8 @@ type Partition[T any] struct {
 // MappedPartition is a mapping from the key types in a [Partition] to values of a generic type V.
 type MappedPartition[T comparable, V any] map[T]V
 
+//TODO xxxx should use keys xxxx
+
 // ApplyForEachConditionally supplies to the given function each element of the given partition,
 // inserting return values into the returned map as directed.  When the action returns true as the second return value,
 // then the other return value is added to the map.
@@ -93,8 +95,6 @@ func (p *Partition[T]) Iterator() Iterator[T] {
 
 // PredicateForEach applies the supplied predicate operation to each element of the partition,
 // returning true if they all return true, false otherwise
-//
-// Use IPAddressPredicateAdapter to pass in a function that takes *Address as argument instead.
 func (p *Partition[T]) PredicateForEach(predicate func(T) bool) bool {
 	return p.predicateForEach(predicate, false)
 }
@@ -103,8 +103,6 @@ func (p *Partition[T]) PredicateForEach(predicate func(T) bool) bool {
 // returning false if the given predicate returns false for any of the elements.
 //
 // The method returns when one application of the predicate returns false (determining the overall result)
-//
-// Use IPAddressPredicateAdapter to pass in a function that takes *Address as argument instead.
 func (p *Partition[T]) PredicateForEachEarly(predicate func(T) bool) bool {
 	return p.predicateForEach(predicate, false)
 }

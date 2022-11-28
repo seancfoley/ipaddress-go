@@ -314,10 +314,10 @@ func newIPv6SectionFromPrefixedSingle(vals, upperVals IPv6SegmentValueProvider, 
 
 // NewIPv6SectionFromMAC constructs an IPv6 address section from a modified EUI-64 (Extended Unique Identifier) MAC address.
 //
-// If the supplied MAC address section is an 8 byte EUI-64, then it must match the required EUI-64 format of xx-xx-ff-fe-xx-xx
-// with the ff-fe section in the middle.
+// If the supplied MAC address section is an 8-byte EUI-64, then it must match the required EUI-64 format of "xx-xx-ff-fe-xx-xx"
+// with the "ff-fe" section in the middle.
 //
-// If the supplied MAC address section is a 6 byte MAC-48 or EUI-48, then the ff-fe pattern will be inserted when converting to IPv6.
+// If the supplied MAC address section is a 6-byte MAC-48 or EUI-48, then the ff-fe pattern will be inserted when converting to IPv6.
 //
 // The constructor will toggle the MAC U/L (universal/local) bit as required with EUI-64.
 //
@@ -333,7 +333,7 @@ func NewIPv6SectionFromMAC(eui *MACAddress) (res *IPv6AddressSection, err addrer
 }
 
 // IPv6AddressSection represents a section of an IPv6 address comprising 0 to 8 IPv6 address segments.
-// The zero values is a section with zero segments.
+// The zero values is a section with zero-segments.
 type IPv6AddressSection struct {
 	ipAddressSectionInternal
 }
@@ -370,9 +370,9 @@ func (section *IPv6AddressSection) Compare(item AddressItem) int {
 
 // CompareSize compares the counts of two items, the number of individual sections represented.
 //
-// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one item represents more individual items than another.
+// Rather than calculating counts with GetCount, there can be more efficient ways of determining whether one item represents more individual items than another.
 //
-// CompareSize returns a positive integer if this address section has a larger count than the item given, 0 if they are the same, or a negative integer if the other has a larger count.
+// CompareSize returns a positive integer if this address section has a larger count than the item given, zero if they are the same, or a negative integer if the other has a larger count.
 func (section *IPv6AddressSection) CompareSize(other AddressItem) int {
 	if section == nil {
 		if isNilItem(other) {
@@ -482,7 +482,7 @@ func (section *IPv6AddressSection) GetPrefixCountLen(prefixLen BitCount) *big.In
 
 // GetSegment returns the segment at the given index.
 // The first segment is at index 0.
-// GetSegment will panic given a negative index or index larger than the segment count.
+// GetSegment will panic given a negative index or an index matching or larger than the segment count.
 func (section *IPv6AddressSection) GetSegment(index int) *IPv6AddressSegment {
 	return section.getDivision(index).ToIPv6()
 }
@@ -720,7 +720,7 @@ func (section *IPv6AddressSection) ToMaxHost() (*IPv6AddressSection, addrerr.Inc
 // the host being the bits following the given prefix length.
 // If this section has the same prefix length, then the resulting section will too, otherwise the resulting section will have no prefix length.
 //
-// For instance, the zero host of 1.2.3.4 for the prefix length 16 is the address 1.2.255.255.
+// For instance, the zero host of "1.2.3.4" for the prefix length of 16 is the address "1.2.255.255".
 //
 // This returns an error if the section is a range of address sections which cannot be converted to a range in which all address sections have max hosts,
 // because the conversion results in a segment that is not a sequential range of values.
@@ -773,7 +773,7 @@ func (section *IPv6AddressSection) SetPrefixLen(prefixLen BitCount) *IPv6Address
 // If this address section has a prefix length, and the prefix length is increased when setting the new prefix length, the bits moved within the prefix become zero.
 // If this address section has a prefix length, and the prefix length is decreased when setting the new prefix length, the bits moved outside the prefix become zero.
 //
-// In other words, bits that move from one side of the prefix length to the other (ie bits moved into the prefix or outside the prefix) are zeroed.
+// In other words, bits that move from one side of the prefix length to the other (bits moved into the prefix or outside the prefix) are zeroed.
 //
 // If the result cannot be zeroed because zeroing out bits results in a non-contiguous segment, an error is returned.
 func (section *IPv6AddressSection) SetPrefixLenZeroed(prefixLen BitCount) (*IPv6AddressSection, addrerr.IncompatibleAddressError) {
@@ -870,7 +870,7 @@ func (section *IPv6AddressSection) SequentialBlockIterator() Iterator[*IPv6Addre
 	return ipv6SectionIterator{section.sequentialBlockIterator()}
 }
 
-// GetZeroSegments returns the list of consecutive zero segments.
+// GetZeroSegments returns the list of consecutive zero-segments.
 // Each element in the list will be an segment index and a total segment count for which
 // that count of consecutive segments starting from that index are all zero.
 func (section *IPv6AddressSection) GetZeroSegments() SegmentSequenceList {
@@ -926,7 +926,7 @@ func (section *IPv6AddressSection) getCompressIndexAndCount(options addrstr.Comp
 			}
 			if preferHost && section.IsPrefixed() &&
 				(BitCount(index+count)*section.GetBitsPerSegment()) > section.getNetworkPrefixLen().bitCount() { //this range contains the host
-				//Since we are going backwards, this means we select as the maximum any zero segment that includes the host
+				//Since we are going backwards, this means we select as the maximum any zero-segment that includes the host
 				break
 			}
 			if preferMixed && index+count >= segmentCount { //this range contains the mixed section
@@ -1321,7 +1321,7 @@ var (
 					SetExpandedSegments(true).ToOptions()
 )
 
-// String implements the fmt.Stringer interface, returning the normalized string provided by ToNormalizedString, or "<nil>" if the receiver is a nil pointer.
+// String implements the [fmt.Stringer] interface, returning the normalized string provided by ToNormalizedString, or "<nil>" if the receiver is a nil pointer.
 func (section *IPv6AddressSection) String() string {
 	if section == nil {
 		return nilString()
@@ -1428,7 +1428,7 @@ func (section *IPv6AddressSection) ToCanonicalString() string {
 
 // ToNormalizedString produces a normalized string for the address section.
 //
-// For IPv6, it differs from the canonical string.  Zero segments are not compressed.
+// For IPv6, it differs from the canonical string.  Zero-segments are not compressed.
 //
 // If this section has a prefix length, it will be included in the string.
 func (section *IPv6AddressSection) ToNormalizedString() string {
@@ -1555,9 +1555,9 @@ func (section *IPv6AddressSection) ToFullString() string {
 		})
 }
 
-// ToReverseDNSString generates the reverse DNS lookup string,
+// ToReverseDNSString generates the reverse-DNS lookup string,
 // returning an error if this address section is a multiple-valued section for which the range cannot be represented.
-// For 2001:db8::567:89ab it is "b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa".
+// For "2001:db8::567:89ab" it is "b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa".
 func (section *IPv6AddressSection) ToReverseDNSString() (string, addrerr.IncompatibleAddressError) {
 	if section == nil {
 		return nilString(), nil
@@ -1573,7 +1573,7 @@ func (section *IPv6AddressSection) ToReverseDNSString() (string, addrerr.Incompa
 }
 
 // ToPrefixLenString returns a string with a CIDR network prefix length if this address has a network prefix length.
-// For IPv6, a zero host section will be compressed with ::. For IPv4 the string is equivalent to the canonical string.
+// For IPv6, a zero host section will be compressed with "::". For IPv4 the string is equivalent to the canonical string.
 func (section *IPv6AddressSection) ToPrefixLenString() string {
 	if section == nil {
 		return nilString()
@@ -1847,7 +1847,7 @@ type EmbeddedIPv6AddressSection struct {
 // If the prefix length matches the bit count, this returns true.
 //
 // This is different from ContainsPrefixBlock in that this method returns
-// false if the series has no prefix length or a prefix length that differs from prefix lengths for which ContainsPrefixBlock returns true.
+// false if the series has no prefix length, or a prefix length that differs from a prefix length for which ContainsPrefixBlock returns true.
 func (section *EmbeddedIPv6AddressSection) IsPrefixBlock() bool {
 	return section.encompassingSection.IsPrefixBlock()
 }
@@ -1931,9 +1931,9 @@ func (grouping *IPv6v4MixedAddressGrouping) Compare(item AddressItem) int {
 
 // CompareSize compares the counts of two items, the number of individual items represented in each.
 //
-// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether this grouping represents more individual address groupings than another item.
+// Rather than calculating counts with GetCount, there can be more efficient ways of determining whether this grouping represents more individual address groupings than another item.
 //
-// CompareSize returns a positive integer if this address division grouping has a larger count than the item given, 0 if they are the same, or a negative integer if the other has a larger count.
+// CompareSize returns a positive integer if this address division grouping has a larger count than the item given, zero if they are the same, or a negative integer if the other has a larger count.
 func (grouping *IPv6v4MixedAddressGrouping) CompareSize(other AddressItem) int {
 	if grouping == nil {
 		if isNilItem(other) {
@@ -1994,7 +1994,7 @@ func (grouping *IPv6v4MixedAddressGrouping) GetIPv4AddressSection() *IPv4Address
 	return grouping.cache.mixed.embeddedIPv4Section
 }
 
-// String implements the fmt.Stringer interface,
+// String implements the [fmt.Stringer] interface,
 // as a slice string with each division converted to a string by String ( ie "[ div0 div1 ...]"),
 // or "<nil>" if the receiver is a nil pointer.
 func (grouping *IPv6v4MixedAddressGrouping) String() string {
@@ -2016,7 +2016,7 @@ func (grouping *IPv6v4MixedAddressGrouping) String() string {
 // Format is intentionally the only method with non-pointer receivers.  It is not intended to be called directly, it is intended for use by the fmt package.
 // When called by a function in the fmt package, nil values are detected before this method is called, avoiding a panic when calling this method.
 
-// Format implements fmt.Formatter interface. It accepts the formats
+// Format implements [fmt.Formatter] interface. It accepts the formats
 //  - 'v' for the default address and section format (either the normalized or canonical string),
 //  - 's' (string) for the same
 //  - 'q' for a quoted string

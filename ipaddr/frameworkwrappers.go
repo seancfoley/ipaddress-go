@@ -51,7 +51,7 @@ type ExtendedSegmentSeries interface {
 
 	// GetSegment returns the segment at the given index.
 	// The first segment is at index 0.
-	// GetSegment will panic given a negative index or index larger than the segment count.
+	// GetSegment will panic given a negative index or an index matching or larger than the segment count.
 	GetSegment(index int) *AddressSegment
 
 	// GetSegments returns a slice with the address segments.  The returned slice is not backed by the same array as this section.
@@ -220,7 +220,7 @@ type ExtendedSegmentSeries interface {
 	// If this series has a prefix length, and the prefix length is increased when setting the new prefix length, the bits moved within the prefix become zero.
 	// If this series has a prefix length, and the prefix length is decreased when setting the new prefix length, the bits moved outside the prefix become zero.
 	//
-	// In other words, bits that move from one side of the prefix length to the other (ie bits moved into the prefix or outside the prefix) are zeroed.
+	// In other words, bits that move from one side of the prefix length to the other (bits moved into the prefix or outside the prefix) are zeroed.
 	//
 	// If the result cannot be zeroed because zeroing out bits results in a non-contiguous segment, an error is returned.
 	SetPrefixLenZeroed(BitCount) (ExtendedSegmentSeries, addrerr.IncompatibleAddressError)
@@ -449,7 +449,7 @@ func (addr WrappedAddress) SetPrefixLen(prefixLen BitCount) ExtendedSegmentSerie
 // If this series has a prefix length, and the prefix length is increased when setting the new prefix length, the bits moved within the prefix become zero.
 // If this series has a prefix length, and the prefix length is decreased when setting the new prefix length, the bits moved outside the prefix become zero.
 //
-// In other words, bits that move from one side of the prefix length to the other (ie bits moved into the prefix or outside the prefix) are zeroed.
+// In other words, bits that move from one side of the prefix length to the other (bits moved into the prefix or outside the prefix) are zeroed.
 //
 // If the result cannot be zeroed because zeroing out bits results in a non-contiguous segment, an error is returned.
 func (addr WrappedAddress) SetPrefixLenZeroed(prefixLen BitCount) (ExtendedSegmentSeries, addrerr.IncompatibleAddressError) {
@@ -708,7 +708,7 @@ func (section WrappedAddressSection) SetPrefixLen(prefixLen BitCount) ExtendedSe
 // If this series has a prefix length, and the prefix length is increased when setting the new prefix length, the bits moved within the prefix become zero.
 // If this series has a prefix length, and the prefix length is decreased when setting the new prefix length, the bits moved outside the prefix become zero.
 //
-// In other words, bits that move from one side of the prefix length to the other (ie bits moved into the prefix or outside the prefix) are zeroed.
+// In other words, bits that move from one side of the prefix length to the other (bits moved into the prefix or outside the prefix) are zeroed.
 //
 // If the result cannot be zeroed because zeroing out bits results in a non-contiguous segment, an error is returned.
 func (section WrappedAddressSection) SetPrefixLenZeroed(prefixLen BitCount) (ExtendedSegmentSeries, addrerr.IncompatibleAddressError) {

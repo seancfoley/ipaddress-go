@@ -60,6 +60,7 @@ const (
 	IPv6AlternativeRangeSeparatorStr = AlternativeRangeSeparatorStr
 )
 
+// Zone represents an IPv6 address zone or scope.
 type Zone string
 
 // IsEmpty returns whether the zone is the zero-zone, which is the lack of a zone, or the empty string zone.
@@ -67,7 +68,7 @@ func (zone Zone) IsEmpty() bool {
 	return zone == ""
 }
 
-// String implements the fmt.Stringer interface, returning the zone characters as a string
+// String implements the [fmt.Stringer] interface, returning the zone characters as a string
 func (zone Zone) String() string {
 	return string(zone)
 }
@@ -347,10 +348,10 @@ func newIPv6AddressFromPrefixedSingle(vals, upperVals IPv6SegmentValueProvider, 
 
 // NewIPv6AddressFromMAC constructs an IPv6 address from a modified EUI-64 (Extended Unique Identifier) MAC address and an IPv6 address 64-bit prefix.
 //
-// If the supplied MAC address section is an 8 byte EUI-64, then it must match the required EUI-64 format of xx-xx-ff-fe-xx-xx
-// with the ff-fe section in the middle.
+// If the supplied MAC address section is an 8-byte EUI-64, then it must match the required EUI-64 format of "xx-xx-ff-fe-xx-xx"
+// with the "ff-fe" section in the middle.
 //
-// If the supplied MAC address section is a 6 byte MAC-48 or EUI-48, then the ff-fe pattern will be inserted when converting to IPv6.
+// If the supplied MAC address section is a 6-byte MAC-48 or EUI-48, then the "ff-fe" pattern will be inserted when converting to IPv6.
 //
 // The constructor will toggle the MAC U/L (universal/local) bit as required with EUI-64.
 //
@@ -389,10 +390,10 @@ func newIPv6AddressFromMAC(prefixSection *IPv6AddressSection, suffix *MACAddress
 
 // NewIPv6AddressFromMACSection constructs an IPv6 address from a modified EUI-64 (Extended Unique Identifier) MAC address section and an IPv6 address section network prefix.
 //
-// If the supplied MAC address section is an 8 byte EUI-64, then it must match the required EUI-64 format of xx-xx-ff-fe-xx-xx
-// with the ff-fe section in the middle.
+// If the supplied MAC address section is an 8-byte EUI-64, then it must match the required EUI-64 format of "xx-xx-ff-fe-xx-xx"
+// with the "ff-fe" section in the middle.
 //
-// If the supplied MAC address section is a 6 byte MAC-48 or EUI-48, then the ff-fe pattern will be inserted when converting to IPv6.
+// If the supplied MAC address section is a 6-byte MAC-48 or EUI-48, then the "ff-fe" pattern will be inserted when converting to IPv6.
 //
 // The constructor will toggle the MAC U/L (universal/local) bit as required with EUI-64.
 //
@@ -438,11 +439,11 @@ func initZeroIPv6() *IPv6Address {
 // IPv6Address is an IPv6 address, or a subnet of multiple IPv6 addresses.
 // An IPv6 address is composed of 8 2-byte segments and can optionally have an associated prefix length.
 // Each segment can represent a single value or a range of values.
-// The zero value is ::
+// The zero value is "::".
 //
-// To construct one from a string, use IPAddressString.
+// To construct one from a string, use [IPAddressString].
 // For other inputs, use one of multiple constructor functions like NewIPv6Address.
-// You can also use one of multiple constructors for IPAddress like NewIPAddress and then convert using ToIPv6.
+// You can also use one of multiple constructors for [IPAddress] like NewIPAddress and then convert using ToIPv6.
 type IPv6Address struct {
 	ipAddressInternal
 }
@@ -458,7 +459,7 @@ func (addr *IPv6Address) init() *IPv6Address {
 //
 // If just a single address, not a subnet of multiple addresses, returns 1.
 //
-// For instance, the IP address subnet 2001:db8::/64 has the count of 2 to the power of 64.
+// For instance, the IP address subnet "2001:db8::/64" has the count of 2 to the power of 64.
 //
 // Use IsMultiple if you simply want to know if the count is greater than 1.
 func (addr *IPv6Address) GetCount() *big.Int {
@@ -507,12 +508,12 @@ func (addr *IPv6Address) GetBytesPerSegment() int {
 	return IPv6BytesPerSegment
 }
 
-// HasZone returns whether this IPv6 address includes a zone or scope
+// HasZone returns whether this IPv6 address includes a zone or scope.
 func (addr *IPv6Address) HasZone() bool {
 	return addr != nil && addr.zone != NoZone
 }
 
-// GetZone returns the zone it it has one, otherwise it returns NoZone, which is an empty string
+// GetZone returns the zone it it has one, otherwise it returns NoZone, which is an empty string.
 func (addr *IPv6Address) GetZone() Zone {
 	if addr == nil {
 		return NoZone
@@ -657,7 +658,7 @@ func (addr *IPv6Address) GetSegments() []*IPv6AddressSegment {
 
 // GetSegment returns the segment at the given index.
 // The first segment is at index 0.
-// GetSegment will panic given a negative index or index larger than the segment count.
+// GetSegment will panic given a negative index or an index matching or larger than the segment count.
 func (addr *IPv6Address) GetSegment(index int) *IPv6AddressSegment {
 	return addr.init().getSegment(index).ToIPv6()
 }
@@ -679,6 +680,8 @@ func (addr *IPv6Address) GetGenericDivision(index int) DivisionType {
 }
 
 // GetGenericSegment returns the segment at the given index as an AddressSegmentType.
+// The first segment is at index 0.
+// GetGenericSegment will panic given a negative index or an index matching or larger than the segment count.
 func (addr *IPv6Address) GetGenericSegment(index int) AddressSegmentType {
 	return addr.init().getSegment(index)
 }
@@ -826,7 +829,7 @@ func (addr *IPv6Address) IsZeroHostLen(prefLen BitCount) bool {
 //
 // The returned address or subnet will have the same prefix and prefix length.
 //
-// For instance, the zero host of 1.2.3.4/16 is the individual address 1.2.0.0/16.
+// For instance, the zero host of "1.2.3.4/16" is the individual address "1.2.0.0/16".
 //
 // This returns an error if the subnet is a range of addresses which cannot be converted to a range in which all addresses have zero hosts,
 // because the conversion results in a subnet segment that is not a sequential range of values.
@@ -839,7 +842,7 @@ func (addr *IPv6Address) ToZeroHost() (*IPv6Address, addrerr.IncompatibleAddress
 // the host being the bits following the given prefix length.
 // If this address or subnet has the same prefix length, then the returned one will too, otherwise the returned series will have no prefix length.
 //
-// For instance, the zero host of 1.2.3.4 for the prefix length 16 is the address 1.2.0.0.
+// For instance, the zero host of "1.2.3.4" for the prefix length of 16 is the address "1.2.0.0".
 //
 // This returns an error if the subnet is a range of addresses which cannot be converted to a range in which all addresses have zero hosts,
 // because the conversion results in a subnet segment that is not a sequential range of values.
@@ -882,7 +885,7 @@ func (addr *IPv6Address) ToMaxHost() (*IPv6Address, addrerr.IncompatibleAddressE
 // the host being the bits following the given prefix length.
 // If this address or subnet has the same prefix length, then the resulting one will too, otherwise the resulting address or subnet will have no prefix length.
 //
-// For instance, the zero host of 1.2.3.4 for the prefix length 16 is the address 1.2.255.255.
+// For instance, the zero host of "1.2.3.4" for the prefix length of 16 is the address "1.2.255.255".
 //
 // This returns an error if the subnet is a range of addresses which cannot be converted to a range in which all addresses have max hosts,
 // because the conversion results in a subnet segment that is not a sequential range of values.
@@ -897,7 +900,7 @@ func (addr *IPv6Address) ToMaxHostLen(prefixLength BitCount) (*IPv6Address, addr
 // The subnet will include all addresses with the same prefix as this one, the prefix "block".
 // The network prefix will match the prefix of this address or subnet, and the host values will span all values.
 //
-// For example, if the address is 1:2:3:4:5:6:7:8/64 it returns the subnet 1:2:3:4::/64 which can also be written as 1:2:3:4:*:*:*:*/64
+// For example, if the address is "1:2:3:4:5:6:7:8/64" it returns the subnet "1:2:3:4::/64" which can also be written as "1:2:3:4:*:*:*:*/64".
 func (addr *IPv6Address) ToPrefixBlock() *IPv6Address {
 	return addr.init().toPrefixBlock().ToIPv6()
 }
@@ -907,7 +910,7 @@ func (addr *IPv6Address) ToPrefixBlock() *IPv6Address {
 // The subnet will include all addresses with the same prefix as this one, the prefix "block" for that prefix length.
 // The network prefix will match the prefix of this address or subnet, and the host values will span all values.
 //
-// For example, if the address is 1:2:3:4:5:6:7:8 and the prefix length provided is 64, it returns the subnet 1:2:3:4::/64 which can also be written as 1:2:3:4:*:*:*:*/64
+// For example, if the address is "1:2:3:4:5:6:7:8" and the prefix length provided is 64, it returns the subnet "1:2:3:4::/64" which can also be written as "1:2:3:4:*:*:*:*/64".
 func (addr *IPv6Address) ToPrefixBlockLen(prefLen BitCount) *IPv6Address {
 	return addr.init().toPrefixBlockLen(prefLen).ToIPv6()
 }
@@ -942,7 +945,7 @@ func (addr *IPv6Address) SetPrefixLen(prefixLen BitCount) *IPv6Address {
 // If this address has a prefix length, and the prefix length is increased when setting the new prefix length, the bits moved within the prefix become zero.
 // If this address has a prefix length, and the prefix length is decreased when setting the new prefix length, the bits moved outside the prefix become zero.
 //
-// In other words, bits that move from one side of the prefix length to the other (ie bits moved into the prefix or outside the prefix) are zeroed.
+// In other words, bits that move from one side of the prefix length to the other (bits moved into the prefix or outside the prefix) are zeroed.
 //
 // If the result cannot be zeroed because zeroing out bits results in a non-contiguous segment, an error is returned.
 
@@ -1161,7 +1164,7 @@ func (addr *IPv6Address) TestBit(n BitCount) bool {
 }
 
 // IsOneBit returns true if the bit in the lower value of this address at the given index is 1, where index 0 refers to the most significant bit.
-// IsOneBit will panic if bitIndex < 0, or if it is larger than the bit count of this item.
+// IsOneBit will panic if bitIndex is less than zero, or if it is larger than the bit count of this item.
 func (addr *IPv6Address) IsOneBit(bitIndex BitCount) bool {
 	return addr.init().isOneBit(bitIndex)
 }
@@ -1217,9 +1220,9 @@ func (addr *IPv6Address) Equal(other AddressType) bool {
 
 // CompareSize compares the counts of two subnets or addresses or items, the number of individual addresses or items within.
 //
-// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether this subnet represents more individual addresses or items than another.
+// Rather than calculating counts with GetCount, there can be more efficient ways of determining whether this subnet represents more individual addresses or items than another.
 //
-// CompareSize returns a positive integer if this address or subnet has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
+// CompareSize returns a positive integer if this address or subnet has a larger count than the one given, zero if they are the same, or a negative integer if the other has a larger count.
 func (addr *IPv6Address) CompareSize(other AddressItem) int {
 	if addr == nil {
 		if isNilItem(other) {
@@ -1414,7 +1417,7 @@ func (addr *IPv6Address) IsUniqueLocal() bool {
 
 // IsIPv4Mapped returns whether the address or all addresses in the subnet are IPv4-mapped.
 //
-// ::ffff:x:x/96 indicates an IPv6 address mapped to IPv4.
+// "::ffff:x:x/96" indicates an IPv6 address mapped to IPv4.
 func (addr *IPv6Address) IsIPv4Mapped() bool {
 	//::ffff:x:x/96 indicates IPv6 address mapped to IPv4
 	if addr.GetSegment(5).Matches(IPv6MaxValuePerSegment) {
@@ -1497,7 +1500,7 @@ func (addr *IPv6Address) IsMulticast() bool {
 	return addr.GetSegment(0).MatchesWithPrefixMask(0xff00, 8)
 }
 
-// IsLoopback returns whether this address is a loopback address, namely ::1.
+// IsLoopback returns whether this address is a loopback address, namely "::1".
 func (addr *IPv6Address) IsLoopback() bool {
 	if addr.section == nil {
 		return false
@@ -1554,7 +1557,7 @@ func (addr *IPv6Address) BlockIterator(segmentCount int) Iterator[*IPv6Address] 
 //
 // Practically, this means finding the count of segments for which the segments that follow are not full range, and then using BlockIterator with that segment count.
 //
-// For instance, given the IPv4 subnet 1-2.3-4.5-6.7-8, it will iterate through 1.3.5.7-8, 1.3.6.7-8, 1.4.5.7-8, 1.4.6.7-8, 2.3.5.7-8, 2.3.6.7-8, 2.4.6.7-8, 2.4.6.7-8.
+// For instance, given the IPv4 subnet "1-2.3-4.5-6.7-8", it will iterate through "1.3.5.7-8", "1.3.6.7-8", "1.4.5.7-8", "1.4.6.7-8", "2.3.5.7-8", "2.3.6.7-8", "2.4.6.7-8" and "2.4.6.7-8".
 //
 // Use GetSequentialBlockCount to get the number of iterated elements.
 func (addr *IPv6Address) SequentialBlockIterator() Iterator[*IPv6Address] {
@@ -1872,7 +1875,7 @@ func (addr *IPv6Address) toEUISegments(extended bool) ([]*AddressDivision, addre
 	return newSegs, nil
 }
 
-// Format implements fmt.Formatter interface. It accepts the formats
+// Format implements [fmt.Formatter] interface. It accepts the formats
 //  - 'v' for the default address and section format (either the normalized or canonical string),
 //  - 's' (string) for the same,
 //  - 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
@@ -1880,15 +1883,15 @@ func (addr *IPv6Address) toEUISegments(extended bool) ([]*AddressDivision, addre
 //  - 'X' (uppercase hexadecimal).
 // Also supported are some of fmt's format flags for integral types.
 // Sign control is not supported since addresses and sections are never negative.
-// '#' for an alternate format is supported, which is leading zero for octal and for hexadecimal,
-// a leading "0x" or "0X" for "%#x" and "%#X" respectively,
+// '#' for an alternate format is supported, which adds a leading zero for octal, and for hexadecimal it adds
+// a leading "0x" or "0X" for "%#x" and "%#X" respectively.
 // Also supported is specification of minimum digits precision, output field width,
 // space or zero padding, and '-' for left or right justification.
 func (addr IPv6Address) Format(state fmt.State, verb rune) {
 	addr.init().format(state, verb)
 }
 
-// String implements the fmt.Stringer interface, returning the canonical string provided by ToCanonicalString, or "<nil>" if the receiver is a nil pointer.
+// String implements the [fmt.Stringer] interface, returning the canonical string provided by ToCanonicalString, or "<nil>" if the receiver is a nil pointer.
 func (addr *IPv6Address) String() string {
 	if addr == nil {
 		return nilString()
@@ -1923,7 +1926,7 @@ func (addr *IPv6Address) ToCanonicalString() string {
 
 // ToNormalizedString produces a normalized string for the address.
 //
-// For IPv6, it differs from the canonical string.  Zero segments are not compressed.
+// For IPv6, it differs from the canonical string.  Zero-segments are not compressed.
 //
 // Each address has a unique normalized string, not counting the prefix length.
 // With IP addresses, the prefix length can cause two equal addresses to have different strings, for example "1.2.3.4/16" and "1.2.3.4".
@@ -1992,7 +1995,7 @@ func (addr *IPv6Address) ToFullString() string {
 }
 
 // ToPrefixLenString returns a string with a CIDR network prefix length if this address has a network prefix length.
-// For IPv6, a zero host section will be compressed with ::. For IPv4 the string is equivalent to the canonical string.
+// For IPv6, a zero host section will be compressed with "::". For IPv4 the string is equivalent to the canonical string.
 func (addr *IPv6Address) ToPrefixLenString() string {
 	if addr == nil {
 		return nilString()
@@ -2001,9 +2004,9 @@ func (addr *IPv6Address) ToPrefixLenString() string {
 }
 
 // ToSubnetString produces a string with specific formats for subnets.
-// The subnet string looks like 1.2.*.* or 1:2::/16.
+// The subnet string looks like "1.2.*.*" or "1:2::/16".
 //
-// In the case of IPv6, when a network prefix has been supplied, the prefix will be shown and the host section will be compressed with ::.
+// In the case of IPv6, when a network prefix has been supplied, the prefix will be shown and the host section will be compressed with "::".
 func (addr *IPv6Address) ToSubnetString() string {
 	if addr == nil {
 		return nilString()
@@ -2019,9 +2022,9 @@ func (addr *IPv6Address) ToCompressedWildcardString() string {
 	return addr.init().toCompressedWildcardString()
 }
 
-// ToReverseDNSString generates the reverse DNS lookup string,
+// ToReverseDNSString generates the reverse-DNS lookup string,
 // returning an error if this address is a multiple-valued subnet for which the range cannot be represented.
-// For 2001:db8::567:89ab it is: b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa
+// For "2001:db8::567:89ab" it is "b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa".
 func (addr *IPv6Address) ToReverseDNSString() (string, addrerr.IncompatibleAddressError) {
 	if addr == nil {
 		return nilString(), nil

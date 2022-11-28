@@ -121,7 +121,7 @@ type HostBitCount uint8
 // BitsForCount returns the number of bits required outside the prefix length
 // for a single prefix block to span at least as many addresses as the given count.
 // Mathematically, it is the ceiling of the base 2 logarithm of the given count.
-// A count of 0 returns nil.
+// A count of zero returns nil.
 func BitsForCount(count uint64) (result *HostBitCount) {
 	if count != 0 {
 		var res HostBitCount
@@ -145,8 +145,8 @@ func (h *HostBitCount) BlockSize() *big.Int {
 	return new(big.Int).Lsh(bigOneConst(), uint(*h))
 }
 
-// Len returns the length of the host.  If the receiver is nil, representing the absence of a prefix length, returns 0.
-// It will also return 0 if the receiver is a prefix with length of 0.  To distinguish the two, compare the receiver with nil.
+// Len returns the length of the host.  If the receiver is nil, representing the absence of a host length, returns 0.
+// It will also return 0 if the receiver has a host length of 0.  To distinguish the two, compare the receiver with nil.
 func (h *HostBitCount) Len() BitCount {
 	if h == nil {
 		return 0
@@ -162,7 +162,7 @@ func (h *HostBitCount) String() string {
 	return strconv.Itoa(h.Len())
 }
 
-// IsNil returns true if this is nil, meaning it represents having no host length, or the absence of a host or prefix length
+// IsNil returns true if this is nil, meaning it represents having no identified host length.
 func (h *HostBitCount) IsNil() bool {
 	return h == nil
 }
@@ -243,6 +243,7 @@ func (p *PortNum) copy() Port {
 	return &res
 }
 
+// Num converts to a PortPortIntNum, returning 0 if the receiver is nil.
 func (p *PortNum) Num() PortInt {
 	if p == nil {
 		return 0
@@ -250,6 +251,7 @@ func (p *PortNum) Num() PortInt {
 	return PortInt(*p)
 }
 
+// Port dereferences this PortNum, while returning 0 if the receiver is nil.
 func (p *PortNum) Port() PortNum {
 	if p == nil {
 		return 0
@@ -265,7 +267,7 @@ func (p *PortNum) Equal(other Port) bool {
 	return other != nil && p.portNum() == other.portNum()
 }
 
-// Matches compares a Port value with a port number
+// Matches compares a Port value with a port number.
 func (p *PortNum) Matches(other PortInt) bool {
 	return p != nil && p.portNum() == other
 }

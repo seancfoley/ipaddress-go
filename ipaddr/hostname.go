@@ -233,8 +233,8 @@ type hostCache struct {
 //
 // Validation is done separately from DNS resolution to avoid unnecessary DNS lookups.
 //
-// See RFC 3513, RFC 2181, RFC 952, RFC 1035, RFC 1034, RFC 1123, RFC 5890 or the list of rfcs for IPAddress.  For IPv6 addresses in host, see RFC 2732 specifying [] notation
-// and RFC 3986 and RFC 4038 (combining IPv6 [] with prefix or zone) and SMTP RFC 2821 for alternative uses of [] for both IPv4 and IPv6.
+// See RFC 3513, RFC 2181, RFC 952, RFC 1035, RFC 1034, RFC 1123, RFC 5890 or the list of rfcs for IPAddress.  For IPv6 addresses in host, see RFC 2732 specifying "[]" notation
+// and RFC 3986 and RFC 4038 (combining IPv6 "[]" notation with prefix or zone) and SMTP RFC 2821 for alternative uses of "[]" notation for both IPv4 and IPv6.
 type HostName struct {
 	str           string
 	parsedHost    *parsedHost
@@ -250,7 +250,7 @@ func (host *HostName) init() *HostName {
 }
 
 // GetValidationOptions returns the validation options supplied when constructing the HostName, or the default validation options if none were supplied.
-//  It returns nil if no options were used to construct.
+// It returns nil if no options were used to construct.
 func (host *HostName) GetValidationOptions() addrstrparam.HostNameParams {
 	return host.init().parsedHost.params
 }
@@ -268,7 +268,7 @@ func (host *HostName) Validate() addrerr.HostNameError {
 	return host.init().validateError
 }
 
-// String implements the fmt.Stringer interface,
+// String implements the [fmt.Stringer] interface,
 // returning the original string used to create this HostName (altered by strings.TrimSpace if a host name and not an address),
 // or "<nil>" if the receiver is a nil pointer.
 func (host *HostName) String() string {
@@ -299,7 +299,7 @@ func (host *HostName) IsAddress() bool {
 // This does not resolve addresses or return resolved addresses.
 // Call ToAddress or GetAddress to get the resolved address.
 //
-// In cases such as IPv6 literals and reverse DNS hosts, you can check the relevant methods isIpv6Literal or isReverseDNS,
+// In cases such as IPv6 literals and reverse-DNS hosts, you can check the relevant methods isIpv6Literal or isReverseDNS,
 // in which case this method should return the associated address.
 func (host *HostName) AsAddress() *IPAddress {
 	if host.IsAddress() {
@@ -471,8 +471,6 @@ func (host *HostName) ToAddresses() (addrs []*IPAddress, err addrerr.AddressErro
 						}
 					}
 				}
-				//fmt.Printf("resolved addrs %v\n", addrs)
-				//fmt.Println()
 			}
 		}
 		data = &resolveData{addrs, err}
@@ -702,7 +700,7 @@ func (host *HostName) IsUncIPv6Literal() bool {
 	return host.IsValid() && host.parsedHost.isUNCIPv6Literal()
 }
 
-// IsReverseDNS returns whether this host name is a reverse DNS string host name.
+// IsReverseDNS returns whether this host name is a reverse-DNS string host name.
 func (host *HostName) IsReverseDNS() bool {
 	host = host.init()
 	return host.IsValid() && host.parsedHost.isReverseDNS()

@@ -20,12 +20,6 @@ func createLargeGrouping(divs []*IPAddressLargeDivision) *IPAddressLargeDivision
 	return grouping
 }
 
-//func createInitializedLargeGrouping(divs []*IPAddressLargeDivision) *IPAddressLargeDivisionGrouping {
-//	result := createLargeGrouping(divs)
-//	result.initMultAndPrefLen()
-//	return result
-//}
-
 type largeDivisionGroupingInternal struct {
 	addressDivisionGroupingBase
 }
@@ -297,7 +291,7 @@ func (grouping *largeDivisionGroupingInternal) GetMinPrefixLenForBlock() BitCoun
 // If the prefix length matches the bit count, this returns true.
 //
 // This is different from ContainsPrefixBlock in that this method returns
-// false if the series has no prefix length or a prefix length that differs from prefix lengths for which ContainsPrefixBlock returns true.
+// false if the series has no prefix length, or a prefix length that differs from a prefix length for which ContainsPrefixBlock returns true.
 func (grouping *largeDivisionGroupingInternal) IsPrefixBlock() bool {
 	prefLen := grouping.getPrefixLen()
 	return prefLen != nil && grouping.ContainsPrefixBlock(prefLen.bitCount())
@@ -322,7 +316,7 @@ func (grouping *largeDivisionGroupingInternal) IsSinglePrefixBlock() bool {
 //
 // Unlike ContainsSinglePrefixBlock, whether there are multiple prefix values in this item for the given prefix length makes no difference.
 //
-// Use GetMinPrefixLenForBlock() to determine the smallest prefix length for which this method returns true.
+// Use GetMinPrefixLenForBlock to determine the smallest prefix length for which this method returns true.
 func (grouping *largeDivisionGroupingInternal) ContainsPrefixBlock(prefixLen BitCount) bool {
 	prefixLen = checkSubnet(grouping, prefixLen)
 	divisionCount := grouping.GetDivisionCount()
@@ -486,9 +480,9 @@ func (grouping *IPAddressLargeDivisionGrouping) Compare(item AddressItem) int {
 
 // CompareSize compares the counts of two items, the number of individual values within.
 //
-// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one represents more individual values than another.
+// Rather than calculating counts with GetCount, there can be more efficient ways of determining whether one represents more individual values than another.
 //
-// CompareSize returns a positive integer if this division has a larger count than the item given, 0 if they are the same, or a negative integer if the other has a larger count.
+// CompareSize returns a positive integer if this division has a larger count than the item given, zero if they are the same, or a negative integer if the other has a larger count.
 func (grouping *IPAddressLargeDivisionGrouping) CompareSize(other AddressItem) int {
 	if grouping == nil {
 		if isNilItem(other) {
@@ -501,10 +495,9 @@ func (grouping *IPAddressLargeDivisionGrouping) CompareSize(other AddressItem) i
 	//return grouping.compareSize(other)
 }
 
-// String implements the fmt.Stringer interface,
-// returning the normalized string provided by ToNormalizedString if this grouping originated as an address section,
-// or printed as a slice with each division converted to a string by String ( ie "[ div0 div1 ...]"),
-// or "<nil>" if the receiver is a nil pointer.
+// String implements the [fmt.Stringer] interface.
+// It returns "<nil>" if the receiver is a nil pointer.
+// Otherwise, the string is printed like a slice, with each division converted to a string by its own String method (like "[ div0 div1 ... ]").
 func (grouping *IPAddressLargeDivisionGrouping) String() string {
 	if grouping == nil {
 		return nilString()

@@ -1345,7 +1345,7 @@ func (t trieTesterGeneric) testMap(trie *ipaddr.AssociativeTrie[*ipaddr.Address,
 		v, _ := trie.Get(addr)
 		expected := valueProducer(i)
 		if !reflect.DeepEqual(v, expected) { //reflect deep equal
-			fmt.Println(trie)
+			//fmt.Println(trie)
 			t.addFailure(newAssocTrieFailure(fmt.Sprintf("got mismatch, got %v, not %v for %v", v, expected, addr), trie))
 			v, _ = trie.Get(addr)
 		}

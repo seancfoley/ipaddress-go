@@ -130,9 +130,9 @@ type AddressItem interface {
 	// whether addresses in the subnet or address range, whether individual sections in the collection of sections, whether individual segments in the segment's range.
 	// It compares the number of individual elements within each.
 	//
-	// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one item represents more individual addresses than another.
+	// Rather than calculating counts with GetCount, there can be more efficient ways of determining whether one item represents more individual addresses than another.
 	//
-	// CompareSize returns a positive integer if this item has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
+	// CompareSize returns a positive integer if this item has a larger count than the one given, zero if they are the same, or a negative integer if the other has a larger count.
 	CompareSize(AddressItem) int
 
 	fmt.Stringer
@@ -170,7 +170,7 @@ type AddressDivisionSeries interface {
 	// If the prefix length matches the bit count, this returns true.
 	//
 	// This is different from ContainsPrefixBlock in that this method returns
-	// false if the series has no prefix length or a prefix length that differs from prefix lengths for which ContainsPrefixBlock returns true.
+	// false if the series has no prefix length, or a prefix length that differs from a prefix length for which ContainsPrefixBlock returns true.
 	IsPrefixBlock() bool
 
 	// IsSinglePrefixBlock returns whether the range of values matches a single subnet block for the prefix length.
@@ -225,7 +225,7 @@ type AddressComponent interface { //AddressSegment and above, AddressSegmentSeri
 	TestBit(index BitCount) bool
 
 	// IsOneBit returns true if the bit in the lower value of this address component at the given index is 1, where index 0 refers to the most significant bit.
-	// IsOneBit will panic if bitIndex < 0, or if it is larger than the bit count of this address component.
+	// IsOneBit will panic if bitIndex is less than zero, or if it is larger than the bit count of this address component.
 	IsOneBit(index BitCount) bool
 
 	// ToHexString writes this address component as a single hexadecimal value (possibly two values if a range that is not a prefixed block),
@@ -269,7 +269,7 @@ type AddressSegmentSeries interface { // Address and above, AddressSection and a
 	// http://tools.ietf.org/html/rfc5952
 	//
 	// For MAC, it uses the canonical standardized IEEE 802 MAC address representation of xx-xx-xx-xx-xx-xx.  An example is "01-23-45-67-89-ab".
-	// For range segments, '|' is used: 11-22-33|44-55-66
+	// For range segments, '|' is used: "11-22-33|44-55-66".
 	//
 	// Each address has a unique canonical string, not counting the prefix length.
 	// With IP addresses and sections, the prefix length is included in the string, and the prefix length can cause two equal addresses to have different strings, for example "1.2.3.4/16" and "1.2.3.4".
@@ -306,7 +306,7 @@ type AddressSegmentSeries interface { // Address and above, AddressSection and a
 
 	// GetGenericSegment returns the segment at the given index as an AddressSegmentType.
 	// The first segment is at index 0.
-	// GetGenericSegment will panic given a negative index or index larger than the segment count.
+	// GetGenericSegment will panic given a negative index or an index matching or larger than the segment count.
 	GetGenericSegment(index int) AddressSegmentType
 }
 
@@ -359,7 +359,7 @@ type IPAddressSegmentSeries interface { // IPAddress and above, IPAddressSection
 	// If the host is zero length (there are zero host bits), IsMaxHostLen returns true.
 	IsMaxHostLen(BitCount) bool
 
-	// IsSingleNetwork returns whether the network section of the IP address series, the prefix, consists of a single value
+	// IsSingleNetwork returns whether the network section of the IP address series, the prefix, consists of a single value.
 	//
 	// If it has no prefix length, it returns true if not multiple, if it contains only a single individual series.
 	IsSingleNetwork() bool
@@ -399,14 +399,14 @@ type IPAddressSegmentSeries interface { // IPAddress and above, IPAddressSection
 	ToFullString() string
 
 	// ToPrefixLenString returns a string with a CIDR network prefix length if this address has a network prefix length.
-	// For IPv6, a zero host section will be compressed with ::. For IPv4 the string is equivalent to the canonical string.
+	// For IPv6, a zero host section will be compressed with "::". For IPv4 the string is equivalent to the canonical string.
 	ToPrefixLenString() string
 
 	// ToSubnetString produces a string with specific formats for subnets.
-	// The subnet string looks like 1.2.*.* or 1:2::/16.
+	// The subnet string looks like "1.2.*.*" or "1:2::/16".
 	//
 	// In the case of IPv4, this means that wildcards are used instead of a network prefix when a network prefix has been supplied.
-	// In the case of IPv6, when a network prefix has been supplied, the prefix will be shown and the host section will be compressed with ::.
+	// In the case of IPv6, when a network prefix has been supplied, the prefix will be shown and the host section will be compressed with "::".
 	ToSubnetString() string
 
 	// ToCanonicalWildcardString produces a string similar to the canonical string but avoids the CIDR prefix length.
@@ -425,10 +425,10 @@ type IPAddressSegmentSeries interface { // IPAddress and above, IPAddressSection
 	// it uses SQL wildcards.  It uses '%' instead of '*' and also uses the wildcard '_'.
 	ToSQLWildcardString() string
 
-	// ToReverseDNSString generates the reverse DNS lookup string,
+	// ToReverseDNSString generates the reverse-DNS lookup string,
 	// returning an error if this address series is an IPv6 multiple-valued section for which the range cannot be represented.
-	// For 8.255.4.4 it is 4.4.255.8.in-addr.arpa
-	// For 2001:db8::567:89ab it is b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa
+	// For "8.255.4.4" it is "4.4.255.8.in-addr.arpa".
+	// For "2001:db8::567:89ab" it is "b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa".
 	ToReverseDNSString() (string, addrerr.IncompatibleAddressError)
 }
 
@@ -481,7 +481,7 @@ type IPv6AddressSegmentSeries interface {
 
 	// GetSegment returns the segment at the given index.
 	// The first segment is at index 0.
-	// GetSegment will panic given a negative index or index larger than the segment count.
+	// GetSegment will panic given a negative index or an index matching or larger than the segment count.
 	GetSegment(index int) *IPv6AddressSegment
 }
 
@@ -536,7 +536,7 @@ type IPv4AddressSegmentSeries interface {
 
 	// GetSegment returns the segment at the given index.
 	// The first segment is at index 0.
-	// GetSegment will panic given a negative index or index larger than the segment count.
+	// GetSegment will panic given a negative index or an index matching or larger than the segment count.
 	GetSegment(index int) *IPv4AddressSegment
 }
 
@@ -565,7 +565,7 @@ type MACAddressSegmentSeries interface {
 
 	// GetSegment returns the segment at the given index.
 	// The first segment is at index 0.
-	// GetSegment will panic given a negative index or index larger than the segment count.
+	// GetSegment will panic given a negative index or an index matching or larger than the segment count.
 	GetSegment(index int) *MACAddressSegment
 }
 
@@ -702,7 +702,7 @@ type IPAddressRange interface {
 	// Generally, for a subnet this means that any segment covering a range of values must be followed by segments that are full range, covering all values.
 	//
 	// Individual addresses are sequential and CIDR prefix blocks are sequential.
-	// The subnet 1.2.3-4.5 is not sequential, since the two addresses it represents, 1.2.3.5 and 1.2.4.5, are not (1.2.3.6 is in-between the two but not in the subnet).
+	// The subnet "1.2.3-4.5" is not sequential, since the two addresses it represents, "1.2.3.5" and "1.2.4.5", are not ("1.2.3.6" is in-between the two but not in the subnet).
 	IsSequential() bool
 }
 

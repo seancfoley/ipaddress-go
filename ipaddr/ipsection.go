@@ -108,7 +108,7 @@ type ipAddressSectionInternal struct {
 
 // GetSegment returns the segment at the given index.
 // The first segment is at index 0.
-// GetSegment will panic given a negative index or index larger than the segment count.
+// GetSegment will panic given a negative index or an index matching or larger than the segment count.
 func (section *ipAddressSectionInternal) GetSegment(index int) *IPAddressSegment {
 	return section.getDivision(index).ToIP()
 }
@@ -1025,7 +1025,7 @@ func (section *ipAddressSectionInternal) getHostSectionLen(networkPrefixLength B
 		newSegments = createSegmentArray(hostSegmentCount)
 		newSegments[0] = createAddressDivision(firstSeg.deriveNewMultiSeg(segLower, segUpper, segPrefLength))
 
-		// the remaining segments each must have zero segment prefix length
+		// the remaining segments each must have zero-segment prefix length
 		var zeroPrefixIndex int
 		if section.isPrefixed() {
 			zeroPrefixIndex = getNetworkSegmentIndex(section.GetPrefixLen().bitCount(), bytesPerSegment, bitsPerSegment) + 1
@@ -1038,7 +1038,7 @@ func (section *ipAddressSectionInternal) getHostSectionLen(networkPrefixLength B
 			seg := section.GetSegment(prefixedSegmentIndex + i)
 			newSegments[i] = createAddressDivision(seg.derivePrefixed(cacheBitCount(0)))
 		}
-		// the rest already have zero segment prefix length, just copy them
+		// the rest already have zero-segment prefix length, just copy them
 		section.copySubDivisions(prefixedSegmentIndex+zeroPrefixIndex, prefixedSegmentIndex+hostSegmentCount, newSegments[zeroPrefixIndex:])
 	} else {
 		prefLen = cacheBitCount(0)
@@ -1413,13 +1413,13 @@ func (section *ipAddressSectionInternal) ContainsSinglePrefixBlock(prefixLen Bit
 // If the prefix length matches the bit count, this returns true.
 //
 // This is different from ContainsPrefixBlock in that this method returns
-// false if the series has no prefix length or a prefix length that differs from prefix lengths for which ContainsPrefixBlock returns true.
+// false if the series has no prefix length, or a prefix length that differs from a prefix length for which ContainsPrefixBlock returns true.
 func (section *ipAddressSectionInternal) IsPrefixBlock() bool {
 	return section.addressSectionInternal.IsPrefixBlock()
 }
 
 // IsSinglePrefixBlock returns whether the range matches the block of values for a single prefix identified by the prefix length of this address.
-// This is similar to IsPrefixBlock() except that it returns false when the subnet has multiple prefixes.
+// This is similar to IsPrefixBlock except that it returns false when the subnet has multiple prefixes.
 //
 // What distinguishes this method from ContainsSinglePrefixBlock is that this method returns
 // false if the series does not have a prefix length assigned to it,
@@ -1504,10 +1504,14 @@ func (section *ipAddressSectionInternal) GetBytesPerSegment() int {
 	return section.addressSectionInternal.GetBytesPerSegment()
 }
 
+// GetGenericSegment returns the segment at the given index as an AddressSegmentType.
+// The first segment is at index 0.
+// GetGenericSegment will panic given a negative index or an index matching or larger than the segment count.
 func (section *ipAddressSectionInternal) GetGenericSegment(index int) AddressSegmentType {
 	return section.addressSectionInternal.GetGenericSegment(index)
 }
 
+// GetSegmentCount returns the segment/division count.
 func (section *ipAddressSectionInternal) GetSegmentCount() int {
 	return section.addressSectionInternal.GetSegmentCount()
 }
@@ -1528,7 +1532,7 @@ func (section *ipAddressSectionInternal) TestBit(n BitCount) bool {
 }
 
 // IsOneBit returns true if the bit in the lower value of this section at the given index is 1, where index 0 refers to the most significant bit.
-// IsOneBit will panic if bitIndex < 0, or if it is larger than the bit count of this item.
+// IsOneBit will panic if bitIndex is less than zero, or if it is larger than the bit count of this item.
 func (section *ipAddressSectionInternal) IsOneBit(prefixBitIndex BitCount) bool {
 	return section.addressSectionInternal.IsOneBit(prefixBitIndex)
 }
@@ -1597,9 +1601,9 @@ func (section *IPAddressSection) Compare(item AddressItem) int {
 
 // CompareSize compares the counts of two address sections or other items, the number of individual items represented.
 //
-// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether this section represents more individual address sections than another item.
+// Rather than calculating counts with GetCount, there can be more efficient ways of determining whether this section represents more individual address sections than another item.
 //
-// CompareSize returns a positive integer if this address section has a larger count than the item given, 0 if they are the same, or a negative integer if the other has a larger count.
+// CompareSize returns a positive integer if this address section has a larger count than the item given, zero if they are the same, or a negative integer if the other has a larger count.
 func (section *IPAddressSection) CompareSize(other AddressItem) int {
 	if section == nil {
 		if isNilItem(other) {
@@ -1905,7 +1909,7 @@ func (section *IPAddressSection) SetPrefixLen(prefixLen BitCount) *IPAddressSect
 // If this address section has a prefix length, and the prefix length is increased when setting the new prefix length, the bits moved within the prefix become zero.
 // If this address section has a prefix length, and the prefix length is decreased when setting the new prefix length, the bits moved outside the prefix become zero.
 //
-// In other words, bits that move from one side of the prefix length to the other (ie bits moved into the prefix or outside the prefix) are zeroed.
+// In other words, bits that move from one side of the prefix length to the other (bits moved into the prefix or outside the prefix) are zeroed.
 //
 // If the result cannot be zeroed because zeroing out bits results in a non-contiguous segment, an error is returned.
 func (section *IPAddressSection) SetPrefixLenZeroed(prefixLen BitCount) (*IPAddressSection, addrerr.IncompatibleAddressError) {
@@ -2129,7 +2133,7 @@ func (section *IPAddressSection) ReverseSegments() *IPAddressSection {
 	return res.ToIP()
 }
 
-// String implements the fmt.Stringer interface, returning the normalized string provided by ToNormalizedString, or "<nil>" if the receiver is a nil pointer.
+// String implements the [fmt.Stringer] interface, returning the normalized string provided by ToNormalizedString, or "<nil>" if the receiver is a nil pointer.
 func (section *IPAddressSection) String() string {
 	if section == nil {
 		return nilString()
@@ -2158,7 +2162,7 @@ func (section *IPAddressSection) ToCanonicalString() string {
 //
 // For IPv4, it is the same as the canonical string.
 //
-// For IPv6, it differs from the canonical string.  Zero segments are not compressed.
+// For IPv6, it differs from the canonical string.  Zero-segments are not compressed.
 //
 // With IP addresses, the prefix length is included in the string.
 func (section *IPAddressSection) ToNormalizedString() string {
@@ -2259,10 +2263,10 @@ func (section *IPAddressSection) ToFullString() string {
 	return section.toFullString()
 }
 
-// ToReverseDNSString generates the reverse DNS lookup string,
+// ToReverseDNSString generates the reverse-DNS lookup string,
 // returning an error if this address section is an IPv6 multiple-valued section for which the range cannot be represented.
-// For 8.255.4.4 it is 4.4.255.8.in-addr.arpa
-// For 2001:db8::567:89ab it is b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa
+// For "8.255.4.4" it is "4.4.255.8.in-addr.arpa".
+// For "2001:db8::567:89ab" it is "b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa".
 func (section *IPAddressSection) ToReverseDNSString() (string, addrerr.IncompatibleAddressError) {
 	if section == nil {
 		return nilString(), nil
@@ -2271,7 +2275,7 @@ func (section *IPAddressSection) ToReverseDNSString() (string, addrerr.Incompati
 }
 
 // ToPrefixLenString returns a string with a CIDR network prefix length if this address has a network prefix length.
-// For IPv6, a zero host section will be compressed with ::. For IPv4 the string is equivalent to the canonical string.
+// For IPv6, a zero host section will be compressed with "::". For IPv4 the string is equivalent to the canonical string.
 func (section *IPAddressSection) ToPrefixLenString() string {
 	if section == nil {
 		return nilString()
@@ -2280,10 +2284,10 @@ func (section *IPAddressSection) ToPrefixLenString() string {
 }
 
 // ToSubnetString produces a string with specific formats for subnets.
-// The subnet string looks like 1.2.*.* or 1:2::/16.
+// The subnet string looks like "1.2.*.*" or "1:2::/16".
 //
 // In the case of IPv4, this means that wildcards are used instead of a network prefix when a network prefix has been supplied.
-// In the case of IPv6, when a network prefix has been supplied, the prefix will be shown and the host section will be compressed with ::.
+// In the case of IPv6, when a network prefix has been supplied, the prefix will be shown and the host section will be compressed with "::".
 func (section *IPAddressSection) ToSubnetString() string {
 	if section == nil {
 		return nilString()

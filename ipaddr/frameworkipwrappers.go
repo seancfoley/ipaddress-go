@@ -21,13 +21,13 @@ import (
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrstr"
 )
 
-// ExtendedIPSegmentSeries wraps either an IPAddress or IPAddressSection.
+// ExtendedIPSegmentSeries wraps either an [IPAddress] or [IPAddressSection].
 // ExtendedIPSegmentSeries can be used to write code that works with both IP addresses and IP address sections,
-// going further than IPAddressSegmentSeries to offer additional methods, methods with the series types in their signature.
+// going further than [IPAddressSegmentSeries] to offer additional methods, methods with the series types in their signature.
 type ExtendedIPSegmentSeries interface {
 	IPAddressSegmentSeries
 
-	// Unwrap returns the wrapped IP address or IP address aection as an interface, IPAddressSegmentSeries
+	// Unwrap returns the wrapped IP address or IP address section as an interface, IPAddressSegmentSeries.
 	Unwrap() IPAddressSegmentSeries
 
 	// Equal returns whether the given address series is equal to this address series.
@@ -83,7 +83,7 @@ type ExtendedIPSegmentSeries interface {
 
 	// GetSegment returns the segment at the given index.
 	// The first segment is at index 0.
-	// GetSegment will panic given a negative index or index larger than the segment count.
+	// GetSegment will panic given a negative index or an index matching or larger than the segment count.
 	GetSegment(index int) *IPAddressSegment
 
 	// GetSegments returns a slice with the address segments.  The returned slice is not backed by the same array as this section.
@@ -143,7 +143,7 @@ type ExtendedIPSegmentSeries interface {
 	//
 	// The returned series will have the same prefix length.
 	//
-	// For instance, the zero host of 1.2.3.4/16 is the individual address 1.2.0.0/16.
+	// For instance, the zero host of "1.2.3.4/16" is the individual address "1.2.0.0/16".
 	//
 	// This returns an error if the series is a range which cannot be converted to a range in which all individual elements have zero hosts,
 	// because the conversion results in a series segment that is not a sequential range of values.
@@ -153,7 +153,7 @@ type ExtendedIPSegmentSeries interface {
 	// the host being the bits following the given prefix length.
 	// If this series has the same prefix length, then the resulting series will too, otherwise the resulting series will have no prefix length.
 	//
-	// For instance, the zero host of 1.2.3.4 for the prefix length 16 is the address 1.2.255.255.
+	// For instance, the zero host of "1.2.3.4" for the prefix length of 16 is the address "1.2.255.255".
 	//
 	// This returns an error if the series is a range which cannot be converted to a range in which all individual elements have max hosts,
 	// because the conversion results in a series segment that is not a sequential range of values.
@@ -165,7 +165,7 @@ type ExtendedIPSegmentSeries interface {
 	//
 	// The returned series will have the same prefix length.
 	//
-	// For instance, the max host of 1.2.3.4/16 gives the broadcast address 1.2.255.255/16.
+	// For instance, the max host of "1.2.3.4/16" gives the broadcast address "1.2.255.255/16".
 	//
 	// This returns an error if the series is a range which cannot be converted to a range in which all individual elements have max hosts,
 	// because the conversion results in a series segment that is not a sequential range of values.
@@ -312,7 +312,7 @@ type ExtendedIPSegmentSeries interface {
 	// If this series has a prefix length, and the prefix length is increased when setting the new prefix length, the bits moved within the prefix become zero.
 	// If this series has a prefix length, and the prefix length is decreased when setting the new prefix length, the bits moved outside the prefix become zero.
 	//
-	// In other words, bits that move from one side of the prefix length to the other (ie bits moved into the prefix or outside the prefix) are zeroed.
+	// In other words, bits that move from one side of the prefix length to the other (bits moved into the prefix or outside the prefix) are zeroed.
 	//
 	// If the result cannot be zeroed because zeroing out bits results in a non-contiguous segment, an error is returned.
 	SetPrefixLenZeroed(BitCount) (ExtendedIPSegmentSeries, addrerr.IncompatibleAddressError)
@@ -345,12 +345,12 @@ type ExtendedIPSegmentSeries interface {
 	ToCustomString(stringOptions addrstr.IPStringOptions) string
 }
 
-// WrappedIPAddress is the implementation of ExtendedIPSegmentSeries for IP addresses
+// WrappedIPAddress is the implementation of ExtendedIPSegmentSeries for IP addresses.
 type WrappedIPAddress struct {
 	*IPAddress
 }
 
-// Unwrap returns the wrapped address as an interface, IPAddressSegmentSeries
+// Unwrap returns the wrapped address as an interface, IPAddressSegmentSeries.
 func (addr WrappedIPAddress) Unwrap() IPAddressSegmentSeries {
 	res := addr.IPAddress
 	if res == nil {
@@ -466,7 +466,7 @@ func (addr WrappedIPAddress) ToZeroHostLen(bitCount BitCount) (ExtendedIPSegment
 //
 // The returned series will have the same prefix length.
 //
-// For instance, the zero host of 1.2.3.4/16 is the individual address 1.2.0.0/16.
+// For instance, the zero host of "1.2.3.4/16" is the individual address "1.2.0.0/16".
 //
 // This returns an error if the series is a range which cannot be converted to a range in which all individual elements have zero hosts,
 // because the conversion results in a series segment that is not a sequential range of values.
@@ -478,7 +478,7 @@ func (addr WrappedIPAddress) ToZeroHost() (ExtendedIPSegmentSeries, addrerr.Inco
 // the host being the bits following the given prefix length.
 // If this address or subnet has the same prefix length, then the resulting one will too, otherwise the resulting series will have no prefix length.
 //
-// For instance, the zero host of 1.2.3.4 for the prefix length 16 is the address 1.2.255.255.
+// For instance, the zero host of "1.2.3.4" for the prefix length of 16 is the address "1.2.255.255".
 //
 // This returns an error if the address or subnet is a range which cannot be converted to a range in which all individual addresses have max hosts,
 // because the conversion results in a series segment that is not a sequential range of values.
@@ -492,7 +492,7 @@ func (addr WrappedIPAddress) ToMaxHostLen(bitCount BitCount) (ExtendedIPSegmentS
 //
 // The returned series will have the same prefix length.
 //
-// For instance, the max host of 1.2.3.4/16 gives the broadcast address 1.2.255.255/16.
+// For instance, the max host of "1.2.3.4/16" gives the broadcast address "1.2.255.255/16".
 //
 // This returns an error if the series is a range which cannot be converted to a range in which all individual elements have max hosts,
 // because the conversion results in a series segment that is not a sequential range of values.
@@ -635,7 +635,7 @@ func (addr WrappedIPAddress) SetPrefixLen(prefixLen BitCount) ExtendedIPSegmentS
 // If this series has a prefix length, and the prefix length is increased when setting the new prefix length, the bits moved within the prefix become zero.
 // If this series has a prefix length, and the prefix length is decreased when setting the new prefix length, the bits moved outside the prefix become zero.
 //
-// In other words, bits that move from one side of the prefix length to the other (ie bits moved into the prefix or outside the prefix) are zeroed.
+// In other words, bits that move from one side of the prefix length to the other (bits moved into the prefix or outside the prefix) are zeroed.
 //
 // If the result cannot be zeroed because zeroing out bits results in a non-contiguous segment, an error is returned.
 func (addr WrappedIPAddress) SetPrefixLenZeroed(prefixLen BitCount) (ExtendedIPSegmentSeries, addrerr.IncompatibleAddressError) {
@@ -694,12 +694,12 @@ func (addr WrappedIPAddress) ReverseSegments() ExtendedIPSegmentSeries {
 	return wrapIPAddress(addr.IPAddress.ReverseSegments())
 }
 
-// WrappedIPAddressSection is the implementation of ExtendedIPSegmentSeries for IP address sections
+// WrappedIPAddressSection is the implementation of ExtendedIPSegmentSeries for IP address sections.
 type WrappedIPAddressSection struct {
 	*IPAddressSection
 }
 
-// Unwrap returns the wrapped address section as an interface, IPAddressSegmentSeries
+// Unwrap returns the wrapped address section as an interface, IPAddressSegmentSeries.
 func (section WrappedIPAddressSection) Unwrap() IPAddressSegmentSeries {
 	res := section.IPAddressSection
 	if res == nil {
@@ -978,7 +978,7 @@ func (section WrappedIPAddressSection) SetPrefixLen(prefixLen BitCount) Extended
 // If this series has a prefix length, and the prefix length is increased when setting the new prefix length, the bits moved within the prefix become zero.
 // If this series has a prefix length, and the prefix length is decreased when setting the new prefix length, the bits moved outside the prefix become zero.
 //
-// In other words, bits that move from one side of the prefix length to the other (ie bits moved into the prefix or outside the prefix) are zeroed.
+// In other words, bits that move from one side of the prefix length to the other (bits moved into the prefix or outside the prefix) are zeroed.
 //
 // If the result cannot be zeroed because zeroing out bits results in a non-contiguous segment, an error is returned.
 func (section WrappedIPAddressSection) SetPrefixLenZeroed(prefixLen BitCount) (ExtendedIPSegmentSeries, addrerr.IncompatibleAddressError) {

@@ -250,7 +250,7 @@ func (grouping *addressDivisionGroupingInternal) getCachedCount() *big.Int {
 //
 // If this has a non-nil prefix length, returns the number of distinct prefix values.
 //
-// If this has a nil prefix length, returns the same value as GetCount
+// If this has a nil prefix length, returns the same value as GetCount.
 func (grouping *addressDivisionGroupingInternal) GetPrefixCount() *big.Int {
 	if section := grouping.toAddressSection(); section != nil {
 		return section.GetPrefixCount()
@@ -305,7 +305,7 @@ func (grouping *addressDivisionGroupingInternal) matchesIPv4AddressType() bool {
 }
 
 func (grouping *addressDivisionGroupingInternal) matchesIPAddressType() bool {
-	return grouping.matchesIPSectionType() // no need to check segment count because addresses cannot be constructed with incorrect segment count (note the zero IPAddress has zero segments)
+	return grouping.matchesIPSectionType() // no need to check segment count because addresses cannot be constructed with incorrect segment count (note the zero IPAddress has zero-segments)
 }
 
 func (grouping *addressDivisionGroupingInternal) matchesMACAddressType() bool {
@@ -350,7 +350,7 @@ func (grouping *addressDivisionGroupingInternal) matchesMACSectionType() bool {
 	return grouping.getAddrType().isMAC() || grouping.matchesZeroGrouping()
 }
 
-// Format implements fmt.Formatter interface. It accepts the formats
+// Format implements [fmt.Formatter] interface. It accepts the formats
 //  - 'v' for the default address and section format (either the normalized or canonical string),
 //  - 's' (string) for the same,
 //  - 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
@@ -358,8 +358,8 @@ func (grouping *addressDivisionGroupingInternal) matchesMACSectionType() bool {
 //  - 'X' (uppercase hexadecimal).
 // Also supported are some of fmt's format flags for integral types.
 // Sign control is not supported since addresses and sections are never negative.
-// '#' for an alternate format is supported, which is leading zero for octal and for hexadecimal,
-// a leading "0x" or "0X" for "%#x" and "%#X" respectively,
+// '#' for an alternate format is supported, which adds a leading zero for octal, and for hexadecimal it adds
+// a leading "0x" or "0X" for "%#x" and "%#X" respectively.
 // Also supported is specification of minimum digits precision, output field width,
 // space or zero padding, and '-' for left or right justification.
 func (grouping addressDivisionGroupingInternal) Format(state fmt.State, verb rune) {
@@ -398,7 +398,7 @@ func (grouping *addressDivisionGroupingInternal) initDivs() *addressDivisionGrou
 //
 // Unlike ContainsSinglePrefixBlock, whether there are multiple prefix values in this item for the given prefix length makes no difference.
 //
-// Use GetMinPrefixLenForBlock() to determine the smallest prefix length for which this method returns true.
+// Use GetMinPrefixLenForBlock to determine the smallest prefix length for which this method returns true.
 func (grouping *addressDivisionGroupingInternal) ContainsPrefixBlock(prefixLen BitCount) bool {
 	if section := grouping.toAddressSection(); section != nil {
 		return section.ContainsPrefixBlock(prefixLen)
@@ -467,7 +467,7 @@ func (grouping *addressDivisionGroupingInternal) ContainsSinglePrefixBlock(prefi
 // If the prefix length matches the bit count, this returns true.
 //
 // This is different from ContainsPrefixBlock in that this method returns
-// false if the series has no prefix length or a prefix length that differs from prefix lengths for which ContainsPrefixBlock returns true.
+// false if the series has no prefix length, or a prefix length that differs from a prefix length for which ContainsPrefixBlock returns true.
 func (grouping *addressDivisionGroupingInternal) IsPrefixBlock() bool { //Note for any given prefix length you can compare with GetMinPrefixLenForBlock
 	prefLen := grouping.getPrefixLen()
 	return prefLen != nil && grouping.ContainsPrefixBlock(prefLen.bitCount())
@@ -1030,7 +1030,7 @@ func normalizeDivisions(divs []*AddressDivision) (newDivs []*AddressDivision, ne
 
 // AddressDivisionGrouping objects consist of a series of AddressDivision objects, each division containing a sequential range of values.
 //
-// AddressDivisionGrouping objects are immutable.  This also makes them thread-safe.
+// AddressDivisionGrouping objects are immutable.  This also makes them concurrency-safe.
 //
 // AddressDivision objects use uint64 to represent their values, so this places a cap on the size of the divisions in AddressDivisionGrouping.
 //
@@ -1048,9 +1048,9 @@ func (grouping *AddressDivisionGrouping) Compare(item AddressItem) int {
 
 // CompareSize compares the counts of two items, the number of individual items represented in each.
 //
-// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether this grouping represents more individual items than another.
+// Rather than calculating counts with GetCount, there can be more efficient ways of determining whether this grouping represents more individual items than another.
 //
-// CompareSize returns a positive integer if this address division grouping has a larger count than the item given, 0 if they are the same, or a negative integer if the other has a larger count.
+// CompareSize returns a positive integer if this address division grouping has a larger count than the item given, zero if they are the same, or a negative integer if the other has a larger count.
 func (grouping *AddressDivisionGrouping) CompareSize(other AddressItem) int {
 	if grouping == nil {
 		if isNilItem(other) {
@@ -1224,10 +1224,10 @@ func (grouping *AddressDivisionGrouping) ForEachDivision(consumer func(divisionI
 	return len(divArray)
 }
 
-// String implements the fmt.Stringer interface,
-// returning the normalized string provided by ToNormalizedString if this grouping originated as an address section,
-// or printed as a slice with each division converted to a string by String ( ie "[ div0 div1 ...]"),
-// or "<nil>" if the receiver is a nil pointer.
+// String implements the [fmt.Stringer] interface.
+// It returns "<nil>" if the receiver is a nil pointer.
+// It returns the normalized string provided by ToNormalizedString if this grouping originated as an address section.
+// Otherwise, the string is printed like a slice, with each division converted to a string by its own String method (like "[ div0 div1 ... ]").
 func (grouping *AddressDivisionGrouping) String() string {
 	if grouping == nil {
 		return nilString()

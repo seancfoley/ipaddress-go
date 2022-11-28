@@ -418,7 +418,6 @@ func (params *addressStringParams) clone() *addressStringParams {
 var _ addressSegmentParams = &addressStringParams{}
 
 // Each StringParams has settings to write exactly one type of IP address part string.
-//protected static class IPAddressStringParams<T extends IPAddressStringDivisionSeries> extends AddressStringParams<T> implements IPAddressStringWriter<T> {
 type ipAddressStringParams struct {
 	addressStringParams
 
@@ -636,7 +635,6 @@ func (params *ipAddressStringParams) clone() *ipAddressStringParams {
 }
 
 // Each IPv6StringParams has settings to write exactly one IPv6 address section string
-//static class IPv6StringParams extends IPAddressStringParams<IPv6AddressSection> {
 type ipv6StringParams struct {
 	ipAddressStringParams
 
@@ -836,7 +834,6 @@ func (params *ipv6StringParams) clone() *ipv6StringParams {
 }
 
 // Each IPv6StringParams has settings to write exactly one IPv6 address section string
-//static class IPv6StringParams extends IPAddressStringParams<IPv6AddressSection> {
 type ipv6v4MixedParams struct {
 	ipv6Params *ipv6StringParams
 	ipv4Params *ipAddressStringParams

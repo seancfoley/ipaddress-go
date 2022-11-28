@@ -39,7 +39,7 @@ func (seg *ipAddressSegmentInternal) IsPrefixBlock() bool {
 }
 
 // IsSinglePrefixBlock returns whether the range matches the block of values for a single prefix identified by the prefix length of this address.
-// This is similar to IsPrefixBlock() except that it returns false when the subnet has multiple prefixes.
+// This is similar to IsPrefixBlock except that it returns false when the subnet has multiple prefixes.
 //
 // What distinguishes this method from ContainsSinglePrefixBlock is that this method returns
 // false if the series does not have a prefix length assigned to it,
@@ -78,19 +78,19 @@ func (seg *ipAddressSegmentInternal) GetPrefixValueCount() SegIntCount {
 
 // GetSegmentPrefixLen returns the network prefix for the segment.
 //
-// The network prefix is 16 for an address like 1.2.0.0/16.
+// The network prefix is 16 for an address like "1.2.0.0/16".
 //
 // When it comes to each address division or segment, the prefix for the division is the
 // prefix obtained when applying the address or section prefix.
 //
-// For instance, consider the address 1.2.0.0/20.
+// For instance, consider the address "1.2.0.0/20".
 // The first segment has no prefix because the address prefix 20 extends beyond the 8 bits in the first segment, it does not even apply to the segment.
 // The second segment has no prefix because the address prefix extends beyond bits 9 to 16 which lie in the second segment, it does not apply to that segment either.
 // The third segment has the prefix 4 because the address prefix 20 corresponds to the first 4 bits in the 3rd segment,
 // which means that the first 4 bits are part of the network section of the address or segment.
 // The last segment has the prefix 0 because not a single bit is in the network section of the address or segment
 //
-// The prefix applied across the address is nil ... nil ... (1 to segment bit length) ... 0 ... 0
+// The division prefixes applied across the address are: nil ... nil (1 to segment bit length) 0 ... 0.
 //
 // If the segment has no prefix then nil is returned.
 func (seg *ipAddressSegmentInternal) GetSegmentPrefixLen() PrefixLen {
@@ -366,7 +366,7 @@ func (seg *ipAddressSegmentInternal) IncludesMax() bool {
 
 // IsFullRange returns whether the segment range includes all possible values for its bit length.
 //
-//  This is true if and only if both IncludesZero and IncludesMax return true.
+// This is true if and only if both IncludesZero and IncludesMax return true.
 func (seg *ipAddressSegmentInternal) IsFullRange() bool {
 	return seg.addressSegmentInternal.IsFullRange()
 }
@@ -479,7 +479,7 @@ func (seg *ipAddressSegmentInternal) TestBit(n BitCount) bool {
 }
 
 // IsOneBit returns true if the bit in the lower value of this segment at the given index is 1, where index 0 refers to the most significant bit.
-// IsOneBit will panic if bitIndex < 0, or if it is larger than the bit count of this item.
+// IsOneBit will panic if bitIndex is less than zero, or if it is larger than the bit count of this item.
 func (seg *ipAddressSegmentInternal) IsOneBit(segmentBitIndex BitCount) bool {
 	return seg.addressSegmentInternal.IsOneBit(segmentBitIndex)
 }
@@ -590,9 +590,9 @@ func (seg *IPAddressSegment) Compare(item AddressItem) int {
 
 // CompareSize compares the counts of two items, the number of individual values within.
 //
-// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether this represents more individual values than another.
+// Rather than calculating counts with GetCount, there can be more efficient ways of determining whether this represents more individual values than another.
 //
-// CompareSize returns a positive integer if this segment has a larger count than the item given, 0 if they are the same, or a negative integer if the other has a larger count.
+// CompareSize returns a positive integer if this segment has a larger count than the item given, zero if they are the same, or a negative integer if the other has a larger count.
 func (seg *IPAddressSegment) CompareSize(other AddressItem) int {
 	if seg == nil {
 		if isNilItem(other) {
@@ -762,7 +762,7 @@ func (seg *IPAddressSegment) GetWildcardString() string {
 
 // String produces a string that is useful when a segment string is provided with no context.
 // If the segment was originally constructed as an IPv4 address segment it uses decimal, otherwise hexadecimal.
-// It uses a string prefix for hex (0x), and does not use the wildcard '*', because division size is variable, so '*' is ambiguous.
+// It uses a string prefix for hex ("0x"), and does not use the wildcard '*', because division size is variable, so '*' is ambiguous.
 // GetWildcardString is more appropriate in context with other segments or divisions.  It does not use a string prefix and uses '*' for full-range segments.
 // GetString is more appropriate in context with prefix lengths, it uses zeros instead of wildcards with full prefix block ranges alongside prefix lengths.
 func (seg *IPAddressSegment) String() string {

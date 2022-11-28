@@ -395,7 +395,7 @@ func (t testBase) testPrefixes(original ipaddr.ExtendedIPSegmentSeries,
 
 		setPrefix := adjustedSeries.GetPrefixLen()
 		if !adjustedSeries.Equal(prefixSet) {
-			fmt.Println(original.String() + " set: " + adjustedSeries.String() + " expected: " + prefixSet.String() + " set prefix: " + bitCountToString(prefix))
+			//fmt.Println(original.String() + " set: " + adjustedSeries.String() + " expected: " + prefixSet.String() + " set prefix: " + bitCountToString(prefix))
 			t.addFailure(newSegmentSeriesFailure("prefix set: "+adjustedSeries.String(), prefixSet))
 		} else {
 			originalPref := original.GetPrefixLen()
@@ -1190,7 +1190,7 @@ func (t testBase) testStrings(w *ipaddr.IPAddressString,
 	t.confirmAddrStrings(ipAddr, c, canonical, s, cidr, n, nw, caw, cw, binary)
 	if ipAddr.IsIPv6() {
 		t.confirmAddrStrings(ipAddr, full)
-		t.confirmHostStrings(ipAddr, true, rDNS) // reverse DNS are valid hosts with embedded addresses
+		t.confirmHostStrings(ipAddr, true, rDNS) // reverse-DNS are valid hosts with embedded addresses
 		skipUncParse := false
 		zone := strings.IndexByte(unc, 's')
 		if zone >= 0 {

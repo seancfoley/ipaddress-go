@@ -273,7 +273,7 @@ func (addr *ipAddressInternal) includesMaxHostLen(networkPrefixLength BitCount) 
 	return addr.getSection().IncludesMaxHostLen(networkPrefixLength)
 }
 
-// IsSingleNetwork returns whether the network section of the address, the prefix, consists of a single value
+// IsSingleNetwork returns whether the network section of the address, the prefix, consists of a single value.
 //
 // If it has no prefix length, it returns true if not multiple, if it contains only a single individual address.
 func (addr *ipAddressInternal) IsSingleNetwork() bool {
@@ -588,7 +588,7 @@ func (addr *ipAddressInternal) getNetwork() IPAddressNetwork {
 //
 // If this has a non-nil prefix length, returns the count of the range of values in the prefix.
 //
-// If this has a nil prefix length, returns the same value as GetCount()
+// If this has a nil prefix length, returns the same value as GetCount.
 func (addr *ipAddressInternal) GetPrefixCount() *big.Int {
 	return addr.addressInternal.GetPrefixCount()
 }
@@ -611,7 +611,7 @@ func (addr *ipAddressInternal) GetBlockCount(segments int) *big.Int {
 //
 // A prefix is a part of the address that is not specific to that address but common amongst a group of addresses, such as a CIDR prefix block subnet.
 //
-// For IP addresses, the prefix is explicitly defined when the address is created. For example, 1.2.0.0/16 has a prefix length of 16, while 1.2.*.* has no prefix length,
+// For IP addresses, the prefix is explicitly defined when the address is created. For example, "1.2.0.0/16" has a prefix length of 16, while "1.2.*.*" has no prefix length,
 // even though they both represent the same set of addresses and are considered equal.  Prefixes can be considered variable for a given IP address and can depend on routing.
 //
 // The methods GetMinPrefixLenForBlock and GetPrefixLenForSingleBlock can help you to obtain or define a prefix length if one does not exist already.
@@ -621,7 +621,7 @@ func (addr *ipAddressInternal) GetPrefixLen() PrefixLen {
 }
 
 // IsSinglePrefixBlock returns whether the address range matches the block of values for a single prefix identified by the prefix length of this address.
-// This is similar to IsPrefixBlock() except that it returns false when the subnet has multiple prefixes.
+// This is similar to IsPrefixBlock except that it returns false when the subnet has multiple prefixes.
 //
 // What distinguishes this method from ContainsSinglePrefixBlock is that this method returns
 // false if the series does not have a prefix length assigned to it,
@@ -629,7 +629,7 @@ func (addr *ipAddressInternal) GetPrefixLen() PrefixLen {
 //
 // It is similar to IsPrefixBlock but returns false when there are multiple prefixes.
 //
-// For instance, "1.*.*.* /16" returns false for this method and returns true for IsPrefixBlock.
+// For instance, "1.*.*.* /16" returns false from this method and returns true from IsPrefixBlock.
 func (addr *ipAddressInternal) IsSinglePrefixBlock() bool {
 	return addr.addressInternal.IsSinglePrefixBlock()
 }
@@ -640,7 +640,7 @@ func (addr *ipAddressInternal) IsSinglePrefixBlock() bool {
 // To create a prefix block from any address, use ToPrefixBlock.
 //
 // This is different from ContainsPrefixBlock in that this method returns
-// false if the series has no prefix length or a prefix length that differs from prefix lengths for which ContainsPrefixBlock returns true.
+// false if the series has no prefix length, or a prefix length that differs from a prefix length for which ContainsPrefixBlock returns true.
 func (addr *ipAddressInternal) IsPrefixBlock() bool {
 	return addr.addressInternal.IsPrefixBlock()
 }
@@ -691,7 +691,7 @@ func (addr *ipAddressInternal) GetMinPrefixLenForBlock() BitCount {
 //  - 1.2.*.* returns 16
 //  - 1.2.*.0/24 returns 16
 //  - 1.2.0.0/16 returns 16
-//  - 1.2.*.4 returns null
+//  - 1.2.*.4 returns nil
 //  - 1.2.252-255.* returns 22
 func (addr *ipAddressInternal) GetPrefixLenForSingleBlock() PrefixLen {
 	return addr.addressInternal.GetPrefixLenForSingleBlock()
@@ -866,7 +866,7 @@ func (addr *IPAddress) getProvider() ipAddressProvider {
 //
 // If just a single address, not a subnet of multiple addresses, returns 1.
 //
-// For instance, the IP address subnet 2001:db8::/64 has the count of 2 to the power of 64.
+// For instance, the IP address subnet "2001:db8::/64" has the count of 2 to the power of 64.
 //
 // Use IsMultiple if you simply want to know if the count is greater than 1.
 func (addr *IPAddress) GetCount() *big.Int {
@@ -881,7 +881,7 @@ func (addr *IPAddress) IsMultiple() bool {
 	return addr != nil && addr.isMultiple()
 }
 
-// Format implements fmt.Formatter interface. It accepts the formats
+// Format implements [fmt.Formatter] interface. It accepts the formats
 //  - 'v' for the default address and section format (either the normalized or canonical string),
 //  - 's' (string) for the same,
 //  - 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
@@ -889,15 +889,15 @@ func (addr *IPAddress) IsMultiple() bool {
 //  - 'X' (uppercase hexadecimal).
 // Also supported are some of fmt's format flags for integral types.
 // Sign control is not supported since addresses and sections are never negative.
-// '#' for an alternate format is supported, which is leading zero for octal and for hexadecimal,
-// a leading "0x" or "0X" for "%#x" and "%#X" respectively,
+// '#' for an alternate format is supported, which adds a leading zero for octal, and for hexadecimal it adds
+// a leading "0x" or "0X" for "%#x" and "%#X" respectively.
 // Also supported is specification of minimum digits precision, output field width,
 // space or zero padding, and '-' for left or right justification.
 func (addr IPAddress) Format(state fmt.State, verb rune) {
 	addr.init().format(state, verb)
 }
 
-// String implements the fmt.Stringer interface, returning the canonical string provided by ToCanonicalString, or "<nil>" if the receiver is a nil pointer.
+// String implements the [fmt.Stringer] interface, returning the canonical string provided by ToCanonicalString, or "<nil>" if the receiver is a nil pointer.
 func (addr *IPAddress) String() string {
 	if addr == nil {
 		return nilString()
@@ -985,7 +985,7 @@ func (addr *IPAddress) GetSegments() []*IPAddressSegment {
 
 // GetSegment returns the segment at the given index.
 // The first segment is at index 0.
-// GetSegment will panic given a negative index or index larger than the segment count.
+// GetSegment will panic given a negative index or an index matching or larger than the segment count.
 func (addr *IPAddress) GetSegment(index int) *IPAddressSegment {
 	return addr.getSegment(index).ToIP()
 }
@@ -1007,6 +1007,8 @@ func (addr *IPAddress) GetGenericDivision(index int) DivisionType {
 }
 
 // GetGenericSegment returns the segment at the given index as an AddressSegmentType.
+// The first segment is at index 0.
+// GetGenericSegment will panic given a negative index or an index matching or larger than the segment count.
 func (addr *IPAddress) GetGenericSegment(index int) AddressSegmentType {
 	return addr.getSegment(index)
 }
@@ -1041,7 +1043,7 @@ func (addr *IPAddress) GetByteCount() int {
 // GetLowerIPAddress returns the address in the subnet or address collection with the lowest numeric value,
 // which will be the receiver if it represents a single address.
 // For example, for "1.2-3.4.5-6", the series "1.2.4.5" is returned.
-// GetLowerIPAddress implements the IPAddressRange interface, and is equivalent to [GetLower].
+// GetLowerIPAddress implements the IPAddressRange interface, and is equivalent to GetLower.
 func (addr *IPAddress) GetLowerIPAddress() *IPAddress {
 	return addr.GetLower()
 }
@@ -1049,7 +1051,7 @@ func (addr *IPAddress) GetLowerIPAddress() *IPAddress {
 // GetUpperIPAddress returns the address in the subnet or address collection with the highest numeric value,
 // which will be the receiver if it represents a single address.
 // For example, for the subnet "1.2-3.4.5-6", the address "1.3.4.6" is returned.
-// GetUpperIPAddress implements the IPAddressRange interface, and is equivalent to [GetUpper].
+// GetUpperIPAddress implements the IPAddressRange interface, and is equivalent to GetUpper.
 func (addr *IPAddress) GetUpperIPAddress() *IPAddress {
 	return addr.GetUpper()
 }
@@ -1082,7 +1084,7 @@ func (addr *IPAddress) IsZeroHostLen(prefLen BitCount) bool {
 //
 // The returned address or subnet will have the same prefix and prefix length.
 //
-// For instance, the zero host of 1.2.3.4/16 is the individual address 1.2.0.0/16.
+// For instance, the zero host of "1.2.3.4/16" is the individual address "1.2.0.0/16".
 //
 // This returns an error if the subnet is a range of addresses which cannot be converted to a range in which all addresses have zero hosts,
 // because the conversion results in a subnet segment that is not a sequential range of values.
@@ -1094,7 +1096,7 @@ func (addr *IPAddress) ToZeroHost() (*IPAddress, addrerr.IncompatibleAddressErro
 // the host being the bits following the given prefix length.
 // If this address or subnet has the same prefix length, then the returned one will too, otherwise the returned series will have no prefix length.
 //
-// For instance, the zero host of 1.2.3.4 for the prefix length 16 is the address 1.2.0.0.
+// For instance, the zero host of "1.2.3.4" for the prefix length of 16 is the address "1.2.0.0".
 //
 // This returns an error if the subnet is a range of addresses which cannot be converted to a range in which all addresses have zero hosts,
 // because the conversion results in a subnet segment that is not a sequential range of values.
@@ -1125,7 +1127,7 @@ func (addr *IPAddress) IsMaxHostLen(prefLen BitCount) bool {
 //
 // The returned address or subnet will have the same prefix and prefix length.
 //
-// For instance, the max host of 1.2.3.4/16 gives the broadcast address 1.2.255.255/16.
+// For instance, the max host of "1.2.3.4/16" gives the broadcast address "1.2.255.255/16".
 //
 // This returns an error if the subnet is a range of addresses which cannot be converted to a range in which all addresses have max hosts,
 // because the conversion results in a subnet segment that is not a sequential range of values.
@@ -1137,7 +1139,7 @@ func (addr *IPAddress) ToMaxHost() (*IPAddress, addrerr.IncompatibleAddressError
 // the host being the bits following the given prefix length.
 // If this address or subnet has the same prefix length, then the resulting one will too, otherwise the resulting address or subnet will have no prefix length.
 //
-// For instance, the zero host of 1.2.3.4 for the prefix length 16 is the address 1.2.255.255.
+// For instance, the zero host of "1.2.3.4" for the prefix length of 16 is the address "1.2.255.255".
 //
 // This returns an error if the subnet is a range of addresses which cannot be converted to a range in which all addresses have max hosts,
 // because the conversion results in a subnet segment that is not a sequential range of values.
@@ -1151,7 +1153,7 @@ func (addr *IPAddress) ToMaxHostLen(prefixLength BitCount) (*IPAddress, addrerr.
 // The subnet will include all addresses with the same prefix as this one, the prefix "block".
 // The network prefix will match the prefix of this address or subnet, and the host values will span all values.
 //
-// For example, if the address is 1.2.3.4/16 it returns the subnet 1.2.0.0/16 which can also be written as 1.2.*.*/16
+// For example, if the address is "1.2.3.4/16" it returns the subnet "1.2.0.0/16", which can also be written as "1.2.*.*/16".
 func (addr *IPAddress) ToPrefixBlock() *IPAddress {
 	return addr.init().toPrefixBlock().ToIP()
 }
@@ -1161,7 +1163,7 @@ func (addr *IPAddress) ToPrefixBlock() *IPAddress {
 // The subnet will include all addresses with the same prefix as this one, the prefix "block" for that prefix length.
 // The network prefix will match the prefix of this address or subnet, and the host values will span all values.
 //
-// For example, if the address is 1.2.3.4 and the prefix length provided is 16, it returns the subnet 1.2.0.0/16 which can also be written as 1.2.*.*/16
+// For example, if the address is "1.2.3.4" and the prefix length provided is 16, it returns the subnet "1.2.0.0/16", which can also be written as "1.2.*.*/16".
 func (addr *IPAddress) ToPrefixBlockLen(prefLen BitCount) *IPAddress {
 	return addr.init().toPrefixBlockLen(prefLen).ToIP()
 }
@@ -1201,7 +1203,7 @@ func (addr *IPAddress) SetPrefixLen(prefixLen BitCount) *IPAddress {
 // If this address has a prefix length, and the prefix length is increased when setting the new prefix length, the bits moved within the prefix become zero.
 // If this address has a prefix length, and the prefix length is decreased when setting the new prefix length, the bits moved outside the prefix become zero.
 //
-// In other words, bits that move from one side of the prefix length to the other (ie bits moved into the prefix or outside the prefix) are zeroed.
+// In other words, bits that move from one side of the prefix length to the other (bits moved into the prefix or outside the prefix) are zeroed.
 //
 // If the result cannot be zeroed because zeroing out bits results in a non-contiguous segment, an error is returned.
 func (addr *IPAddress) SetPrefixLenZeroed(prefixLen BitCount) (*IPAddress, addrerr.IncompatibleAddressError) {
@@ -1229,8 +1231,8 @@ func (addr *IPAddress) AdjustPrefixLen(prefixLen BitCount) *IPAddress {
 // When prefix length is increased, the bits moved within the prefix become zero.
 // When a prefix length is decreased, the bits moved outside the prefix become zero.
 //
-// For example, 1.2.0.0/16 adjusted by -8 becomes 1.0.0.0/8.
-// 1.2.0.0/16 adjusted by 8 becomes 1.2.0.0/24
+// For example, "1.2.0.0/16" adjusted by -8 becomes "1.0.0.0/8".
+// "1.2.0.0/16" adjusted by 8 becomes "1.2.0.0/24".
 //
 // If the result cannot be zeroed because zeroing out bits results in a non-contiguous segment, an error is returned.
 func (addr *IPAddress) AdjustPrefixLenZeroed(prefixLen BitCount) (*IPAddress, addrerr.IncompatibleAddressError) {
@@ -1413,7 +1415,7 @@ func (addr *IPAddress) TestBit(n BitCount) bool {
 }
 
 // IsOneBit returns true if the bit in the lower value of this address at the given index is 1, where index 0 refers to the most significant bit.
-// IsOneBit will panic if bitIndex < 0, or if it is larger than the bit count of this item.
+// IsOneBit will panic if bitIndex is less than zero, or if it is larger than the bit count of this item.
 func (addr *IPAddress) IsOneBit(bitIndex BitCount) bool {
 	return addr.init().isOneBit(bitIndex)
 }
@@ -1458,9 +1460,9 @@ func (addr *IPAddress) Equal(other AddressType) bool {
 
 // CompareSize compares the counts of two subnets or addresses or other items, the number of individual items within.
 //
-// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one subnet represents more individual addresses than another.
+// Rather than calculating counts with GetCount, there can be more efficient ways of determining whether one subnet represents more individual addresses than another.
 //
-// CompareSize returns a positive integer if this address or subnet has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
+// CompareSize returns a positive integer if this address or subnet has a larger count than the one given, zero if they are the same, or a negative integer if the other has a larger count.
 func (addr *IPAddress) CompareSize(other AddressItem) int { // this is here to take advantage of the CompareSize in IPAddressSection
 	if addr == nil {
 		if isNilItem(other) {
@@ -1649,8 +1651,8 @@ func (addr *IPAddress) PrefixBlockIterator() Iterator[*IPAddress] {
 // BlockIterator iterates through the addresses that can be obtained by iterating through all the upper segments up to the given segment count.
 // The segments following remain the same in all iterated addresses.
 //
-// For instance, given the IPv4 subnet 1-2.3-4.5-6.7, given the count argument 2,
-// it will iterate through 1.3.5-6.7, 1.4.5-6.7, 2.3.5-6.7, and 2.4.5-6.7.
+// For instance, given the IPv4 subnet "1-2.3-4.5-6.7" and the count argument 2,
+// BlockIterator will iterate through "1.3.5-6.7", "1.4.5-6.7", "2.3.5-6.7" and "2.4.5-6.7".
 func (addr *IPAddress) BlockIterator(segmentCount int) Iterator[*IPAddress] {
 	return ipAddrIterator{addr.init().blockIterator(segmentCount)}
 }
@@ -1659,7 +1661,7 @@ func (addr *IPAddress) BlockIterator(segmentCount int) Iterator[*IPAddress] {
 //
 // Practically, this means finding the count of segments for which the segments that follow are not full range, and then using BlockIterator with that segment count.
 //
-// For instance, given the IPv4 subnet 1-2.3-4.5-6.7-8, it will iterate through 1.3.5.7-8, 1.3.6.7-8, 1.4.5.7-8, 1.4.6.7-8, 2.3.5.7-8, 2.3.6.7-8, 2.4.6.7-8, and 2.4.6.7-8.
+// For instance, given the IPv4 subnet "1-2.3-4.5-6.7-8", it will iterate through "1.3.5.7-8", "1.3.6.7-8", "1.4.5.7-8", "1.4.6.7-8", "2.3.5.7-8", "2.3.6.7-8", "2.4.6.7-8" and "2.4.6.7-8".
 //
 // Use GetSequentialBlockCount to get the number of iterated elements.
 func (addr *IPAddress) SequentialBlockIterator() Iterator[*IPAddress] {
@@ -2010,8 +2012,8 @@ func (addr *IPAddress) SpanWithSequentialBlocks() []*IPAddress {
 // SpanWithSequentialBlocksTo produces the smallest slice of sequential block subnets that span all values from this subnet to the given subnet.
 // The span will cover all addresses in both subnets and everything in between.
 //
-// Individual block subnets come in the form 1-3.1-4.5.6-8, however that particular subnet is not sequential since address 1.1.5.8 is in the subnet,
-// the next sequential address 1.1.5.9 is not in the subnet, and a higher address 1.2.5.6 is in the subnet.
+// Individual block subnets come in the form "1-3.1-4.5.6-8", however that particular subnet is not sequential since address "1.1.5.8" is in the subnet,
+// the next sequential address "1.1.5.9" is not in the subnet, and a higher address "1.2.5.6" is in the subnet.
 // Blocks are sequential when the first segment with a range of values is followed by segments that span all values.
 //
 // If the other address is a different version than this, then this is equivalent to calling SpanWithSequentialBlocks on this subnet.
@@ -2082,7 +2084,7 @@ func (addr *IPAddress) GetSegmentStrings() []string {
 // http://tools.ietf.org/html/rfc5952
 //
 // For MAC, it uses the canonical standardized IEEE 802 MAC address representation of xx-xx-xx-xx-xx-xx.  An example is "01-23-45-67-89-ab".
-// For range segments, '|' is used: 11-22-33|44-55-66
+// For range segments, '|' is used: "11-22-33|44-55-66".
 //
 // Each address has a unique canonical string, not counting the prefix length.
 // With IP addresses, the prefix length is included in the string, and the prefix length can cause two equal addresses to have different strings, for example "1.2.3.4/16" and "1.2.3.4".
@@ -2110,7 +2112,7 @@ func (addr *IPAddress) ToCanonicalWildcardString() string {
 //
 // For IPv4, it is the same as the canonical string.
 //
-// For IPv6, it differs from the canonical string.  Zero segments are not compressed.
+// For IPv6, it differs from the canonical string.  Zero-segments are not compressed.
 //
 // Each address has a unique normalized string, not counting the prefix length.
 // With IP addresses, the prefix length can cause two equal addresses to have different strings, for example "1.2.3.4/16" and "1.2.3.4".
@@ -2170,10 +2172,10 @@ func (addr *IPAddress) ToFullString() string {
 	return addr.init().toFullString()
 }
 
-// ToReverseDNSString generates the reverse DNS lookup string,
+// ToReverseDNSString generates the reverse-DNS lookup string,
 // returning an error if this address is an IPv6 multiple-valued subnet for which the range cannot be represented.
-// For 8.255.4.4 it is 4.4.255.8.in-addr.arpa
-// For 2001:db8::567:89ab it is b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa
+// For "8.255.4.4" it is "4.4.255.8.in-addr.arpa".
+// For "2001:db8::567:89ab" it is "b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa".
 func (addr *IPAddress) ToReverseDNSString() (string, addrerr.IncompatibleAddressError) {
 	if addr == nil {
 		return nilString(), nil
@@ -2182,7 +2184,7 @@ func (addr *IPAddress) ToReverseDNSString() (string, addrerr.IncompatibleAddress
 }
 
 // ToPrefixLenString returns a string with a CIDR network prefix length if this address has a network prefix length.
-// For IPv6, a zero host section will be compressed with ::. For IPv4 the string is equivalent to the canonical string.
+// For IPv6, a zero host section will be compressed with "::". For IPv4 the string is equivalent to the canonical string.
 func (addr *IPAddress) ToPrefixLenString() string {
 	if addr == nil {
 		return nilString()
@@ -2191,10 +2193,10 @@ func (addr *IPAddress) ToPrefixLenString() string {
 }
 
 // ToSubnetString produces a string with specific formats for subnets.
-// The subnet string looks like 1.2.*.* or 1:2::/16.
+// The subnet string looks like "1.2.*.*" or "1:2::/16".
 //
 // In the case of IPv4, this means that wildcards are used instead of a network prefix when a network prefix has been supplied.
-// In the case of IPv6, when a network prefix has been supplied, the prefix will be shown and the host section will be compressed with ::.
+// In the case of IPv6, when a network prefix has been supplied, the prefix will be shown and the host section will be compressed with "::".
 func (addr *IPAddress) ToSubnetString() string {
 	if addr == nil {
 		return nilString()

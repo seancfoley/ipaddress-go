@@ -259,7 +259,7 @@ func (div *addressDivisionBase) IncludesMax() bool {
 
 // IsFullRange returns whether the division range includes all possible values for its bit length.
 //
-//  This is true if and only if both IncludesZero and IncludesMax return true.
+// This is true if and only if both IncludesZero and IncludesMax return true.
 func (div *addressDivisionBase) IsFullRange() bool {
 	return div.includesZero() && div.includesMax()
 }
@@ -282,7 +282,7 @@ func (div *addressDivisionBase) matchesStructure(other DivisionType) (res bool, 
 }
 
 // toString produces a string that is useful when a division string is provided with no context.
-// It uses a string prefix for octal or hex (0 or 0x), and does not use the wildcard '*', because division size is variable, so '*' is ambiguous.
+// It uses a string prefix for octal or hex ("0" or "0x"), and does not use the wildcard '*', because division size is variable, so '*' is ambiguous.
 // GetWildcardString() is more appropriate in context with other segments or divisions.  It does not use a string prefix and uses '*' for full-range segments.
 // GetString() is more appropriate in context with prefix lengths, it uses zeros instead of wildcards for prefix block ranges.
 func toString(div DivisionType) string { // this can be moved to addressDivisionBase when we have ContainsPrefixBlock and similar methods implemented for big.Int in the base.

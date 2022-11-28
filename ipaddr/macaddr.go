@@ -383,7 +383,7 @@ func (addr *MACAddress) GetSegments() []*MACAddressSegment {
 
 // GetSegment returns the segment at the given index.
 // The first segment is at index 0.
-// GetSegment will panic given a negative index or index larger than the segment count.
+// GetSegment will panic given a negative index or an index matching or larger than the segment count.
 func (addr *MACAddress) GetSegment(index int) *MACAddressSegment {
 	return addr.init().getSegment(index).ToMAC()
 }
@@ -405,6 +405,8 @@ func (addr *MACAddress) GetGenericDivision(index int) DivisionType {
 }
 
 // GetGenericSegment returns the segment at the given index as an AddressSegmentType.
+// The first segment is at index 0.
+// GetGenericSegment will panic given a negative index or an index matching or larger than the segment count.
 func (addr *MACAddress) GetGenericSegment(index int) AddressSegmentType {
 	return addr.init().getSegment(index)
 }
@@ -417,7 +419,7 @@ func (addr *MACAddress) TestBit(n BitCount) bool {
 }
 
 // IsOneBit returns true if the bit in the lower value of this address at the given index is 1, where index 0 refers to the most significant bit.
-// IsOneBit will panic if bitIndex < 0, or if it is larger than the bit count of this item.
+// IsOneBit will panic if bitIndex is less than zero, or if it is larger than the bit count of this item.
 func (addr *MACAddress) IsOneBit(bitIndex BitCount) bool {
 	return addr.init().isOneBit(bitIndex)
 }
@@ -484,7 +486,7 @@ func (addr *MACAddress) SetPrefixLen(prefixLen BitCount) *MACAddress {
 // If this address has a prefix length, and the prefix length is increased when setting the new prefix length, the bits moved within the prefix become zero.
 // If this address has a prefix length, and the prefix length is decreased when setting the new prefix length, the bits moved outside the prefix become zero.
 //
-// In other words, bits that move from one side of the prefix length to the other (ie bits moved into the prefix or outside the prefix) are zeroed.
+// In other words, bits that move from one side of the prefix length to the other (bits moved into the prefix or outside the prefix) are zeroed.
 //
 // If the result cannot be zeroed because zeroing out bits results in a non-contiguous segment, an error is returned.
 
@@ -641,9 +643,9 @@ func (addr *MACAddress) Equal(other AddressType) bool {
 
 // CompareSize compares the counts of two addresses or address collections or address items, the number of individual addresses or items within.
 //
-// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one address collection represents more individual addresses than another.
+// Rather than calculating counts with GetCount, there can be more efficient ways of determining whether one address collection represents more individual addresses than another.
 //
-// CompareSize returns a positive integer if this address or address collection has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
+// CompareSize returns a positive integer if this address or address collection has a larger count than the one given, zero if they are the same, or a negative integer if the other has a larger count.
 func (addr *MACAddress) CompareSize(other AddressItem) int { // this is here to take advantage of the CompareSize in IPAddressSection
 	if addr == nil {
 		if isNilItem(other) {
@@ -769,7 +771,7 @@ func (addr *MACAddress) BlockIterator(segmentCount int) Iterator[*MACAddress] {
 //
 // Practically, this means finding the count of segments for which the segments that follow are not full range, and then using BlockIterator with that segment count.
 //
-// For instance, given the IPv4 subnet 1-2.3-4.5-6.7-8, it will iterate through 1.3.5.7-8, 1.3.6.7-8, 1.4.5.7-8, 1.4.6.7-8, 2.3.5.7-8, 2.3.6.7-8, 2.4.6.7-8, 2.4.6.7-8.
+// For instance, given the IPv4 subnet "1-2.3-4.5-6.7-8", it will iterate through "1.3.5.7-8", "1.3.6.7-8", "1.4.5.7-8", "1.4.6.7-8", "2.3.5.7-8", "2.3.6.7-8", "2.4.6.7-8" and "2.4.6.7-8".
 //
 // Use GetSequentialBlockCount to get the number of iterated elements.
 func (addr *MACAddress) SequentialBlockIterator() Iterator[*MACAddress] {
@@ -1013,7 +1015,7 @@ func (addr *MACAddress) ToEUI64(asMAC bool) (*MACAddress, addrerr.IncompatibleAd
 	return nil, &incompatibleAddressError{addressError{key: "ipaddress.mac.error.not.eui.convertible"}}
 }
 
-// String implements the fmt.Stringer interface, returning the canonical string provided by ToCanonicalString, or "<nil>" if the receiver is a nil pointer.
+// String implements the [fmt.Stringer] interface, returning the canonical string provided by ToCanonicalString, or "<nil>" if the receiver is a nil pointer.
 func (addr *MACAddress) String() string {
 	if addr == nil {
 		return nilString()
@@ -1021,7 +1023,7 @@ func (addr *MACAddress) String() string {
 	return addr.init().addressInternal.toString()
 }
 
-// Format implements fmt.Formatter interface. It accepts the formats
+// Format implements [fmt.Formatter] interface. It accepts the formats
 //  - 'v' for the default address and section format (either the normalized or canonical string),
 //  - 's' (string) for the same,
 //  - 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
@@ -1029,8 +1031,8 @@ func (addr *MACAddress) String() string {
 //  - 'X' (uppercase hexadecimal).
 // Also supported are some of fmt's format flags for integral types.
 // Sign control is not supported since addresses and sections are never negative.
-// '#' for an alternate format is supported, which is leading zero for octal and for hexadecimal,
-// a leading "0x" or "0X" for "%#x" and "%#X" respectively,
+// '#' for an alternate format is supported, which adds a leading zero for octal, and for hexadecimal it adds
+// a leading "0x" or "0X" for "%#x" and "%#X" respectively.
 // Also supported is specification of minimum digits precision, output field width,
 // space or zero padding, and '-' for left or right justification.
 func (addr MACAddress) Format(state fmt.State, verb rune) {
@@ -1048,7 +1050,7 @@ func (addr *MACAddress) GetSegmentStrings() []string {
 // ToCanonicalString produces a canonical string for the address.
 //
 // For MAC, it uses the canonical standardized IEEE 802 MAC address representation of xx-xx-xx-xx-xx-xx.  An example is "01-23-45-67-89-ab".
-// For range segments, '|' is used: 11-22-33|44-55-66
+// For range segments, '|' is used: "11-22-33|44-55-66".
 //
 // Each MAC address has a unique canonical string.
 func (addr *MACAddress) ToCanonicalString() string {
@@ -1060,8 +1062,8 @@ func (addr *MACAddress) ToCanonicalString() string {
 
 // ToNormalizedString produces a normalized string for the address.
 //
-// For MAC, it differs from the canonical string.  It uses the most common representation of MAC addresses: xx:xx:xx:xx:xx:xx.  An example is "01:23:45:67:89:ab".
-// For range segments, '-' is used: 11:22:33-44:55:66
+// For MAC, it differs from the canonical string.  It uses the most common representation of MAC addresses: "xx:xx:xx:xx:xx:xx".  An example is "01:23:45:67:89:ab".
+// For range segments, '-' is used: "11:22:33-44:55:66".
 //
 // Each address has a unique normalized string.
 func (addr *MACAddress) ToNormalizedString() string {
@@ -1143,8 +1145,8 @@ func (addr *MACAddress) ToSpaceDelimitedString() string {
 	return addr.init().GetSection().ToSpaceDelimitedString()
 }
 
-// ToDashedString produces a string delimited by dashes: aa-bb-cc-dd-ee-ff
-// For range segments, '|' is used: 11-22-33|44-55-66
+// ToDashedString produces a string delimited by dashes: "aa-bb-cc-dd-ee-ff".
+// For range segments, '|' is used: "11-22-33|44-55-66".
 // It returns the same string as ToCanonicalString.
 func (addr *MACAddress) ToDashedString() string {
 	if addr == nil {
@@ -1153,8 +1155,8 @@ func (addr *MACAddress) ToDashedString() string {
 	return addr.init().GetSection().ToDashedString()
 }
 
-// ToColonDelimitedString produces a string delimited by colons: aa:bb:cc:dd:ee:ff
-// For range segments, '-' is used: 11:22:33-44:55:66
+// ToColonDelimitedString produces a string delimited by colons: "aa:bb:cc:dd:ee:ff".
+// For range segments, '-' is used: "11:22:33-44:55:66".
 // It returns the same string as ToNormalizedString.
 func (addr *MACAddress) ToColonDelimitedString() string {
 	if addr == nil {

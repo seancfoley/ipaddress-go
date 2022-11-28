@@ -3625,7 +3625,7 @@ func (strValidator) validateHostName(fromHost *HostName, validationOptions addrs
 			}
 			lastSeparatorIndex = index
 			isPossiblyIPv6 = isPossiblyIPv6 && (index == addrLen) //A '.' means not ipv6 (if we see ':' we jump out of loop so mixed address not possible), but for single segment we end up here even without a '.' character in the string
-		} else if currentChar == '_' { //this is not supported in host names but is supported in domain names, see discussion in Host class
+		} else if currentChar == '_' { //this is not supported in host names but is supported in domain names, see discussion in HostName
 			isAllDigits = false
 		} else if currentChar == '-' {
 			//host name segments cannot end with '-'

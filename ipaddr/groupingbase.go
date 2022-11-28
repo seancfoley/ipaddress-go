@@ -318,7 +318,7 @@ func (grouping *addressDivisionGroupingBase) getCachedCount() *big.Int {
 //
 // If this has a non-nil prefix length, returns the number of distinct prefix values.
 //
-// If this has a nil prefix length, returns the same value as GetCount
+// If this has a nil prefix length, returns the same value as GetCount.
 func (grouping *addressDivisionGroupingBase) GetPrefixCount() *big.Int {
 	return grouping.cachePrefixCount(grouping.getPrefixCountBig)
 }

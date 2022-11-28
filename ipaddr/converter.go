@@ -41,12 +41,13 @@ type IPAddressConverter interface {
 	IsIPv6Convertible(address *IPAddress) bool
 }
 
-// DefaultAddressConverter converts to/from IPv4-mapped addresses, which maps IPv4 a.b.c.d to/from IPv6 ::ffff:a.b.c.d
-// Converting from IPv6 to IPv4 requires that the IPV6 address have the prefix 0:0:0:0:0:ffff
+// DefaultAddressConverter converts to/from IPv4-mapped addresses, which maps IPv4 "a.b.c.d" to/from the IPv4-mapped IPv6 "::ffff:a.b.c.d".
+// Converting from IPv6 to IPv4 requires that the IPV6 address have the prefix "0:0:0:0:0:ffff".
+//
 // Note that with some subnets, the mapping is not possible due to the range of values in segments.
-// For example, ::ffff:0-100:0 cannot be mapped to an IPv4 address because the range 0-0x100 cannot be split into two smaller ranges.
-// Similarly, 1-2.0.0.0 cannot be converted to an IPv4-mapped IPv6 address,
-// because the two segments 1-2.0 cannot be joined into a single IPv6 segment with the same range of values, namely the two values 0x100 and 0x200.
+// For example, "::ffff:0-100:0" cannot be mapped to an IPv4 address because the range 0-0x100 cannot be split into two smaller ranges.
+// Similarly, "1-2.0.0.0" cannot be converted to an IPv4-mapped IPv6 address,
+// because the two segments "1-2.0" cannot be joined into a single IPv6 segment with the same range of values, namely the two values 0x100 and 0x200.
 type DefaultAddressConverter struct{}
 
 var _ IPAddressConverter = DefaultAddressConverter{}

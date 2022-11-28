@@ -78,7 +78,7 @@ type HostNameError interface {
 //  • masking subnets in a way that produces a non-contiguous range of values in a segment,
 //  • reversing values that are not reversible,
 //  • producing strings that are single-segment ranges from subnets which cannot be represented that way,
-//  • producing new formats for which the range of values are incompatible with the new segments (EUI-64, IPv4 inet_aton formats, IPv4 embedded within IPv6, dotted MAC addresses from standard mac addresses, reverse DNS strings), or
+//  • producing new formats for which the range of values are incompatible with the new segments (EUI-64, IPv4 inet_aton formats, IPv4 embedded within IPv6, dotted MAC addresses from standard mac addresses, reverse-DNS strings), or
 //  • using a subnet for an operation that requires a single address, such as with ToCanonicalHostName in IPAddress
 type IncompatibleAddressError interface {
 	AddressError

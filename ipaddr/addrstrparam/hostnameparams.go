@@ -142,7 +142,7 @@ type HostNameParamsBuilder struct {
 func (builder *HostNameParamsBuilder) ToParams() HostNameParams {
 	// We do not return a pointer to builder.hostNameParameters because that would make it possible to change params
 	// by continuing to use the same builder,
-	// and we want immutable objects for thread-safety,
+	// and we want immutable objects for concurrency-safety,
 	// so we cannot allow it
 	result := builder.hostNameParameters
 	result.ipParams = *builder.ipAddressBuilder.ToParams().(*ipAddressStringParameters)

@@ -312,7 +312,7 @@ func (masker specificValueBitwiseOrer) GetOredUpper(upperValue, maskValue uint64
 //
 //
 //
-//
+// MaskExtendedRange masks divisions with bit counts larger than 64 bits. Use MaskRange for smaller divisions.
 func MaskExtendedRange(
 	value, extendedValue,
 	upperValue, extendedUpperValue,
@@ -468,6 +468,7 @@ func MaskExtendedRange(
 	return newExtendedFullRangeMasker(highestDifferingBitMasked, maskedIsSequential)
 }
 
+// MaskRange masks divisions with bit counts 64 bits or smaller. Use MaskExtendedRange for larger divisions.
 func MaskRange(value, upperValue, maskValue, maxValue uint64) Masker {
 	if value == upperValue {
 		return defaultMasker

@@ -40,7 +40,8 @@ type DivisionType interface {
 
 var _ DivisionType = &IPAddressLargeDivision{}
 
-// StandardDivisionType represents any standard address division, which is a division of size 64 bits or less.  All can be converted to/from AddressDivision
+// StandardDivisionType represents any standard address division, which is a division of size 64 bits or less.
+// All can be converted to/from [AddressDivision].
 type StandardDivisionType interface {
 	DivisionType
 

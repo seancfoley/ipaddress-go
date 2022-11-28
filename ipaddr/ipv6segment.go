@@ -228,9 +228,9 @@ func (seg *IPv6AddressSegment) Compare(item AddressItem) int {
 
 // CompareSize compares the counts of two items, the number of individual values within.
 //
-// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one represents more individual values than another.
+// Rather than calculating counts with GetCount, there can be more efficient ways of determining whether one represents more individual values than another.
 //
-// CompareSize returns a positive integer if this segment has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
+// CompareSize returns a positive integer if this segment has a larger count than the one given, zero if they are the same, or a negative integer if the other has a larger count.
 func (seg *IPv6AddressSegment) CompareSize(other AddressItem) int {
 	if seg == nil {
 		if isNilItem(other) {
@@ -292,7 +292,7 @@ func (seg *IPv6AddressSegment) GetPrefixCountLen(segmentPrefixLength BitCount) *
 	return seg.init().ipAddressSegmentInternal.GetPrefixCountLen(segmentPrefixLength)
 }
 
-// GetPrefixValueCountLen returns the same value as GetPrefixCountLen as an integer
+// GetPrefixValueCountLen returns the same value as GetPrefixCountLen as an integer.
 func (seg *IPv6AddressSegment) GetPrefixValueCountLen(segmentPrefixLength BitCount) SegIntCount {
 	return seg.init().ipAddressSegmentInternal.GetPrefixValueCountLen(segmentPrefixLength)
 }
@@ -661,7 +661,7 @@ func (seg *IPv6AddressSegment) GetWildcardString() string {
 	return seg.init().getWildcardString()
 }
 
-// String produces a string that is useful when a segment is provided with no context.  It uses the hexadecimal radix with the string prefix for hex (0x).
+// String produces a string that is useful when a segment is provided with no context.  It uses the hexadecimal radix with the string prefix for hex ("0x").
 // GetWildcardString is more appropriate in context with other segments or divisions.  It does not use a string prefix and uses '*' for full-range segments.
 // GetString is more appropriate in context with prefix lengths, it uses zeros instead of wildcards with full prefix block ranges alongside prefix lengths.
 func (seg *IPv6AddressSegment) String() string {

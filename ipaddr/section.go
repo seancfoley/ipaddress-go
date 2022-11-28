@@ -374,13 +374,15 @@ func (section *addressSectionInternal) GetBytesPerSegment() int {
 
 // GetSegment returns the segment at the given index.
 // The first segment is at index 0.
-// GetSegment will panic given a negative index or index larger than the segment count.
+// GetSegment will panic given a negative index or an index matching or larger than the segment count.
 func (section *addressSectionInternal) GetSegment(index int) *AddressSegment {
 	return section.getDivision(index).ToSegmentBase()
 }
 
 // GetGenericSegment returns the segment as an AddressSegmentType,
-// allowing all segment types to be represented by a single type
+// allowing all segment types to be represented by a single type.
+// The first segment is at index 0.
+// GetGenericSegment will panic given a negative index or an index matching or larger than the segment count.
 func (section *addressSectionInternal) GetGenericSegment(index int) AddressSegmentType {
 	return section.GetSegment(index)
 }
@@ -446,7 +448,7 @@ func (section *addressSectionInternal) TestBit(n BitCount) bool {
 }
 
 // IsOneBit returns true if the bit in the lower value of this section at the given index is 1, where index 0 refers to the most significant bit.
-// IsOneBit will panic if bitIndex < 0, or if it is larger than the bit count of this item.
+// IsOneBit will panic if bitIndex is less than zero, or if it is larger than the bit count of this item.
 func (section *addressSectionInternal) IsOneBit(prefixBitIndex BitCount) bool {
 	bitsPerSegment := section.GetBitsPerSegment()
 	bytesPerSegment := section.GetBytesPerSegment()
@@ -1224,7 +1226,7 @@ var (
 // Format is intentionally the only method with non-pointer receivers.  It is not intended to be called directly, it is intended for use by the fmt package.
 // When called by a function in the fmt package, nil values are detected before this method is called, avoiding a panic when calling this method.
 
-// Format implements fmt.Formatter interface. It accepts the formats
+// Format implements [fmt.Formatter] interface. It accepts the formats
 //  - 'v' for the default address and section format (either the normalized or canonical string),
 //  - 's' (string) for the same,
 //  - 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
@@ -1232,8 +1234,8 @@ var (
 //  - 'X' (uppercase hexadecimal).
 // Also supported are some of fmt's format flags for integral types.
 // Sign control is not supported since addresses and sections are never negative.
-// '#' for an alternate format is supported, which is leading zero for octal and for hexadecimal,
-// a leading "0x" or "0X" for "%#x" and "%#X" respectively,
+// '#' for an alternate format is supported, which adds a leading zero for octal, and for hexadecimal it adds
+// a leading "0x" or "0X" for "%#x" and "%#X" respectively.
 // Also supported is specification of minimum digits precision, output field width,
 // space or zero padding, and '-' for left or right justification.
 func (section addressSectionInternal) Format(state fmt.State, verb rune) {
@@ -1668,7 +1670,7 @@ func (section *addressSectionInternal) isDualString() (bool, addrerr.Incompatibl
 	return false, nil
 }
 
-// used by iterator() and nonZeroHostIterator() in section classes
+// used by iterator() and nonZeroHostIterator() in section types
 func (section *addressSectionInternal) sectionIterator(excludeFunc func([]*AddressDivision) bool) Iterator[*AddressSection] {
 	useOriginal := !section.isMultiple()
 	var original = section.toAddressSection()
@@ -1909,12 +1911,12 @@ func (section *addressSectionInternal) IncludesZero() bool {
 	return section.addressDivisionGroupingInternal.IncludesZero()
 }
 
-// IsMax returns whether this section matches exactly the maximum possible value, the value whose bits are all ones
+// IsMax returns whether this section matches exactly the maximum possible value, the value whose bits are all ones.
 func (section *addressSectionInternal) IsMax() bool {
 	return section.addressDivisionGroupingInternal.IsMax()
 }
 
-// IncludesMax returns whether this section includes the max value, the value whose bits are all ones, within its range
+// IncludesMax returns whether this section includes the max value, the value whose bits are all ones, within its range.
 func (section *addressSectionInternal) IncludesMax() bool {
 	return section.addressDivisionGroupingInternal.IncludesMax()
 }
@@ -1990,7 +1992,7 @@ func (section *addressSectionInternal) IsPrefixBlock() bool {
 }
 
 // IsSinglePrefixBlock returns whether the range matches the block of values for a single prefix identified by the prefix length of this address.
-// This is similar to IsPrefixBlock() except that it returns false when the subnet has multiple prefixes.
+// This is similar to IsPrefixBlock except that it returns false when the subnet has multiple prefixes.
 //
 // What distinguishes this method from ContainsSinglePrefixBlock is that this method returns
 // false if the series does not have a prefix length assigned to it,
@@ -2163,9 +2165,9 @@ func (section *AddressSection) Compare(item AddressItem) int {
 
 // CompareSize compares the counts of two address sections, the number of individual sections represented.
 //
-// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one section represents more individual address sections than another.
+// Rather than calculating counts with GetCount, there can be more efficient ways of determining whether one section represents more individual address sections than another.
 //
-// CompareSize returns a positive integer if this address section has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
+// CompareSize returns a positive integer if this address section has a larger count than the one given, zero if they are the same, or a negative integer if the other has a larger count.
 func (section *AddressSection) CompareSize(other AddressItem) int {
 	if section == nil {
 		if isNilItem(other) {
@@ -2206,7 +2208,7 @@ func (section *AddressSection) IsMultiple() bool {
 //
 // If this has a non-nil prefix length, returns the number of distinct prefix values.
 //
-// If this has a nil prefix length, returns the same value as GetCount
+// If this has a nil prefix length, returns the same value as GetCount.
 func (section *AddressSection) GetPrefixCount() *big.Int {
 	if sect := section.ToIPv4(); sect != nil {
 		return sect.GetPrefixCount()
@@ -2339,7 +2341,7 @@ func (section *AddressSection) SetPrefixLen(prefixLen BitCount) *AddressSection 
 // If this address section has a prefix length, and the prefix length is increased when setting the new prefix length, the bits moved within the prefix become zero.
 // If this address section has a prefix length, and the prefix length is decreased when setting the new prefix length, the bits moved outside the prefix become zero.
 //
-// In other words, bits that move from one side of the prefix length to the other (ie bits moved into the prefix or outside the prefix) are zeroed.
+// In other words, bits that move from one side of the prefix length to the other (bits moved into the prefix or outside the prefix) are zeroed.
 //
 // If the result cannot be zeroed because zeroing out bits results in a non-contiguous segment, an error is returned.
 func (section *AddressSection) SetPrefixLenZeroed(prefixLen BitCount) (*AddressSection, addrerr.IncompatibleAddressError) {
@@ -2592,7 +2594,7 @@ func (section *AddressSection) ReverseSegments() *AddressSection {
 	return res
 }
 
-// String implements the fmt.Stringer interface, returning the normalized string provided by ToNormalizedString, or "<nil>" if the receiver is a nil pointer.
+// String implements the [fmt.Stringer] interface, returning the normalized string provided by ToNormalizedString, or "<nil>" if the receiver is a nil pointer.
 func (section *AddressSection) String() string {
 	if section == nil {
 		return nilString()
@@ -2622,10 +2624,10 @@ func (section *AddressSection) ToCanonicalString() string {
 //
 // For IPv4, it is the same as the canonical string.
 //
-// For IPv6, it differs from the canonical string.  Zero segments are not compressed.
+// For IPv6, it differs from the canonical string.  Zero-segments are not compressed.
 //
-// For MAC, it differs from the canonical string.  It uses the most common representation of MAC addresses: xx:xx:xx:xx:xx:xx.  An example is "01:23:45:67:89:ab".
-// For range segments, '-' is used: 11:22:33-44:55:66
+// For MAC, it differs from the canonical string.  It uses the most common representation of MAC addresses: "xx:xx:xx:xx:xx:xx".  An example is "01:23:45:67:89:ab".
+// For range segments, '-' is used: "11:22:33-44:55:66".
 func (section *AddressSection) ToNormalizedString() string {
 	if section == nil {
 		return nilString()

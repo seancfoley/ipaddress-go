@@ -231,7 +231,7 @@ var (
 
 // String produces a string that is useful when a division string is provided with no context.
 // If the division was originally constructed as an address segment, uses the default radix for that segment, which is decimal for IPv4 and hexadecimal for IPv6, MAC or other.
-// It uses a string prefix for octal or hex (0 or 0x), and does not use the wildcard '*', because division size is variable, so '*' is ambiguous.
+// It uses a string prefix for octal or hex ("0" or "0x"), and does not use the wildcard '*', because division size is variable, so '*' is ambiguous.
 // GetWildcardString is more appropriate in context with other segments or divisions.  It does not use a string prefix and uses '*' for full-range segments.
 // GetString is more appropriate in context with prefix lengths, it uses zeros instead of wildcards for prefix block ranges.
 func (div *addressDivisionInternal) String() string {
@@ -239,14 +239,14 @@ func (div *addressDivisionInternal) String() string {
 }
 
 // toString produces a string that is useful when a division string is provided with no context.
-// It uses a string prefix for octal or hex (0 or 0x), and does not use the wildcard '*', because division size is variable, so '*' is ambiguous.
+// It uses a string prefix for octal or hex ("0" or "0x"), and does not use the wildcard '*', because division size is variable, so '*' is ambiguous.
 // GetWildcardString() is more appropriate in context with other segments or divisions.  It does not use a string prefix and uses '*' for full-range segments.
 // GetString() is more appropriate in context with prefix lengths, it uses zeros instead of wildcards for prefix block ranges.
 func (div *addressDivisionInternal) toString() string { // this can be moved to addressDivisionBase when we have ContainsPrefixBlock and similar methods implemented for big.Int in the base.
 	return toString(div.toAddressDivision())
 }
 
-// Format implements fmt.Formatter interface. It accepts the formats
+// Format implements [fmt.Formatter] interface. It accepts the formats
 //  - 'v' for the default address and section format (either the normalized or canonical string),
 //  - 's' (string) for the same,
 //  - 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
@@ -254,8 +254,8 @@ func (div *addressDivisionInternal) toString() string { // this can be moved to 
 //  - 'X' (uppercase hexadecimal).
 // Also supported are some of fmt's format flags for integral types.
 // Sign control is not supported since addresses and sections are never negative.
-// '#' for an alternate format is supported, which is leading zero for octal and for hexadecimal,
-// a leading "0x" or "0X" for "%#x" and "%#X" respectively,
+// '#' for an alternate format is supported, which adds a leading zero for octal, and for hexadecimal it adds
+// a leading "0x" or "0X" for "%#x" and "%#X" respectively.
 // Also supported is specification of minimum digits precision, output field width,
 // space or zero padding, and '-' for left or right justification.
 func (div addressDivisionInternal) Format(state fmt.State, verb rune) {
@@ -914,7 +914,7 @@ func (div *addressDivisionInternal) IncludesMax() bool {
 
 // IsFullRange returns whether the division range includes all possible values for its bit length.
 //
-//  This is true if and only if both IncludesZero and IncludesMax return true.
+// This is true if and only if both IncludesZero and IncludesMax return true.
 func (div *addressDivisionInternal) IsFullRange() bool {
 	return div.addressDivisionBase.IsFullRange()
 }
@@ -1016,9 +1016,9 @@ func (div *AddressDivision) Compare(item AddressItem) int {
 
 // CompareSize compares the counts of two items, the number of individual values within.
 //
-// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one represents more individual values than another.
+// Rather than calculating counts with GetCount, there can be more efficient ways of determining whether one represents more individual values than another.
 //
-// CompareSize returns a positive integer if this division has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
+// CompareSize returns a positive integer if this division has a larger count than the one given, zero if they are the same, or a negative integer if the other has a larger count.
 func (div *AddressDivision) CompareSize(other AddressItem) int {
 	if div == nil {
 		if isNilItem(other) {
@@ -1170,7 +1170,7 @@ func (div *AddressDivision) GetWildcardString() string {
 }
 
 // String produces a string that is useful when a division string is provided with no context.
-// It uses a string prefix for octal or hex (0 or 0x), and does not use the wildcard '*', because division size is variable, and so '*' is ambiguous.
+// It uses a string prefix for octal or hex ("0" or "0x"), and does not use the wildcard '*', because division size is variable, and so '*' is ambiguous.
 // GetWildcardString is more appropriate in context with other segments or divisions.  It does not use a string prefix and uses '*' for full-range segments.
 // GetString is more appropriate in context with prefix lengths, it uses zeros instead of wildcards for prefix block ranges.
 func (div *AddressDivision) String() string {

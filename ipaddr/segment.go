@@ -194,12 +194,12 @@ func (seg *addressSegmentInternal) GetPrefixCountLen(segmentPrefixLength BitCoun
 	return bigZero().SetUint64(seg.GetPrefixValueCountLen(segmentPrefixLength))
 }
 
-// GetPrefixValueCountLen returns the same value as GetPrefixCountLen as an integer
+// GetPrefixValueCountLen returns the same value as GetPrefixCountLen as an integer.
 func (seg *addressSegmentInternal) GetPrefixValueCountLen(segmentPrefixLength BitCount) SegIntCount {
 	return getPrefixValueCount(seg.toAddressSegment(), segmentPrefixLength)
 }
 
-// GetValueCount returns the same value as GetCount as an integer
+// GetValueCount returns the same value as GetCount as an integer.
 func (seg *addressSegmentInternal) GetValueCount() SegIntCount {
 	return uint64(seg.GetUpperSegmentValue()-seg.GetSegmentValue()) + 1
 }
@@ -223,7 +223,7 @@ func (seg *addressSegmentInternal) TestBit(n BitCount) bool {
 }
 
 // IsOneBit returns true if the bit in the lower value of this segment at the given index is 1, where index 0 refers to the most significant bit.
-// IsOneBit will panic if bitIndex < 0, or if it is larger than the bit count of this item.
+// IsOneBit will panic if bitIndex is less than zero, or if it is larger than the bit count of this item.
 func (seg *addressSegmentInternal) IsOneBit(segmentBitIndex BitCount) bool {
 	value := seg.GetSegmentValue()
 	bitCount := seg.GetBitCount()
@@ -370,7 +370,7 @@ var (
 	decimalParamsSeg = new(addrstr.IPStringOptionsBuilder).SetRadix(10).ToOptions()
 )
 
-// We do not need to "override" ToNormalizedString() and ToHexString(bool) because neither prints leading zeros according to bit count, so zero segments of type IPv4/IPv6/MAC are printed consistently
+// We do not need to "override" ToNormalizedString() and ToHexString(bool) because neither prints leading zeros according to bit count, so zero-segments of type IPv4/IPv6/MAC are printed consistently
 
 // ToNormalizedString produces a string that is consistent for all address segments of the same type and version.
 // IPv4 segments use base 10, while other segment types use base 16.
@@ -700,7 +700,7 @@ func (seg *addressSegmentInternal) IncludesMax() bool {
 
 // IsFullRange returns whether the segment range includes all possible values for its bit length.
 //
-//  This is true if and only if both IncludesZero and IncludesMax return true.
+// This is true if and only if both IncludesZero and IncludesMax return true.
 func (seg *addressSegmentInternal) IsFullRange() bool {
 	return seg.addressDivisionInternal.IsFullRange()
 }
@@ -750,20 +750,19 @@ func (seg *addressSegmentInternal) IsSinglePrefix(divisionPrefixLength BitCount)
 
 // AddressSegment represents a single segment of an address.  A segment contains a single value or a range of sequential values and it has an assigned bit length.
 //
-// The current implementations of this class are the most common representations of IPv4, IPv6 and MAC;
+// The current implementations of this type are the most common representations of IPv4, IPv6 and MAC;
 // segments are 1 byte for Ipv4, they are two bytes for Ipv6, and they are 1 byte for MAC addresses.
 //
-// There are alternative forms of dividing addresses into divisions, such as the dotted representation for MAC like 1111.2222.3333,
-// the embedded IPv4 representation for IPv6 like f:f:f:f:f:f:1.2.3.4, the inet_aton formats like 1.2 for IPv4, and so on.
+// There are alternative forms of dividing addresses into divisions, such as the dotted representation for MAC like "1111.2222.3333",
+// the embedded IPv4 representation for IPv6 like "f:f:f:f:f:f:1.2.3.4", the inet_aton formats like "1.2" for IPv4, and so on.
 //
 // The general rules are that segments have a whole number of bytes, and in a given address all segments have the same length.
 //
-// When alternatives forms do not follow the general rules for segments,
-// you can use the {@link inet.ipaddr.format.standard.AddressDivision type instead.
+// When alternatives forms do not follow the general rules for segments, you can use [AddressDivision] instead.
 // Divisions do not have the restriction that divisions of an address are equal length and a whole number of bytes.
-// Divisions can be grouped using AddressDivisionGrouping.
+// Divisions can be grouped using [AddressDivisionGrouping].
 //
-// AddressSegment objects are immutable and thus also thread-safe.
+// AddressSegment objects are immutable and thus are also concurrency-safe.
 type AddressSegment struct {
 	addressSegmentInternal
 }
@@ -796,9 +795,9 @@ func (seg *AddressSegment) Compare(item AddressItem) int {
 
 // CompareSize compares the counts of two items, the number of individual values within.
 //
-// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one represents more individual values than another.
+// Rather than calculating counts with GetCount, there can be more efficient ways of determining whether one represents more individual values than another.
 //
-// CompareSize returns a positive integer if this segment has a larger count than the item given, 0 if they are the same, or a negative integer if the other has a larger count.
+// CompareSize returns a positive integer if this segment has a larger count than the item given, zero if they are the same, or a negative integer if the other has a larger count.
 func (seg *AddressSegment) CompareSize(other AddressItem) int {
 	if seg == nil {
 		if isNilItem(other) {
@@ -957,7 +956,7 @@ func (seg *AddressSegment) GetWildcardString() string {
 
 // String produces a string that is useful when a segment string is provided with no context.
 // If the segment was originally constructed as an IPv4 address segment it uses decimal, otherwise hexadecimal.
-// It uses a string prefix for hex (0x), and does not use the wildcard '*', because division size is variable, so '*' is ambiguous.
+// It uses a string prefix for hex ("0x"), and does not use the wildcard '*', because division size is variable, so '*' is ambiguous.
 // GetWildcardString is more appropriate in context with other segments or divisions.  It does not use a string prefix and uses '*' for full-range segments.
 // GetString is more appropriate in context with prefix lengths, it uses zeros instead of wildcards with full prefix block ranges alongside prefix lengths.
 func (seg *AddressSegment) String() string {

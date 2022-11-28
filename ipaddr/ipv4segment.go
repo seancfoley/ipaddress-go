@@ -213,9 +213,9 @@ func (seg *IPv4AddressSegment) Compare(item AddressItem) int {
 
 // CompareSize compares the counts of two segments, the number of individual values within.
 //
-// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one represents more individual values than another.
+// Rather than calculating counts with GetCount, there can be more efficient ways of determining whether one represents more individual values than another.
 //
-// CompareSize returns a positive integer if this segment has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
+// CompareSize returns a positive integer if this segment has a larger count than the one given, zero if they are the same, or a negative integer if the other has a larger count.
 func (seg *IPv4AddressSegment) CompareSize(other AddressItem) int {
 	if seg == nil {
 		if isNilItem(other) {
@@ -289,7 +289,7 @@ func (seg *IPv4AddressSegment) GetPrefixCountLen(segmentPrefixLength BitCount) *
 	return seg.init().ipAddressSegmentInternal.GetPrefixCountLen(segmentPrefixLength)
 }
 
-// GetPrefixValueCountLen returns the same value as GetPrefixCountLen as an integer
+// GetPrefixValueCountLen returns the same value as GetPrefixCountLen as an integer.
 func (seg *IPv4AddressSegment) GetPrefixValueCountLen(segmentPrefixLength BitCount) SegIntCount {
 	return seg.init().ipAddressSegmentInternal.GetPrefixValueCountLen(segmentPrefixLength)
 }

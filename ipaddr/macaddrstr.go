@@ -57,28 +57,28 @@ func parseMACAddressString(str string, params addrstrparam.MACAddressStringParam
 
 var zeroMACAddressString = NewMACAddressString("")
 
-// MACAddressString parses the string representation of a MAC address.  Such a string can represent just a single address or a collection of addresses like 1:*:1-3:1-4:5:6
+// MACAddressString parses the string representation of a MAC address.  Such a string can represent just a single address or a collection of addresses like "1:*:1-3:1-4:5:6".
 //
 // This supports a wide range of address formats and provides specific error messages, and allows specific configuration.
 //
-// You can control all of the supported formats using MACAddressStringParametersBuilder to build a parameters instance of  MACAddressStringParameters.
-// When not using the constructor that takes a MACAddressStringParameters, a default instance of MACAddressStringParameters is used that is generally permissive.
+// You can control all the supported formats using MACAddressStringParamsBuilder to build a parameters instance of  MACAddressStringParams.
+// When not using the constructor that takes a MACAddressStringParams, a default instance of MACAddressStringParams is used that is generally permissive.
 //
 // Supported Formats
 //
 // Ranges are supported:
 //
-//  • wildcards '*' and ranges '-' (for example 1:*:1-3:1-4:5:6), useful for working with MAC address collections
+//  • wildcards '*' and ranges '-' (for example "1:*:1-3:1-4:5:6"), useful for working with MAC address collections
 //  • SQL wildcards '%" and "_", although '%' is considered an SQL wildcard only when it is not considered an IPv6 zone indicator
 //
 //
 // The different methods of representing MAC addresses are supported:
 //
-//  • 6 or 8 bytes in hex representation like aa:bb:cc:dd:ee:ff
-//  • The same but with a hyphen separator like aa-bb-cc-dd-ee-ff (the range separator in this case becomes '/')
-//  • The same but with space separator like aa bb cc dd ee ff
-//  • The dotted representation, 4 sets of 12 bits in hex representation like aaa.bbb.ccc.ddd
-//  • The 12 or 16 hex representation with no separators like aabbccddeeff
+//  • 6 or 8 bytes in hex representation like "aa:bb:cc:dd:ee:ff"
+//  • The same but with a hyphen separator like "aa-bb-cc-dd-ee-ff" (the range separator in this case becomes '/')
+//  • The same but with space separator like "aa bb cc dd ee ff"
+//  • The dotted representation, 4 sets of 12 bits in hex representation like "aaa.bbb.ccc.ddd"
+//  • The 12 or 16 hex representation with no separators like "aabbccddeeff"
 //
 //
 // All of the above range variations also work for each of these ways of representing MAC addresses.
@@ -90,13 +90,13 @@ var zeroMACAddressString = NewMACAddressString("")
 //
 //
 // Usage
-// Once you have constructed a MACAddressString object, you can convert it to a MACAddress object with GetAddress or ToAddress.
+// Once you have constructed a MACAddressString object, you can convert it to a [MACAddress] object with GetAddress or ToAddress.
 //
 // For empty addresses, both ToAddress and GetAddress return nil.  For invalid addresses, GetAddress and ToAddress return nil, with ToAddress also returning an error.
 //
 // This type is concurrency-safe.  In fact, MACAddressString objects are immutable.
 // A MACAddressString object represents a single MAC address representation that cannot be changed after construction.
-// Some of the derived state is created upon demand and cached, such as the derived MACAddress instances.
+// Some derived state is created upon demand and cached, such as the derived [MACAddress] instances.
 type MACAddressString struct {
 	str             string
 	addressProvider macAddressProvider
@@ -120,7 +120,7 @@ func (addrStr *MACAddressString) GetValidationOptions() addrstrparam.MACAddressS
 	return nil
 }
 
-// String implements the fmt.Stringer interface,
+// String implements the [fmt.Stringer] interface,
 // returning the original string used to create this MACAddressString (altered by strings.TrimSpace),
 // or "<nil>" if the receiver is a nil pointer.
 func (addrStr *MACAddressString) String() string {
@@ -132,8 +132,8 @@ func (addrStr *MACAddressString) String() string {
 
 // ToNormalizedString produces a normalized string for the address.
 //
-// For MAC, it differs from the canonical string.  It uses the most common representation of MAC addresses: xx:xx:xx:xx:xx:xx.  An example is "01:23:45:67:89:ab".
-// For range segments, '-' is used: 11:22:33-44:55:66
+// For MAC, it differs from the canonical string.  It uses the most common representation of MAC addresses: "xx:xx:xx:xx:xx:xx".  An example is "01:23:45:67:89:ab".
+// For range segments, '-' is used: "11:22:33-44:55:66".
 //
 // If the original string is not a valid address string, the original string is used.
 func (addrStr *MACAddressString) ToNormalizedString() string {
@@ -175,9 +175,9 @@ func (addrStr *MACAddressString) IsPrefixed() bool {
 	return addrStr.getPrefixLen() != nil
 }
 
-// GetPrefixLen returns the prefix length if this address is a valid prefixed address, otherwise returns nil
+// GetPrefixLen returns the prefix length if this address is a prefixed address, otherwise it returns nil.
 //
-// For MAC addresses, the prefix is initially inferred from the range, so 1:2:3:*:*:* has a prefix length of 24.
+// For MAC addresses, the prefix is initially inferred from the range, so "1:2:3:*:*:*" has a prefix length of 24.
 // Addresses derived from the original may retain the original prefix length regardless of their range.
 func (addrStr *MACAddressString) GetPrefixLen() PrefixLen {
 	return addrStr.getPrefixLen().copy()

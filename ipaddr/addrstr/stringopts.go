@@ -32,7 +32,6 @@ var (
 
 const (
 	ipv6SegmentSeparator     = ':'
-	ipv6ZoneSeparator        = '%'
 	ipv6ZoneSeparatorStr     = "%"
 	ipv4SegmentSeparator     = '.'
 	macColonSegmentSeparator = ':'
@@ -909,16 +908,16 @@ func (builder *IPv6StringOptionsBuilder) ToOptions() IPv6StringOptions {
 type CompressionChoiceOptions string
 
 const (
-	// HostPreferred - if there is a host section, compress the host along with any adjoining zero segments, otherwise compress a range of zero segments.
+	// HostPreferred - if there is a host section, compress the host along with any adjoining zero-segments, otherwise compress a range of zero-segments.
 	HostPreferred CompressionChoiceOptions = "host preferred"
 
-	// MixedPreferred - if there is a mixed section that is compressible according to the MixedCompressionOptions, compress the mixed section along with any adjoining zero segments, otherwise compress a range of zero segments.
+	// MixedPreferred - if there is a mixed section that is compressible according to the MixedCompressionOptions, compress the mixed section along with any adjoining zero-segments, otherwise compress a range of zero-segments.
 	MixedPreferred CompressionChoiceOptions = "mixed preferred"
 
 	// ZerosOrHost - compress the largest range of zero or host segments.
 	ZerosOrHost CompressionChoiceOptions = ""
 
-	// ZerosCompression - compress the largest range of zero segments.
+	// ZerosCompression - compress the largest range of zero-segments.
 	ZerosCompression CompressionChoiceOptions = "zeros"
 )
 

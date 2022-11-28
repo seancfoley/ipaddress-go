@@ -312,7 +312,7 @@ func (node *trieNode[T, V]) elementsContainedBy(addr T) *tree.BinTrieNode[trieKe
 
 func (node *trieNode[T, V]) elementsContaining(addr T) *containmentPath[T, V] {
 	addr = mustBeBlockOrAddress(addr)
-	return toContainmentPathX[T, V](node.toBinTrieNode().ElementsContaining(trieKey[T]{addr}))
+	return toContainmentPath[T, V](node.toBinTrieNode().ElementsContaining(trieKey[T]{addr}))
 }
 
 func (node *trieNode[T, V]) longestPrefixMatch(addr T) (t T) {
@@ -411,7 +411,7 @@ func (node *TrieNode[T]) SetAdded() {
 	node.toBinTrieNode().SetAdded()
 }
 
-// Clear removes this node and all sub-nodes from the trie, after which isEmpty() will return true.
+// Clear removes this node and all sub-nodes from the trie, after which isEmpty will return true.
 func (node *TrieNode[T]) Clear() {
 	node.toBinTrieNode().Clear()
 }
@@ -422,12 +422,12 @@ func (node *TrieNode[T]) IsLeaf() bool {
 	return node.toBinTrieNode().IsLeaf()
 }
 
-// GetUpperSubNode gets the direct child node whose key is largest in value
+// GetUpperSubNode gets the direct child node whose key is largest in value.
 func (node *TrieNode[T]) GetUpperSubNode() *TrieNode[T] {
 	return toAddressTrieNode[T](node.toBinTrieNode().GetUpperSubNode())
 }
 
-// GetLowerSubNode gets the direct child node whose key is smallest in value
+// GetLowerSubNode gets the direct child node whose key is smallest in value.
 func (node *TrieNode[T]) GetLowerSubNode() *TrieNode[T] {
 	return toAddressTrieNode[T](node.toBinTrieNode().GetLowerSubNode())
 }
@@ -459,12 +459,12 @@ func (node *TrieNode[T]) PreviousNode() *TrieNode[T] {
 	return toAddressTrieNode[T](node.toBinTrieNode().PreviousNode())
 }
 
-// FirstNode returns the first (the lowest valued) node in the sub-trie originating from this node
+// FirstNode returns the first (the lowest valued) node in the sub-trie originating from this node.
 func (node *TrieNode[T]) FirstNode() *TrieNode[T] {
 	return toAddressTrieNode[T](node.toBinTrieNode().FirstNode())
 }
 
-// FirstAddedNode returns the first (the lowest valued) added node in the sub-trie originating from this node
+// FirstAddedNode returns the first (the lowest valued) added node in the sub-trie originating from this node,
 // or nil if there are no added entries in this trie or sub-trie.
 func (node *TrieNode[T]) FirstAddedNode() *TrieNode[T] {
 	return toAddressTrieNode[T](node.toBinTrieNode().FirstAddedNode())
@@ -613,7 +613,7 @@ func (node *TrieNode[T]) AsNewTrie() *Trie[T] {
 	return toAddressTrie[T](node.toBinTrieNode().AsNewTrie())
 }
 
-// Compare returns -1, 0 or 1 if this node is less than, equal, or greater than the other, according to the key and the trie order.
+// Compare returns a negative integer, zero, or a positive integer if this node is less than, equal, or greater than the other, according to the key and the trie order.
 func (node *TrieNode[T]) Compare(other *TrieNode[T]) int {
 	return node.toBinTrieNode().Compare(other.toBinTrieNode())
 }
@@ -639,7 +639,7 @@ func (node *TrieNode[T]) Remove() {
 // Contains returns whether the given address or prefix block subnet is in the sub-trie, as an added element, with this node as the root.
 //
 // If the argument is not a single address nor prefix block, this method will panic.
-// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
 //
 // Returns true if the prefix block or address address exists already in the trie, false otherwise.
 //
@@ -653,14 +653,14 @@ func (node *TrieNode[T]) Contains(addr T) bool {
 // Removing an element will not remove contained elements (nodes for contained blocks and addresses).
 //
 // If the argument is not a single address nor prefix block, this method will panic.
-// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
 //
 // Returns true if the prefix block or address was removed, false if not already in the trie.
 //
 // You can also remove by calling GetAddedNode to get the node and then calling Remove on the node.
 //
 // When an address is removed, the corresponding node may remain in the trie if it remains a subnet block for two sub-nodes.
-// If the corresponding node can be removed from the trie, it will be.
+// If the corresponding node can be removed from the trie, it will be removed.
 func (node *TrieNode[T]) RemoveNode(addr T) bool {
 	return node.tobase().removeNode(addr)
 }
@@ -671,13 +671,13 @@ func (node *TrieNode[T]) RemoveNode(addr T) bool {
 //
 // For example, after inserting 1.2.3.0 and 1.2.3.1, passing 1.2.3.0/31 to RemoveElementsContainedBy will remove them both,
 // while the Remove method will remove nothing.
-// After inserting 1.2.3.0/31, then #remove(Address) will remove 1.2.3.0/31, but will leave 1.2.3.0 and 1.2.3.1 in the trie.
+// After inserting 1.2.3.0/31, then Remove(Address) will remove 1.2.3.0/31, but will leave 1.2.3.0 and 1.2.3.1 in the trie.
 //
 // It cannot partially delete a node, such as deleting a single address from a prefix block represented by a node.
 // It can only delete the whole node if the whole address or block represented by that node is contained in the given address or block.
 //
 // If the argument is not a single address nor prefix block, this method will panic.
-// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
 //
 //Returns the root node of the subtrie that was removed from the trie, or nil if nothing was removed.
 func (node *TrieNode[T]) RemoveElementsContainedBy(addr T) *TrieNode[T] {
@@ -687,7 +687,7 @@ func (node *TrieNode[T]) RemoveElementsContainedBy(addr T) *TrieNode[T] {
 // ElementsContainedBy checks if a part of this trie, with this node as the root, is contained by the given prefix block subnet or individual address.
 //
 // If the argument is not a single address nor prefix block, this method will panic.
-// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
 //
 // Returns the root node of the contained subtrie, or nil if no subtrie is contained.
 // The node returned need not be an "added" node, see IsAdded for more details on added nodes.
@@ -703,7 +703,7 @@ func (node *TrieNode[T]) ElementsContainedBy(addr T) *TrieNode[T] {
 // If the argument is not a single address nor prefix block, this method will panic.
 //
 // If the argument is not a single address nor prefix block, this method will panic.
-// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
 func (node *TrieNode[T]) ElementsContaining(addr T) *ContainmentPath[T] {
 	return &ContainmentPath[T]{*node.tobase().elementsContaining(addr)}
 }
@@ -712,7 +712,7 @@ func (node *TrieNode[T]) ElementsContaining(addr T) *ContainmentPath[T] {
 // This is equivalent to finding the containing subnet or address with the smallest subnet size.
 //
 // If the argument is not a single address nor prefix block, this method will panic.
-// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
 //
 // The second returned argument is false if no added subnet or address contains the given argument.
 //
@@ -728,7 +728,7 @@ func (node *TrieNode[T]) LongestPrefixMatch(addr T) T {
 // Returns the node corresponding to that subnet.
 //
 // If the argument is not a single address nor prefix block, this method will panic.
-// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
 //
 // Returns nil if no added subnet or address contains the given argument.
 //
@@ -742,7 +742,7 @@ func (node *TrieNode[T]) LongestPrefixMatchNode(addr T) *TrieNode[T] {
 // ElementContains checks if a prefix block subnet or address in the trie, with this node as the root, contains the given subnet or address.
 //
 // If the argument is not a single address nor prefix block, this method will panic.
-// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
 //
 // Returns true if the subnet or address is contained by a trie element, false otherwise.
 //
@@ -758,7 +758,7 @@ func (node *TrieNode[T]) ElementContains(addr T) bool {
 // including any prefix block node that was not added.
 //
 // If the argument is not a single address nor prefix block, this method will panic.
-// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
 func (node *TrieNode[T]) GetNode(addr T) *TrieNode[T] {
 	return toAddressTrieNode[T](node.tobase().getNode(addr))
 }
@@ -766,7 +766,7 @@ func (node *TrieNode[T]) GetNode(addr T) *TrieNode[T] {
 // GetAddedNode gets trie nodes representing added elements.
 //
 // If the argument is not a single address nor prefix block, this method will panic.
-// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
 //
 // Use Contains to check for the existence of a given address in the trie,
 // as well as GetNode to search for all nodes including those not-added but also auto-generated nodes for subnet blocks.
@@ -786,7 +786,7 @@ func (node *TrieNode[T]) Size() int {
 	return node.toBinTrieNode().Size()
 }
 
-// IsEmpty returns whether the size is 0.
+// IsEmpty returns whether the size is zero.
 func (node *TrieNode[T]) IsEmpty() bool {
 	return node.Size() == 0
 }
@@ -808,7 +808,7 @@ func (node *TrieNode[T]) String() string {
 // For some reason Format must be here and not in addressTrieNode for nil node.
 // It panics in fmt code either way, but if in here then it is handled by a recover() call in fmt properly in the debugger.
 
-// Format implements the fmt.Formatter interface
+// Format implements the [fmt.Formatter] interface.
 func (node TrieNode[T]) Format(state fmt.State, verb rune) {
 	node.toBinTrieNode().Format(state, verb)
 }
@@ -875,12 +875,12 @@ func (node *AssociativeTrieNode[T, V]) SetAdded() {
 	node.toBinTrieNode().SetAdded()
 }
 
-// Clear removes this node and all sub-nodes from the tree, after which isEmpty() will return true.
+// Clear removes this node and all sub-nodes from the tree, after which isEmpty will return true.
 func (node *AssociativeTrieNode[T, V]) Clear() {
 	node.toBinTrieNode().Clear()
 }
 
-// IsLeaf returns whether this node is in the tree (a node for which IsAdded() is true)
+// IsLeaf returns whether this node is in the tree (a node for which IsAdded is true)
 // and there are no elements in the sub-tree with this node as the root.
 func (node *AssociativeTrieNode[T, V]) IsLeaf() bool {
 	return node.toBinTrieNode().IsLeaf()
@@ -941,7 +941,7 @@ func (node *AssociativeTrieNode[T, V]) FirstNode() *AssociativeTrieNode[T, V] {
 	return toAssociativeTrieNode[T, V](node.toBinTrieNode().FirstNode())
 }
 
-// FirstAddedNode returns the first (the lowest valued) added node in the sub-trie originating from this node
+// FirstAddedNode returns the first (the lowest valued) added node in the sub-trie originating from this node,
 // or nil if there are no added entries in this trie or sub-trie.
 func (node *AssociativeTrieNode[T, V]) FirstAddedNode() *AssociativeTrieNode[T, V] {
 	return toAssociativeTrieNode[T, V](node.toBinTrieNode().FirstAddedNode())
@@ -1090,7 +1090,7 @@ func (node *AssociativeTrieNode[T, V]) AsNewTrie() *AssociativeTrie[T, V] {
 	return toAssociativeTrie[T, V](node.toBinTrieNode().AsNewTrie())
 }
 
-// Compare returns -1, 0 or 1 if this node is less than, equal, or greater than the other, according to the key and the trie order.
+// Compare returns a negative integer, zero, or a positive integer if this node is less than, equal, or greater than the other, according to the key and the trie order.
 func (node *AssociativeTrieNode[T, V]) Compare(other *AssociativeTrieNode[T, V]) int {
 	return node.toBinTrieNode().Compare(other.toBinTrieNode())
 }
@@ -1128,7 +1128,7 @@ func (node *AssociativeTrieNode[T, V]) Remove() {
 // Contains returns whether the given address or prefix block subnet is in the sub-trie, as an added element, with this node as the root.
 //
 // If the argument is not a single address nor prefix block, this method will panic.
-// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
 //
 // Returns true if the prefix block or address address exists already in the trie, false otherwise.
 //
@@ -1142,14 +1142,14 @@ func (node *AssociativeTrieNode[T, V]) Contains(addr T) bool {
 // Removing an element will not remove contained elements (nodes for contained blocks and addresses).
 //
 // If the argument is not a single address nor prefix block, this method will panic.
-// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
 //
 // Returns true if the prefix block or address was removed, false if not already in the trie.
 //
 // You can also remove by calling GetAddedNode to get the node and then calling Remove on the node.
 //
 // When an address is removed, the corresponding node may remain in the trie if it remains a subnet block for two sub-nodes.
-// If the corresponding node can be removed from the trie, it will be.
+// If the corresponding node can be removed from the trie, it will be removed.
 func (node *AssociativeTrieNode[T, V]) RemoveNode(addr T) bool {
 	return node.toBase().removeNode(addr)
 }
@@ -1160,13 +1160,13 @@ func (node *AssociativeTrieNode[T, V]) RemoveNode(addr T) bool {
 //
 // For example, after inserting 1.2.3.0 and 1.2.3.1, passing 1.2.3.0/31 to RemoveElementsContainedBy will remove them both,
 // while the Remove method will remove nothing.
-// After inserting 1.2.3.0/31, then #remove(Address) will remove 1.2.3.0/31, but will leave 1.2.3.0 and 1.2.3.1 in the trie.
+// After inserting 1.2.3.0/31, then Remove(Address) will remove 1.2.3.0/31, but will leave 1.2.3.0 and 1.2.3.1 in the trie.
 //
 // It cannot partially delete a node, such as deleting a single address from a prefix block represented by a node.
 // It can only delete the whole node if the whole address or block represented by that node is contained in the given address or block.
 //
 // If the argument is not a single address nor prefix block, this method will panic.
-// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
 //
 //Returns the root node of the subtrie that was removed from the trie, or nil if nothing was removed.
 func (node *AssociativeTrieNode[T, V]) RemoveElementsContainedBy(addr T) *AssociativeTrieNode[T, V] {
@@ -1176,7 +1176,7 @@ func (node *AssociativeTrieNode[T, V]) RemoveElementsContainedBy(addr T) *Associ
 // ElementsContainedBy checks if a part of this trie, with this node as the root, is contained by the given prefix block subnet or individual address.
 //
 // If the argument is not a single address nor prefix block, this method will panic.
-// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
 //
 // Returns the root node of the contained subtrie, or nil if no subtrie is contained.
 // The node returned need not be an "added" node, see IsAdded for more details on added nodes.
@@ -1192,7 +1192,7 @@ func (node *AssociativeTrieNode[T, V]) ElementsContainedBy(addr T) *AssociativeT
 // If the argument is not a single address nor prefix block, this method will panic.
 //
 // If the argument is not a single address nor prefix block, this method will panic.
-// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
 func (node *AssociativeTrieNode[T, V]) ElementsContaining(addr T) *ContainmentValuesPath[T, V] {
 	return &ContainmentValuesPath[T, V]{*node.toBase().elementsContaining(addr)}
 }
@@ -1201,7 +1201,7 @@ func (node *AssociativeTrieNode[T, V]) ElementsContaining(addr T) *ContainmentVa
 // This is equivalent to finding the containing subnet or address with the smallest subnet size.
 //
 // If the argument is not a single address nor prefix block, this method will panic.
-// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
 //
 // Returns nil if no added subnet or address contains the given argument.
 //
@@ -1217,7 +1217,7 @@ func (node *AssociativeTrieNode[T, V]) LongestPrefixMatch(addr T) T {
 // Returns the node corresponding to that subnet.
 //
 // If the argument is not a single address nor prefix block, this method will panic.
-// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
 //
 // Returns nil if no added subnet or address contains the given argument.
 //
@@ -1231,7 +1231,7 @@ func (node *AssociativeTrieNode[T, V]) LongestPrefixMatchNode(addr T) *Associati
 // ElementContains checks if a prefix block subnet or address in the trie, with this node as the root, contains the given subnet or address.
 //
 // If the argument is not a single address nor prefix block, this method will panic.
-// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
 //
 // Returns true if the subnet or address is contained by a trie element, false otherwise.
 //
@@ -1247,7 +1247,7 @@ func (node *AssociativeTrieNode[T, V]) ElementContains(addr T) bool {
 // including any prefix block node that was not added.
 //
 // If the argument is not a single address nor prefix block, this method will panic.
-// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
 func (node *AssociativeTrieNode[T, V]) GetNode(addr T) *AssociativeTrieNode[T, V] {
 	return toAssociativeTrieNode[T, V](node.toBase().getNode(addr))
 }
@@ -1255,7 +1255,7 @@ func (node *AssociativeTrieNode[T, V]) GetNode(addr T) *AssociativeTrieNode[T, V
 // GetAddedNode gets trie nodes representing added elements.
 //
 // If the argument is not a single address nor prefix block, this method will panic.
-// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
 //
 // Use Contains to check for the existence of a given address in the trie,
 // as well as GetNode to search for all nodes including those not-added but also auto-generated nodes for subnet blocks.
@@ -1266,7 +1266,7 @@ func (node *AssociativeTrieNode[T, V]) GetAddedNode(addr T) *AssociativeTrieNode
 // Get gets the value for the specified key in this mapped trie or subtrie.
 //
 // If the argument is not a single address nor prefix block, this method will panic.
-// The Partition type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
 //
 // Returns the value for the given key.
 // Returns nil if the contains no mapping for that key or if the mapped value is nil.
@@ -1286,7 +1286,7 @@ func (node *AssociativeTrieNode[T, V]) Size() int {
 	return node.toBinTrieNode().Size()
 }
 
-// IsEmpty returns whether the size is 0.
+// IsEmpty returns whether the size is zero.
 func (node *AssociativeTrieNode[T, V]) IsEmpty() bool {
 	return node.Size() == 0
 }
@@ -1308,7 +1308,7 @@ func (node *AssociativeTrieNode[T, V]) String() string {
 // For some reason Format must be here and not in addressTrieNode for nil node.
 // It panics in fmt code either way, but if in here then it is handled by a recover() call in fmt properly in the debugger.
 
-// Format implements the fmt.Formatter interface.
+// Format implements the [fmt.Formatter] interface.
 func (node AssociativeTrieNode[T, V]) Format(state fmt.State, verb rune) {
 	node.toBase().binNode.Format(state, verb)
 }
@@ -1330,7 +1330,7 @@ type containmentPath[T TrieKeyConstraint[T], V any] struct {
 
 // Count returns the count of containing subnets in the path of containing subnets, starting from this node and moving downwards to sub-nodes.
 // This is a constant-time operation since the size is maintained in each node and adjusted with each add and Remove operation in the sub-tree.
-func (path *containmentPath[T, V]) Count() int {
+func (path *containmentPath[T, V]) count() int {
 	if path == nil {
 		return 0
 	}
@@ -1338,14 +1338,14 @@ func (path *containmentPath[T, V]) Count() int {
 }
 
 // String returns a visual representation of the Path with one node per line.
-func (path *containmentPath[T, V]) String() string {
+func (path *containmentPath[T, V]) string() string {
 	if path == nil {
 		return nilString()
 	}
 	return path.path.String()
 }
 
-func toContainmentPathX[T TrieKeyConstraint[T], V any](path *tree.Path[trieKey[T], V]) *containmentPath[T, V] {
+func toContainmentPath[T TrieKeyConstraint[T], V any](path *tree.Path[trieKey[T], V]) *containmentPath[T, V] {
 	return (*containmentPath[T, V])(unsafe.Pointer(path))
 }
 
@@ -1360,6 +1360,17 @@ func toContainmentPathX[T TrieKeyConstraint[T], V any](path *tree.Path[trieKey[T
 // the first node corresponding to the shortest prefix match, the last element corresponding to the longest prefix match.
 type ContainmentPath[T TrieKeyConstraint[T]] struct {
 	containmentPath[T, emptyValue]
+}
+
+// Count returns the count of containing subnets in the path of containing subnets, starting from this node and moving downwards to sub-nodes.
+// This is a constant-time operation since the size is maintained in each node and adjusted with each add and Remove operation in the sub-tree.
+func (path *ContainmentPath[T]) Count() int {
+	return path.count()
+}
+
+// String returns a visual representation of the Path with one node per line.
+func (path *ContainmentPath[T]) String() string {
+	return path.string()
 }
 
 // ShortestPrefixMatch returns the beginning of the Path of containing subnets, which may or may not match the tree root of the originating tree.
@@ -1391,6 +1402,17 @@ type ContainmentValuesPath[T TrieKeyConstraint[T], V any] struct {
 	containmentPath[T, V]
 }
 
+// Count returns the count of containing subnets in the path of containing subnets, starting from this node and moving downwards to sub-nodes.
+// This is a constant-time operation since the size is maintained in each node and adjusted with each add and Remove operation in the sub-tree.
+func (path *ContainmentValuesPath[T, V]) Count() int {
+	return path.count()
+}
+
+// String returns a visual representation of the Path with one node per line.
+func (path *ContainmentValuesPath[T, V]) String() string {
+	return path.string()
+}
+
 // ShortestPrefixMatch returns the beginning of the Path of containing subnets, which may or may not match the tree root of the originating tree.
 // If there are no containing elements (prefix matches) this returns nil.
 func (path *ContainmentValuesPath[T, V]) ShortestPrefixMatch() *ContainmentValuesPathNode[T, V] {
@@ -1418,14 +1440,14 @@ type containmentPathNode[T TrieKeyConstraint[T], V any] struct {
 	pathNode tree.PathNode[trieKey[T], V]
 }
 
-// GetKey gets the containing block or matching address corresponding to this node
-func (node *containmentPathNode[T, V]) GetKey() T {
+// getKey gets the containing block or matching address corresponding to this node
+func (node *containmentPathNode[T, V]) getKey() T {
 	return node.pathNode.GetKey().address
 }
 
 // Count returns the count of containing subnets in the path of containing subnets, starting from this node and moving downwards to sub-nodes.
 // This is a constant-time operation since the size is maintained in each node and adjusted with each add and Remove operation in the sub-tree.
-func (node *containmentPathNode[T, V]) Count() int {
+func (node *containmentPathNode[T, V]) count() int {
 	if node == nil {
 		return 0
 	}
@@ -1433,7 +1455,7 @@ func (node *containmentPathNode[T, V]) Count() int {
 }
 
 // String returns a visual representation of this node including the address key
-func (node *containmentPathNode[T, V]) String() string {
+func (node *containmentPathNode[T, V]) string() string {
 	if node == nil {
 		return nilString()
 	}
@@ -1441,7 +1463,7 @@ func (node *containmentPathNode[T, V]) String() string {
 }
 
 // ListString returns a visual representation of the containing subnets starting from this node and moving downwards to sub-nodes.
-func (node *containmentPathNode[T, V]) ListString() string {
+func (node *containmentPathNode[T, V]) listString() string {
 	return node.pathNode.ListString(true, true)
 }
 
@@ -1455,6 +1477,27 @@ func (node *containmentPathNode[T, V]) ListString() string {
 // ContainmentPathNode is a node in a ContainmentPath
 type ContainmentPathNode[T TrieKeyConstraint[T]] struct {
 	containmentPathNode[T, emptyValue]
+}
+
+// GetKey gets the containing block or matching address corresponding to this node
+func (node *ContainmentPathNode[T]) GetKey() T {
+	return node.getKey()
+}
+
+// Count returns the count of containing subnets in the path of containing subnets, starting from this node and moving downwards to sub-nodes.
+// This is a constant-time operation since the size is maintained in each node and adjusted with each add and Remove operation in the sub-tree.
+func (node *ContainmentPathNode[T]) Count() int {
+	return node.count()
+}
+
+// String returns a visual representation of this node including the address key
+func (node *ContainmentPathNode[T]) String() string {
+	return node.string()
+}
+
+// ListString returns a visual representation of the containing subnets starting from this node and moving downwards to sub-nodes.
+func (node *ContainmentPathNode[T]) ListString() string {
+	return node.listString()
 }
 
 // Next gets the node contained by this node
@@ -1481,6 +1524,27 @@ func toContainmentPathNode[T TrieKeyConstraint[T]](node *tree.PathNode[trieKey[T
 // ContainmentValuesPathNode is a node in a ContainmentPath
 type ContainmentValuesPathNode[T TrieKeyConstraint[T], V any] struct {
 	containmentPathNode[T, V]
+}
+
+// GetKey gets the containing block or matching address corresponding to this node
+func (node *ContainmentValuesPathNode[T, V]) GetKey() T {
+	return node.getKey()
+}
+
+// Count returns the count of containing subnets in the path of containing subnets, starting from this node and moving downwards to sub-nodes.
+// This is a constant-time operation since the size is maintained in each node and adjusted with each add and Remove operation in the sub-tree.
+func (node *ContainmentValuesPathNode[T, V]) Count() int {
+	return node.count()
+}
+
+// String returns a visual representation of this node including the address key
+func (node *ContainmentValuesPathNode[T, V]) String() string {
+	return node.string()
+}
+
+// ListString returns a visual representation of the containing subnets starting from this node and moving downwards to sub-nodes.
+func (node *ContainmentValuesPathNode[T, V]) ListString() string {
+	return node.listString()
 }
 
 // Next gets the node contained by this node

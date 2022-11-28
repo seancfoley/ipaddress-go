@@ -43,10 +43,12 @@ func (key SequentialRangeKey[T]) String() string {
 	return key.ToSeqRange().String()
 }
 
+// GetLowerKey returns the lower key of the pair of address keys comprising this sequential range key.
 func (key SequentialRangeKey[T]) GetLowerKey() RangeBoundaryKey[T] {
 	return key.lowerKey
 }
 
+// GetUpperKey returns the upper key of the pair of address keys comprising this sequential range key.
 func (key SequentialRangeKey[T]) GetUpperKey() RangeBoundaryKey[T] {
 	return key.upperKey
 }

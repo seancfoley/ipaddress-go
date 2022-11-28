@@ -40,9 +40,11 @@ var (
 )
 
 // PrefixBlockAllocator allocates blocks of the desired size from a set of seed blocks provided to it previously for allocation.
+//
 // The generic type T can be *IPAddress, *IPv4Address or *IPv6Address.
+//
 // Once a prefix block allocator of generic type *IPAddress has been provided with either an IPv4 or IPv6 address or subnet for allocation,
-// it can only be used with that address version from that point onwards.  In other words, it can allocate either IPv4 or IPv6 blocks, but not both.
+// it can only be used with the same address version from that point onwards.  In other words, it can allocate either IPv4 or IPv6 blocks, but not both.
 type PrefixBlockAllocator[T PrefixBlockConstraint[T]] struct {
 	version IPVersion
 	blocks  [][]T
@@ -226,6 +228,7 @@ func (alloc *PrefixBlockAllocator[T]) AllocateBitLen(bitLength BitCount) T {
 	if (!block.IsMultiple() && !bigIsOne(block.GetCount())) || i == newPrefixBitCount {
 		return block
 	}
+	// block is larger than needed, adjust it
 	adjustedBlock := block.SetPrefixLen(newPrefixBitCount)
 	blockIterator := adjustedBlock.PrefixBlockIterator()
 	result := blockIterator.Next()

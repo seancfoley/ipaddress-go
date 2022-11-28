@@ -208,7 +208,7 @@ func newIPv4SectionFromPrefixedSingle(vals, upperVals IPv4SegmentValueProvider, 
 }
 
 // IPv4AddressSection represents a section of an IPv4 address comprising 0 to 4 IPv4 address segments.
-// The zero values is a section with zero segments.
+// The zero values is a section with zero-segments.
 type IPv4AddressSection struct {
 	ipAddressSectionInternal
 }
@@ -245,9 +245,9 @@ func (section *IPv4AddressSection) Compare(item AddressItem) int {
 
 // CompareSize compares the counts of two address sections or items, the number of individual sections or other items represented.
 //
-// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether this section represents more individual address sections than another.
+// Rather than calculating counts with GetCount, there can be more efficient ways of determining whether this section represents more individual address sections than another.
 //
-// CompareSize returns a positive integer if this address section has a larger count than the one given, 0 if they are the same, or a negative integer if the other has a larger count.
+// CompareSize returns a positive integer if this address section has a larger count than the one given, zero if they are the same, or a negative integer if the other has a larger count.
 func (section *IPv4AddressSection) CompareSize(other AddressItem) int {
 	if section == nil {
 		if isNilItem(other) {
@@ -407,7 +407,7 @@ func (section *IPv4AddressSection) GetBlockCount(segmentCount int) *big.Int {
 
 // GetSegment returns the segment at the given index.
 // The first segment is at index 0.
-// GetSegment will panic given a negative index or index larger than the segment count.
+// GetSegment will panic given a negative index or an index matching or larger than the segment count.
 func (section *IPv4AddressSection) GetSegment(index int) *IPv4AddressSegment {
 	return section.getDivision(index).ToIPv4()
 }
@@ -726,7 +726,7 @@ func (section *IPv4AddressSection) SetPrefixLen(prefixLen BitCount) *IPv4Address
 // If this address section has a prefix length, and the prefix length is increased when setting the new prefix length, the bits moved within the prefix become zero.
 // If this address section has a prefix length, and the prefix length is decreased when setting the new prefix length, the bits moved outside the prefix become zero.
 //
-// In other words, bits that move from one side of the prefix length to the other (ie bits moved into the prefix or outside the prefix) are zeroed.
+// In other words, bits that move from one side of the prefix length to the other (bits moved into the prefix or outside the prefix) are zeroed.
 //
 // If the result cannot be zeroed because zeroing out bits results in a non-contiguous segment, an error is returned.
 func (section *IPv4AddressSection) SetPrefixLenZeroed(prefixLen BitCount) (*IPv4AddressSection, addrerr.IncompatibleAddressError) {
@@ -1246,9 +1246,9 @@ func (section *IPv4AddressSection) ToFullString() string {
 		})
 }
 
-// ToReverseDNSString generates the reverse DNS lookup string.
+// ToReverseDNSString generates the reverse-DNS lookup string.
 // For IPV4, the error is always nil.
-// For 8.255.4.4 it is 4.4.255.8.in-addr.arpa
+// For "8.255.4.4" it is "4.4.255.8.in-addr.arpa".
 func (section *IPv4AddressSection) ToReverseDNSString() (string, addrerr.IncompatibleAddressError) {
 	if section == nil {
 		return nilString(), nil
@@ -1273,7 +1273,7 @@ func (section *IPv4AddressSection) ToPrefixLenString() string {
 }
 
 // ToSubnetString produces a string with specific formats for subnets.
-// The subnet string looks like 1.2.*.* or 1:2::/16.
+// The subnet string looks like "1.2.*.*" or "1:2::/16".
 //
 // In the case of IPv4, this means that wildcards are used instead of a network prefix when a network prefix has been supplied.
 func (section *IPv4AddressSection) ToSubnetString() string {
@@ -1435,7 +1435,7 @@ func (section *IPv4AddressSection) toNormalizedString(stringOptions addrstr.IPSt
 	return toNormalizedIPString(stringOptions, section)
 }
 
-// String implements the fmt.Stringer interface, returning the normalized string provided by ToNormalizedString, or "<nil>" if the receiver is a nil pointer.
+// String implements the [fmt.Stringer] interface, returning the normalized string provided by ToNormalizedString, or "<nil>" if the receiver is a nil pointer.
 func (section *IPv4AddressSection) String() string {
 	if section == nil {
 		return nilString()

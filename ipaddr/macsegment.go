@@ -218,9 +218,9 @@ func (seg *MACAddressSegment) Compare(item AddressItem) int {
 
 // CompareSize compares the counts of two items, the number of individual values within.
 //
-// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one represents more individual values than another.
+// Rather than calculating counts with GetCount, there can be more efficient ways of determining whether one represents more individual values than another.
 //
-// CompareSize returns a positive integer if this segment has a larger count than the item given, 0 if they are the same, or a negative integer if the other has a larger count.
+// CompareSize returns a positive integer if this segment has a larger count than the item given, zero if they are the same, or a negative integer if the other has a larger count.
 func (seg *MACAddressSegment) CompareSize(other AddressItem) int {
 	if seg == nil {
 		if isNilItem(other) {
@@ -486,7 +486,7 @@ func (seg *MACAddressSegment) GetWildcardString() string {
 	return seg.init().getWildcardString()
 }
 
-// String produces a string that is useful when a segment is provided with no context.  It uses the hexadecimal radix with the string prefix for hex (0x).
+// String produces a string that is useful when a segment is provided with no context.  It uses the hexadecimal radix with the string prefix for hex ("0x").
 // GetWildcardString and GetString are more appropriate in context with other segments or divisions.  They do not use a string prefix and use '*' for full-range segments.
 func (seg *MACAddressSegment) String() string {
 	if seg == nil {

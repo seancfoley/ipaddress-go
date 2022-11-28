@@ -143,7 +143,7 @@ type MACAddressStringParamsBuilder struct {
 func (builder *MACAddressStringParamsBuilder) ToParams() MACAddressStringParams {
 	// We do not return a pointer to builder.params because that would make it possible to change a macAddressStringParameters
 	// by continuing to use the same builder,
-	// and we want immutable objects for thread-safety,
+	// and we want immutable objects for concurrency-safety,
 	// so we cannot allow it
 	result := builder.params
 	result.addressStringParameters = *builder.AddressStringParamsBuilder.ToParams().(*addressStringParameters)

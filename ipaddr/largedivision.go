@@ -288,14 +288,14 @@ func (div *addressLargeDivInternal) getDefaultTextualRadix() int {
 }
 
 // toString produces a string that is useful when a division string is provided with no context.
-// It uses a string prefix for octal or hex (0 or 0x), and does not use the wildcard '*', because division size is variable, so '*' is ambiguous.
+// It uses a string prefix for octal or hex ("0" or "0x"), and does not use the wildcard '*', because division size is variable, so '*' is ambiguous.
 // GetWildcardString() is more appropriate in context with other segments or divisions.  It does not use a string prefix and uses '*' for full-range segments.
 // GetString() is more appropriate in context with prefix lengths, it uses zeros instead of wildcards for prefix block ranges.
 func (div *addressLargeDivInternal) toString() string { // this can be moved to addressDivisionBase when we have ContainsPrefixBlock and similar methods implemented for big.Int in the base
 	return toString(div.toLargeAddressDivision())
 }
 
-// Format implements fmt.Formatter interface. It accepts the formats
+// Format implements [fmt.Formatter] interface. It accepts the formats
 //  - 'v' for the default address and section format (either the normalized or canonical string),
 //  - 's' (string) for the same,
 //  - 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
@@ -303,8 +303,8 @@ func (div *addressLargeDivInternal) toString() string { // this can be moved to 
 //  - 'X' (uppercase hexadecimal).
 // Also supported are some of fmt's format flags for integral types.
 // Sign control is not supported since addresses and sections are never negative.
-// '#' for an alternate format is supported, which is leading zero for octal and for hexadecimal,
-// a leading "0x" or "0X" for "%#x" and "%#X" respectively,
+// '#' for an alternate format is supported, which adds a leading zero for octal, and for hexadecimal it adds
+// a leading "0x" or "0X" for "%#x" and "%#X" respectively.
 // Also supported is specification of minimum digits precision, output field width,
 // space or zero padding, and '-' for left or right justification.
 func (div addressLargeDivInternal) Format(state fmt.State, verb rune) {
@@ -368,19 +368,19 @@ func (div *IPAddressLargeDivision) GetUpperValue() *BigDivInt {
 
 // GetDivisionPrefixLen returns the network prefix for the division.
 //
-// The network prefix is 16 for an address like 1.2.0.0/16.
+// The network prefix is 16 for an address like "1.2.0.0/16".
 //
 // When it comes to each address division or segment, the prefix for the division is the
 // prefix obtained when applying the address or section prefix.
 //
-// For instance, consider the address 1.2.0.0/20.
+// For instance, consider the address "1.2.0.0/20".
 // The first segment has no prefix because the address prefix 20 extends beyond the 8 bits in the first segment, it does not even apply to the segment.
 // The second segment has no prefix because the address prefix extends beyond bits 9 to 16 which lie in the second segment, it does not apply to that segment either.
 // The third segment has the prefix 4 because the address prefix 20 corresponds to the first 4 bits in the 3rd segment,
 // which means that the first 4 bits are part of the network section of the address or segment.
 // The last segment has the prefix 0 because not a single bit is in the network section of the address or segment
 //
-// The prefix applied across the address is nil ... nil ... (1 to segment bit length) ... 0 ... 0
+// The division prefixes applied across the address are: nil ... nil (1 to segment bit length) 0 ... 0.
 //
 // If the division has no prefix then nil is returned.
 func (div *IPAddressLargeDivision) GetDivisionPrefixLen() PrefixLen {
@@ -502,9 +502,9 @@ func (div *IPAddressLargeDivision) Compare(item AddressItem) int {
 
 // CompareSize compares the counts of two items, the number of individual values within.
 //
-// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether one represents more individual values than another.
+// Rather than calculating counts with GetCount, there can be more efficient ways of determining whether one represents more individual values than another.
 //
-// CompareSize returns a positive integer if this division has a larger count than the item given, 0 if they are the same, or a negative integer if the other has a larger count.
+// CompareSize returns a positive integer if this division has a larger count than the item given, zero if they are the same, or a negative integer if the other has a larger count.
 func (div *IPAddressLargeDivision) CompareSize(other AddressItem) int {
 	if div == nil {
 		if isNilItem(other) {
@@ -517,7 +517,7 @@ func (div *IPAddressLargeDivision) CompareSize(other AddressItem) int {
 }
 
 // String produces a string that is useful when a division string is provided with no context.
-// It uses a string prefix for octal or hex (0 or 0x), and does not use the wildcard '*', because division size is variable, so '*' is ambiguous.
+// It uses a string prefix for octal or hex ("0" or "0x"), and does not use the wildcard '*', because division size is variable, so '*' is ambiguous.
 // GetWildcardString is more appropriate in context with other segments or divisions.  It does not use a string prefix and uses '*' for full-range segments.
 // GetString is more appropriate in context with prefix lengths, it uses zeros instead of wildcards for prefix block ranges.
 func (div *IPAddressLargeDivision) String() string {
@@ -875,19 +875,19 @@ func (div *IPAddressLargeDivision) IsPrefixed() bool {
 
 // GetPrefixLen returns the network prefix for the division.
 //
-// The network prefix is 16 for an address like 1.2.0.0/16.
+// The network prefix is 16 for an address like "1.2.0.0/16".
 //
 // When it comes to each address division or segment, the prefix for the division is the
 // prefix obtained when applying the address or section prefix.
 //
-// For instance, consider the address 1.2.0.0/20.
+// For instance, consider the address "1.2.0.0/20".
 // The first segment has no prefix because the address prefix 20 extends beyond the 8 bits in the first segment, it does not even apply to the segment.
 // The second segment has no prefix because the address prefix extends beyond bits 9 to 16 which lie in the second segment, it does not apply to that segment either.
 // The third segment has the prefix 4 because the address prefix 20 corresponds to the first 4 bits in the 3rd segment,
 // which means that the first 4 bits are part of the network section of the address or segment.
 // The last segment has the prefix 0 because not a single bit is in the network section of the address or segment
 //
-// The prefix applied across the address is nil ... nil ... (1 to segment bit length) ... 0 ... 0
+// The division prefixes applied across the address are: nil ... nil (1 to segment bit length) 0 ... 0.
 //
 // If the segment has no prefix then nil is returned.
 func (div *IPAddressLargeDivision) GetPrefixLen() PrefixLen {

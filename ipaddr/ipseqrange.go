@@ -27,14 +27,14 @@ import (
 	"unsafe"
 )
 
-// DefaultSeqRangeSeparator is the low to high value separator used when creating strings for IP ranges
+// DefaultSeqRangeSeparator is the low to high value separator used when creating strings for IP ranges.
 const DefaultSeqRangeSeparator = " -> "
 
 type rangeCache struct {
 	cachedCount *big.Int
 }
 
-// SequentialRangeConstraint is the generic type constraint for an IP address sequential range
+// SequentialRangeConstraint is the generic type constraint for an IP address sequential range.
 type SequentialRangeConstraint[T any] interface {
 	AddressType // cannot use IPAddressType here because ToAddressString() results in a circular dependency, SequentialRangeConstraint -> IPAddressType -> IPAddressString -> SequentialRange -> SequentialRangeConstraint
 
@@ -90,18 +90,20 @@ var (
 //
 // For the generic type T you can choose *IPAddress, *IPv4Address, or *IPv6Address.
 //
-// IPAddress and IPAddressString allow you to specify a range of values for each segment.
-// That allows you to represent single addresses, any address CIDR prefix subnet (eg 1.2.0.0/16 or 1:2:3:4::/64) or any subnet that can be represented with segment ranges (1.2.0-255.* or 1:2:3:4:*), see
-// IPAddressString for details.  IPAddressString and IPAddress cover all potential subnets and addresses that can be represented by a single address string of 4 or less segments for IPv4, and 8 or less segments for IPv6.
+// This type allows the representation of any sequential address range, including those that cannot be represented by [IPAddress] or [IPAddressString].
 //
-// This type allows the representation of any sequential address range, including those that cannot be represented by IPAddress or IPAddressString.
+// [IPAddress] and [IPAddressString] allow you to specify a range of values for each segment, allowing
+// for single addresses, any address CIDR prefix subnet (for example, "1.2.0.0/16" or "1:2:3:4::/64") or any subnet that can be represented with segment ranges (for example, "1.2.0-255.*" or "1:2:3:4:*").
+// See [IPAddressString] for details.
+// [IPAddressString] and [IPAddress] cover all potential subnets and addresses that can be represented by a single address string of 4 or less segments for IPv4, and 8 or less segments for IPv6.
+// In contrast, this type covers any sequential address range.
 //
 // String representations of this type include the full address for both the lower and upper bounds of the range.
 //
-// The zero value is a range from the zero IPAddress to itself.
+// The zero value is a range from the zero-valued [IPAddress] to itself.
 //
-// For a range of type SequentialRange[*IPAddress], the range spans from an IPv4 address to another IPv4Address,
-// or from an IPv6 address to another IPv6 address.  A range cannot include both IPv4 and IPv6 addresses.
+// For a range of type SequentialRange[*IPAddress], the range spans from an IPv4 address to another IPv4 address,
+// or from an IPv6 address to another IPv6 address.  A sequential range cannot include both IPv4 and IPv6 addresses.
 type SequentialRange[T SequentialRangeConstraint[T]] struct {
 	lower,
 	upper T
@@ -169,7 +171,7 @@ func (rng *SequentialRange[T]) getCachedCount(copy bool) (res *big.Int) {
 	return
 }
 
-// GetPrefixCountLen returns the count of the number of distinct values within the prefix part of the range of addresses
+// GetPrefixCountLen returns the count of the number of distinct values within the prefix part of the range of addresses.
 func (rng *SequentialRange[T]) GetPrefixCountLen(prefixLen BitCount) *big.Int {
 	if !rng.IsMultiple() { // also checks for zero-ranges
 		return bigOne()
@@ -390,12 +392,12 @@ func (rng *SequentialRange[T]) GetCount() *big.Int {
 	return rng.init().getCachedCount(true)
 }
 
-// IsMultiple returns whether this range represents a range of multiple addresses
+// IsMultiple returns whether this range represents a range of multiple addresses.
 func (rng *SequentialRange[T]) IsMultiple() bool {
 	return rng != nil && rng.isMultiple
 }
 
-// String implements the fmt.Stringer interface,
+// String implements the [fmt.Stringer] interface,
 // returning the lower address canonical string, followed by the default separator " -> ",
 // followed by the upper address canonical string.
 // It returns "<nil>" if the receiver is a nil pointer.
@@ -406,7 +408,7 @@ func (rng *SequentialRange[T]) String() string {
 	return rng.ToString(T.String, DefaultSeqRangeSeparator, T.String)
 }
 
-// Format implements fmt.Formatter interface.
+// Format implements [fmt.Formatter] interface.
 //
 // It prints the string as "lower -> upper" where lower and upper are the formatted strings for the lowest and highest addresses in the range, given by GetLower and GetUpper.
 // The formats, flags, and other specifications supported are those supported by Format in IPAddress.
@@ -417,6 +419,7 @@ func (rng SequentialRange[T]) Format(state fmt.State, verb rune) {
 	rngPtr.upper.Format(state, verb)
 }
 
+// ToString produces a customized string for the address range.
 func (rng *SequentialRange[T]) ToString(lowerStringer func(T) string, separator string, upperStringer func(T) string) string {
 	if rng == nil {
 		return nilString()
@@ -443,52 +446,52 @@ func (rng *SequentialRange[T]) ToCanonicalString() string {
 	return rng.ToString(T.ToCanonicalString, DefaultSeqRangeSeparator, T.ToCanonicalString)
 }
 
-// GetLowerIPAddress satisfies the IPAddressRange interface, returning the lower address in the range, same as GetLower()
+// GetLowerIPAddress satisfies the IPAddressRange interface, returning the lower address in the range, same as GetLower.
 func (rng *SequentialRange[T]) GetLowerIPAddress() *IPAddress {
 	return rng.GetLower().ToIP()
 }
 
-// GetUpperIPAddress satisfies the IPAddressRange interface, returning the upper address in the range, same as GetUpper()
+// GetUpperIPAddress satisfies the IPAddressRange interface, returning the upper address in the range, same as GetUpper.
 func (rng *SequentialRange[T]) GetUpperIPAddress() *IPAddress {
 	return rng.GetUpper().ToIP()
 }
 
-// GetLower returns the lowest address in the range, the one with the lowest numeric value
+// GetLower returns the lowest address in the range, the one with the lowest numeric value.
 func (rng *SequentialRange[T]) GetLower() T {
 	return rng.init().lower
 }
 
-// GetUpper returns the highest address in the range, the one with the highest numeric value
+// GetUpper returns the highest address in the range, the one with the highest numeric value.
 func (rng *SequentialRange[T]) GetUpper() T {
 	return rng.init().upper
 }
 
-// GetBitCount returns the number of bits in each address in the range
+// GetBitCount returns the number of bits in each address in the range.
 func (rng *SequentialRange[T]) GetBitCount() BitCount {
 	return rng.GetLower().GetBitCount()
 }
 
-// GetByteCount returns the number of bytes in each address in the range
+// GetByteCount returns the number of bytes in each address in the range.
 func (rng *SequentialRange[T]) GetByteCount() int {
 	return rng.GetLower().GetByteCount()
 }
 
-// GetNetIP returns the lower IP address in the range as a net.IP
+// GetNetIP returns the lower IP address in the range as a net.IP.
 func (rng *SequentialRange[T]) GetNetIP() net.IP {
 	return rng.GetLower().GetNetIP()
 }
 
-// GetUpperNetIP returns the upper IP address in the range as a net.IP
+// GetUpperNetIP returns the upper IP address in the range as a net.IP.
 func (rng *SequentialRange[T]) GetUpperNetIP() net.IP {
 	return rng.GetUpper().GetUpperNetIP()
 }
 
-// GetNetNetIPAddr returns the lowest address in this address range as a netip.Addr
+// GetNetNetIPAddr returns the lowest address in this address range as a netip.Addr.
 func (rng *SequentialRange[T]) GetNetNetIPAddr() netip.Addr {
 	return rng.GetLower().GetNetNetIPAddr()
 }
 
-// GetUpperNetNetIPAddr returns the highest address in this address range as a netip.Addr
+// GetUpperNetNetIPAddr returns the highest address in this address range as a netip.Addr.
 func (rng *SequentialRange[T]) GetUpperNetNetIPAddr() netip.Addr {
 	return rng.GetUpper().GetUpperNetNetIPAddr()
 }
@@ -594,9 +597,9 @@ func (rng *SequentialRange[T]) Compare(item AddressItem) int {
 
 // CompareSize compares the counts of two address ranges or items, the number of individual addresses or items within each.
 //
-// Rather than calculating counts with GetCount, there can be more efficient ways of comparing whether this range spans more individual addresses than another item.
+// Rather than calculating counts with GetCount, there can be more efficient ways of determining whether this range spans more individual addresses than another item.
 //
-// CompareSize returns a positive integer if this range has a larger count than the item given, 0 if they are the same, or a negative integer if the other has a larger count.
+// CompareSize returns a positive integer if this range has a larger count than the item given, zero if they are the same, or a negative integer if the other has a larger count.
 func (rng *SequentialRange[T]) CompareSize(other AddressItem) int {
 	if rng == nil {
 		if isNilItem(other) {
@@ -608,12 +611,12 @@ func (rng *SequentialRange[T]) CompareSize(other AddressItem) int {
 	return compareCount(rng, other)
 }
 
-// GetValue returns the lowest address in the range, the one with the lowest numeric value, as an integer
+// GetValue returns the lowest address in the range, the one with the lowest numeric value, as an integer.
 func (rng *SequentialRange[T]) GetValue() *big.Int {
 	return rng.GetLower().GetValue()
 }
 
-// GetUpperValue returns the highest address in the range, the one with the highest numeric value, as an integer
+// GetUpperValue returns the highest address in the range, the one with the highest numeric value, as an integer.
 func (rng *SequentialRange[T]) GetUpperValue() *big.Int {
 	return rng.GetUpper().GetValue()
 }
@@ -708,12 +711,12 @@ func (rng *SequentialRange[T]) PrefixBlockIterator(prefLength BitCount) Iterator
 // instead constraining themselves to values from this range.
 //
 // Since a range between two arbitrary addresses cannot always be represented with a single IPAddress instance,
-// the returned iterator iterates through IPAddressSeqRange instances.
+// the returned iterator iterates through SequentialRange instances.
 //
-// For instance, if iterating from 1.2.3.4 to 1.2.4.5 with prefix 8, the range shares the same prefix of value 1,
-// but the range cannot be represented by the address 1.2.3-4.4-5 which does not include 1.2.3.255 or 1.2.4.0 both of which are in the original range.
-// Nor can the range be represented by 1.2.3-4.0-255 which includes 1.2.4.6 and 1.2.3.3, both of which were not in the original range.
-// An IPAddressSeqRange is thus required to represent that prefixed range.
+// For instance, if iterating from "1.2.3.4" to "1.2.4.5" with prefix 8, the range shares the same prefix of value 1,
+// but the range cannot be represented by the address "1.2.3-4.4-5" which does not include "1.2.3.255" or "1.2.4.0" both of which are in the original range.
+// Nor can the range be represented by "1.2.3-4.0-255" which includes "1.2.4.6" and "1.2.3.3", both of which were not in the original range.
+// A SequentialRange is thus required to represent that prefixed range.
 func (rng *SequentialRange[T]) PrefixIterator(prefLength BitCount) Iterator[*SequentialRange[T]] {
 	rng = rng.init()
 	lower := rng.lower
@@ -789,7 +792,7 @@ func (rng *SequentialRange[T]) Join(ranges ...*SequentialRange[T]) []*Sequential
 // JoinTo joins this range to the other if they are contiguous.  If this range overlaps with the given range,
 // or if the highest value of the lower range is one below the lowest value of the higher range,
 // then the two are joined into a new larger range that is returned.
-// Otherwise nil is returned.
+// Otherwise, nil is returned.
 func (rng *SequentialRange[T]) JoinTo(other *SequentialRange[T]) *SequentialRange[T] {
 	rng = rng.init()
 	other = other.init()
@@ -1037,7 +1040,7 @@ func newSequRange[T SequentialRangeConstraint[T]](first, other T) *SequentialRan
 
 // NewSequentialRange creates a sequential range from the given addresses.
 // If the type of T is *IPAddress and the versions of lower and upper do not match (one is IPv4, one IPv6), then nil is returned.
-// Otherwise the range is returned.
+// Otherwise, the range is returned.
 func NewSequentialRange[T SequentialRangeConstraint[T]](lower, upper T) *SequentialRange[T] {
 	var t T
 	if lower == t && upper == t { // nil for pointers
@@ -1057,7 +1060,7 @@ func NewSequentialRange[T SequentialRangeConstraint[T]](lower, upper T) *Sequent
 // NewIPSeqRange creates an IP sequential range from the given addresses.
 // It is here for backwards compatibility. NewSequentialRange is recommended instead.
 // If the type of T is *IPAddress and the versions of lower and upper do not match (one is IPv4, one IPv6), then nil is returned.
-// Otherwise the range is returned.
+// Otherwise, the range is returned.
 func NewIPSeqRange(lower, upper *IPAddress) *SequentialRange[*IPAddress] { // for backwards compatibility
 	if lower == nil && upper == nil {
 		lower = zeroIPAddr
