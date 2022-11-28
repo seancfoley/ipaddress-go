@@ -450,14 +450,14 @@ func (t trieTesterGeneric) partitionForTrie(trie *AddressTrie, subnet *ipaddr.IP
 	}
 	keyAll1 := make(map[ipaddr.Key[*ipaddr.Address]]struct{})
 	for k, v := range keyAll {
-		keyAll1[k.ToKey()] = v
+		keyAll1[k.ToAddress().ToKey()] = v
 	}
 
 	all2 := make(ipaddr.MappedPartition[*ipaddr.Address, *AddressTrieNode])
 	keyAll2 := make(map[ipaddr.Key[*ipaddr.Address]]struct{})
 	ipaddr.PartitionWithSingleBlockSize(subnet).ForEach(func(addr *ipaddr.IPAddress) {
 		node := trie.GetAddedNode(addr.ToAddressBase())
-		all2[addr.ToAddressBase()] = node
+		all2[addr.ToAddressBase().ToKey()] = node
 		keyAll2[addr.ToAddressBase().ToKey()] = struct{}{}
 	})
 
@@ -470,15 +470,15 @@ func (t trieTesterGeneric) partitionForTrie(trie *AddressTrie, subnet *ipaddr.IP
 
 	// the maps using *Address keys and *Address nodes are not expected to be equal since they use pointers
 	for k, v := range all {
-		if !k.Equal(v.GetKey()) {
+		if !k.ToAddress().Equal(v.GetKey()) {
 			t.addFailure(newTrieFailure("node key wrong for "+k.String(), trie))
 		}
 		found := false
 		for k2, v2 := range all2 {
-			if !k2.Equal(v2.GetKey()) {
+			if !k2.ToAddress().Equal(v2.GetKey()) {
 				t.addFailure(newTrieFailure("node key wrong for "+k2.String(), trie))
 			}
-			if k.Equal(k2) {
+			if k.ToAddress().Equal(k2.ToAddress()) {
 				found = true
 				break
 			}

@@ -184,7 +184,7 @@ func createMACZero(extended bool) *MACAddress {
 // You can construct a MAC address from a byte slice, from a uint64, from a SegmentValueProvider,
 // from a MACAddressSection of 6 or 8 segments, or from an array of 6 or 8 MACAddressSegment instances.
 //
-// To construct one from a string use ToAddress or GetAddress of MACAddressString.
+// To construct one from a string, use NewMACAddressString, then use the ToAddress or GetAddress method of [MACAddressString].
 type MACAddress struct {
 	addressInternal
 }
@@ -1217,6 +1217,21 @@ func (addr *MACAddress) ToAddressBase() *Address {
 // which can be used to write code that works with both addresses and address sections.
 func (addr *MACAddress) Wrap() WrappedAddress {
 	return wrapAddress(addr.ToAddressBase())
+}
+
+// ToGenericKey produces a generic Key[*MACAddress] that can be used with generic code working with [Address], [IPAddress], [IPv4Address], [IPv6Address] and [MACAddress].
+// ToKey produces a more compact key for code that is MAC-specific.
+func (addr *MACAddress) ToGenericKey() Key[*MACAddress] {
+	key := Key[*MACAddress]{}
+	addr.init().toMACKey(&key.keyContents)
+	return key
+}
+
+func (addr *MACAddress) fromKey(scheme addressScheme, key *keyContents) *MACAddress {
+	if scheme == eui64Scheme || scheme == mac48Scheme {
+		return fromMACAddrKey(scheme, key)
+	}
+	panic("invalid generic key")
 }
 
 // ToKey creates the associated address key.

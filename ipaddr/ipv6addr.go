@@ -441,9 +441,11 @@ func initZeroIPv6() *IPv6Address {
 // Each segment can represent a single value or a range of values.
 // The zero value is "::".
 //
-// To construct one from a string, use [IPAddressString].
-// For other inputs, use one of multiple constructor functions like NewIPv6Address.
-// You can also use one of multiple constructors for [IPAddress] like NewIPAddress and then convert using ToIPv6.
+// To construct one from a string, use NewIPAddressString, then use the ToAddress or GetAddress method of [IPAddressString],
+// and then use ToIPv6 to get an IPv6Address, assuming the string had an IPv6 format.
+//
+// For other inputs, use one of the multiple constructor functions like NewIPv6Address.
+// You can also use one of the multiple constructors for [IPAddress] like NewIPAddress and then convert using ToIPv6.
 type IPv6Address struct {
 	ipAddressInternal
 }
@@ -2198,6 +2200,21 @@ func (addr *IPv6Address) ToKey() IPv6AddressKey {
 
 func (addr *IPv6Address) toKey() RangeBoundaryKey[*IPv6Address] {
 	return addr.ToKey()
+}
+
+// ToGenericKey produces a generic Key[*IPv6Address] that can be used with generic code working with [Address], [IPAddress], [IPv4Address], [IPv6Address] and [MACAddress].
+// ToKey produces a more compact key for code that is IPv6-specific.
+func (addr *IPv6Address) ToGenericKey() Key[*IPv6Address] {
+	key := Key[*IPv6Address]{}
+	addr.init().toIPv6Key(&key.keyContents)
+	return key
+}
+
+func (addr *IPv6Address) fromKey(scheme addressScheme, key *keyContents) *IPv6Address {
+	if scheme == ipv6Scheme {
+		return fromIPv6IPKey(key)
+	}
+	panic("invalid generic key")
 }
 
 func (addr *IPv6Address) toIPv6Key(contents *keyContents) {

@@ -164,7 +164,7 @@ func (key MACAddressKey) String() string {
 	return key.ToAddress().String()
 }
 
-// KeyConstraint is the generic type constraint for the generic address type corresponding to an address key
+// KeyConstraint is the generic type constraint for an address type that can be generated from a generic address key.
 type KeyConstraint[T any] interface {
 	fmt.Stringer
 	fromKey(addressScheme, *keyContents) T // implemented by IPAddress and Address
@@ -179,6 +179,17 @@ const (
 	mac48Scheme        addressScheme = 3
 	eui64Scheme        addressScheme = 4
 )
+
+// KeyGeneratorConstraint is the generic type constraint for an address type that can generate a generic address key.
+type KeyGeneratorConstraint[T KeyConstraint[T]] interface {
+	ToGenericKey() Key[T]
+}
+
+// GenericKeyConstraint is the generic type constraint for an address type that can generate and be generated from a generic address key.
+type GenericKeyConstraint[T KeyConstraint[T]] interface {
+	KeyGeneratorConstraint[T]
+	KeyConstraint[T]
+}
 
 // Key is a representation of an address that is comparable as defined by the language specification.
 // See https://go.dev/ref/spec#Comparison_operators
@@ -231,9 +242,9 @@ type (
 )
 
 var (
-	// _ Key[*IPv4Address] // does not compile, as expected and intended
-	// _ Key[*IPv6Address] // does not compile, as expected and intended
-	// _ Key[*MACAddress]  // does not compile, as expected and intended
+	_ Key[*IPv4Address]
+	_ Key[*IPv6Address]
+	_ Key[*MACAddress]
 
 	_ AddressKey
 	_ IPAddressKey

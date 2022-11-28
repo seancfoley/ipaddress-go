@@ -36,8 +36,8 @@ type WrappedIPAddressString struct {
 }
 
 // Unwrap returns the wrapped IPAddressString as an interface, HostIdentifierString.
-func (w WrappedIPAddressString) Unwrap() HostIdentifierString {
-	res := w.IPAddressString
+func (str WrappedIPAddressString) Unwrap() HostIdentifierString {
+	res := str.IPAddressString
 	if res == nil {
 		return nil
 	}
@@ -45,8 +45,8 @@ func (w WrappedIPAddressString) Unwrap() HostIdentifierString {
 }
 
 // ToAddress returns the identified address or an error.
-func (w WrappedIPAddressString) ToAddress() (AddressType, error) {
-	addr, err := w.IPAddressString.ToAddress()
+func (str WrappedIPAddressString) ToAddress() (AddressType, error) {
+	addr, err := str.IPAddressString.ToAddress()
 	if err != nil {
 		return nil, err
 	}
@@ -54,8 +54,8 @@ func (w WrappedIPAddressString) ToAddress() (AddressType, error) {
 }
 
 // GetAddress returns the identified address or nil if none.
-func (w WrappedIPAddressString) GetAddress() AddressType {
-	if addr := w.IPAddressString.GetAddress(); addr != nil {
+func (str WrappedIPAddressString) GetAddress() AddressType {
+	if addr := str.IPAddressString.GetAddress(); addr != nil {
 		return addr
 	}
 	return nil
@@ -67,8 +67,8 @@ type WrappedMACAddressString struct {
 }
 
 // Unwrap returns the wrapped MACAddressString as an interface, HostIdentifierString.
-func (w WrappedMACAddressString) Unwrap() HostIdentifierString {
-	res := w.MACAddressString
+func (str WrappedMACAddressString) Unwrap() HostIdentifierString {
+	res := str.MACAddressString
 	if res == nil {
 		return nil
 	}
@@ -76,8 +76,8 @@ func (w WrappedMACAddressString) Unwrap() HostIdentifierString {
 }
 
 // ToAddress returns the identified address or an error.
-func (w WrappedMACAddressString) ToAddress() (AddressType, error) {
-	addr, err := w.MACAddressString.ToAddress()
+func (str WrappedMACAddressString) ToAddress() (AddressType, error) {
+	addr, err := str.MACAddressString.ToAddress()
 	if err != nil {
 		return nil, err
 	}
@@ -85,8 +85,8 @@ func (w WrappedMACAddressString) ToAddress() (AddressType, error) {
 }
 
 // GetAddress returns the identified address or nil if none.
-func (w WrappedMACAddressString) GetAddress() AddressType {
-	if addr := w.MACAddressString.GetAddress(); addr != nil {
+func (str WrappedMACAddressString) GetAddress() AddressType {
+	if addr := str.MACAddressString.GetAddress(); addr != nil {
 		return addr
 	}
 	return nil
@@ -98,8 +98,8 @@ type WrappedHostName struct {
 }
 
 // Unwrap returns the wrapped HostName as an interface, HostIdentifierString.
-func (w WrappedHostName) Unwrap() HostIdentifierString {
-	res := w.HostName
+func (host WrappedHostName) Unwrap() HostIdentifierString {
+	res := host.HostName
 	if res == nil {
 		return nil
 	}
@@ -107,8 +107,8 @@ func (w WrappedHostName) Unwrap() HostIdentifierString {
 }
 
 // ToAddress returns the identified address or an error.
-func (w WrappedHostName) ToAddress() (AddressType, error) {
-	addr, err := w.HostName.ToAddress()
+func (host WrappedHostName) ToAddress() (AddressType, error) {
+	addr, err := host.HostName.ToAddress()
 	if err != nil {
 		return nil, err
 	}
@@ -116,8 +116,8 @@ func (w WrappedHostName) ToAddress() (AddressType, error) {
 }
 
 // GetAddress returns the identified address or nil if none.
-func (w WrappedHostName) GetAddress() AddressType {
-	if addr := w.HostName.GetAddress(); addr != nil {
+func (host WrappedHostName) GetAddress() AddressType {
+	if addr := host.HostName.GetAddress(); addr != nil {
 		return addr
 	}
 	return nil

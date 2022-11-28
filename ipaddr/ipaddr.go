@@ -835,10 +835,13 @@ func (addr *ipAddressInternal) rangeIterator(
 
 var zeroIPAddr = createIPAddress(zeroSection, NoZone)
 
-// IPAddress represents an IP address or subnet, either IPv4 or IPv6 (except for the zero-IPAddress which is neither).
+// IPAddress represents an IP address or subnet, either IPv4 or IPv6 (except for the zero-valued IPAddress which is neither).
 // An IP address is composed of range-valued segments and can optionally have an associated prefix length.
 // The zero value IPAddress has no segments, neither IPv4 nor IPv6, which is not compatible with zero value for IPv4 or IPv6, those being 0.0.0.0 and :: respectively.
 // The zero value is also known as the adaptive zero.
+//
+// To construct one from a string, use NewIPAddressString,
+// then use the ToAddress or GetAddress method of [IPAddressString].
 type IPAddress struct {
 	ipAddressInternal
 }
@@ -2396,6 +2399,11 @@ func (addr *IPAddress) ToKey() Key[*IPAddress] {
 		thisAddr.toIPv6Key(contents)
 	} // else key.scheme == anySchemeX
 	return key
+}
+
+// ToGenericKey produces a generic Key[*IPAddress] that can be used with generic code working with [Address], [IPAddress], [IPv4Address], [IPv6Address] and [MACAddress].
+func (addr *IPAddress) ToGenericKey() Key[*IPAddress] {
+	return addr.ToKey()
 }
 
 func (addr *IPAddress) toKey() RangeBoundaryKey[*IPAddress] {

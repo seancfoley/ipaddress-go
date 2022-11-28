@@ -55,47 +55,47 @@ type PrefixBitCount uint8
 
 // Len returns the length of the prefix.  If the receiver is nil, representing the absence of a prefix length, returns 0.
 // It will also return 0 if the receiver is a prefix with length of 0.  To distinguish the two, compare the receiver with nil.
-func (p *PrefixBitCount) Len() BitCount {
-	if p == nil {
+func (prefixBitCount *PrefixBitCount) Len() BitCount {
+	if prefixBitCount == nil {
 		return 0
 	}
-	return p.bitCount()
+	return prefixBitCount.bitCount()
 }
 
 // IsNil returns true if this is nil, meaning it represents having no prefix length, or the absence of a prefix length
-func (p *PrefixBitCount) IsNil() bool {
-	return p == nil
+func (prefixBitCount *PrefixBitCount) IsNil() bool {
+	return prefixBitCount == nil
 }
 
-func (p *PrefixBitCount) bitCount() BitCount {
-	return BitCount(*p)
+func (prefixBitCount *PrefixBitCount) bitCount() BitCount {
+	return BitCount(*prefixBitCount)
 }
 
-func (p *PrefixBitCount) copy() PrefixLen {
-	if p == nil {
+func (prefixBitCount *PrefixBitCount) copy() PrefixLen {
+	if prefixBitCount == nil {
 		return nil
 	}
-	res := *p
+	res := *prefixBitCount
 	return &res
 }
 
 // Equal compares two PrefixLen values for equality.  This method is intended for the PrefixLen type.  BitCount values should be compared with the == operator.
-func (p *PrefixBitCount) Equal(other PrefixLen) bool {
-	if p == nil {
+func (prefixBitCount *PrefixBitCount) Equal(other PrefixLen) bool {
+	if prefixBitCount == nil {
 		return other == nil
 	}
-	return other != nil && p.bitCount() == other.bitCount()
+	return other != nil && prefixBitCount.bitCount() == other.bitCount()
 }
 
 // Matches compares a PrefixLen value with a bit count
-func (p *PrefixBitCount) Matches(other BitCount) bool {
-	return p != nil && p.bitCount() == other
+func (prefixBitCount *PrefixBitCount) Matches(other BitCount) bool {
+	return prefixBitCount != nil && prefixBitCount.bitCount() == other
 }
 
 // Compare compares PrefixLen values, returning -1, 0, or 1 if this prefix length is less than, equal to, or greater than the given prefix length.
 // This method is intended for the PrefixLen type.  BitCount values should be compared with ==, >, <, >= and <= operators.
-func (p *PrefixBitCount) Compare(other PrefixLen) int {
-	if p == nil {
+func (prefixBitCount *PrefixBitCount) Compare(other PrefixLen) int {
+	if prefixBitCount == nil {
 		if other == nil {
 			return 0
 		}
@@ -103,15 +103,15 @@ func (p *PrefixBitCount) Compare(other PrefixLen) int {
 	} else if other == nil {
 		return -1
 	}
-	return p.bitCount() - other.bitCount()
+	return prefixBitCount.bitCount() - other.bitCount()
 }
 
 // String returns the bit count as a base-10 positive integer string, or "<nil>" if the receiver is a nil pointer.
-func (p *PrefixBitCount) String() string {
-	if p == nil {
+func (prefixBitCount *PrefixBitCount) String() string {
+	if prefixBitCount == nil {
 		return nilString()
 	}
-	return strconv.Itoa(p.bitCount())
+	return strconv.Itoa(prefixBitCount.bitCount())
 }
 
 // HostBitCount is the count of bits in a host.
@@ -138,33 +138,33 @@ func BitsForCount(count uint64) (result *HostBitCount) {
 
 // BlockSize is the reverse of BitsForCount, the total number of values possible ranging across the number of host bits.
 // The nil *HostBitCount returns 0.
-func (h *HostBitCount) BlockSize() *big.Int {
-	if h == nil {
+func (hostBitCount *HostBitCount) BlockSize() *big.Int {
+	if hostBitCount == nil {
 		return bigZero()
 	}
-	return new(big.Int).Lsh(bigOneConst(), uint(*h))
+	return new(big.Int).Lsh(bigOneConst(), uint(*hostBitCount))
 }
 
 // Len returns the length of the host.  If the receiver is nil, representing the absence of a host length, returns 0.
 // It will also return 0 if the receiver has a host length of 0.  To distinguish the two, compare the receiver with nil.
-func (h *HostBitCount) Len() BitCount {
-	if h == nil {
+func (hostBitCount *HostBitCount) Len() BitCount {
+	if hostBitCount == nil {
 		return 0
 	}
-	return BitCount(*h)
+	return BitCount(*hostBitCount)
 }
 
 // String returns the bit count as a base-10 positive integer string, or "<nil>" if the receiver is a nil pointer.
-func (h *HostBitCount) String() string {
-	if p == nil {
+func (hostBitCount *HostBitCount) String() string {
+	if hostBitCount == nil {
 		return nilString()
 	}
-	return strconv.Itoa(h.Len())
+	return strconv.Itoa(hostBitCount.Len())
 }
 
 // IsNil returns true if this is nil, meaning it represents having no identified host length.
-func (h *HostBitCount) IsNil() bool {
-	return h == nil
+func (hostBitCount *HostBitCount) IsNil() bool {
+	return hostBitCount == nil
 }
 
 var cachedPrefixBitCounts, cachedPrefixLens = initPrefLens()
@@ -231,50 +231,50 @@ type PortInt = int // using signed integers allows for easier arithmetic
 // PortNum is the port number for a non-nil Port.  For arithmetic, you might wish to use the signed integer type PortInt instead.
 type PortNum uint16
 
-func (p *PortNum) portNum() PortInt {
-	return PortInt(*p)
+func (portNum *PortNum) portNum() PortInt {
+	return PortInt(*portNum)
 }
 
-func (p *PortNum) copy() Port {
-	if p == nil {
+func (portNum *PortNum) copy() Port {
+	if portNum == nil {
 		return nil
 	}
-	res := *p
+	res := *portNum
 	return &res
 }
 
 // Num converts to a PortPortIntNum, returning 0 if the receiver is nil.
-func (p *PortNum) Num() PortInt {
-	if p == nil {
+func (portNum *PortNum) Num() PortInt {
+	if portNum == nil {
 		return 0
 	}
-	return PortInt(*p)
+	return PortInt(*portNum)
 }
 
 // Port dereferences this PortNum, while returning 0 if the receiver is nil.
-func (p *PortNum) Port() PortNum {
-	if p == nil {
+func (portNum *PortNum) Port() PortNum {
+	if portNum == nil {
 		return 0
 	}
-	return *p
+	return *portNum
 }
 
 // Equal compares two Port values for equality.
-func (p *PortNum) Equal(other Port) bool {
-	if p == nil {
+func (portNum *PortNum) Equal(other Port) bool {
+	if portNum == nil {
 		return other == nil
 	}
-	return other != nil && p.portNum() == other.portNum()
+	return other != nil && portNum.portNum() == other.portNum()
 }
 
 // Matches compares a Port value with a port number.
-func (p *PortNum) Matches(other PortInt) bool {
-	return p != nil && p.portNum() == other
+func (portNum *PortNum) Matches(other PortInt) bool {
+	return portNum != nil && portNum.portNum() == other
 }
 
 // Compare compares PrefixLen values, returning -1, 0, or 1 if the receiver is less than, equal to, or greater than the argument.
-func (p *PortNum) Compare(other Port) int {
-	if p == nil {
+func (portNum *PortNum) Compare(other Port) int {
+	if portNum == nil {
 		if other == nil {
 			return 0
 		}
@@ -282,15 +282,15 @@ func (p *PortNum) Compare(other Port) int {
 	} else if other == nil {
 		return 1
 	}
-	return p.portNum() - other.portNum()
+	return portNum.portNum() - other.portNum()
 }
 
 // String returns the bit count as a base-10 positive integer string, or "<nil>" if the receiver is a nil pointer.
-func (p *PortNum) String() string {
-	if p == nil {
+func (portNum *PortNum) String() string {
+	if portNum == nil {
 		return nilString()
 	}
-	return strconv.Itoa(p.portNum())
+	return strconv.Itoa(portNum.portNum())
 }
 
 func cachePorts(i PortInt) Port {

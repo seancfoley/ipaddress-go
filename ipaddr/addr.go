@@ -1072,7 +1072,7 @@ func (addr *addressInternal) format(state fmt.State, verb rune) {
 
 var zeroAddr = createAddress(zeroSection, NoZone)
 
-// Address represents a single address, or a collection of multiple addresses, such as with an IP subnet.
+// Address represents a single address, or a collection of multiple addresses, such as with an IP subnet or a set of MAC addresses.
 //
 // Addresses consist of a sequence of segments, each of equal bit-size.
 // The number of such segments and the bit-size are determined by the underlying version or type of the address, whether IPv4, IPv6, MAC, or other.
@@ -1080,7 +1080,7 @@ var zeroAddr = createAddress(zeroSection, NoZone)
 //
 // To construct one from a string, use
 // NewIPAddressString or NewMACAddressString,
-// then use the ToAddress or GetAddress methods to get an IPAddress or MACAddress,
+// then use the ToAddress or GetAddress methods to get an [IPAddress] or [MACAddress],
 // and then you can convert to this type using the ToAddressBase method.
 //
 // Any given specific address types can be converted to Address with the ToAddressBase method,
@@ -1961,6 +1961,11 @@ func (addr *Address) ToKey() Key[*Address] {
 		thisAddr.toMACKey(contents)
 	} // else key.scheme == adaptiveZeroScheme
 	return key
+}
+
+// ToGenericKey produces a generic Key[*Address] that can be used with generic code working with [Address], [IPAddress], [IPv4Address], [IPv6Address] and [MACAddress].
+func (addr *Address) ToGenericKey() Key[*Address] {
+	return addr.ToKey()
 }
 
 func (addr *Address) fromKey(scheme addressScheme, key *keyContents) *Address {

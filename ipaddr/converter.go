@@ -65,7 +65,7 @@ func (converter DefaultAddressConverter) ToIPv4(address *IPAddress) *IPv4Address
 }
 
 // ToIPv6 converts to an IPv4-mapped IPv6 address or returns the original address if IPv6 already.
-func (DefaultAddressConverter) ToIPv6(address *IPAddress) *IPv6Address {
+func (converter DefaultAddressConverter) ToIPv6(address *IPAddress) *IPv6Address {
 	if addr := address.ToIPv6(); addr != nil {
 		return addr
 	} else if addr := address.ToIPv4(); addr != nil {
@@ -77,7 +77,7 @@ func (DefaultAddressConverter) ToIPv6(address *IPAddress) *IPv6Address {
 }
 
 // IsIPv4Convertible returns true if ToIPv4 returns non-nil.
-func (DefaultAddressConverter) IsIPv4Convertible(address *IPAddress) bool {
+func (converter DefaultAddressConverter) IsIPv4Convertible(address *IPAddress) bool {
 	if addr := address.ToIPv6(); addr != nil {
 		if addr.IsIPv4Mapped() {
 			if _, _, _, _, err := addr.GetSegment(IPv6SegmentCount - 1).splitSegValues(); err != nil {
@@ -92,7 +92,7 @@ func (DefaultAddressConverter) IsIPv4Convertible(address *IPAddress) bool {
 }
 
 // IsIPv6Convertible returns true if ToIPv6 returns non-nil.
-func (DefaultAddressConverter) IsIPv6Convertible(address *IPAddress) bool {
+func (converter DefaultAddressConverter) IsIPv6Convertible(address *IPAddress) bool {
 	if addr := address.ToIPv4(); addr != nil {
 		return addr.GetSegment(0).isJoinableTo(addr.GetSegment(1)) && addr.GetSegment(2).isJoinableTo(addr.GetSegment(3))
 	}

@@ -181,9 +181,11 @@ func initZeroIPv4() *IPv4Address {
 // Each segment can represent a single value or a range of values.
 // The zero value is "0.0.0.0".
 //
-// To construct one from a string, use [IPAddressString].
-// For other inputs, use one of multiple constructor functions like NewIPv4Address.
-// You can also use one of multiple constructors for [IPAddress] like NewIPAddress and then convert using ToIPv4.
+// To construct one from a string, use NewIPAddressString, then use the ToAddress or GetAddress method of [IPAddressString],
+// and then use ToIPv4 to get an IPv4Address, assuming the string had an IPv4 format.
+//
+// For other inputs, use one of the multiple constructor functions like NewIPv4Address.
+// You can also use one of the multiple constructors for [IPAddress] like NewIPAddress and then convert using ToIPv4.
 type IPv4Address struct {
 	ipAddressInternal
 }
@@ -1848,6 +1850,21 @@ func fromIPv4Key(key IPv4AddressKey) *IPv4Address {
 			return IPv4SegInt(keyVal >> (segIndex << ipv4BitsToSegmentBitshift))
 		},
 	)
+}
+
+// ToGenericKey produces a generic Key[*IPv4Address] that can be used with generic code working with [Address], [IPAddress], [IPv4Address], [IPv6Address] and [MACAddress].
+// ToKey produces a more compact key for code that is IPv4-specific.
+func (addr *IPv4Address) ToGenericKey() Key[*IPv4Address] {
+	key := Key[*IPv4Address]{}
+	addr.init().toIPv4Key(&key.keyContents)
+	return key
+}
+
+func (addr *IPv4Address) fromKey(scheme addressScheme, key *keyContents) *IPv4Address {
+	if scheme == ipv4Scheme {
+		return fromIPv4IPKey(key)
+	}
+	panic("invalid generic key")
 }
 
 func (addr *IPv4Address) toIPv4Key(contents *keyContents) {
