@@ -26,7 +26,7 @@ type ExtendedIdentifierString interface {
 	// ToAddress returns the identified address or an error.
 	ToAddress() (AddressType, error)
 
-	// Unwrap returns the wrapped [IPAddressString], [MACAddressString] or [HostName] as an interface, HostIdentifierString.
+	// Unwrap returns the wrapped IPAddressString, MACAddressString or HostName as an interface, HostIdentifierString.
 	Unwrap() HostIdentifierString
 }
 

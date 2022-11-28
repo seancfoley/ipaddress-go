@@ -19,7 +19,7 @@ IPAddress is a library for handling IP addresses and subnets, both IPv4 and IPv6
 
 # Benefits of this Library
 
-
+The primary goals are:
  - Parsing of all host name and ipv4/ipv6 address formats in common usage plus some additional formats
  - Parsing and representation of subnets, either those specified by network prefix length or those specified with ranges of segment values.
  - Allow the separation of address parsing from host parsing.
