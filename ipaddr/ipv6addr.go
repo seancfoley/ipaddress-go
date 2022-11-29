@@ -2205,16 +2205,17 @@ func (addr *IPv6Address) toKey() RangeBoundaryKey[*IPv6Address] {
 // ToGenericKey produces a generic Key[*IPv6Address] that can be used with generic code working with [Address], [IPAddress], [IPv4Address], [IPv6Address] and [MACAddress].
 // ToKey produces a more compact key for code that is IPv6-specific.
 func (addr *IPv6Address) ToGenericKey() Key[*IPv6Address] {
+	// Note: We intentionally do not populate the "scheme" field, which is used with Key[*Address] and Key[*IPAddress] and 64-bit Key[*MACAddress].
+	// With Key[*IPv6Address], by leaving the scheme zero, the zero Key[*IPv6Address] matches up with the key produced here by the zero address.
+	// We do not need the scheme field for Key[*IPv6Address] since the generic type indicates IPv6.
 	key := Key[*IPv6Address]{}
 	addr.init().toIPv6Key(&key.keyContents)
 	return key
 }
 
-func (addr *IPv6Address) fromKey(scheme addressScheme, key *keyContents) *IPv6Address {
-	if scheme == ipv6Scheme {
-		return fromIPv6IPKey(key)
-	}
-	panic("invalid generic key")
+func (addr *IPv6Address) fromKey(_ addressScheme, key *keyContents) *IPv6Address {
+	// See ToGenericKey for details such as the fact that the scheme is ignored
+	return fromIPv6IPKey(key)
 }
 
 func (addr *IPv6Address) toIPv6Key(contents *keyContents) {

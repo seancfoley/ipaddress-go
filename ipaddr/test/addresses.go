@@ -112,6 +112,8 @@ type testAddresses interface {
 	allowsRange() bool
 
 	getAllCached() []*ipaddr.IPAddress
+
+	getAllMACCached() []*ipaddr.MACAddress
 }
 
 type addresses struct {
@@ -251,6 +253,43 @@ func (t *addresses) getAllCached() (all []*ipaddr.IPAddress) {
 	t.netIPv6AddressCacheLock.Unlock()
 	t.netIPv4AddressCacheLock.Unlock()
 	t.strIPAddressStrCacheLock.Unlock()
+	return
+}
+
+func (t *addresses) getAllMACCached() (all []*ipaddr.MACAddress) {
+	if !t.caching {
+		return
+	}
+	t.strMACAddressStrCacheLock.Lock()
+	t.netMACAddressCacheLock.Lock()
+	t.netMACExtAddressCacheLock.Lock()
+	t.uint64MACAddressCacheLock.Lock()
+	t.uint64MACExtAddressCacheLock.Lock()
+	all = make([]*ipaddr.MACAddress, 0, len(t.strMACAddressStrCache)+
+		len(t.netMACAddressCache)+len(t.netMACExtAddressCache)+
+		len(t.uint64MACAddressCache)+len(t.uint64MACExtAddressCache))
+	for _, str := range t.strMACAddressStrCache {
+		if addr := str.GetAddress(); addr != nil {
+			all = append(all, addr)
+		}
+	}
+	for _, addr := range t.netMACAddressCache {
+		all = append(all, addr)
+	}
+	for _, addr := range t.netMACExtAddressCache {
+		all = append(all, addr)
+	}
+	for _, addr := range t.uint64MACAddressCache {
+		all = append(all, addr)
+	}
+	for _, addr := range t.uint64MACExtAddressCache {
+		all = append(all, addr)
+	}
+	t.uint64MACExtAddressCacheLock.Unlock()
+	t.uint64MACAddressCacheLock.Unlock()
+	t.netMACExtAddressCacheLock.Unlock()
+	t.netMACAddressCacheLock.Unlock()
+	t.strMACAddressStrCacheLock.Unlock()
 	return
 }
 

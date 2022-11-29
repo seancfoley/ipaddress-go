@@ -1284,7 +1284,7 @@ func (node AddedTreeNode[T]) GetKey() T {
 
 // String returns a visual representation of this node including the key.
 // If this is the root, it will have an open circle if the root is not an added node.
-// Otherwise, the node will have a closed circle. ,
+// Otherwise, the node will have a closed circle.
 func (node AddedTreeNode[T]) String() string {
 	return tree.NodeString[trieKey[T], emptyValue](printWrapper[T, emptyValue]{node.wrapped})
 }
@@ -1368,7 +1368,7 @@ func (node AssociativeAddedTreeNode[T, V]) GetValue() V {
 
 // String returns a visual representation of this node including the key and the value.
 // If this is the root, it will have an open circle if the root is not an added node.
-// Otherwise, the node will have a closed circle. ,
+// Otherwise, the node will have a closed circle.
 func (node AssociativeAddedTreeNode[T, V]) String() string {
 	return tree.NodeString[trieKey[T], V](printWrapper[T, V]{node.wrapped})
 }

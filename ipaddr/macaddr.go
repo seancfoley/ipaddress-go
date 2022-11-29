@@ -1219,21 +1219,6 @@ func (addr *MACAddress) Wrap() WrappedAddress {
 	return wrapAddress(addr.ToAddressBase())
 }
 
-// ToGenericKey produces a generic Key[*MACAddress] that can be used with generic code working with [Address], [IPAddress], [IPv4Address], [IPv6Address] and [MACAddress].
-// ToKey produces a more compact key for code that is MAC-specific.
-func (addr *MACAddress) ToGenericKey() Key[*MACAddress] {
-	key := Key[*MACAddress]{}
-	addr.init().toMACKey(&key.keyContents)
-	return key
-}
-
-func (addr *MACAddress) fromKey(scheme addressScheme, key *keyContents) *MACAddress {
-	if scheme == eui64Scheme || scheme == mac48Scheme {
-		return fromMACAddrKey(scheme, key)
-	}
-	panic("invalid generic key")
-}
-
 // ToKey creates the associated address key.
 // While addresses can be compared with the Compare, TrieCompare or Equal methods as well as various provided instances of AddressComparator,
 // they are not comparable with go operators.
@@ -1278,6 +1263,25 @@ func fromMACKey(key MACAddressKey) *MACAddress {
 	)
 }
 
+// ToGenericKey produces a generic Key[*MACAddress] that can be used with generic code working with [Address], [IPAddress], [IPv4Address], [IPv6Address] and [MACAddress].
+// ToKey produces a more compact key for code that is MAC-specific.
+func (addr *MACAddress) ToGenericKey() Key[*MACAddress] {
+	// Note: We intentionally do not populate the "scheme" field for MAC-48.
+	// With Key[*IPv4Address], by leaving the scheme zero for MAC-48, the zero Key[*MACAddress] matches up with the key produced here by the zero address.
+	// We do not need the scheme field for Key[*MACAddress] since the generic type indicates MAC, but we do need a flag to distinguish 64-bit EUI-64.
+	key := Key[*MACAddress]{}
+	if isExtended := addr.GetSegmentCount() == ExtendedUniqueIdentifier64SegmentCount; isExtended {
+		key.scheme = eui64Scheme
+	}
+	addr.init().toMACKey(&key.keyContents)
+	return key
+}
+
+func (addr *MACAddress) fromKey(scheme addressScheme, key *keyContents) *MACAddress {
+	// See ToGenericKey for details such as the fact that the scheme is populated only for eui64Scheme
+	return fromMACAddrKey(scheme, key)
+}
+
 func (addr *MACAddress) toMACKey(contents *keyContents) {
 	section := addr.GetSection()
 	divs := section.getDivArray()
@@ -1302,6 +1306,8 @@ func (addr *MACAddress) toMACKey(contents *keyContents) {
 func fromMACAddrKey(scheme addressScheme, key *keyContents) *MACAddress {
 	segCount := MediaAccessControlSegmentCount
 	isExtended := false
+	// Note: the check here must be for eui64Scheme and not mac48Scheme
+	// ToGenericKey will only populate the scheme to eui64Scheme, it will be left as 0 otherwise
 	if isExtended = scheme == eui64Scheme; isExtended {
 		segCount = ExtendedUniqueIdentifier64SegmentCount
 	}

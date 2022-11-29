@@ -1855,16 +1855,16 @@ func fromIPv4Key(key IPv4AddressKey) *IPv4Address {
 // ToGenericKey produces a generic Key[*IPv4Address] that can be used with generic code working with [Address], [IPAddress], [IPv4Address], [IPv6Address] and [MACAddress].
 // ToKey produces a more compact key for code that is IPv4-specific.
 func (addr *IPv4Address) ToGenericKey() Key[*IPv4Address] {
+	// Note: We intentionally do not populate the "scheme" field, which is used with Key[*Address] and Key[*IPAddress] and 64-bit Key[*MACAddress].
+	// With Key[*IPv4Address], by leaving the scheme zero, the zero Key[*IPv4Address] matches up with the key produced here by the zero address.
+	// We do not need the scheme field for Key[*IPv4Address] since the generic type indicates IPv4.
 	key := Key[*IPv4Address]{}
 	addr.init().toIPv4Key(&key.keyContents)
 	return key
 }
 
-func (addr *IPv4Address) fromKey(scheme addressScheme, key *keyContents) *IPv4Address {
-	if scheme == ipv4Scheme {
-		return fromIPv4IPKey(key)
-	}
-	panic("invalid generic key")
+func (addr *IPv4Address) fromKey(_ addressScheme, key *keyContents) *IPv4Address {
+	return fromIPv4IPKey(key)
 }
 
 func (addr *IPv4Address) toIPv4Key(contents *keyContents) {
