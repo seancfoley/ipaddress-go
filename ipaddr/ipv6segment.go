@@ -341,8 +341,8 @@ func (seg *IPv6AddressSegment) MatchesWithPrefixMask(value IPv6SegInt, networkBi
 
 // GetBlockMaskPrefixLen returns the prefix length if this address segment is equivalent to the mask for a CIDR prefix block.
 // Otherwise, it returns nil.
-// A CIDR network mask is a segment with all 1s in the network bits and then all 0s in the host bits.
-// A CIDR host mask is a segment with all 0s in the network bits and then all 1s in the host bits.
+// A CIDR network mask is a segment with all ones in the network bits and then all zeros in the host bits.
+// A CIDR host mask is a segment with all zeros in the network bits and then all ones in the host bits.
 // The prefix length is the bit-length of the network bits.
 //
 // Also, keep in mind that the prefix length returned by this method is not equivalent to the prefix length of this segment.

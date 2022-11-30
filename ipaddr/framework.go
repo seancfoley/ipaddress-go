@@ -369,8 +369,8 @@ type IPAddressSegmentSeries interface { // IPAddress and above, IPAddressSection
 
 	// GetBlockMaskPrefixLen returns the prefix length if this IP address or IP address section is equivalent to the mask for a CIDR prefix block.
 	// Otherwise, it returns nil.
-	// A CIDR network mask is a series with all 1s in the network section and then all 0s in the host section.
-	// A CIDR host mask is a series with all 0s in the network section and then all 1s in the host section.
+	// A CIDR network mask is a series with all ones in the network section and then all zeros in the host section.
+	// A CIDR host mask is a series with all zeros in the network section and then all ones in the host section.
 	// The prefix length is the bit-length of the network section.
 	//
 	// Also, keep in mind that the prefix length returned by this method is not equivalent to the prefix length of this instance,

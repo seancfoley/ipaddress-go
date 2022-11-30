@@ -492,7 +492,7 @@ func MaskRange(value, upperValue, maskValue, maxValue uint64) Masker {
 		foundDiffering := differingMasked != 0
 		if foundDiffering {
 			// Anything below highestDifferingBitMasked in the mask must be ones.
-			// Also, if we have masked out any 1 bit in the original, then anything that we do not mask out that follows must be all 1s
+			// Also, if we have masked out any 1 bit in the original, then anything that we do not mask out that follows must be all ones
 			highestDifferingBitMasked := bits.LeadingZeros64(differingMasked) // first one bit in the mask covering the range
 			var hostMask uint64
 			if highestDifferingBitMasked != 63 {

@@ -153,8 +153,8 @@ func (section *ipAddressSectionInternal) GetNetworkPrefixLen() PrefixLen {
 
 // GetBlockMaskPrefixLen returns the prefix length if this address section is equivalent to the mask for a CIDR prefix block.
 // Otherwise, it returns nil.
-// A CIDR network mask is an address section with all 1s in the network section and then all 0s in the host section.
-// A CIDR host mask is an address section with all 0s in the network section and then all 1s in the host section.
+// A CIDR network mask is an address section with all ones in the network section and then all zeros in the host section.
+// A CIDR host mask is an address section with all zeros in the network section and then all ones in the host section.
 // The prefix length is the bit-length of the network section.
 //
 // Also, keep in mind that the prefix length returned by this method is not equivalent to the prefix length of this instance,
