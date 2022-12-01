@@ -31,14 +31,14 @@ type SequentialRangeKey[T SequentialRangeConstraint[T]] struct {
 	lowerKey, upperKey RangeBoundaryKey[T]
 }
 
-// ToSeqRange converts back to a sequential range instance
+// ToSeqRange converts back to a sequential range instance.
 func (key SequentialRangeKey[T]) ToSeqRange() *SequentialRange[T] {
 	lower := key.lowerKey.ToAddress()
 	upper := key.upperKey.ToAddress()
 	return newSequRangeUnchecked(lower, upper, lower != upper)
 }
 
-// String calls the String method in the corresponding sequential range
+// String calls the String method in the corresponding sequential range.
 func (key SequentialRangeKey[T]) String() string {
 	return key.ToSeqRange().String()
 }
@@ -65,12 +65,12 @@ type IPv4AddressKey struct {
 	vals uint64 // upper and lower combined into one uint64
 }
 
-// ToAddress converts back to an address instance
+// ToAddress converts back to an address instance.
 func (key IPv4AddressKey) ToAddress() *IPv4Address {
 	return fromIPv4Key(key)
 }
 
-// String calls the String method in the corresponding address
+// String calls the String method in the corresponding address.
 func (key IPv4AddressKey) String() string {
 	return key.ToAddress().String()
 }
@@ -117,12 +117,12 @@ type IPv6AddressKey struct {
 	keyContents
 }
 
-// ToAddress converts back to an address instance
+// ToAddress converts back to an address instance.
 func (key IPv6AddressKey) ToAddress() *IPv6Address {
 	return fromIPv6Key(key)
 }
 
-// String calls the String method in the corresponding address
+// String calls the String method in the corresponding address.
 func (key IPv6AddressKey) String() string {
 	return key.ToAddress().String()
 }
@@ -154,12 +154,12 @@ type MACAddressKey struct {
 	additionalByteCount uint8 // 0 for MediaAccessControlSegmentCount or 2 for ExtendedUniqueIdentifier64SegmentCount
 }
 
-// ToAddress converts back to an address instance
+// ToAddress converts back to an address instance.
 func (key MACAddressKey) ToAddress() *MACAddress {
 	return fromMACKey(key)
 }
 
-// String calls the String method in the corresponding address
+// String calls the String method in the corresponding address.
 func (key MACAddressKey) String() string {
 	return key.ToAddress().String()
 }
@@ -214,13 +214,13 @@ func IPKeyFromRangeKey(key RangeBoundaryKey[*IPAddress]) Key[*IPAddress] {
 	return addr.ToKey()
 }
 
-// ToAddress converts back to an address instance
+// ToAddress converts back to an address instance.
 func (key Key[T]) ToAddress() T {
 	var t T
 	return t.fromKey(key.scheme, &key.keyContents)
 }
 
-// String calls the String method in the corresponding address
+// String calls the String method in the corresponding address.
 func (key Key[T]) String() string {
 	return key.ToAddress().String()
 }
