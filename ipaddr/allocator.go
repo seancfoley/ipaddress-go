@@ -102,19 +102,20 @@ func (alloc *PrefixBlockAllocator[T]) AddAvailable(blocks ...T) {
 	if len(blocks) == 0 {
 		return
 	}
+	version := alloc.version
 	for _, block := range blocks {
-		version := alloc.version
 		if version.IsIndeterminate() {
-			alloc.version = block.GetIPVersion()
+			version = block.GetIPVersion()
+			alloc.version = version
 		} else if !version.Equal(block.GetIPVersion()) {
-			panic("mismatched versions")
+			panic(lookupStr("ipaddress.error.ipVersionMismatch"))
 		}
 	}
 
 	if alloc.blocks == nil {
 		size := alloc.version.GetBitCount() + 1
 		alloc.blocks = make([][]T, size)
-	} else {
+	} else if alloc.totalBlockCount > 0 {
 		for i, existingBlocks := range alloc.blocks {
 			blocks = append(blocks, existingBlocks...)
 			alloc.blocks[i] = nil
@@ -134,7 +135,7 @@ func (alloc *PrefixBlockAllocator[T]) insertBlocks(blocks []T) {
 	}
 }
 
-// GetAvailable returns a list of all the blocks available for allocating in the allocator
+// GetAvailable returns a list of all the blocks available for allocating in the allocator.
 func (alloc *PrefixBlockAllocator[T]) GetAvailable() (blocks []T) {
 	for _, block := range alloc.blocks {
 		blocks = append(blocks, block...)
@@ -225,7 +226,7 @@ func (alloc *PrefixBlockAllocator[T]) AllocateBitLen(bitLength BitCount) T {
 			break
 		}
 	}
-	if (!block.IsMultiple() && !bigIsOne(block.GetCount())) || i == newPrefixBitCount {
+	if !block.IsMultiple() || i == newPrefixBitCount {
 		return block
 	}
 	// block is larger than needed, adjust it
@@ -249,13 +250,13 @@ func (alloc *PrefixBlockAllocator[T]) AllocateMultiBitLens(bitLengths ...BitCoun
 	sort.Slice(lengths, func(i, j int) bool {
 		return lengths[i] > lengths[j]
 	})
-	version := alloc.version
 	result := make([]AllocatedBlock[T], 0, len(lengths))
 	for _, bitLength := range lengths {
 		allocated := alloc.AllocateBitLen(bitLength)
 		if allocated.IsMultiple() || bigIsOne(allocated.GetCount()) {
+			hostBitCount := HostBitCount(bitLength)
 			result = append(result, AllocatedBlock[T]{
-				blockSize: new(big.Int).Lsh(bigOneConst(), uint(version.GetBitCount()-bitLength)),
+				blockSize: hostBitCount.BlockSize(),
 				block:     allocated,
 			})
 		} else {
