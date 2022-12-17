@@ -16,9 +16,11 @@ IP address and network manipulation, CIDR, operations, iterations, containment c
 | [1.4.1](https://github.com/seancfoley/ipaddress-go/releases/tag/v1.4.1) | Requires Go 1.13 or higher |
 | [1.5.2](https://github.com/seancfoley/ipaddress-go/releases/tag/v1.5.2) | Requires Go 1.18 or higher |
 
-go.mod: require github.com/seancfoley/ipaddress-go v1.5.2
+In your go.mod file:\
+require github.com/seancfoley/ipaddress-go v1.5.2
 
-source: import "github.com/seancfoley/ipaddress-go/ipaddr"
+In your source file:\
+import "github.com/seancfoley/ipaddress-go/ipaddr"
 
 Also available as a [Java](https://www.oracle.com/java/) library from the [IPAddress repository](https://github.com/seancfoley/IPAddress)
 
