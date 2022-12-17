@@ -1076,7 +1076,8 @@ var zeroAddr = createAddress(zeroSection, NoZone)
 //
 // Addresses consist of a sequence of segments, each of equal bit-size.
 // The number of such segments and the bit-size are determined by the underlying version or type of the address, whether IPv4, IPv6, MAC, or other.
-// Each segment can represent a single value or a sequential range of values.
+// Each segment can represent a single value or a sequential range of values.  Addresses can also have an associated prefix length,
+// which is the number of consecutive bits comprising the prefix, the most significant bits of an address.
 //
 // To construct one from a string, use
 // NewIPAddressString or NewMACAddressString,
@@ -1941,8 +1942,8 @@ func (addr *Address) Wrap() WrappedAddress {
 
 // ToKey creates the associated address key.
 // While addresses can be compared with the Compare, TrieCompare or Equal methods as well as various provided instances of AddressComparator,
-// they are not comparable with go operators.
-// However, AddressKey instances are comparable with go operators, and thus can be used as map keys.
+// they are not comparable with Go operators.
+// However, AddressKey instances are comparable with Go operators, and thus can be used as map keys.
 func (addr *Address) ToKey() Key[*Address] {
 	key := Key[*Address]{}
 	contents := &key.keyContents

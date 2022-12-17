@@ -136,7 +136,7 @@ func BitsForCount(count uint64) (result *HostBitCount) {
 	return nil
 }
 
-// BlockSize is the reverse of BitsForCount, the total number of values possible ranging across the number of host bits.
+// BlockSize is the reverse of BitsForCount, giving the total number of values when ranging across the number of host bits.
 // The nil *HostBitCount returns 0.
 func (hostBitCount *HostBitCount) BlockSize() *big.Int {
 	if hostBitCount == nil {

@@ -779,7 +779,7 @@ func (node *TrieNode[T]) NodeSize() int {
 	return node.toBinTrieNode().NodeSize()
 }
 
-// Size returns the number of elements in the trie.
+// Size returns the number of elements in the sub-trie with this node as the root.
 // Only nodes for which IsAdded returns true are counted.
 // When zero is returned, IsEmpty returns true.
 func (node *TrieNode[T]) Size() int {

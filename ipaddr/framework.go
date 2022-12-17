@@ -234,7 +234,7 @@ type AddressComponent interface { //AddressSegment and above, AddressSegmentSeri
 	// If a multiple-valued component cannot be written as a single prefix block or a range of two values, an error is returned.
 	ToHexString(with0xPrefix bool) (string, addrerr.IncompatibleAddressError)
 
-	// ToNormalizedString produces a string that is consistent for all address components of the same type and version,
+	// ToNormalizedString produces a string that is consistent for all address components of the same type and version.
 	ToNormalizedString() string
 }
 

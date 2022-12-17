@@ -1810,8 +1810,8 @@ func (addr *IPv4Address) toMinUpper() *IPv4Address {
 
 // ToKey creates the associated address key.
 // While addresses can be compared with the Compare, TrieCompare or Equal methods as well as various provided instances of AddressComparator,
-// they are not comparable with go operators.
-// However, AddressKey instances are comparable with go operators, and thus can be used as map keys.
+// they are not comparable with Go operators.
+// However, AddressKey instances are comparable with Go operators, and thus can be used as map keys.
 func (addr *IPv4Address) ToKey() IPv4AddressKey {
 	addr = addr.init()
 	key := IPv4AddressKey{}

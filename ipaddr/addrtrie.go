@@ -295,8 +295,8 @@ func (trie *Trie[T]) GetRoot() *TrieNode[T] {
 	return toAddressTrieNode[T](trie.getRoot())
 }
 
-// Size returns the number of elements in the tree.
-// It does not return the number of nodes.
+// Size returns the number of elements in the trie.
+// It does not return the number of nodes, it returns the number of added nodes.
 // Only nodes for which IsAdded returns true are counted (those nodes corresponding to added addresses and prefix blocks).
 // When zero is returned, IsEmpty returns true.
 func (trie *Trie[T]) Size() int {
@@ -1277,6 +1277,12 @@ func (node AddedTreeNode[T]) GetSubNodes() []AddedTreeNode[T] {
 	return res
 }
 
+// IsAdded returns if the node was an added node in the original trie.
+// This returns true for all nodes except possibly the root, since only added nodes are added to this tree, apart from the root.
+func (node AddedTreeNode[T]) IsAdded() bool {
+	return node.wrapped.IsAdded()
+}
+
 // GetKey returns the key of this node, which is the same as the key of the corresponding node in the originating trie.
 func (node AddedTreeNode[T]) GetKey() T {
 	return node.wrapped.GetKey().address
@@ -1348,6 +1354,12 @@ func (node AssociativeAddedTreeNode[T, V]) GetSubNodes() []AssociativeAddedTreeN
 		res[i] = AssociativeAddedTreeNode[T, V]{subNode}
 	}
 	return res
+}
+
+// IsAdded returns if the node was an added node in the original trie.
+// This returns true for all nodes except possibly the root, since only added nodes are added to this tree, apart from the root.
+func (node AssociativeAddedTreeNode[T, V]) IsAdded() bool {
+	return node.wrapped.IsAdded()
 }
 
 // GetKey returns the key of this node, which is the same as the key of the corresponding node in the originating trie.
