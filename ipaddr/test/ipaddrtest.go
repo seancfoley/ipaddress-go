@@ -2371,6 +2371,128 @@ func (t ipAddressTester) run() {
 			addr:  "1::78/126",
 		},
 	})
+
+	t.testAllocatorLen([]string{"192.168.10.0/24"}, []ipaddr.BitCount{5, 5, 2, 6, 2, 2}, []struct {
+		count int
+		addr  string
+	}{
+		{
+			count: 64,
+			addr:  "192.168.10.0/26",
+		},
+		{
+			count: 32,
+			addr:  "192.168.10.64/27",
+		},
+		{
+			count: 32,
+			addr:  "192.168.10.96/27",
+		},
+		{
+			count: 4,
+			addr:  "192.168.10.128/30",
+		},
+		{
+			count: 4,
+			addr:  "192.168.10.132/30",
+		},
+		{
+			count: 4,
+			addr:  "192.168.10.136/30",
+		},
+	})
+	t.testAllocatorLen([]string{"192.168.10.0/24"}, []ipaddr.BitCount{6, 5, 4, 4}, []struct {
+		count int
+		addr  string
+	}{
+		{
+			count: 64,
+			addr:  "192.168.10.0/26",
+		},
+		{
+			count: 32,
+			addr:  "192.168.10.64/27",
+		},
+		{
+			count: 16,
+			addr:  "192.168.10.96/28",
+		},
+		{count: 16,
+			addr: "192.168.10.112/28",
+		},
+	})
+	t.testAllocatorLen([]string{"192.168.10.0/24"}, []ipaddr.BitCount{1, 1, 5, 6}, []struct {
+		count int
+		addr  string
+	}{
+		{
+			count: 64,
+			addr:  "192.168.10.0/26",
+		},
+		{
+			count: 32,
+			addr:  " 192.168.10.64/27",
+		},
+		{
+			count: 2,
+			addr:  "192.168.10.96/31",
+		},
+		{
+			count: 2,
+			addr:  " 192.168.10.98/31",
+		},
+	})
+	t.testAllocatorLen([]string{"192.168.10.0/24"}, []ipaddr.BitCount{6, 4}, []struct {
+		count int
+		addr  string
+	}{
+		{
+			count: 64,
+			addr:  "192.168.10.0/26",
+		},
+		{
+			count: 16,
+			addr:  "192.168.10.64/28",
+		},
+	})
+	t.testAllocatorLen([]string{"192.168.10.0/24"}, []ipaddr.BitCount{5}, []struct {
+		count int
+		addr  string
+	}{
+		{
+			count: 32,
+			addr:  "192.168.10.0/27",
+		},
+	})
+	t.testAllocatorLen([]string{"192.168.10.0/24"}, []ipaddr.BitCount{}, []struct {
+		count int
+		addr  string
+	}(nil))
+	t.testAllocatorLen([]string{"1::/64"}, []int{6, 4, 2, 3, 5}, []struct {
+		count int
+		addr  string
+	}{
+		{
+			count: 64,
+			addr:  "1::/122",
+		},
+		{
+			count: 32,
+			addr:  "1::40/123",
+		},
+		{
+			count: 16,
+			addr:  "1::60/124",
+		},
+		{
+			count: 8,
+			addr:  "1::70/125",
+		},
+		{
+			count: 4,
+			addr:  "1::78/126",
+		},
+	})
 }
 
 func one28() *big.Int {
@@ -2378,6 +2500,75 @@ func one28() *big.Int {
 	sixtyFour := new(big.Int).Set(sixty4)
 	sixty4.Or(sixtyFour.Lsh(sixtyFour, 64), sixty4)
 	return sixty4
+}
+
+func (t ipAddressTester) testAllocatorLen(blocksStrs []string, bitLengths []ipaddr.BitCount, expected []struct {
+	count int
+	addr  string
+}) {
+
+	var blocks []*ipaddr.IPAddress
+	for _, str := range blocksStrs {
+		blocks = append(blocks, t.createAddress(str).GetAddress())
+	}
+	testAllocatorLen(t, blocks, bitLengths, expected)
+
+	if blocks[0].GetIPVersion().IsIPv4() {
+		blocks4 := cloneToIPv4Addrs(blocks)
+		testAllocatorLen(t, blocks4, bitLengths, expected)
+	} else if blocks[0].GetIPVersion().IsIPv6() {
+		blocks6 := cloneToIPv6Addrs(blocks)
+		testAllocatorLen(t, blocks6, bitLengths, expected)
+	}
+
+}
+
+// PrefixBlockAllocator[T PrefixBlockConstraint[T]]
+
+func testAllocatorLen[T ipaddr.PrefixBlockConstraint[T]](t ipAddressTester, blocks []T, bitLengths []ipaddr.BitCount, expected []struct {
+	count int
+	addr  string
+}) {
+	alloc := ipaddr.PrefixBlockAllocator[T]{}
+	alloc.AddAvailable(blocks...)
+	//alloc.SetReserved(reservedCount)
+	allocatedBlocks := alloc.AllocateMultiBitLens(bitLengths...)
+	//fmt.Println("allocated are: ", allocatedBlocks)
+	for i, ab := range allocatedBlocks {
+		if len(expected) <= i {
+			continue // note we will fail on the length check below
+		}
+		expectedAddr := t.createAddress(expected[i].addr).GetAddress()
+		if !ab.GetAddress().Equal(expectedAddr) {
+			t.addFailure(newAddressItemFailure(fmt.Sprint("mismatch: ", ab.GetAddress(), " with expected address ", expectedAddr), expectedAddr))
+		}
+		if ab.GetSize().Cmp(big.NewInt(int64(expected[i].count))) != 0 {
+			t.addFailure(newAddressItemFailure(fmt.Sprint("mismatch: ", ab.GetSize(), " with expected count ", expected[i].count), expectedAddr))
+		}
+		if ab.GetSize().Cmp(ab.GetCount()) > 0 {
+			t.addFailure(newAddressItemFailure(fmt.Sprint("mismatch: ", ab.GetSize(), " with count ", ab.GetCount()), expectedAddr))
+		}
+		//if reservedCount <= 0 && ab.GetSize().Cmp(ab.GetCount()) < 0 {
+		//	t.addFailure(newAddressItemFailure(fmt.Sprint("mismatch: ", ab.GetSize(), " with count 2 ", ab.GetCount()), expectedAddr))
+		//}
+		if expectedAddr.GetCount().Cmp(ab.GetCount()) != 0 {
+			t.addFailure(newAddressItemFailure(fmt.Sprint("mismatch: ", ab.GetSize(), " with count ", ab.GetCount()), expectedAddr))
+		}
+		if ab.GetReservedCount() != 0 {
+			t.addFailure(newAddressItemFailure(fmt.Sprint("mismatch: ", ab.GetReservedCount(), " with expected reserved count ", 0), expectedAddr))
+		}
+	}
+	if len(allocatedBlocks) != len(expected) {
+		t.addFailure(newAddressItemFailure(fmt.Sprint("mismatch blocks length: ", len(allocatedBlocks), " with ", len(expected)), nil))
+	}
+	// put em back and see what happens
+	for _, allocated := range allocatedBlocks {
+		alloc.AddAvailable(allocated.GetAddress())
+	}
+	if !ipaddr.AddrsMatchUnordered(blocks, alloc.GetAvailable()) {
+		t.addFailure(newAddressItemFailure(fmt.Sprint("mismatch blocks: ", blocks, " with ", alloc.GetAvailable()), nil))
+	}
+	t.incrementTestCount()
 }
 
 func (t ipAddressTester) testAllocator(blocksStrs []string, sizes []uint64, reservedCount int, expected []struct {
@@ -2430,7 +2621,7 @@ func (t ipAddressTester) testAllocator(blocksStrs []string, sizes []uint64, rese
 	t.incrementTestCount()
 	if alloc.GetVersion().IsIPv4() {
 		t.testIPv4Allocator(blocksStrs, sizes, reservedCount, expected)
-	} else if alloc.GetVersion().IsIPv4() {
+	} else if alloc.GetVersion().IsIPv6() {
 		t.testIPv6Allocator(blocksStrs, sizes, reservedCount, expected)
 	}
 }
@@ -2475,9 +2666,13 @@ func (t ipAddressTester) testIPv4Allocator(blocksStrs []string, sizes []uint64, 
 	if len(allocatedBlocks) != len(expected) {
 		t.addFailure(newAddressItemFailure(fmt.Sprint("mismatch blocks length: ", len(allocatedBlocks), " with ", len(expected)), nil))
 	}
+	//fmt.Println(allocatedBlocks)
+	//fmt.Println(alloc)
+
 	// put em back and see what happens
 	for _, allocated := range allocatedBlocks {
 		alloc.AddAvailable(allocated.GetAddress())
+		//fmt.Println(alloc)
 	}
 	if !ipaddr.AddrsMatchUnordered(cloneIPv4AddrsToIPAddrs(blocks), cloneIPv4AddrsToIPAddrs(alloc.GetAvailable())) {
 		t.addFailure(newAddressItemFailure(fmt.Sprint("mismatch blocks: ", blocks, " with ", alloc.GetAvailable()), nil))
@@ -2547,6 +2742,22 @@ func cloneIPv6AddrsToIPAddrs(orig []*ipaddr.IPv6Address) []*ipaddr.IPAddress {
 	result := make([]*ipaddr.IPAddress, len(orig))
 	for i := range orig {
 		result[i] = orig[i].ToIP()
+	}
+	return result
+}
+
+func cloneToIPv4Addrs(orig []*ipaddr.IPAddress) []*ipaddr.IPv4Address {
+	return cloneTo(orig, func(a *ipaddr.IPAddress) *ipaddr.IPv4Address { return a.ToIPv4() })
+}
+
+func cloneToIPv6Addrs(orig []*ipaddr.IPAddress) []*ipaddr.IPv6Address {
+	return cloneTo(orig, func(a *ipaddr.IPAddress) *ipaddr.IPv6Address { return a.ToIPv6() })
+}
+
+func cloneTo[T any, U any](orig []T, conv func(T) U) []U {
+	result := make([]U, len(orig))
+	for i := range orig {
+		result[i] = conv(orig[i])
 	}
 	return result
 }
@@ -4795,6 +5006,38 @@ func (t ipAddressTester) testRangeSubtract(lower1, higher1, lower2, higher2 stri
 			}
 		} else if len(result) > 1 {
 			t.addFailure(newIPAddrFailure(fmt.Sprintf("mismatch result %v expected %v ranges subtracting '"+addr2.String()+"' from '"+addr.String()+"'", result, len(resultPairs)/2), addr))
+		}
+	}
+	t.incrementTestCount()
+}
+
+func (t ipAddressTester) testRangeJoin2(inputs, expected []string) {
+	var rangeList []*ipaddr.IPAddressSeqRange
+	for i := 1; i < len(inputs); i += 2 {
+		if inputs[i-1] == "" {
+			rangeList = append(rangeList, nil)
+			continue
+		}
+		w := t.createAddress(inputs[i-1])
+		w2 := t.createAddress(inputs[i])
+		val := w.GetAddress().SpanWithRange(w2.GetAddress())
+		rangeList = append(rangeList, val)
+	}
+	var rng *ipaddr.SequentialRange[*ipaddr.IPAddress]
+	result := rng.Join(rangeList...)
+	rangeList = rangeList[:0]
+	for i := 1; i < len(expected); i += 2 {
+		w := t.createAddress(expected[i-1])
+		w2 := t.createAddress(expected[i])
+		val := w.GetAddress().SpanWithRange(w2.GetAddress())
+		rangeList = append(rangeList, val)
+	}
+	if len(result) != len(rangeList) {
+		t.addFailure(newFailure(fmt.Sprintf("failed expected: %v actual: %v", rangeList, result), nil))
+	}
+	for i := 0; i < len(result); i++ {
+		if !result[i].Equal(rangeList[i]) {
+			t.addFailure(newSeqRangeFailure("failed expected: "+rangeList[i].String()+" actual: "+result[i].String(), result[i]))
 		}
 	}
 	t.incrementTestCount()

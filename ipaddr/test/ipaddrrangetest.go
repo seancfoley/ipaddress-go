@@ -1676,6 +1676,178 @@ func (t ipAddressRangeTester) run() {
 	t.testRangeExtend("1.2.3.4-5", "1.2.4.3", "1.2.3-5.6", "", "1.2.3.4", "1.2.5.6")
 	t.testRangeExtend("1.2.3.4-5", "1.2.4.3", "1.2.1-5.6", "", "1.2.1.6", "1.2.5.6")
 
+	t.testRangeJoin2([]string{}, []string{})
+	t.testRangeJoin2([]string{
+		"", "",
+	}, []string{})
+	t.testRangeJoin2([]string{
+		"1.2.3.4", "1.2.3.5",
+	}, []string{
+		"1.2.3.4", "1.2.3.5",
+	})
+	t.testRangeJoin2([]string{
+		"", "",
+		"", "",
+	}, []string{})
+	t.testRangeJoin2([]string{
+		"1.2.3.4", "1.2.3.5",
+		"", "",
+	}, []string{
+		"1.2.3.4", "1.2.3.5",
+	})
+	t.testRangeJoin2([]string{
+		"", "",
+		"1.2.3.4", "1.2.3.5",
+	}, []string{
+		"1.2.3.4", "1.2.3.5",
+	})
+	t.testRangeJoin2([]string{
+		"", "",
+		"1.2.3.4", "1.2.3.5",
+		"", "",
+	}, []string{
+		"1.2.3.4", "1.2.3.5",
+	})
+	t.testRangeJoin2([]string{
+		"1.2.3.4", "1.2.3.5",
+		"", "",
+		"1.2.3.255", "1.2.4.1",
+	}, []string{
+		"1.2.3.4", "1.2.3.5",
+		"1.2.3.255", "1.2.4.1",
+	})
+	t.testRangeJoin2([]string{
+		"1.2.3.4", "1.2.3.255",
+		"", "",
+		"1.2.3.255", "1.2.4.1",
+	}, []string{
+		"1.2.3.4", "1.2.4.1",
+	})
+	t.testRangeJoin2([]string{
+		"1.2.3.4", "1.2.3.255",
+		"", "",
+		"1.2.3.255", "1.2.4.1",
+		"1.2.4.2", "1.5.0.0",
+	}, []string{
+		"1.2.3.4", "1.5.0.0",
+	})
+	t.testRangeJoin2([]string{
+		"1.2.3.4", "1.2.3.255",
+		"", "",
+		"1.2.3.255", "1.2.4.1",
+		"1.2.4.2", "255.255.255.255",
+		"::", "::2",
+	}, []string{
+		"1.2.3.4", "255.255.255.255",
+		"::", "::2",
+	})
+	t.testRangeJoin2([]string{
+		"1.2.3.4", "1.2.3.255",
+		"1.2.3.255", "1.2.4.1",
+		"1.2.4.2", "255.255.255.255",
+		"::", "::1",
+	}, []string{
+		"1.2.3.4", "255.255.255.255",
+		"::", "::1",
+	})
+	t.testRangeJoin2([]string{
+		"0.0.0.0", "0.0.0.1",
+		"1.2.3.4", "1.2.3.255",
+		"1.2.3.255", "1.2.4.1",
+		"1.2.4.2", "255.255.255.255",
+		"::", "::1",
+		"::", "::2",
+		"ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffe", "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+	}, []string{
+		"0.0.0.0", "0.0.0.1",
+		"1.2.3.4", "255.255.255.255",
+		"::", "::2",
+		"ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffe", "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+	})
+
+	t.testRangeJoin2([]string{
+		"0.0.0.0", "0.0.0.1",
+		"1.2.3.4", "1.2.3.255",
+		"::", "::2",
+		"ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffe", "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+	}, []string{
+		"0.0.0.0", "0.0.0.1",
+		"1.2.3.4", "1.2.3.255",
+		"::", "::2",
+		"ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffe", "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+	})
+
+	t.testRangeJoin2([]string{
+		"0.0.0.0", "0.0.0.1",
+		"1.2.3.4", "1.2.3.255",
+		"::", "::2",
+		"", "",
+		"ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffe", "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+	}, []string{
+		"0.0.0.0", "0.0.0.1",
+		"1.2.3.4", "1.2.3.255",
+		"::", "::2",
+		"ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffe", "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+	})
+
+	t.testRangeJoin2([]string{
+		"", "",
+		"0.0.0.0", "0.0.0.1",
+		"", "",
+		"1.2.3.4", "1.2.3.255",
+		"", "",
+		"::1:2:3:4", "::1:2:3:4",
+		"", "",
+		"", "",
+		"::1:2:3:4", "::1:2:3:5",
+		"", "",
+		"::1:2:3:6", "::1:2:3:6",
+		"1.2.3.255", "1.2.4.1",
+		"", "",
+		"1.2.4.2", "255.255.255.255",
+		"::", "::1",
+		"", "",
+		"::", "::2",
+		"", "",
+		"ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffe", "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+		"", "",
+	}, []string{
+		"0.0.0.0", "0.0.0.1",
+		"1.2.3.4", "255.255.255.255",
+		"::", "::2",
+		"::1:2:3:4", "::1:2:3:6",
+		"ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffe", "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+	})
+
+	t.testRangeJoin2([]string{
+		"", "",
+		"ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffe", "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+		"", "",
+		"::", "::2",
+		"", "",
+		"::", "::1",
+		"", "",
+		"1.2.4.2", "255.255.255.255",
+		"", "",
+		"", "",
+		"1.2.3.255", "1.2.4.1",
+		"::1:2:3:6", "::1:2:3:6",
+		"", "",
+		"::1:2:3:4", "::1:2:3:5",
+		"", "",
+		"::1:2:3:4", "::1:2:3:4",
+		"1.2.3.4", "1.2.3.255",
+		"", "",
+		"0.0.0.0", "0.0.0.1",
+		"", "",
+	}, []string{
+		"0.0.0.0", "0.0.0.1",
+		"1.2.3.4", "255.255.255.255",
+		"::", "::2",
+		"::1:2:3:4", "::1:2:3:6",
+		"ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffe", "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+	})
+
 	t.testIncompatibleAddress2("a:b:c:d:e:f:1.2.*.4", "a:b:c:d:e:f:1.2.0.4", "a:b:c:d:e:f:1.2.255.4", []interface{}{0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 1, 2, []uint{0, 0xff}, 4}) //[a, b, c, d, e, f, 1, 2, 0-ff, 4]
 	t.testIncompatibleAddress2("::ffff:0.0.*.0", "::ffff:0.0.0.0", "::ffff:0.0.255.0", []interface{}{0, 0xffff, 0, 0, []uint{0, 0xff}, 0})                                   //[0, ffff, 0, 0, 0-ff, 0]
 	t.testIncompatibleAddress2("::ffff:*.0.0.0", "::ffff:0.0.0.0", "::ffff:255.0.0.0", []interface{}{0, 0xffff, []uint{0, 0xff}, 0, 0, 0})                                   //[0, ffff, 0-ff, 0, 0, 0]
