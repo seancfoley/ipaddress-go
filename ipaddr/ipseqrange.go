@@ -782,8 +782,9 @@ func (rng *SequentialRange[T]) SpanWithSequentialBlocks() []T {
 	return res
 }
 
-// Join joins the given ranges into the fewest number of ranges.
+// Join joins the receiver with the given ranges into the fewest number of ranges.
 // The returned array will be sorted by ascending lowest range value.
+// Nil ranges are tolerated, and ignored.
 func (rng *SequentialRange[T]) Join(ranges ...*SequentialRange[T]) []*SequentialRange[T] {
 	ranges = append(append(make([]*SequentialRange[T], 0, len(ranges)+1), ranges...), rng)
 	return joinRanges(ranges)
@@ -856,7 +857,7 @@ func (rng *SequentialRange[T]) Extend(other *SequentialRange[T]) *SequentialRang
 	return newSequRangeUnchecked(lower, otherUpper, true) // l ol u ou or l u ol ou
 }
 
-// Subtract subtracts the given range from this range, to produce either zero, one, or two address ranges that contain the addresses in this range and not in the given range.
+// Subtract subtracts the given range from the receiver range, to produce either zero, one, or two address ranges that contain the addresses in the receiver range and not in the given range.
 // If the result has length 2, the two ranges are ordered by ascending lowest range value.
 func (rng *SequentialRange[T]) Subtract(other *SequentialRange[T]) []*SequentialRange[T] {
 	rng = rng.init()
@@ -893,8 +894,8 @@ func (rng *SequentialRange[T]) Subtract(other *SequentialRange[T]) []*Sequential
 
 // ToKey creates the associated address range key.
 // While address ranges can be compared with the Compare or Equal methods as well as various provided instances of AddressComparator,
-// they are not comparable with go operators.
-// However, SequentialRangeKey instances are comparable with go operators, and thus can be used as map keys.
+// they are not comparable with Go operators.
+// However, SequentialRangeKey instances are comparable with Go operators, and thus can be used as map keys.
 func (rng *SequentialRange[T]) ToKey() SequentialRangeKey[T] {
 	rng = rng.init()
 	return SequentialRangeKey[T]{
@@ -1117,14 +1118,12 @@ func joinRanges[T SequentialRangeConstraint[T]](ranges []*SequentialRange[T]) []
 	sort.Slice(ranges, func(i, j int) bool {
 		return LowValueComparator.CompareRanges(ranges[i], ranges[j]) < 0
 	})
-	for i := 0; i < rangesLen; i++ {
+	for i := 0; i < rangesLen; {
 		rng := ranges[i]
-		if rng == nil {
-			continue
-		}
 		currentLower, currentUpper := rng.GetLower(), rng.GetUpper()
 		var isMultiJoin, didJoin bool
-		for j := i + 1; j < rangesLen; j++ {
+		j := i + 1
+		for ; j < rangesLen; j++ {
 			rng2 := ranges[j]
 			nextLower := rng2.GetLower()
 			doJoin := compareLowIPAddressValues(currentUpper, nextLower) >= 0
@@ -1134,13 +1133,13 @@ func joinRanges[T SequentialRangeConstraint[T]](ranges []*SequentialRange[T]) []
 			}
 			if doJoin {
 				//Join them
+				joinedCount++
 				nextUpper := rng2.GetUpper()
 				if compareLowIPAddressValues(currentUpper, nextUpper) < 0 {
 					currentUpper = nextUpper
 				}
 				ranges[j] = nil
 				isMultiJoin = isMultiJoin || rng.isMultiple || rng2.isMultiple
-				joinedCount++
 				didJoin = true
 			} else {
 				break
@@ -1149,17 +1148,20 @@ func joinRanges[T SequentialRangeConstraint[T]](ranges []*SequentialRange[T]) []
 		if didJoin {
 			ranges[i] = newSequRangeUnchecked(currentLower, currentUpper, isMultiJoin)
 		}
+		i = j
 	}
 	finalLen := rangesLen - joinedCount
-	for i, j := 0, 0; i < rangesLen; i++ {
-		rng := ranges[i]
-		if rng == nil {
-			continue
-		}
-		ranges[j] = rng
-		j++
-		if j >= finalLen {
-			break
+	if finalLen > 0 {
+		for i, j := 0, 0; ; i++ {
+			rng := ranges[i]
+			if rng == nil {
+				continue
+			}
+			ranges[j] = rng
+			j++
+			if j >= finalLen {
+				break
+			}
 		}
 	}
 	ret := ranges[:finalLen]
