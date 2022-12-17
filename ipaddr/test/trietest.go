@@ -271,6 +271,15 @@ func (t trieTesterGeneric) testString(strs trieStrings) {
 		t.addFailure(newTrieFailure("assoc trie string not right, got "+addedNodeTreeStr+" instead of expected "+strs.addedNodeString, addrTree))
 	}
 
+	troot := tree.GetRoot()
+	tcount := tcountNodes(troot)
+	if !troot.IsAdded() {
+		tcount--
+	}
+	if tcount != addrTree.Size() {
+		t.addFailure(newTrieFailure("size not right, got "+strconv.Itoa(tcount)+" instead of expected "+strconv.Itoa(addrTree.Size()), addrTree))
+	}
+
 	assocTrie := &ipaddr.AssociativeTrie[*ipaddr.Address, int]{}
 	for i, addr := range strs.addrs {
 		addressStr := t.createAddress(addr)
@@ -279,6 +288,10 @@ func (t trieTesterGeneric) testString(strs trieStrings) {
 	}
 
 	treeStr = assocTrie.String()
+	if treeStr != strs.treeToIndexString {
+		t.addFailure(newTrieFailure("trie string not right, got "+treeStr+" instead of expected "+strs.treeToIndexString, addrTree))
+	}
+
 	addedNodeTreeStr = assocTrie.AddedNodesTreeString()
 	associatedTreeStr := strs.addedNodeToIndexString
 	if addedNodeTreeStr != associatedTreeStr {
@@ -291,24 +304,32 @@ func (t trieTesterGeneric) testString(strs trieStrings) {
 		t.addFailure(newTrieFailure("assoc trie string not right, got "+addedNodeTreeStr+" instead of expected "+strs.addedNodeToIndexString, addrTree))
 	}
 
-	//ipaddr.AssociativeAddedTree[T, V]
-	//var check func(node ipaddr.AssociativeAddedTreeNode[*ipaddr.Address, int])
-	//check = func(node ipaddr.AssociativeAddedTreeNode[*ipaddr.Address, int]) {
-	//	subNodes := node.GetSubNodes()
-	//	for i := range subNodes {
-	//		if i > 0 {
-	//			fmt.Println(subNodes[i].GetKey().Compare(subNodes[i-1].GetKey()))
-	//		}
-	//		//res[i] = AssociativeAddedTreeNode[T, V]{subNode}
-	//	}
-	//	fmt.Println()
-	//	for _, subNode := range subNodes {
-	//		check(subNode)
-	//	}
-	//}
-	//check(*assocTree.GetRoot())
+	root := contree.GetRoot()
+	count := countNodes(root)
+	if !root.IsAdded() {
+		count--
+	}
+	if count != assocTrie.Size() {
+		t.addFailure(newTrieFailure("size not right, got "+strconv.Itoa(count)+" instead of expected "+strconv.Itoa(assocTrie.Size()), addrTree))
+	}
 
 	t.incrementTestCount()
+}
+
+func countNodes(node ipaddr.AssociativeAddedTreeNode[*ipaddr.Address, int]) int {
+	count := 1
+	for _, n := range node.GetSubNodes() {
+		count += countNodes(n)
+	}
+	return count
+}
+
+func tcountNodes(node ipaddr.AddedTreeNode[*ipaddr.Address]) int {
+	count := 1
+	for _, n := range node.GetSubNodes() {
+		count += tcountNodes(n)
+	}
+	return count
 }
 
 func (t trieTesterGeneric) testZeroValuedAddedTrees() {

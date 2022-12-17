@@ -18,8 +18,9 @@ package test
 import "github.com/seancfoley/ipaddress-go/ipaddr"
 
 type trieStrings struct {
-	addrs                                               []string
-	treeString, addedNodeString, addedNodeToIndexString string
+	addrs []string
+	treeString, addedNodeString,
+	treeToIndexString, addedNodeToIndexString string
 }
 
 var treeOne = trieStrings{
@@ -38,6 +39,7 @@ var treeOne = trieStrings{
 		"bb::ffff:2:3:42",
 		"bb::ffff:2:3:43",
 	},
+
 	treeString: "\n" +
 		"○ ::/0 (13)\n" +
 		"└─○ ::/8 (13)\n" +
@@ -65,6 +67,7 @@ var treeOne = trieStrings{
 		"    └─○ bb::ffff:2:3:42/127 (2)\n" +
 		"      ├─● bb::ffff:2:3:42 (1)\n" +
 		"      └─● bb::ffff:2:3:43 (1)\n",
+
 	addedNodeString: "\n" +
 		"○ ::/0\n" +
 		"├─● 1::ff:aa:3:4\n" +
@@ -80,6 +83,35 @@ var treeOne = trieStrings{
 		"├─● bb::ffff:2:3:32\n" +
 		"├─● bb::ffff:2:3:42\n" +
 		"└─● bb::ffff:2:3:43\n",
+
+	treeToIndexString: "\n" +
+		"○ ::/0 = 0 (13)\n" +
+		"└─○ ::/8 = 0 (13)\n" +
+		"  ├─○ 1::/64 = 0 (7)\n" +
+		"  │ ├─○ 1::ff:aa:3:0/123 = 0 (2)\n" +
+		"  │ │ ├─● 1::ff:aa:3:4 = 5 (1)\n" +
+		"  │ │ └─● 1::ff:aa:3:12 = 6 (1)\n" +
+		"  │ └─○ 1::ffff:0:0:0/88 = 0 (5)\n" +
+		"  │   ├─○ 1::ffff:2:3:0/123 = 0 (4)\n" +
+		"  │   │ ├─○ 1::ffff:2:3:4/126 = 0 (3)\n" +
+		"  │   │ │ ├─○ 1::ffff:2:3:4/127 = 0 (2)\n" +
+		"  │   │ │ │ ├─● 1::ffff:2:3:4 = 1 (1)\n" +
+		"  │   │ │ │ └─● 1::ffff:2:3:5 = 0 (1)\n" +
+		"  │   │ │ └─● 1::ffff:2:3:6 = 2 (1)\n" +
+		"  │   │ └─● 1::ffff:2:3:12 = 3 (1)\n" +
+		"  │   └─● 1::ffff:aa:3:4 = 4 (1)\n" +
+		"  └─○ bb::ffff:2:3:0/121 = 0 (6)\n" +
+		"    ├─○ bb::ffff:2:3:0/122 = 0 (4)\n" +
+		"    │ ├─○ bb::ffff:2:3:0/123 = 0 (2)\n" +
+		"    │ │ ├─● bb::ffff:2:3:6 = 7 (1)\n" +
+		"    │ │ └─● bb::ffff:2:3:12 = 8 (1)\n" +
+		"    │ └─○ bb::ffff:2:3:20/123 = 0 (2)\n" +
+		"    │   ├─● bb::ffff:2:3:22 = 9 (1)\n" +
+		"    │   └─● bb::ffff:2:3:32 = 10 (1)\n" +
+		"    └─○ bb::ffff:2:3:42/127 = 0 (2)\n" +
+		"      ├─● bb::ffff:2:3:42 = 11 (1)\n" +
+		"      └─● bb::ffff:2:3:43 = 12 (1)\n",
+
 	addedNodeToIndexString: "\n" +
 		"○ ::/0 = 0\n" +
 		"├─● 1::ff:aa:3:4 = 5\n" +
@@ -108,6 +140,7 @@ var treeTwo = trieStrings{
 		"ff80:8000:cc00::/38",
 		"ff80:8000:cc00::/40",
 	},
+
 	treeString: "\n" +
 		"○ ::/0 (8)\n" +
 		"└─○ ff80::/16 (8)\n" +
@@ -120,6 +153,7 @@ var treeTwo = trieStrings{
 		"          ├─● ff80:8000:c800:: (1)\n" +
 		"          └─● ff80:8000:cc00::/38 (2)\n" +
 		"            └─● ff80:8000:cc00::/40 (1)\n",
+
 	addedNodeString: "\n" +
 		"○ ::/0\n" +
 		"├─● ff80::\n" +
@@ -130,6 +164,20 @@ var treeTwo = trieStrings{
 		"      ├─● ff80:8000:c800::\n" +
 		"      └─● ff80:8000:cc00::/38\n" +
 		"        └─● ff80:8000:cc00::/40\n",
+
+	treeToIndexString: "\n" +
+		"○ ::/0 = 0 (8)\n" +
+		"└─○ ff80::/16 = 0 (8)\n" +
+		"  ├─● ff80:: = 0 (1)\n" +
+		"  └─● ff80:8000::/24 = 2 (7)\n" +
+		"    └─● ff80:8000::/32 = 3 (6)\n" +
+		"      ├─● ff80:8000:: = 1 (1)\n" +
+		"      └─● ff80:8000:c000::/34 = 4 (4)\n" +
+		"        └─○ ff80:8000:c800::/37 = 0 (3)\n" +
+		"          ├─● ff80:8000:c800:: = 5 (1)\n" +
+		"          └─● ff80:8000:cc00::/38 = 6 (2)\n" +
+		"            └─● ff80:8000:cc00::/40 = 7 (1)\n",
+
 	addedNodeToIndexString: "\n" +
 		"○ ::/0 = 0\n" +
 		"├─● ff80:: = 0\n" +
@@ -152,6 +200,7 @@ var treeThree = trieStrings{
 		"192.168.10.132/30",
 		"192.168.10.136/30",
 	},
+
 	treeString: "\n" +
 		"○ 0.0.0.0/0 (7)\n" +
 		"└─● 192.168.10.0/24 (7)\n" +
@@ -165,6 +214,7 @@ var treeThree = trieStrings{
 		"    │ ├─● 192.168.10.128/30 (1)\n" +
 		"    │ └─● 192.168.10.132/30 (1)\n" +
 		"    └─● 192.168.10.136/30 (1)\n",
+
 	addedNodeString: "\n" +
 		"○ 0.0.0.0/0\n" +
 		"└─● 192.168.10.0/24\n" +
@@ -174,6 +224,21 @@ var treeThree = trieStrings{
 		"  ├─● 192.168.10.128/30\n" +
 		"  ├─● 192.168.10.132/30\n" +
 		"  └─● 192.168.10.136/30\n",
+
+	treeToIndexString: "\n" +
+		"○ 0.0.0.0/0 = 0 (7)\n" +
+		"└─● 192.168.10.0/24 = 0 (7)\n" +
+		"  ├─○ 192.168.10.0/25 = 0 (3)\n" +
+		"  │ ├─● 192.168.10.0/26 = 1 (1)\n" +
+		"  │ └─○ 192.168.10.64/26 = 0 (2)\n" +
+		"  │   ├─● 192.168.10.64/27 = 2 (1)\n" +
+		"  │   └─● 192.168.10.96/27 = 3 (1)\n" +
+		"  └─○ 192.168.10.128/28 = 0 (3)\n" +
+		"    ├─○ 192.168.10.128/29 = 0 (2)\n" +
+		"    │ ├─● 192.168.10.128/30 = 4 (1)\n" +
+		"    │ └─● 192.168.10.132/30 = 5 (1)\n" +
+		"    └─● 192.168.10.136/30 = 6 (1)\n",
+
 	addedNodeToIndexString: "\n" +
 		"○ 0.0.0.0/0 = 0\n" +
 		"└─● 192.168.10.0/24 = 0\n" +
@@ -191,6 +256,8 @@ var treeFour = trieStrings{
 		"<nil>\n",
 	addedNodeString: "\n" +
 		"○ <nil>\n",
+	treeToIndexString: "\n" +
+		"<nil>\n",
 	addedNodeToIndexString: "\n" +
 		"○ <nil> = 0\n",
 }
