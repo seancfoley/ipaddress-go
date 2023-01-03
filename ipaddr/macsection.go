@@ -486,12 +486,12 @@ func (section *MACAddressSection) GetUpper() *MACAddressSection {
 	return section.getUpper().ToMAC()
 }
 
-// Uint64Value returns the lowest indiviudal address section in the address section collection as a uint64.
+// Uint64Value returns the lowest individual address section in the address section collection as a uint64.
 func (section *MACAddressSection) Uint64Value() uint64 {
 	return section.getLongValue(true)
 }
 
-// UpperUint64Value returns the highest indiviudal address section in the address section collection as a uint64.
+// UpperUint64Value returns the highest individual address section in the address section collection as a uint64.
 func (section *MACAddressSection) UpperUint64Value() uint64 {
 	return section.getLongValue(false)
 }

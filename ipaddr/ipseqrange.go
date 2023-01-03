@@ -44,11 +44,11 @@ type SequentialRangeConstraint[T any] interface {
 
 	ToIP() *IPAddress
 
+	PrefixedConstraint[T]
+
 	Increment(int64) T
-	WithoutPrefixLen() T
 	GetLower() T
 	GetUpper() T
-	ToPrefixBlockLen(BitCount) T
 
 	CoverWithPrefixBlockTo(T) T
 	SpanWithPrefixBlocksTo(T) []T
@@ -1011,6 +1011,7 @@ func newSequRange[T SequentialRangeConstraint[T]](first, other T) *SequentialRan
 			upper = lower
 		}
 	} else {
+		// We find the lowest and the highest from both supplied addresses
 		firstLower := first.GetLower()
 		otherLower := other.GetLower()
 		firstUpper := first.GetUpper()
@@ -1026,14 +1027,23 @@ func newSequRange[T SequentialRangeConstraint[T]](first, other T) *SequentialRan
 			isMult = true
 			upper = otherUpper
 		} else {
-			isMult = comp > 0
+			isMult = isMult || comp > 0
 			upper = firstUpper
 		}
-		lower = lower.WithoutPrefixLen()
 		if isMult = isMult || compareLowIPAddressValues(lower, upper) != 0; isMult {
+			lower = lower.WithoutPrefixLen()
 			upper = upper.WithoutPrefixLen()
 		} else {
-			upper = lower
+			if lower.IsPrefixed() {
+				if upper.IsPrefixed() {
+					lower = lower.WithoutPrefixLen()
+					upper = lower
+				} else {
+					lower = upper
+				}
+			} else {
+				upper = lower
+			}
 		}
 	}
 	return newSequRangeUnchecked(lower, upper, isMult)

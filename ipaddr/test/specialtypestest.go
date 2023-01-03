@@ -220,10 +220,11 @@ func (t specialTypesTester) testIPv6Strings(addr string,
 }
 
 func (t specialTypesTester) testEmptyValues() {
-	//zeroHostOptions := new(ipaddr.HostNameParamsBuilder).ParseEmptyStrAs(ipaddr.LoopbackOption).ToParams()
+	t.testEmptyValuesOpts(hostOptionsSpecial, addressOptionsSpecial)
+
 	zeroHostOptions := new(addrstrparam.HostNameParamsBuilder).GetIPAddressParamsBuilder().ParseEmptyStrAs(addrstrparam.LoopbackOption).GetParentBuilder().ToParams()
 	zeroAddrOptions := new(addrstrparam.IPAddressStringParamsBuilder).ParseEmptyStrAs(addrstrparam.LoopbackOption).ToParams()
-	t.testEmptyValuesOpts(hostOptionsSpecial, addressOptionsSpecial)
+	t.testEmptyValuesOpts(zeroHostOptions, zeroAddrOptions)
 
 	zeroHostOptions = new(addrstrparam.HostNameParamsBuilder).GetIPAddressParamsBuilder().ParseEmptyStrAs(addrstrparam.ZeroAddressOption).GetParentBuilder().ToParams()
 	zeroAddrOptions = new(addrstrparam.IPAddressStringParamsBuilder).ParseEmptyStrAs(addrstrparam.ZeroAddressOption).ToParams()

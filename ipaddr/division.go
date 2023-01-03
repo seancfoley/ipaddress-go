@@ -467,7 +467,6 @@ func (div *addressDivisionInternal) toNetworkDivision(divPrefixLength PrefixLen,
 			return div.toAddressDivision()
 		}
 	} else {
-		withPrefixLength = false
 		divPrefixLength = nil
 		if div.getDivisionPrefixLength() == nil {
 			return div.toAddressDivision()

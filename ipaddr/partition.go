@@ -158,7 +158,8 @@ func (part *Partition[T]) predicateForAny(predicate func(address T) bool, return
 type SpanPartitionConstraint[T any] interface {
 	AddressDivisionSeries
 
-	WithoutPrefixLen() T
+	PrefixedConstraint[T]
+
 	SpanWithPrefixBlocks() []T
 }
 
@@ -238,7 +239,8 @@ func PartitionIPv4WithSingleBlockSize(newAddr *IPv4Address) *Partition[*IPv4Addr
 type IteratePartitionConstraint[T any] interface {
 	AddressDivisionSeries
 
-	WithoutPrefixLen() T
+	PrefixedConstraint[T]
+
 	AssignMinPrefixForBlock() T
 	PrefixBlockIterator() Iterator[T]
 	Iterator() Iterator[T]

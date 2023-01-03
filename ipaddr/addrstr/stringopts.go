@@ -18,7 +18,7 @@
 Package addrstr provides interfaces for specifying how to create specific strings from addresses and address sections,
 as well as builder types to construct instances of those interfaces.
 
-For example, StringOptionsBuilder produces instances implementing StringOptions for specifiying generic strings.
+For example, StringOptionsBuilder produces instances implementing StringOptions for specifying generic strings.
 More specific builders and corresponding interface types exist for more specific address versions and types.
 
 Each instance produced by a builders is immutable.

@@ -110,7 +110,7 @@ func (grouping *addressDivisionGroupingBase) isMultiple() bool {
 }
 
 // hasNoDivisions() returns whether this grouping is the zero grouping,
-// which is what you get when contructing a grouping or section with no divisions
+// which is what you get when constructing a grouping or section with no divisions
 func (grouping *addressDivisionGroupingBase) hasNoDivisions() bool {
 	divisions := grouping.divisions
 	return divisions == nil || divisions.getDivisionCount() == 0

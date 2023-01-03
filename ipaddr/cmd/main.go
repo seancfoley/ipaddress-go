@@ -249,16 +249,18 @@ func main() {
 	addrStrPref := ipaddr.NewIPAddressString("1.2-11.0.0/15")
 	pAddr = addrStrPref.GetAddress()
 	newIter := pAddr.GetSection().PrefixBlockIterator()
-	fmt.Printf("\nto iterate: %+v", pAddr)
-	fmt.Printf("\niterate prefix blocks (prefix len 15):\n")
+	fmt.Println()
+	fmt.Printf("to iterate: %+v", pAddr)
+	fmt.Println("iterate prefix blocks (prefix len 15):")
 	for newIter.HasNext() {
 		fmt.Printf("%v ", newIter.Next())
 	}
 	addrStrPref = ipaddr.NewIPAddressString("1.2-11.0.0/16")
 	pAddr = addrStrPref.GetAddress()
-	fmt.Printf("\nto iterate: %+v", pAddr)
+	fmt.Println()
+	fmt.Printf("to iterate: %+v", pAddr)
 	newIter = pAddr.GetSection().BlockIterator(2)
-	fmt.Printf("\niterate a section's first two blocks:\n")
+	fmt.Println("iterate a section's first two blocks:")
 	for newIter.HasNext() {
 		fmt.Printf("%v ", newIter.Next())
 	}

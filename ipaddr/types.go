@@ -346,7 +346,7 @@ func bigAbsIsOne(val *BigDivInt) bool {
 	return len(bits) == 1 && bits[0] == 1
 }
 
-func checkSubnet(item bitItem, prefixLength BitCount) BitCount {
+func checkSubnet(item BitItem, prefixLength BitCount) BitCount {
 	return checkBitCount(prefixLength, item.GetBitCount())
 }
 

@@ -29,7 +29,6 @@ type PrefixBlockConstraint[T any] interface {
 	SequentialRangeConstraint[T]
 
 	MergeToPrefixBlocks(...T) []T
-	SetPrefixLen(BitCount) T
 	PrefixBlockIterator() Iterator[T]
 }
 

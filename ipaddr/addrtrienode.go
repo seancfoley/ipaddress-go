@@ -23,11 +23,19 @@ import (
 )
 
 // TrieKeyConstraint is the generic type constraint used for tree keys, which are individual addresses and prefix block subnets.
-type TrieKeyConstraint[T AddressType] interface {
+type TrieKeyConstraint[T any] interface {
 	comparable
-	AddressType
 
-	ToPrefixBlockLen(prefLen BitCount) T
+	BitItem
+
+	fmt.Stringer
+
+	PrefixedConstraint[T]
+
+	IsOneBit(index BitCount) bool // AddressComponent
+
+	ToAddressBase() *Address // AddressType - used by MatchBits
+
 	toMaxLower() T
 	toMinUpper() T
 	trieCompare(other *Address) int

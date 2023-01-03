@@ -3231,7 +3231,7 @@ func (t ipAddressRangeTester) testMerge2Impl(result, result2 string, prefix bool
 		//got [1:2:3:4:0-3fff:*:*:* 1:2:3:6:*:*:*:*]
 		if len(merged3) != 2 || !ipaddr.AddrsMatchOrdered(merged, merged3) {
 			t.addFailure(newIPAddrFailure("merge prefix mismatch merging "+strings.Join(addresses, ",")+" expected "+asSliceString(expected)+" got "+asSliceString(merged3), resultAddr))
-			merged3 = getMergedPrefixBlocksAltRange(joinAddrToAddresses(mergers, addr2))
+			//merged3 = getMergedPrefixBlocksAltRange(joinAddrToAddresses(mergers, addr2))
 		}
 		if len(merged4) != 2 || !ipaddr.AddrsMatchOrdered(merged, merged4) {
 			t.addFailure(newIPAddrFailure("merge prefix mismatch merging "+strings.Join(addresses, ",")+" expected "+asSliceString(expected)+" got "+asSliceString(merged4), resultAddr))
@@ -3493,8 +3493,7 @@ func (t ipAddressRangeTester) testInetAtonCombos(w *ipaddr.IPAddressString, ipAd
 				} else {
 					origStr := str
 					count := 0
-					pos := -1
-					for pos = strings.IndexByte(str, ipaddr.IPv4SegmentSeparator); pos >= 0 && pos < len(str); {
+					for pos := strings.IndexByte(str, ipaddr.IPv4SegmentSeparator); pos >= 0 && pos < len(str); {
 						//for ((pos = str.indexOf(ipaddr.IPv4SegmentSeparator)) >= 0){
 						str = str[pos+1:]
 						pos = strings.IndexByte(str, ipaddr.IPv4SegmentSeparator)

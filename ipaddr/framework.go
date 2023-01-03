@@ -25,7 +25,7 @@ import (
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
 )
 
-type bitItem interface {
+type BitItem interface {
 	// GetByteCount returns the number of bytes required for each value comprising this address item,
 	// rounding up if the bit count is not a multiple of 8.
 	GetByteCount() int
@@ -37,12 +37,7 @@ type bitItem interface {
 // AddressItem represents all addresses, division groupings, divisions, and sequential ranges.
 // Any address item can be compared to any other.
 type AddressItem interface {
-	// GetByteCount returns the number of bytes required for each value comprising this address item,
-	// rounding up if the bit count is not a multiple of 8.
-	GetByteCount() int
-
-	// GetBitCount returns the number of bits in each value comprising this address item.
-	GetBitCount() BitCount
+	BitItem
 
 	// GetValue returns the lowest individual address item in the address item range as an integer value.
 	GetValue() *big.Int
@@ -138,6 +133,56 @@ type AddressItem interface {
 	fmt.Stringer
 }
 
+type Prefixed interface {
+	// IsPrefixed returns whether this item has an associated prefix length.
+	IsPrefixed() bool
+
+	// GetPrefixLen returns the prefix length, or nil if there is no prefix length.
+	//
+	// A prefix length indicates the number of bits in the initial part (most significant bits) of the series that comprise the prefix.
+	//
+	// A prefix is a part of the series that is not specific to that series but common amongst a group, such as a CIDR prefix block subnet.
+	GetPrefixLen() PrefixLen
+
+	// IsPrefixBlock returns whether this item has a prefix length and includes the block associated with that prefix length.
+	// If the prefix length matches the bit count, this returns true.
+	//
+	// This is different from ContainsPrefixBlock in that this method returns
+	// false if this item has no prefix length, or it has a prefix length that differs from a prefix length for which ContainsPrefixBlock returns true.
+	IsPrefixBlock() bool
+
+	// IsSinglePrefixBlock returns whether the range of values matches a single subnet block for the prefix length.
+	//
+	// This is different from ContainsSinglePrefixBlock in that this method returns
+	// false if this series has no prefix length or a prefix length that differs from a prefix length for which ContainsSinglePrefixBlock returns true.
+	IsSinglePrefixBlock() bool
+}
+
+type PrefixedConstraint[T any] interface {
+	Prefixed
+
+	// WithoutPrefixLen provides the same item but with no prefix length.  The values remain unchanged.
+	WithoutPrefixLen() T
+
+	// ToPrefixBlock returns the item whose prefix matches the prefix of this item, while the remaining bits span all values.
+	// If this item has no prefix length, then this item is returned.
+	//
+	// The returned item will include all items with the same prefix as this item, known as the prefix "block".
+	ToPrefixBlock() T
+
+	// ToPrefixBlockLen returns the item associated with the prefix length provided,
+	// the item whose prefix of that length matches the prefix of that length in this item, and the remaining bits span all values.
+	//
+	// The returned address will include all items with the same prefix as this one, known as the prefix "block".
+	ToPrefixBlockLen(BitCount) T
+
+	// SetPrefixLen sets the prefix length, returning a new item with the same values but with the new prefix length.
+	//
+	// A prefix length will not be set to a value lower than zero or beyond the bit length of the item.
+	// The provided prefix length will be adjusted to these boundaries if necessary.
+	SetPrefixLen(BitCount) T
+}
+
 // AddressDivisionSeries serves as a common interface to all division groupings, address sections, and addresses.
 type AddressDivisionSeries interface {
 	AddressItem
@@ -166,28 +211,7 @@ type AddressDivisionSeries interface {
 	// Generally, this means that any division covering a range of values must be followed by divisions that are full range, covering all values.
 	IsSequential() bool
 
-	// IsPrefixBlock returns whether this address division series has a prefix length and includes the block associated with its prefix length.
-	// If the prefix length matches the bit count, this returns true.
-	//
-	// This is different from ContainsPrefixBlock in that this method returns
-	// false if the series has no prefix length, or a prefix length that differs from a prefix length for which ContainsPrefixBlock returns true.
-	IsPrefixBlock() bool
-
-	// IsSinglePrefixBlock returns whether the range of values matches a single subnet block for the prefix length.
-	//
-	// This is different from ContainsSinglePrefixBlock in that this method returns
-	// false if this series has no prefix length or a prefix length that differs from a prefix length for which ContainsSinglePrefixBlock returns true.
-	IsSinglePrefixBlock() bool
-
-	// IsPrefixed returns whether this address has an associated prefix length.
-	IsPrefixed() bool
-
-	// GetPrefixLen returns the prefix length, or nil if there is no prefix length.
-	//
-	// A prefix length indicates the number of bits in the initial part (most significant bits) of the series that comprise the prefix.
-	//
-	// A prefix is a part of the series that is not specific to that series but common amongst a group, such as a CIDR prefix block subnet.
-	GetPrefixLen() PrefixLen
+	Prefixed
 
 	// GetGenericDivision returns the division at the given index as a DivisionType.
 	// The first division is at index 0.

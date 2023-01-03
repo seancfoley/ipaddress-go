@@ -622,7 +622,7 @@ func (t macAddressTester) testMACValuesBig(segs []int, decimal, negativeDecimal 
 	addr[i] = t.createMACAddress(strb.String()).GetAddress()
 	i++
 	addr[i] = t.createMACAddressFromUint64(longval, len(segs) == 8)
-	i++
+	//i++
 	for j := 0; j < len(addr); j++ {
 		for k := j; k < len(addr); k++ {
 			if !addr[k].Equal(addr[j]) || !addr[j].Equal(addr[k]) {

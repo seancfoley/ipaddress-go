@@ -2459,7 +2459,7 @@ func createSegments(
 	segments = createSegmentArray(segmentCount)
 	for segmentIndex := 0; segmentIndex < segmentCount; segmentIndex++ {
 		segmentPrefixLength := getSegmentPrefixLength(bitsPerSegment, prefixLength, segmentIndex)
-		var value, value2 SegInt = 0, 0
+		var value, value2 SegInt
 		if lowerValueProvider == nil {
 			value = upperValueProvider(segmentIndex)
 			value2 = value

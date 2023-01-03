@@ -716,7 +716,7 @@ func (t macAddressRangeTester) testMACPrefixCountImpl(w *ipaddr.MACAddressString
 }
 
 func (t macAddressRangeTester) testPrefixBlock(prefixedAddressStr string, expectedPref ipaddr.BitCount) {
-	//starting with prefixed address like 1:2:3:*:*:*, get lower (whcih should retain prefix except for allsubnets)
+	//starting with prefixed address like 1:2:3:*:*:*, get lower (which should retain prefix except for allsubnets)
 	//check if prefix block (not), then for all subnets assign prefix, then for all call toPrefixBlock, compare with original and also the prefix
 	prefixedAddressString := t.createMACAddress(prefixedAddressStr)
 	prefixedAddress := prefixedAddressString.GetAddress()

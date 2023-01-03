@@ -858,7 +858,7 @@ func (t trieTesterGeneric) testIterationContainmentTree(
 
 func (t trieTesterGeneric) testIterate(tree *AddressTrie) {
 
-	type triePtr = (*AddressTrie)
+	type triePtr = *AddressTrie
 	t.testIteratorRem(tree, func(trie *AddressTrie) ipaddr.IteratorWithRemove[*AddressTrieNode] {
 		return trie.BlockSizeNodeIterator(true)
 	}, triePtr.Size)
@@ -1368,7 +1368,7 @@ func (t trieTesterGeneric) testMap(trie *ipaddr.AssociativeTrie[*ipaddr.Address,
 		if !reflect.DeepEqual(v, expected) { //reflect deep equal
 			//fmt.Println(trie)
 			t.addFailure(newAssocTrieFailure(fmt.Sprintf("got mismatch, got %v, not %v for %v", v, expected, addr), trie))
-			v, _ = trie.Get(addr)
+			//v, _ = trie.Get(addr)
 		}
 	}
 	// all trie2 from now on

@@ -71,14 +71,14 @@ func (str DelimitedAddressString) ParseDelimitedSegments() Iterator[string] {
 	s := string(str)
 	for i := 0; i < strlen; i++ {
 		c := str[i]
-		if isDelimitedBoundary(c) {
-			if delimitedList != nil {
+		if isDelimitedBoundary(c) { // end of segment or range boundary
+			if len(delimitedList) > 0 {
 				if parts == nil {
 					parts = make([][]string, 0, IPv6SegmentCount)
 				}
-				parts, delimitedList = addParts(s, parts, lastSegmentStartIndex, lastPartIndex, lastDelimiterIndex, delimitedList, i)
+				parts, _ = addParts(s, parts, lastSegmentStartIndex, lastPartIndex, lastDelimiterIndex, delimitedList, i)
 				lastPartIndex = i
-				delimitedList = nil
+				delimitedList = delimitedList[:0]
 			}
 			lastDelimiterIndex = i + 1
 			lastSegmentStartIndex = lastDelimiterIndex
@@ -93,11 +93,11 @@ func (str DelimitedAddressString) ParseDelimitedSegments() Iterator[string] {
 		}
 	}
 	if anyDelimited {
-		if delimitedList != nil {
+		if len(delimitedList) > 0 {
 			if parts == nil {
 				parts = make([][]string, 0, IPv6SegmentCount)
 			}
-			parts, delimitedList = addParts(s, parts, lastSegmentStartIndex, lastPartIndex, lastDelimiterIndex, delimitedList, len(str))
+			parts, _ = addParts(s, parts, lastSegmentStartIndex, lastPartIndex, lastDelimiterIndex, delimitedList, len(str))
 		} else {
 			parts = append(parts, []string{s[lastPartIndex:]})
 		}

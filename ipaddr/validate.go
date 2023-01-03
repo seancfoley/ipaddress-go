@@ -1965,7 +1965,7 @@ func parseValidatedPrefix(
 	if digitCount == 0 {
 		//we know leadingZeroCount is > 0 since we have checked already if there were no characters at all
 		leadingZeros--
-		digitCount++
+		// digitCount++ digitCount is unused after this, no need for it to be accurate
 	}
 	asIPv4 := ipVersion.IsIPv4()
 	if asIPv4 {
@@ -2759,8 +2759,9 @@ func chooseIPAddressProvider(
 
 				if validationOptions == defaultIPAddrParameters {
 					res = emptyProvider
+				} else {
+					res = &nullProvider{isEmpty: true, ipType: emptyType, params: validationOptions}
 				}
-				res = &nullProvider{isEmpty: true, ipType: emptyType, params: validationOptions}
 				return
 			}
 		} else { //isAll
