@@ -24,8 +24,6 @@ import "github.com/seancfoley/ipaddress-go/ipaddr"
 
 Also available as a [Java](https://www.oracle.com/java/) library from the [IPAddress repository](https://github.com/seancfoley/IPAddress)
 
-![Go](https://github.com/seancfoley/IPAddress/blob/gh-pages/images/go_logo.png?raw=true) ![Java](https://github.com/seancfoley/IPAddress/blob/gh-pages/images/java_logo.png?raw=true)  ![Kotlin](https://github.com/seancfoley/IPAddress/blob/gh-pages/images/kotlin_logo.png?raw=true) ![Scala](https://github.com/seancfoley/IPAddress/blob/gh-pages/images/scala.png?raw=true)![Groovy](https://github.com/seancfoley/IPAddress/blob/gh-pages/images/groovy.png?raw=true)![Clojure](https://github.com/seancfoley/IPAddress/blob/gh-pages/images/clojure.png?raw=true)
-
 ## Getting Started
 
 starting with address or subnet strings
