@@ -20,10 +20,10 @@ IPAddress is a library for handling IP addresses and subnets, both IPv4 and IPv6
 # Benefits of this Library
 
 The primary goals are:
- - Parse all host name and ipv4/ipv6 address formats in common usage, plus some additional formats.
+ - Parse all IPv4 and IPv6 address formats and host name formats in common usage, plus some additional formats.
  - Parse and represent subnets, either those specified by network prefix length or those specified with ranges of segment values.
  - Allow the separation of address parsing from host parsing.
- - Allow control over which formats are allowed when parsing, whether IPv4/6, or subnets, or inet_aton formats, or other.
+ - Allow control over which formats are allowed when parsing, whether IPv4, IPv6, subnet formats, inet_aton formats, or other.
  - Produce all common address strings of different formats for a given IPv4 or IPv6 address and produce collections of such strings.
  - Parse all common MAC Address formats in usage and produce all common MAC address strings of different formats.
  - Integrate MAC addresses with IPv6 with standard conversions.
