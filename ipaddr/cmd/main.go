@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"math"
 	"net"
+	"reflect"
 
 	//"go/ast"
 	"go/doc"
@@ -739,6 +740,9 @@ func main() {
 	fmt.Println("assoc node value is ", assocAddedTreeNode.GetValue())
 	fmt.Println("assoc node subnodes are ", assocAddedTreeNode.GetSubNodes())
 	fmt.Println("assoc node tree string is " + assocAddedTreeNode.TreeString())
+
+	fmt.Println()
+	zeros()
 }
 
 func splitIntoBlocks(one, two string) {
@@ -1018,3 +1022,105 @@ func NewIPv4AddressTrie() ipaddr.IPv4AddressTrie {
 func NewAddressTrieNode() ipaddr.TrieNode[*ipaddr.Address] {
 	return ipaddr.TrieNode[*ipaddr.Address]{}
 }
+
+func zeros() {
+
+	//TODO print as a table, should be easy using \t tabs
+
+	fmt.Println("Zero value address items")
+	vars := []ipaddr.AddressItem{
+		&ipaddr.Address{}, &ipaddr.IPAddress{},
+		&ipaddr.IPv4Address{}, &ipaddr.IPv6Address{}, &ipaddr.MACAddress{},
+
+		&ipaddr.AddressSection{}, &ipaddr.IPAddressSection{},
+		&ipaddr.IPv4AddressSection{}, &ipaddr.IPv6AddressSection{}, &ipaddr.MACAddressSection{},
+		&ipaddr.EmbeddedIPv6AddressSection{},
+		&ipaddr.AddressDivisionGrouping{}, &ipaddr.IPAddressLargeDivisionGrouping{},
+		&ipaddr.IPv6v4MixedAddressGrouping{},
+
+		&ipaddr.AddressSegment{}, &ipaddr.IPAddressSegment{},
+		&ipaddr.IPv4AddressSegment{}, &ipaddr.IPv6AddressSegment{}, &ipaddr.MACAddressSegment{},
+		&ipaddr.AddressDivision{},
+		&ipaddr.IPAddressLargeDivision{},
+
+		&ipaddr.IPAddressSeqRange{}, &ipaddr.IPv6AddressSeqRange{}, &ipaddr.IPv4AddressSeqRange{},
+	}
+
+	for _, v := range vars {
+		elt := reflect.ValueOf(v).Elem()
+		t := elt.Type()
+		val := v.GetValue()
+		bc := v.GetBitCount()
+		c := v.GetCount()
+		fmt.Printf("%v zero value has string \"%v\", integer value %v, bit count %v and contained count %v\n", t, elt, val, bc, c)
+	}
+
+	fmt.Println()
+	fmt.Println("Zero-value keys")
+	keys := []fmt.Stringer{ // Stringer and ToAddress
+		&ipaddr.AddressKey{}, &ipaddr.IPAddressKey{},
+		&ipaddr.IPv4AddressKey{}, &ipaddr.IPv6AddressKey{}, &ipaddr.MACAddressKey{},
+		&ipaddr.IPAddressSeqRangeKey{}, &ipaddr.IPv4AddressSeqRangeKey{}, &ipaddr.IPv6AddressSeqRangeKey{},
+	}
+	for _, k := range keys {
+		var elt = reflect.ValueOf(k).Elem()
+		fmt.Printf("%v zero value has string \"%v\"\n", elt.Type(), elt)
+	}
+
+	fmt.Println()
+	fmt.Println("Zero-value host id strings")
+	hostids := []ipaddr.HostIdentifierString{ // Stringer and ToAddress
+		&ipaddr.HostName{}, &ipaddr.IPAddressString{}, &ipaddr.MACAddressString{},
+	}
+	for _, k := range hostids {
+		var elt = reflect.ValueOf(k).Elem()
+		fmt.Printf("%v zero value has string \"%v\"\n", elt.Type(), elt)
+	}
+
+	fmt.Println()
+	fmt.Println("Nil pointer address items")
+	nilPtrItems := []ipaddr.AddressItem{
+		(*ipaddr.Address)(nil), (*ipaddr.IPAddress)(nil),
+		(*ipaddr.IPv4Address)(nil), (*ipaddr.IPv6Address)(nil), (*ipaddr.MACAddress)(nil),
+
+		(*ipaddr.AddressSection)(nil), (*ipaddr.IPAddressSection)(nil),
+		(*ipaddr.IPv4AddressSection)(nil), (*ipaddr.IPv6AddressSection)(nil), (*ipaddr.MACAddressSection)(nil),
+
+		(*ipaddr.AddressSegment)(nil), (*ipaddr.IPAddressSegment)(nil),
+		(*ipaddr.IPv4AddressSegment)(nil), (*ipaddr.IPv6AddressSegment)(nil), (*ipaddr.MACAddressSegment)(nil),
+	}
+	for _, v := range nilPtrItems {
+		fmt.Printf("%T pointer %p has string %v and contained count %v\n", v, v, v, v.GetCount())
+	}
+
+	fmt.Println()
+	fmt.Println("Nil pointer host id strings")
+	nilPtrIds := []ipaddr.HostIdentifierString{
+		(*ipaddr.HostName)(nil), (*ipaddr.IPAddressString)(nil), (*ipaddr.MACAddressString)(nil),
+	}
+	for _, v := range nilPtrIds {
+		fmt.Printf("%T pointer %p has string %v and contained count %v\n", v, v, v)
+	}
+
+	//fmt.Println()
+	//fmt.Println("Nil pointer items")
+	//nilPtrs := []any{
+	//	(*ipaddr.AddressTrie)(nil), (*ipaddr.AssociativeAddressTrie)(nil),
+	//	(*ipaddr.IPv4AddressTrie)(nil), (*ipaddr.IPv4AddressAssociativeTrie)(nil),
+	//	(*ipaddr.IPv6AddressTrie)(nil), (*ipaddr.IPv6AddressAssociativeTrie)(nil),
+	//}
+	//for _, v := range nilPtrs {
+	//	//fmt.Printf("%T has string %v and contained count %v\n", v, v, v.GetCount())
+	//	fmt.Printf("%T has string %v\n", v, v)
+	//}
+}
+
+// ContainmentPath[*Address] ContainmentValuesPath[*Address, any]
+// SegmentSequence SegmentSequenceList
+// AllocatedBlock[*IPAddress]
+// DefaultAddressConverter
+// IPAddressCreator: this one might never have thought about zero
+// IPVersion
+// Partition
+// PrefixKey PrefixLen
+// Zone

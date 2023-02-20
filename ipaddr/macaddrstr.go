@@ -17,6 +17,7 @@
 package ipaddr
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
@@ -128,6 +129,14 @@ func (addrStr *MACAddressString) String() string {
 		return nilString()
 	}
 	return addrStr.str
+}
+
+// Format implements the [fmt.Formatter] interface.
+// It accepts the verbs hat are applicable to strings,
+// namely the verbs %s, %q, %x and %X.
+func (addrStr MACAddressString) Format(state fmt.State, verb rune) {
+	s := flagsFromState(state, verb)
+	_, _ = state.Write([]byte(fmt.Sprintf(s, addrStr.str)))
 }
 
 // ToNormalizedString produces a normalized string for the address.

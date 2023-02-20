@@ -350,7 +350,7 @@ func (grouping *addressDivisionGroupingInternal) matchesMACSectionType() bool {
 	return grouping.getAddrType().isMAC() || grouping.matchesZeroGrouping()
 }
 
-// Format implements [fmt.Formatter] interface. It accepts the formats
+// Format implements the [fmt.Formatter] interface. It accepts the formats
 //  - 'v' for the default address and section format (either the normalized or canonical string),
 //  - 's' (string) for the same,
 //  - 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),

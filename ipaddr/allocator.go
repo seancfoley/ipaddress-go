@@ -44,6 +44,8 @@ var (
 //
 // Once a prefix block allocator of generic type *IPAddress has been provided with either an IPv4 or IPv6 address or subnet for allocation,
 // it can only be used with the same address version from that point onwards.  In other words, it can allocate either IPv4 or IPv6 blocks, but not both.
+//
+// The zero value of a PrefixBlockAllocator is an allocator ready for use.
 type PrefixBlockAllocator[T PrefixBlockConstraint[T]] struct {
 	version IPVersion
 	blocks  [][]T

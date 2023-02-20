@@ -33,8 +33,8 @@ type SequentialRangeKey[T SequentialRangeConstraint[T]] struct {
 
 // ToSeqRange converts back to a sequential range instance.
 func (key SequentialRangeKey[T]) ToSeqRange() *SequentialRange[T] {
-	lower := key.lowerKey.ToAddress()
-	upper := key.upperKey.ToAddress()
+	lower := key.GetLowerKey().ToAddress()
+	upper := key.GetUpperKey().ToAddress()
 	return newSequRangeUnchecked(lower, upper, lower != upper)
 }
 
@@ -43,14 +43,31 @@ func (key SequentialRangeKey[T]) String() string {
 	return key.ToSeqRange().String()
 }
 
+func nilKeyConvert[T SequentialRangeConstraint[T]]() RangeBoundaryKey[T] {
+	return nilConvert[T]().toKey()
+}
+
 // GetLowerKey returns the lower key of the pair of address keys comprising this sequential range key.
 func (key SequentialRangeKey[T]) GetLowerKey() RangeBoundaryKey[T] {
-	return key.lowerKey
+	lowerKey := key.lowerKey
+	if lowerKey == nil {
+		//TODO you cannot do this, it will cause failed map lookups, since SequentialRangeKey[*IPv4Address]{} will not matcht the same constructed from zero IPv4Address
+		// the former will have lowerKey and upperKey nil in here
+		// So that begs the question, what should SequentialRangeKey[*IPv4Address]{} look like?  How should it behave?  It should not panic.
+		// But otherwise, what?  Kinda looks like it should have a ToAddress that returns nil.  And maybe in addiiton, return nil for ToSeqRange() too.
+		// If ToSeqRange() returns nil, then almost certainly GetLowerKey() should return nil too.
+		return nilKeyConvert[T]()
+	}
+	return lowerKey
 }
 
 // GetUpperKey returns the upper key of the pair of address keys comprising this sequential range key.
 func (key SequentialRangeKey[T]) GetUpperKey() RangeBoundaryKey[T] {
-	return key.upperKey
+	upperKey := key.upperKey
+	if upperKey == nil {
+		return nilKeyConvert[T]()
+	}
+	return upperKey
 }
 
 // IPv4AddressKey is a representation of an IPv4 address that is comparable as defined by the language specification.

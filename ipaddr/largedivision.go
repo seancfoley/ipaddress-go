@@ -260,7 +260,11 @@ type addressLargeDivInternal struct {
 }
 
 func (div *addressLargeDivInternal) getDefaultRadix() int {
-	return int(div.defaultRadix.Int64())
+	rad := div.defaultRadix
+	if rad == nil {
+		return 16 // use same default as other divisions when zero div
+	}
+	return int(rad.Int64())
 }
 
 func (div *addressLargeDivInternal) toLargeAddressDivision() *IPAddressLargeDivision {
@@ -268,7 +272,11 @@ func (div *addressLargeDivInternal) toLargeAddressDivision() *IPAddressLargeDivi
 }
 
 func (div *addressLargeDivInternal) getLargeDivValues() *largeDivValues {
-	return div.divisionValues.(*largeDivValues)
+	vals := div.divisionValues
+	if vals == nil {
+		return nil
+	}
+	return vals.(*largeDivValues)
 }
 
 // returns the default radix for textual representations of divisions
@@ -358,12 +366,12 @@ type IPAddressLargeDivision struct {
 
 // GetValue returns the lowest value in the address division range as a big integer.
 func (div *IPAddressLargeDivision) GetValue() *BigDivInt {
-	return new(big.Int).Set(div.getValue())
+	return new(big.Int).Set(div.addressLargeDivInternal.GetValue())
 }
 
 // GetUpperValue returns the highest value in the address division range as a big integer.
 func (div *IPAddressLargeDivision) GetUpperValue() *BigDivInt {
-	return new(big.Int).Set(div.getUpperValue())
+	return new(big.Int).Set(div.addressLargeDivInternal.GetUpperValue())
 }
 
 // GetDivisionPrefixLen returns the network prefix for the division.
@@ -818,15 +826,35 @@ func (div *IPAddressLargeDivision) getDigitCount(val *BigDivInt, radix int) int 
 }
 
 func (div *IPAddressLargeDivision) getMaxDigitCountRadix(radix int) int {
-	return getBigMaxDigitCount(radix, div.GetBitCount(), div.getLargeDivValues().maxValue)
+	bc := div.GetBitCount()
+	vals := div.getLargeDivValues()
+	var maxValue *BigDivInt
+	if vals == nil {
+		maxValue = bigZeroConst()
+	} else {
+		maxValue = vals.maxValue
+	}
+	return getBigMaxDigitCount(radix, bc, maxValue)
 }
 
 func (div *IPAddressLargeDivision) getMaxDigitCount() int {
-	return getBigMaxDigitCount(div.getDefaultTextualRadix(), div.GetBitCount(), div.getLargeDivValues().maxValue)
+	rad := div.getDefaultTextualRadix()
+	bc := div.GetBitCount()
+	vals := div.getLargeDivValues()
+	var maxValue *BigDivInt
+	if vals == nil {
+		maxValue = bigZeroConst()
+	} else {
+		maxValue = vals.maxValue
+	}
+	return getBigMaxDigitCount(rad, bc, maxValue)
 }
 
 func (div *IPAddressLargeDivision) getDefaultLowerString() string {
-	return toDefaultBigString(div.getValue(), div.getBigDefaultTextualRadix(), false, 0, div.getMaxDigitCount())
+	val := div.GetValue()
+	rad := div.getBigDefaultTextualRadix()
+	mdg := div.getMaxDigitCount()
+	return toDefaultBigString(val, rad, false, 0, mdg)
 }
 
 func (div *IPAddressLargeDivision) getDefaultRangeString() string {

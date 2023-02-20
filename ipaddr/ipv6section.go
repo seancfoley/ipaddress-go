@@ -1828,13 +1828,13 @@ func (section *IPv6AddressSection) createNonMixedSection() *EmbeddedIPv6AddressS
 		result.initMultAndPrefLen()
 	}
 	return &EmbeddedIPv6AddressSection{
-		embeddedIPv6AddressSection: embeddedIPv6AddressSection{result},
+		embeddedIPv6AddressSection: embeddedIPv6AddressSection{*result},
 		encompassingSection:        section,
 	}
 }
 
 type embeddedIPv6AddressSection struct {
-	*IPv6AddressSection
+	IPv6AddressSection
 }
 
 // EmbeddedIPv6AddressSection represents the initial IPv6 section of an IPv6v4MixedAddressGrouping.
@@ -1849,7 +1849,11 @@ type EmbeddedIPv6AddressSection struct {
 // This is different from ContainsPrefixBlock in that this method returns
 // false if the series has no prefix length, or a prefix length that differs from a prefix length for which ContainsPrefixBlock returns true.
 func (section *EmbeddedIPv6AddressSection) IsPrefixBlock() bool {
-	return section.encompassingSection.IsPrefixBlock()
+	ipv6Sect := section.encompassingSection
+	if ipv6Sect == nil {
+		ipv6Sect = zeroIPv6AddressSection
+	}
+	return ipv6Sect.IsPrefixBlock()
 }
 
 func (section *IPv6AddressSection) createEmbeddedIPv4AddressSection() (sect *IPv4AddressSection, err addrerr.IncompatibleAddressError) {
@@ -1984,14 +1988,37 @@ func (grouping *IPv6v4MixedAddressGrouping) ToDivGrouping() *AddressDivisionGrou
 	return (*AddressDivisionGrouping)(grouping)
 }
 
+// by using cached sections for zero values, we will return the same section
+// pointer for repeated calls to the same zero-valued containing section
+
+var (
+	zeroEmbeddedIPv6AddressSection = &EmbeddedIPv6AddressSection{}
+	zeroIPv4AddressSection         = &IPv4AddressSection{}
+	zeroIPv6AddressSection         = &IPv6AddressSection{}
+)
+
 // GetIPv6AddressSection returns the initial IPv6 section of the grouping.
 func (grouping *IPv6v4MixedAddressGrouping) GetIPv6AddressSection() *EmbeddedIPv6AddressSection {
-	return grouping.cache.mixed.embeddedIPv6Section
+	if grouping == nil {
+		return nil
+	}
+	cache := grouping.cache
+	if cache == nil { // zero-valued
+		return zeroEmbeddedIPv6AddressSection
+	}
+	return cache.mixed.embeddedIPv6Section
 }
 
 // GetIPv4AddressSection returns the ending IPv4 section of the grouping.
 func (grouping *IPv6v4MixedAddressGrouping) GetIPv4AddressSection() *IPv4AddressSection {
-	return grouping.cache.mixed.embeddedIPv4Section
+	if grouping == nil {
+		return nil
+	}
+	cache := grouping.cache
+	if cache == nil { // zero-valued
+		return zeroIPv4AddressSection
+	}
+	return cache.mixed.embeddedIPv4Section
 }
 
 // String implements the [fmt.Stringer] interface,
@@ -2004,11 +2031,16 @@ func (grouping *IPv6v4MixedAddressGrouping) String() string {
 	// used to use grouping.toString() but decided to use a mixed string instead
 	parms := mixedParams
 	ipv6Sect := grouping.GetIPv6AddressSection().encompassingSection
+	if ipv6Sect == nil {
+		ipv6Sect = zeroIPv6AddressSection
+	}
+	// using ipv6Sect here instead of grouping.GetIPv6AddressSection() affects whether compression is used
 	stringParams := from(parms, ipv6Sect) // I guess this would have to be on the ipv6 section - but no compress host
 	params := &ipv6v4MixedParams{
 		ipv6Params: stringParams,
 		ipv4Params: toIPParams(parms.GetIPv4Opts()),
 	}
+	// using grouping.GetIPv6AddressSection() here affects the results of IsPrefixBlock to account for the IPv4 section that follows the IPv6 section
 	result := params.toZonedString(grouping, NoZone)
 	return result
 }

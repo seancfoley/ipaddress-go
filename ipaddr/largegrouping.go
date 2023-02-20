@@ -55,6 +55,17 @@ func (grouping *largeDivisionGroupingInternal) initMultiple() {
 	return
 }
 
+// divisions are printed like slices of *IPAddressLargeDivision (which are Stringers) with division separated by spaces and enclosed in square brackets,
+// sections are printed like addresses with segments separated by segment separators
+func (grouping largeDivisionGroupingInternal) Format(state fmt.State, verb rune) {
+	arr := grouping.initDivs().getDivArray()
+	if len(arr) == 0 {
+		return
+	}
+	s := flagsFromState(state, verb)
+	_, _ = state.Write([]byte(fmt.Sprintf(s, arr)))
+}
+
 func (grouping *largeDivisionGroupingInternal) toString() string {
 	return fmt.Sprint(grouping.initDivs().getDivArray())
 }

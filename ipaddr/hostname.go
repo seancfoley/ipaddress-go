@@ -17,6 +17,7 @@
 package ipaddr
 
 import (
+	"fmt"
 	"net"
 	"net/netip"
 	"strings"
@@ -276,6 +277,14 @@ func (host *HostName) String() string {
 		return nilString()
 	}
 	return host.str
+}
+
+// Format implements the [fmt.Formatter] interface.
+// It accepts the verbs hat are applicable to strings,
+// namely the verbs %s, %q, %x and %X.
+func (addrStr HostName) Format(state fmt.State, verb rune) {
+	s := flagsFromState(state, verb)
+	_, _ = state.Write([]byte(fmt.Sprintf(s, addrStr.str)))
 }
 
 // IsAddressString returns whether this host name is a string representing an IP address or subnet.

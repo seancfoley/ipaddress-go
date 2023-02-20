@@ -131,6 +131,7 @@ type AddressItem interface {
 	CompareSize(AddressItem) int
 
 	fmt.Stringer
+	fmt.Formatter
 }
 
 type Prefixed interface {
@@ -816,6 +817,7 @@ type HostIdentifierString interface {
 	Wrap() ExtendedIdentifierString
 
 	fmt.Stringer
+	fmt.Formatter
 }
 
 var _, _, _ HostIdentifierString = &IPAddressString{}, &MACAddressString{}, &HostName{}
