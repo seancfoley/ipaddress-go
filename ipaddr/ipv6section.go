@@ -1959,7 +1959,7 @@ func (grouping *IPv6v4MixedAddressGrouping) GetCount() *big.Int {
 		return bigZero()
 	}
 	cnt := grouping.GetIPv6AddressSection().GetCount()
-	return cnt.Add(cnt, grouping.GetIPv4AddressSection().GetCount())
+	return cnt.Mul(cnt, grouping.GetIPv4AddressSection().GetCount())
 }
 
 // IsMultiple returns  whether this grouping represents multiple values.
