@@ -87,9 +87,7 @@ func (t keyTester) run() {
 	key := ipaddr.Key[*ipaddr.Address]{}
 
 	zeroAddr := ipaddr.Address{}
-	zeroIPAddr := ipaddr.IPAddress{}
-	zero4Addr := ipaddr.IPv4Address{}
-	zero6Addr := ipaddr.IPv6Address{}
+
 	zeroMACAddr := ipaddr.MACAddress{}
 
 	keyEquals(t, key4, zero4Addr.ToGenericKey())
@@ -117,13 +115,19 @@ func (t keyTester) run() {
 	equals(t, macAddrKey.ToAddress(), &zeroMACAddr)
 }
 
+var (
+	zeroIPAddr = ipaddr.IPAddress{}
+	zero4Addr  = ipaddr.IPv4Address{}
+	zero6Addr  = ipaddr.IPv6Address{}
+)
+
 func keyEquals[TE interface {
 	addFailure(failure)
 }, T interface {
 	comparable
 	fmt.Stringer
 }](t TE, one, two T) {
-	if one != two || two != one {
+	if two != one {
 		f := newAddrFailure("comparison of "+one.String()+" with "+two.String(), nil)
 		t.addFailure(f)
 	}
@@ -289,15 +293,56 @@ func (t keyTester) testKeys(cached []*ipaddr.Address) {
 		if ipAddr := addr.ToIP(); ipAddr != nil {
 			other := ipAddr.ToKey().ToAddress()
 			equals(t, ipAddr, other)
+
+			ipRange := ipaddr.NewSequentialRange(ipAddr, &zeroIPAddr)
+			ipRangeBack := ipRange.ToKey().ToSeqRange()
+			equals(t, ipRangeBack.GetLower(), &zeroIPAddr)
+			equals(t, ipRangeBack.GetUpper(), ipAddr)
+
+			if !ipAddr.IsMax() {
+				oneUp := ipAddr.Increment(1)
+				ipRange := ipaddr.NewSequentialRange(ipAddr, oneUp)
+				ipRangeBack := ipRange.ToKey().ToSeqRange()
+				equals(t, ipRangeBack.GetUpper(), oneUp)
+				equals(t, ipRangeBack.GetLower(), ipAddr)
+			}
 		}
 		if addrv4 := addr.ToIPv4(); addrv4 != nil {
 			other := addrv4.ToKey().ToAddress()
 			equals(t, addrv4, other)
+
+			ipRange := ipaddr.NewSequentialRange(addrv4, &zero4Addr)
+			ipRangeBack := ipRange.ToKey().ToSeqRange()
+			equals(t, ipRangeBack.GetLower(), &zero4Addr)
+			equals(t, ipRangeBack.GetUpper(), addrv4)
+
+			if !addrv4.IsMax() {
+				oneUp := addrv4.Increment(1)
+				ipRange := ipaddr.NewSequentialRange(addrv4, oneUp)
+				ipRangeBack := ipRange.ToKey().ToSeqRange()
+				equals(t, ipRangeBack.GetUpper(), oneUp)
+				equals(t, ipRangeBack.GetLower(), addrv4)
+			}
+
 			//ipv4Count++
 		}
 		if addrv6 := addr.ToIPv6(); addrv6 != nil {
 			other := addrv6.ToKey().ToAddress()
 			equals(t, addrv6, other)
+
+			ipRange := ipaddr.NewSequentialRange(addrv6, &zero6Addr)
+			ipRangeBack := ipRange.ToKey().ToSeqRange()
+			equals(t, ipRangeBack.GetLower(), &zero6Addr)
+			equals(t, ipRangeBack.GetUpper(), addrv6)
+
+			if !addrv6.IsMax() {
+				oneUp := addrv6.Increment(1)
+				ipRange := ipaddr.NewSequentialRange(addrv6, oneUp)
+				ipRangeBack := ipRange.ToKey().ToSeqRange()
+				equals(t, ipRangeBack.GetUpper(), oneUp)
+				equals(t, ipRangeBack.GetLower(), addrv6)
+			}
+
 			//ipv6Count++
 		}
 		if addrmac := addr.ToMAC(); addrmac != nil {

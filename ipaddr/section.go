@@ -724,7 +724,7 @@ func (section *addressSectionInternal) replace(
 		}
 	}
 	addrType := sect.getAddrType()
-	if addrType.isNil() { // zero-length section
+	if addrType.isZeroSegments() { // zero-length section
 		addrType = replacement.getAddrType()
 	}
 	return createInitializedSection(segs, prefixLen, addrType)

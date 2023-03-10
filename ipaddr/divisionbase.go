@@ -274,7 +274,7 @@ func (div *addressDivisionBase) getAddrType() addrType {
 
 func (div *addressDivisionBase) matchesStructure(other DivisionType) (res bool, addrType addrType) {
 	addrType = div.getAddrType()
-	if addrType != other.getAddrType() || (addrType.isNil() && (div.GetBitCount() != other.GetBitCount())) {
+	if addrType != other.getAddrType() || (addrType.isZeroSegments() && (div.GetBitCount() != other.GetBitCount())) {
 		return
 	}
 	res = true

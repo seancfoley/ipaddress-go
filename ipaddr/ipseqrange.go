@@ -71,8 +71,6 @@ type SequentialRangeConstraint[T any] interface {
 		prefixedSegIteratorProducer func(seg *IPAddressSegment, index int) Iterator[*IPAddressSegment],
 	) Iterator[T]
 
-	toKey() RangeBoundaryKey[T]
-
 	equalsSameVersion(AddressType) bool
 
 	getLowestHighestAddrs() (lower, upper T)
@@ -897,11 +895,7 @@ func (rng *SequentialRange[T]) Subtract(other *SequentialRange[T]) []*Sequential
 // they are not comparable with Go operators.
 // However, SequentialRangeKey instances are comparable with Go operators, and thus can be used as map keys.
 func (rng *SequentialRange[T]) ToKey() SequentialRangeKey[T] {
-	rng = rng.init()
-	return SequentialRangeKey[T]{
-		lowerKey: rng.lower.toKey(),
-		upperKey: rng.upper.toKey(),
-	}
+	return newSequentialRangeKey(rng.init())
 }
 
 // IsIPv4 returns true if this sequential address range is an IPv4 sequential address range.  If so, use ToIPv4 to convert to the IPv4-specific type.

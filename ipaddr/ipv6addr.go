@@ -2198,10 +2198,6 @@ func (addr *IPv6Address) ToKey() IPv6AddressKey {
 	return key
 }
 
-func (addr *IPv6Address) toKey() RangeBoundaryKey[*IPv6Address] {
-	return addr.ToKey()
-}
-
 // ToGenericKey produces a generic Key[*IPv6Address] that can be used with generic code working with [Address], [IPAddress], [IPv4Address], [IPv6Address] and [MACAddress].
 // ToKey produces a more compact key for code that is IPv6-specific.
 func (addr *IPv6Address) ToGenericKey() Key[*IPv6Address] {
@@ -2250,11 +2246,11 @@ func fromIPv6IPKey(contents *keyContents) *IPv6Address {
 			valsIndex := segmentIndex >> 2
 			segIndex := ((IPv6SegmentCount - 1) - segmentIndex) & 0x3
 			return IPv6SegInt(contents.vals[valsIndex].lower >> (segIndex << ipv6BitsToSegmentBitshift))
-		}, func(segmentIndex int) IPv6SegInt {
+		},
+		func(segmentIndex int) IPv6SegInt {
 			valsIndex := segmentIndex >> 2
 			segIndex := ((IPv6SegmentCount - 1) - segmentIndex) & 0x3
 			return IPv6SegInt(contents.vals[valsIndex].upper >> (segIndex << ipv6BitsToSegmentBitshift))
 		},
-		string(contents.zone),
-	)
+		string(contents.zone))
 }

@@ -1834,10 +1834,6 @@ func (addr *IPv4Address) ToKey() IPv4AddressKey {
 	return key
 }
 
-func (addr *IPv4Address) toKey() RangeBoundaryKey[*IPv4Address] {
-	return addr.ToKey()
-}
-
 func fromIPv4Key(key IPv4AddressKey) *IPv4Address {
 	keyVal := key.vals
 	return NewIPv4AddressFromRange(

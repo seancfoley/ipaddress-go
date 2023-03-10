@@ -680,9 +680,9 @@ func (t specialTypesTester) testZeros() {
 		t.addFailure(newAddressItemFailure("zero of "+ipv6Zero.String(), ipv6Zero3))
 	}
 
-	ipZero3 = ipRangeZero.ToKey().GetLowerKey().ToAddress()
-	ipv4Zero3 = ipv4RangeZero.ToKey().GetLowerKey().ToAddress()
-	ipv6Zero3 = ipv6RangeZero.ToKey().GetLowerKey().ToAddress()
+	ipZero3 = ipRangeZero.ToKey().ToSeqRange().GetLower().ToKey().ToAddress()
+	ipv4Zero3 = ipv4RangeZero.ToKey().ToSeqRange().GetLower().ToKey().ToAddress() // Goland parser mistakenly flags this, resolving ToKey incorrectly
+	ipv6Zero3 = ipv6RangeZero.ToKey().ToSeqRange().GetLower().ToKey().ToAddress() // Goland parser mistakenly flags this, resolving ToKey incorrectly
 
 	// check that zero values from address ranges match zero values from addresses
 	if !ipZero.Equal(ipZero3) || !ipZero3.Equal(&ipZero) || !ipZero3.Equal(ipZero3) || !ipZero.Equal(&ipZero) {
@@ -699,9 +699,9 @@ func (t specialTypesTester) testZeros() {
 		t.addFailure(newAddressItemFailure("zero of "+ipv6Zero.String(), ipv6Zero3))
 	}
 
-	ipZero3 = ipRangeZero.ToKey().GetUpperKey().ToAddress()
-	ipv4Zero3 = ipv4RangeZero.ToKey().GetUpperKey().ToAddress()
-	ipv6Zero3 = ipv6RangeZero.ToKey().GetUpperKey().ToAddress()
+	ipZero3 = ipRangeZero.ToKey().ToSeqRange().GetUpper().ToKey().ToAddress()
+	ipv4Zero3 = ipv4RangeZero.ToKey().ToSeqRange().GetUpper().ToKey().ToAddress() // Goland parser mistakenly flags this, resolving ToKey incorrectly
+	ipv6Zero3 = ipv6RangeZero.ToKey().ToSeqRange().GetUpper().ToKey().ToAddress() // Goland parser mistakenly flags this, resolving ToKey incorrectly
 
 	// check that zero values from address ranges match zero values from addresses
 	if !ipZero.Equal(ipZero3) || !ipZero3.Equal(&ipZero) || !ipZero3.Equal(ipZero3) || !ipZero.Equal(&ipZero) {

@@ -27,7 +27,7 @@ const (
 	macType         addrType = 4 // mac segments
 )
 
-func (a addrType) isNil() bool {
+func (a addrType) isZeroSegments() bool {
 	return a == zeroType
 }
 

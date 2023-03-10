@@ -316,7 +316,7 @@ func (grouping *addressDivisionGroupingInternal) matchesMACAddressType() bool {
 // It is not considered equal to constructions of specific zero length sections of groupings like NewIPv4Section(nil) which can only represent a zero-length section of a single address type.
 func (grouping *addressDivisionGroupingInternal) matchesZeroGrouping() bool {
 	addrType := grouping.getAddrType()
-	return addrType.isNil() && grouping.hasNoDivisions()
+	return addrType.isZeroSegments() && grouping.hasNoDivisions()
 }
 
 func (grouping *addressDivisionGroupingInternal) matchesAddrSectionType() bool {

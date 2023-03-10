@@ -2406,10 +2406,6 @@ func (addr *IPAddress) ToGenericKey() Key[*IPAddress] {
 	return addr.ToKey()
 }
 
-func (addr *IPAddress) toKey() RangeBoundaryKey[*IPAddress] {
-	return addr.ToKey()
-}
-
 func (addr *IPAddress) fromKey(scheme addressScheme, key *keyContents) *IPAddress {
 	if scheme == ipv4Scheme {
 		ipv4Addr := fromIPv4IPKey(key)

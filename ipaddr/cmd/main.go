@@ -21,6 +21,7 @@ import (
 	"math"
 	"net"
 	"reflect"
+	"strings"
 
 	//"go/ast"
 	"go/doc"
@@ -1025,9 +1026,29 @@ func NewAddressTrieNode() ipaddr.TrieNode[*ipaddr.Address] {
 
 func zeros() {
 
-	//TODO print as a table, should be easy using \t tabs
+	strip := func(s string) string {
+		return strings.ReplaceAll(strings.ReplaceAll(s, "ipaddr.", ""),
+			"github.com/seancfoley/ipaddress-go/", "")
+	}
 
-	fmt.Println("Zero value address items")
+	typeName := func(i any) string {
+		return strip(reflect.ValueOf(i).Elem().Type().Name())
+	}
+
+	interfaceTypeName := func(i any) string {
+		return strip(reflect.TypeOf(i).String())
+	}
+
+	truncateIndent := func(s, indent string) string {
+		if boundary := len(indent) - (len(s) >> 3); boundary >= 0 {
+			return indent[:boundary] + "\t" // every 8 chars eliminates a tab
+		}
+		return ""
+	}
+
+	baseIndent := "\t\t\t"
+	title := "Address item zero values"
+	fmt.Printf("%s%sint\tbits\tcount\tstring\n", title, truncateIndent(title, baseIndent))
 	vars := []ipaddr.AddressItem{
 		&ipaddr.Address{}, &ipaddr.IPAddress{},
 		&ipaddr.IPv4Address{}, &ipaddr.IPv6Address{}, &ipaddr.MACAddress{},
@@ -1040,45 +1061,18 @@ func zeros() {
 
 		&ipaddr.AddressSegment{}, &ipaddr.IPAddressSegment{},
 		&ipaddr.IPv4AddressSegment{}, &ipaddr.IPv6AddressSegment{}, &ipaddr.MACAddressSegment{},
-		&ipaddr.AddressDivision{},
-		&ipaddr.IPAddressLargeDivision{},
+		&ipaddr.AddressDivision{}, &ipaddr.IPAddressLargeDivision{},
 
-		&ipaddr.IPAddressSeqRange{}, &ipaddr.IPv6AddressSeqRange{}, &ipaddr.IPv4AddressSeqRange{},
+		&ipaddr.IPAddressSeqRange{}, &ipaddr.IPv4AddressSeqRange{}, &ipaddr.IPv6AddressSeqRange{},
 	}
-
 	for _, v := range vars {
-		elt := reflect.ValueOf(v).Elem()
-		t := elt.Type()
-		val := v.GetValue()
-		bc := v.GetBitCount()
-		c := v.GetCount()
-		fmt.Printf("%v zero value has string \"%v\", integer value %v, bit count %v and contained count %v\n", t, elt, val, bc, c)
+		name := typeName(v) + "{}"
+		indent := truncateIndent(name, baseIndent)
+		fmt.Printf("%s%s%v\t%v\t%v\t\"%v\"\n", name, indent, v.GetValue(), v.GetBitCount(), v.GetCount(), v)
 	}
 
-	fmt.Println()
-	fmt.Println("Zero-value keys")
-	keys := []fmt.Stringer{ // Stringer and ToAddress
-		&ipaddr.AddressKey{}, &ipaddr.IPAddressKey{},
-		&ipaddr.IPv4AddressKey{}, &ipaddr.IPv6AddressKey{}, &ipaddr.MACAddressKey{},
-		&ipaddr.IPAddressSeqRangeKey{}, &ipaddr.IPv4AddressSeqRangeKey{}, &ipaddr.IPv6AddressSeqRangeKey{},
-	}
-	for _, k := range keys {
-		var elt = reflect.ValueOf(k).Elem()
-		fmt.Printf("%v zero value has string \"%v\"\n", elt.Type(), elt)
-	}
-
-	fmt.Println()
-	fmt.Println("Zero-value host id strings")
-	hostids := []ipaddr.HostIdentifierString{ // Stringer and ToAddress
-		&ipaddr.HostName{}, &ipaddr.IPAddressString{}, &ipaddr.MACAddressString{},
-	}
-	for _, k := range hostids {
-		var elt = reflect.ValueOf(k).Elem()
-		fmt.Printf("%v zero value has string \"%v\"\n", elt.Type(), elt)
-	}
-
-	fmt.Println()
-	fmt.Println("Nil pointer address items")
+	title = "Address item nil pointers"
+	fmt.Printf("\n%s%scount\tstring\n", title, truncateIndent(title, baseIndent+"\t\t"))
 	nilPtrItems := []ipaddr.AddressItem{
 		(*ipaddr.Address)(nil), (*ipaddr.IPAddress)(nil),
 		(*ipaddr.IPv4Address)(nil), (*ipaddr.IPv6Address)(nil), (*ipaddr.MACAddress)(nil),
@@ -1088,39 +1082,47 @@ func zeros() {
 
 		(*ipaddr.AddressSegment)(nil), (*ipaddr.IPAddressSegment)(nil),
 		(*ipaddr.IPv4AddressSegment)(nil), (*ipaddr.IPv6AddressSegment)(nil), (*ipaddr.MACAddressSegment)(nil),
+
+		(*ipaddr.IPAddressSeqRange)(nil), (*ipaddr.IPv4AddressSeqRange)(nil), (*ipaddr.IPv6AddressSeqRange)(nil),
 	}
 	for _, v := range nilPtrItems {
-		fmt.Printf("%T pointer %p has string %v and contained count %v\n", v, v, v, v.GetCount())
+		name := "(" + interfaceTypeName(v) + ")(nil)"
+		indent := truncateIndent(name, baseIndent+"\t\t")
+		fmt.Printf("%s%s%v\t\"%v\"\n", name, indent, v.GetCount(), v)
 	}
 
-	fmt.Println()
-	fmt.Println("Nil pointer host id strings")
+	title = "Address key zero values"
+	fmt.Printf("\n%s%sstring\n", title, truncateIndent(title, baseIndent+"\t\t\t"))
+	keys := []fmt.Stringer{
+		&ipaddr.AddressKey{}, &ipaddr.IPAddressKey{},
+		&ipaddr.IPv4AddressKey{}, &ipaddr.IPv6AddressKey{}, &ipaddr.MACAddressKey{},
+		&ipaddr.IPAddressSeqRangeKey{}, &ipaddr.IPv4AddressSeqRangeKey{}, &ipaddr.IPv6AddressSeqRangeKey{},
+	}
+	for _, k := range keys {
+		name := typeName(k) + "{}"
+		indent := truncateIndent(name, baseIndent+"\t\t\t")
+		fmt.Printf("%s%s\"%v\"\n", name, indent, k)
+	}
+
+	title = "Host id zero values"
+	fmt.Printf("\n%s%sstring\n", title, truncateIndent(title, baseIndent+"\t\t\t"))
+	hostids := []ipaddr.HostIdentifierString{
+		&ipaddr.HostName{}, &ipaddr.IPAddressString{}, &ipaddr.MACAddressString{},
+	}
+	for _, k := range hostids {
+		name := typeName(k) + "{}"
+		indent := truncateIndent(name, baseIndent+"\t\t\t")
+		fmt.Printf("%s%s\"%v\"\n", name, indent, k)
+	}
+
+	title = "Host id nil pointers"
+	fmt.Printf("\n%s%sstring\n", title, truncateIndent(title, baseIndent+"\t\t\t"))
 	nilPtrIds := []ipaddr.HostIdentifierString{
 		(*ipaddr.HostName)(nil), (*ipaddr.IPAddressString)(nil), (*ipaddr.MACAddressString)(nil),
 	}
 	for _, v := range nilPtrIds {
-		fmt.Printf("%T pointer %p has string %v and contained count %v\n", v, v, v)
+		name := "(" + interfaceTypeName(v) + ")(nil)"
+		indent := truncateIndent(name, baseIndent+"\t\t\t")
+		fmt.Printf("%s%s\"%v\"\n", name, indent, v)
 	}
-
-	//fmt.Println()
-	//fmt.Println("Nil pointer items")
-	//nilPtrs := []any{
-	//	(*ipaddr.AddressTrie)(nil), (*ipaddr.AssociativeAddressTrie)(nil),
-	//	(*ipaddr.IPv4AddressTrie)(nil), (*ipaddr.IPv4AddressAssociativeTrie)(nil),
-	//	(*ipaddr.IPv6AddressTrie)(nil), (*ipaddr.IPv6AddressAssociativeTrie)(nil),
-	//}
-	//for _, v := range nilPtrs {
-	//	//fmt.Printf("%T has string %v and contained count %v\n", v, v, v.GetCount())
-	//	fmt.Printf("%T has string %v\n", v, v)
-	//}
 }
-
-// ContainmentPath[*Address] ContainmentValuesPath[*Address, any]
-// SegmentSequence SegmentSequenceList
-// AllocatedBlock[*IPAddress]
-// DefaultAddressConverter
-// IPAddressCreator: this one might never have thought about zero
-// IPVersion
-// Partition
-// PrefixKey PrefixLen
-// Zone

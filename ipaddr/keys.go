@@ -17,9 +17,59 @@ package ipaddr
 
 import "fmt"
 
-// RangeBoundaryKey represents an address key used within a sequential range key.
-type RangeBoundaryKey[T any] interface {
-	ToAddress() T
+func newSequentialRangeKey[T SequentialRangeConstraint[T]](rng *SequentialRange[T]) (key SequentialRangeKey[T]) {
+	lower := rng.GetLower()
+	upper := rng.GetUpper()
+	lowerIp := lower.ToIP()
+	upperIp := upper.ToIP()
+
+	var t T
+	anyt := any(t)
+	_, isIP := anyt.(*IPAddress)
+	if lowerIp.isIPv4() {
+		section := lowerIp.GetSection()
+		divs := section.getDivArray()
+		for _, div := range divs {
+			seg := div.ToIPv4()
+			val := &key.vals[0]
+			newLower := (val.lower << IPv4BitsPerSegment) | uint64(seg.GetIPv4SegmentValue())
+			val.lower = newLower
+		}
+		section = upperIp.GetSection()
+		divs = section.getDivArray()
+		for _, div := range divs {
+			seg := div.ToIPv4()
+			val := &key.vals[0]
+			newUpper := (val.upper << IPv4BitsPerSegment) | uint64(seg.GetIPv4SegmentValue())
+			val.upper = newUpper
+		}
+		if isIP {
+			key.addrType = ipv4Type
+		}
+	} else if lowerIp.isIPv6() {
+		section := lowerIp.GetSection()
+		divs := section.getDivArray()
+		for i, div := range divs {
+			seg := div.ToIPv6()
+			val := &key.vals[i>>2]
+			newLower := (val.lower << IPv6BitsPerSegment) | uint64(seg.GetIPv6SegmentValue())
+			val.lower = newLower
+		}
+		section = upperIp.GetSection()
+		divs = section.getDivArray()
+		for i, div := range divs {
+			seg := div.ToIPv6()
+			val := &key.vals[i>>2]
+			newUpper := (val.upper << IPv6BitsPerSegment) | uint64(seg.GetIPv6SegmentValue())
+			val.upper = newUpper
+		}
+		if isIP {
+			key.addrType = ipv6Type
+		}
+	} else { // nether IPv4 nor IPv6, the zero IP address
+		// key.addrType is zeroType
+	}
+	return
 }
 
 // SequentialRangeKey is a representation of SequentialRange that is comparable as defined by the language specification.
@@ -28,46 +78,79 @@ type RangeBoundaryKey[T any] interface {
 // It can be used as a map key.
 // The zero value is a range from a zero-length address to itself.
 type SequentialRangeKey[T SequentialRangeConstraint[T]] struct {
-	lowerKey, upperKey RangeBoundaryKey[T]
+	vals [2]struct {
+		lower,
+		upper uint64
+	}
+	addrType addrType // only used when T is *IPAddress to indicate version for non-zero valued address
 }
 
 // ToSeqRange converts back to a sequential range instance.
 func (key SequentialRangeKey[T]) ToSeqRange() *SequentialRange[T] {
-	lower := key.GetLowerKey().ToAddress()
-	upper := key.GetUpperKey().ToAddress()
-	return newSequRangeUnchecked(lower, upper, lower != upper)
+	var lower, upper T
+	var isMult bool
+	isIP, isIPv4, isIPv6 := false, false, false
+	anyt := any(lower)
+	if _, isIPv4 = anyt.(*IPv4Address); !isIPv4 {
+		if _, isIPv6 = anyt.(*IPv6Address); !isIPv6 {
+			if _, isIP = anyt.(*IPAddress); isIP {
+				addressType := key.addrType
+				if isIPv4 = addressType.isIPv4(); !isIPv4 {
+					if isIPv6 = addressType.isIPv6(); !isIPv6 {
+						if isNeither := addressType.isZeroSegments(); isNeither {
+							lower = any(zeroIPAddr).(T)
+							upper = lower
+						} else {
+							panic("supports only IP addresses")
+						}
+					}
+				}
+			} else {
+				panic("supports only IP addresses")
+			}
+		}
+	}
+	if isIPv6 {
+		lower6 := NewIPv6AddressFromVals(
+			func(segmentIndex int) IPv6SegInt {
+				valsIndex := segmentIndex >> 2
+				segIndex := ((IPv6SegmentCount - 1) - segmentIndex) & 0x3
+				return IPv6SegInt(key.vals[valsIndex].lower >> (segIndex << ipv6BitsToSegmentBitshift))
+			})
+		upper6 := NewIPv6AddressFromVals(
+			func(segmentIndex int) IPv6SegInt {
+				valsIndex := segmentIndex >> 2
+				segIndex := ((IPv6SegmentCount - 1) - segmentIndex) & 0x3
+				return IPv6SegInt(key.vals[valsIndex].upper >> (segIndex << ipv6BitsToSegmentBitshift))
+			})
+		isMult = key.vals[1].lower != key.vals[1].upper || key.vals[0].lower != key.vals[0].upper
+		if isIP {
+			lower = any(lower6.ToIP()).(T)
+			upper = any(upper6.ToIP()).(T)
+		} else {
+			lower = any(lower6).(T)
+			upper = any(upper6).(T)
+		}
+	} else if isIPv4 {
+		l := uint32(key.vals[0].lower)
+		u := uint32(key.vals[0].upper)
+		lower4 := NewIPv4AddressFromUint32(l)
+		upper4 := NewIPv4AddressFromUint32(u)
+		isMult = l != u
+		if isIP {
+			lower = any(lower4.ToIP()).(T)
+			upper = any(upper4.ToIP()).(T)
+		} else {
+			lower = any(lower4).(T)
+			upper = any(upper4).(T)
+		}
+	}
+	return newSequRangeUnchecked(lower, upper, isMult)
 }
 
 // String calls the String method in the corresponding sequential range.
 func (key SequentialRangeKey[T]) String() string {
 	return key.ToSeqRange().String()
-}
-
-func nilKeyConvert[T SequentialRangeConstraint[T]]() RangeBoundaryKey[T] {
-	return nilConvert[T]().toKey()
-}
-
-// GetLowerKey returns the lower key of the pair of address keys comprising this sequential range key.
-func (key SequentialRangeKey[T]) GetLowerKey() RangeBoundaryKey[T] {
-	lowerKey := key.lowerKey
-	if lowerKey == nil {
-		//TODO you cannot do this, it will cause failed map lookups, since SequentialRangeKey[*IPv4Address]{} will not matcht the same constructed from zero IPv4Address
-		// the former will have lowerKey and upperKey nil in here
-		// So that begs the question, what should SequentialRangeKey[*IPv4Address]{} look like?  How should it behave?  It should not panic.
-		// But otherwise, what?  Kinda looks like it should have a ToAddress that returns nil.  And maybe in addiiton, return nil for ToSeqRange() too.
-		// If ToSeqRange() returns nil, then almost certainly GetLowerKey() should return nil too.
-		return nilKeyConvert[T]()
-	}
-	return lowerKey
-}
-
-// GetUpperKey returns the upper key of the pair of address keys comprising this sequential range key.
-func (key SequentialRangeKey[T]) GetUpperKey() RangeBoundaryKey[T] {
-	upperKey := key.upperKey
-	if upperKey == nil {
-		return nilKeyConvert[T]()
-	}
-	return upperKey
 }
 
 // IPv4AddressKey is a representation of an IPv4 address that is comparable as defined by the language specification.
@@ -92,17 +175,6 @@ func (key IPv4AddressKey) String() string {
 	return key.ToAddress().String()
 }
 
-// IPv4KeyFromRangeKey converts the IPv4 range key to an IPv4AddressKey.
-// The IPv4AddressKey satisfies the "comparable" generic constraint, unlike RangeBoundaryKey.
-// Both key types are "comparable" with respect to comparison operators and map keys.
-func IPv4KeyFromRangeKey(key RangeBoundaryKey[*IPv4Address]) IPv4AddressKey {
-	if conv, ok := key.(IPv4AddressKey); ok {
-		return conv
-	}
-	var addr *IPv4Address = key.ToAddress()
-	return addr.ToKey()
-}
-
 type testComparableConstraint[T comparable] struct{}
 
 var (
@@ -114,13 +186,6 @@ var (
 	_ testComparableConstraint[Key[*Address]]
 	//_ testComparableConstraint[RangeBoundaryKey[*IPv4Address]] // does not compile, as expected, because it has an interface field.  But it is still go-comparable.
 )
-
-func testCompare() {
-	var one1, two1 IPv4AddressKey
-	_ = one1 == two1 // comparable
-	var one2, two2 RangeBoundaryKey[*IPv4Address]
-	_ = one2 == two2 // comparable
-}
 
 // IPv6AddressKey is a representation of an IPv6 address that is comparable as defined by the language specification.
 // See https://go.dev/ref/spec#Comparison_operators
@@ -142,17 +207,6 @@ func (key IPv6AddressKey) ToAddress() *IPv6Address {
 // String calls the String method in the corresponding address.
 func (key IPv6AddressKey) String() string {
 	return key.ToAddress().String()
-}
-
-// IPv6KeyFromRangeKey converts the IPv6 range key to an IPv6AddressKey.
-// The IPv6AddressKey satisfies the "comparable" generic constraint, unlike RangeBoundaryKey.
-// Both key types are "comparable" with respect to comparison operators and map keys.
-func IPv6KeyFromRangeKey(key RangeBoundaryKey[*IPv6Address]) IPv6AddressKey {
-	if conv, ok := key.(IPv6AddressKey); ok {
-		return conv
-	}
-	var addr *IPv6Address = key.ToAddress()
-	return addr.ToKey()
 }
 
 // MACAddressKey is a representation of a MAC address that is comparable as defined by the language specification.
@@ -218,17 +272,6 @@ type GenericKeyConstraint[T KeyConstraint[T]] interface {
 type Key[T KeyConstraint[T]] struct {
 	scheme addressScheme
 	keyContents
-}
-
-// IPKeyFromRangeKey converts the IP address range key to a Key[*IPAddress].
-// The type Key[*IPAddress] satisfies the "comparable" generic constraint, unlike RangeBoundaryKey.
-// Both key types are "comparable" with respect to comparison operators and map keys.
-func IPKeyFromRangeKey(key RangeBoundaryKey[*IPAddress]) Key[*IPAddress] {
-	if conv, ok := key.(Key[*IPAddress]); ok {
-		return conv
-	}
-	var addr *IPAddress = key.ToAddress()
-	return addr.ToKey()
 }
 
 // ToAddress converts back to an address instance.
