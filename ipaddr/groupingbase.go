@@ -478,12 +478,20 @@ type mixedCache struct {
 	embeddedIPv6Section        *EmbeddedIPv6AddressSection
 }
 
+type uint128Cache struct {
+	high, low uint64
+}
+
 type valueCache struct {
 	cachedCount, cachedPrefixCount *big.Int
 
 	cachedMaskLens *maskLenSetting
 
 	bytesCache *bytesCache
+
+	uint128Cache *uint128Cache
+
+	uint32Cache *uint32
 
 	stringCache stringCache
 
