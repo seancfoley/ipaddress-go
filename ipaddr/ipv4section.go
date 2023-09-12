@@ -18,6 +18,7 @@ package ipaddr
 
 import (
 	"math/big"
+	"unsafe"
 
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrstr"
@@ -111,6 +112,8 @@ func NewIPv4SectionFromPrefixedUint32(value uint32, segmentCount int, prefixLeng
 	res = createIPv4Section(segments)
 	if prefixLength != nil {
 		assignPrefix(prefixLength, segments, res.ToIP(), false, false, BitCount(segmentCount<<ipv4BitsToSegmentBitshift))
+	} else {
+		res.cache.uint32Cache = &value
 	}
 	return
 }
@@ -226,9 +229,10 @@ func (section *IPv4AddressSection) Contains(other AddressSectionType) bool {
 // Equal returns whether the given address section is equal to this address section.
 // Two address sections are equal if they represent the same set of sections.
 // They must match:
-//  - type/version: IPv4
-//  - segment counts
-//  - segment value ranges
+//   - type/version: IPv4
+//   - segment counts
+//   - segment value ranges
+//
 // Prefix lengths are ignored.
 func (section *IPv4AddressSection) Equal(other AddressSectionType) bool {
 	if section == nil {
@@ -595,6 +599,52 @@ func (section *IPv4AddressSection) GetUpper() *IPv4AddressSection {
 	return section.getUpper().ToIPv4()
 }
 
+// Uint32Value returns the lowest address in the address section range as a uint32.
+func (section *IPv4AddressSection) Uint32Value() uint32 {
+	cache := section.cache
+	if cache == nil {
+		return section.uint32Value()
+	}
+	res := (*uint32)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&cache.uint32Cache))))
+	if res == nil {
+		val := section.uint32Value()
+		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache.uint32Cache))
+		atomicStorePointer(dataLoc, unsafe.Pointer(&val))
+		return val
+	}
+	return *res
+}
+
+// Uint32Value returns the lowest address in the address section range as a uint32.
+func (section *IPv4AddressSection) uint32Value() uint32 {
+	segCount := section.GetSegmentCount()
+	if segCount == 0 {
+		return 0
+	}
+	arr := section.getDivArray()
+	val := uint32(arr[0].getDivisionValue())
+	bitsPerSegment := section.GetBitsPerSegment()
+	for i := 1; i < segCount; i++ {
+		val = (val << uint(bitsPerSegment)) | uint32(arr[i].getDivisionValue())
+	}
+	return val
+}
+
+// UpperUint32Value returns the highest address in the address section range as a uint32.
+func (section *IPv4AddressSection) UpperUint32Value() uint32 {
+	segCount := section.GetSegmentCount()
+	if segCount == 0 {
+		return 0
+	}
+	arr := section.getDivArray()
+	val := uint32(arr[0].getUpperDivisionValue())
+	bitsPerSegment := section.GetBitsPerSegment()
+	for i := 1; i < segCount; i++ {
+		val = (val << uint(bitsPerSegment)) | uint32(arr[i].getUpperDivisionValue())
+	}
+	return val
+}
+
 // ToZeroHost converts the address section to one in which all individual address sections have a host of zero,
 // the host being the bits following the prefix length.
 // If the address section has no prefix length, then it returns an all-zero address section.
@@ -650,36 +700,6 @@ func (section *IPv4AddressSection) ToMaxHost() (*IPv4AddressSection, addrerr.Inc
 func (section *IPv4AddressSection) ToMaxHostLen(prefixLength BitCount) (*IPv4AddressSection, addrerr.IncompatibleAddressError) {
 	res, err := section.toMaxHostLen(prefixLength)
 	return res.ToIPv4(), err
-}
-
-// Uint32Value returns the lowest address in the address section range as a uint32.
-func (section *IPv4AddressSection) Uint32Value() uint32 {
-	segCount := section.GetSegmentCount()
-	if segCount == 0 {
-		return 0
-	}
-	arr := section.getDivArray()
-	val := uint32(arr[0].getDivisionValue())
-	bitsPerSegment := section.GetBitsPerSegment()
-	for i := 1; i < segCount; i++ {
-		val = (val << uint(bitsPerSegment)) | uint32(arr[i].getDivisionValue())
-	}
-	return val
-}
-
-// UpperUint32Value returns the highest address in the address section range as a uint32.
-func (section *IPv4AddressSection) UpperUint32Value() uint32 {
-	segCount := section.GetSegmentCount()
-	if segCount == 0 {
-		return 0
-	}
-	arr := section.getDivArray()
-	val := uint32(arr[0].getUpperDivisionValue())
-	bitsPerSegment := section.GetBitsPerSegment()
-	for i := 1; i < segCount; i++ {
-		val = (val << uint(bitsPerSegment)) | uint32(arr[i].getUpperDivisionValue())
-	}
-	return val
 }
 
 // ToPrefixBlock returns the section with the same prefix as this section while the remaining bits span all values.
@@ -992,7 +1012,6 @@ func (section *IPv4AddressSection) checkSectionCounts(sections []*IPv4AddressSec
 	return nil
 }
 
-//
 // MergeToSequentialBlocks merges this with the list of sections to produce the smallest array of sequential blocks.
 //
 // The resulting slice is sorted from lowest address value to highest, regardless of the size of each prefix block.
@@ -1005,7 +1024,6 @@ func (section *IPv4AddressSection) MergeToSequentialBlocks(sections ...*IPv4Addr
 	return cloneToIPv4Sections(blocks), nil
 }
 
-//
 // MergeToPrefixBlocks merges this section with the list of sections to produce the smallest array of prefix blocks.
 //
 // The resulting slice is sorted from lowest value to highest, regardless of the size of each prefix block.
@@ -1136,7 +1154,7 @@ func (section *IPv4AddressSection) ToBinaryString(with0bPrefix bool) (string, ad
 // https://en.wikipedia.org/wiki/IPv6_address#Representation
 // http://tools.ietf.org/html/rfc5952
 //
-//If this section has a prefix length, it will be included in the string.
+// If this section has a prefix length, it will be included in the string.
 func (section *IPv4AddressSection) ToCanonicalString() string {
 	if section == nil {
 		return nilString()

@@ -21,6 +21,7 @@ import (
 	"math/big"
 	"net"
 	"net/netip"
+	"unsafe"
 
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrstr"
@@ -174,8 +175,6 @@ func initZeroIPv4() *IPv4Address {
 	return newIPv4Address(section)
 }
 
-//
-//
 // IPv4Address is an IPv4 address, or a subnet of multiple IPv4 addresses.
 // An IPv4 address is composed of 4 1-byte segments and can optionally have an associated prefix length.
 // Each segment can represent a single value or a range of values.
@@ -340,7 +339,13 @@ func (addr *IPv4Address) GetHostSectionLen(prefLen BitCount) *IPv4AddressSection
 // GetNetworkMask returns the network mask associated with the CIDR network prefix length of this address or subnet.
 // If this address or subnet has no prefix length, then the all-ones mask is returned.
 func (addr *IPv4Address) GetNetworkMask() *IPv4Address {
-	return addr.getNetworkMask(ipv4Network).ToIPv4()
+	var prefLen BitCount
+	if pref := addr.getPrefixLen(); pref != nil {
+		prefLen = pref.bitCount()
+	} else {
+		prefLen = IPv4BitCount
+	}
+	return ipv4Network.GetNetworkMask(prefLen).ToIPv4()
 }
 
 // GetHostMask returns the host mask associated with the CIDR network prefix length of this address or subnet.
@@ -608,16 +613,6 @@ func (addr *IPv4Address) ToMaxHostLen(prefixLength BitCount) (*IPv4Address, addr
 	return res.ToIPv4(), err
 }
 
-// Uint32Value returns the lowest address in the subnet range as a uint32.
-func (addr *IPv4Address) Uint32Value() uint32 {
-	return addr.GetSection().Uint32Value()
-}
-
-// UpperUint32Value returns the highest address in the subnet range as a uint32.
-func (addr *IPv4Address) UpperUint32Value() uint32 {
-	return addr.GetSection().UpperUint32Value()
-}
-
 // ToPrefixBlock returns the subnet associated with the prefix length of this address.
 // If this address has no prefix length, this address is returned.
 //
@@ -714,14 +709,14 @@ func (addr *IPv4Address) AdjustPrefixLenZeroed(prefixLen BitCount) (*IPv4Address
 // If there is no such address, then nil is returned.
 //
 // Examples:
-//  - 1.2.3.4 returns 1.2.3.4/32
-//  - 1.2.*.* returns 1.2.0.0/16
-//  - 1.2.*.0/24 returns 1.2.0.0/16
-//  - 1.2.*.4 returns nil
-//  - 1.2.0-1.* returns 1.2.0.0/23
-//  - 1.2.1-2.* returns nil
-//  - 1.2.252-255.* returns 1.2.252.0/22
-//  - 1.2.3.4/16 returns 1.2.3.4/32
+//   - 1.2.3.4 returns 1.2.3.4/32
+//   - 1.2.*.* returns 1.2.0.0/16
+//   - 1.2.*.0/24 returns 1.2.0.0/16
+//   - 1.2.*.4 returns nil
+//   - 1.2.0-1.* returns 1.2.0.0/23
+//   - 1.2.1-2.* returns nil
+//   - 1.2.252-255.* returns 1.2.252.0/22
+//   - 1.2.3.4/16 returns 1.2.3.4/32
 func (addr *IPv4Address) AssignPrefixForSingleBlock() *IPv4Address {
 	return addr.init().assignPrefixForSingleBlock().ToIPv4()
 }
@@ -732,14 +727,14 @@ func (addr *IPv4Address) AssignPrefixForSingleBlock() *IPv4Address {
 // In other words, this method assigns a prefix length to this subnet matching the largest prefix block in this subnet.
 //
 // Examples:
-//  - 1.2.3.4 returns 1.2.3.4/32
-//  - 1.2.*.* returns 1.2.0.0/16
-//  - 1.2.*.0/24 returns 1.2.0.0/16
-//  - 1.2.*.4 returns 1.2.*.4/32
-//  - 1.2.0-1.* returns 1.2.0.0/23
-//  - 1.2.1-2.* returns 1.2.1-2.0/24
-//  - 1.2.252-255.* returns 1.2.252.0/22
-//  - 1.2.3.4/16 returns 1.2.3.4/32
+//   - 1.2.3.4 returns 1.2.3.4/32
+//   - 1.2.*.* returns 1.2.0.0/16
+//   - 1.2.*.0/24 returns 1.2.0.0/16
+//   - 1.2.*.4 returns 1.2.*.4/32
+//   - 1.2.0-1.* returns 1.2.0.0/23
+//   - 1.2.1-2.* returns 1.2.1-2.0/24
+//   - 1.2.252-255.* returns 1.2.252.0/22
+//   - 1.2.3.4/16 returns 1.2.3.4/32
 func (addr *IPv4Address) AssignMinPrefixForBlock() *IPv4Address {
 	return addr.init().assignMinPrefixForBlock().ToIPv4()
 }
@@ -805,13 +800,13 @@ func (addr *IPv4Address) GetMinPrefixLenForBlock() BitCount {
 // If this segment grouping represents a single value, returns the bit length of this address division series.
 //
 // Examples:
-//  - 1.2.3.4 returns 32
-//  - 1.2.3.4/16 returns 32
-//  - 1.2.*.* returns 16
-//  - 1.2.*.0/24 returns 16
-//  - 1.2.0.0/16 returns 16
-//  - 1.2.*.4 returns nil
-//  - 1.2.252-255.* returns 22
+//   - 1.2.3.4 returns 32
+//   - 1.2.3.4/16 returns 32
+//   - 1.2.*.* returns 16
+//   - 1.2.*.0/24 returns 16
+//   - 1.2.0.0/16 returns 16
+//   - 1.2.*.4 returns nil
+//   - 1.2.252-255.* returns 22
 func (addr *IPv4Address) GetPrefixLenForSingleBlock() PrefixLen {
 	return addr.init().ipAddressInternal.GetPrefixLenForSingleBlock()
 }
@@ -824,6 +819,16 @@ func (addr *IPv4Address) GetValue() *big.Int {
 // GetUpperValue returns the highest address in this subnet or address as an integer value.
 func (addr *IPv4Address) GetUpperValue() *big.Int {
 	return addr.init().section.GetUpperValue()
+}
+
+// Uint32Value returns the lowest address in the subnet range as a uint32.
+func (addr *IPv4Address) Uint32Value() uint32 {
+	return addr.GetSection().Uint32Value()
+}
+
+// UpperUint32Value returns the highest address in the subnet range as a uint32.
+func (addr *IPv4Address) UpperUint32Value() uint32 {
+	return addr.GetSection().UpperUint32Value()
 }
 
 // GetNetIPAddr returns the lowest address in this subnet or address as a net.IPAddr.
@@ -1000,8 +1005,8 @@ func (addr *IPv4Address) CompareSize(other AddressItem) int {
 // The comparison is intended for individual addresses and CIDR prefix blocks.
 // If an address is neither an individual address nor a prefix block, it is treated like one:
 //
-//	- ranges that occur inside the prefix length are ignored, only the lower value is used.
-//	- ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
+//   - ranges that occur inside the prefix length are ignored, only the lower value is used.
+//   - ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
 func (addr *IPv4Address) TrieCompare(other *IPv4Address) int {
 	return addr.init().trieCompare(other.ToAddressBase())
 }
@@ -1010,8 +1015,8 @@ func (addr *IPv4Address) TrieCompare(other *IPv4Address) int {
 //
 // If an address is neither an individual address nor a prefix block, it is treated like one:
 //
-//	- ranges that occur inside the prefix length are ignored, only the lower value is used.
-//	- ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
+//   - ranges that occur inside the prefix length are ignored, only the lower value is used.
+//   - ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
 func (addr *IPv4Address) TrieIncrement() *IPv4Address {
 	if res, ok := trieIncrement(addr); ok {
 		return res
@@ -1023,8 +1028,8 @@ func (addr *IPv4Address) TrieIncrement() *IPv4Address {
 //
 // If an address is neither an individual address nor a prefix block, it is treated like one:
 //
-//	- ranges that occur inside the prefix length are ignored, only the lower value is used.
-//	- ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
+//   - ranges that occur inside the prefix length are ignored, only the lower value is used.
+//   - ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
 func (addr *IPv4Address) TrieDecrement() *IPv4Address {
 	if res, ok := trieDecrement(addr); ok {
 		return res
@@ -1363,7 +1368,6 @@ func (addr *IPv4Address) CoverWithPrefixBlock() *IPv4Address {
 	return addr.init().coverWithPrefixBlock().ToIPv4()
 }
 
-//
 // MergeToSequentialBlocks merges this with the list of addresses to produce the smallest array of sequential blocks.
 //
 // The resulting slice is sorted from lowest address value to highest, regardless of the size of each prefix block.
@@ -1536,11 +1540,12 @@ func createMixedSection(newIPv6Divisions []*AddressDivision, mixedSection *IPv4A
 }
 
 // Format implements [fmt.Formatter] interface. It accepts the formats
-//  - 'v' for the default address and section format (either the normalized or canonical string),
-//  - 's' (string) for the same,
-//  - 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
-//  - 'd' (decimal), 'x' (lowercase hexadecimal), and
-//  - 'X' (uppercase hexadecimal).
+//   - 'v' for the default address and section format (either the normalized or canonical string),
+//   - 's' (string) for the same,
+//   - 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
+//   - 'd' (decimal), 'x' (lowercase hexadecimal), and
+//   - 'X' (uppercase hexadecimal).
+//
 // Also supported are some of fmt's format flags for integral types.
 // Sign control is not supported since addresses and sections are never negative.
 // '#' for an alternate format is supported, which adds a leading zero for octal, and for hexadecimal it adds
@@ -1772,7 +1777,15 @@ func (addr *IPv4Address) ToCustomString(stringOptions addrstr.IPStringOptions) s
 //
 // ToAddressBase can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (addr *IPv4Address) ToAddressBase() *Address {
-	return addr.ToIP().ToAddressBase()
+	if addr != nil {
+		addr = addr.init()
+	}
+	return (*Address)(unsafe.Pointer(addr))
+}
+
+// toAddressBase is needed for tries, it skips the init() call
+func (addr *IPv4Address) toAddressBase() *Address {
+	return (*Address)(unsafe.Pointer(addr))
 }
 
 // ToIP converts to an IPAddress, a polymorphic type usable with all IP addresses and subnets.

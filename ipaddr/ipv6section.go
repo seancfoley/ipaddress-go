@@ -267,6 +267,8 @@ func NewIPv6SectionFromPrefixedUint64(highBytes, lowBytes uint64, segmentCount i
 	res = createIPv6Section(segments)
 	if prefixLength != nil {
 		assignPrefix(prefixLength, segments, res.ToIP(), false, false, BitCount(segmentCount<<ipv6BitsToSegmentBitshift))
+	} else {
+		res.cache.uint128Cache = &uint128Cache{high: highBytes, low: lowBytes}
 	}
 	return
 }
@@ -351,9 +353,10 @@ func (section *IPv6AddressSection) Contains(other AddressSectionType) bool {
 // Equal returns whether the given address section is equal to this address section.
 // Two address sections are equal if they represent the same set of sections.
 // They must match:
-//  - type/version: IPv6
-//  - segment count
-//  - segment value ranges
+//   - type/version: IPv6
+//   - segment count
+//   - segment value ranges
+//
 // Prefix lengths are ignored.
 func (section *IPv6AddressSection) Equal(other AddressSectionType) bool {
 	if section == nil {
@@ -668,6 +671,79 @@ func (section *IPv6AddressSection) GetLower() *IPv6AddressSection {
 // For example, for "1::1:2-3:4:5-6", the section "1::1:3:4:6" is returned.
 func (section *IPv6AddressSection) GetUpper() *IPv6AddressSection {
 	return section.getUpper().ToIPv6()
+}
+
+// Uint64Values returns the lowest address in the address section range as a pair of uint64s.
+func (section *IPv6AddressSection) Uint64Values() (high, low uint64) {
+	cache := section.cache
+	if cache == nil {
+		return section.uint64Values()
+	}
+	res := (*uint128Cache)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&cache.uint128Cache))))
+	if res == nil {
+		val := uint128Cache{}
+		val.high, val.low = section.uint64Values()
+		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache.uint128Cache))
+		atomicStorePointer(dataLoc, unsafe.Pointer(&val))
+		return val.high, val.low
+	}
+	return res.high, res.low
+}
+
+// uint64Values returns the lowest address in the address range as a pair of uint64 values.
+func (section *IPv6AddressSection) uint64Values() (high, low uint64) {
+	segCount := section.GetSegmentCount()
+	if segCount == 0 {
+		return
+	}
+	arr := section.getDivArray()
+	bitsPerSegment := section.GetBitsPerSegment()
+	if segCount <= 4 {
+		low = uint64(arr[0].getDivisionValue())
+		for i := 1; i < segCount; i++ {
+			low = (low << uint(bitsPerSegment)) | uint64(arr[i].getDivisionValue())
+		}
+	} else {
+		high = uint64(arr[0].getDivisionValue())
+		highCount := segCount - 4
+		i := 1
+		for ; i < highCount; i++ {
+			high = (high << uint(bitsPerSegment)) | uint64(arr[i].getDivisionValue())
+		}
+		low = uint64(arr[i].getDivisionValue())
+		for i++; i < segCount; i++ {
+			low = (low << uint(bitsPerSegment)) | uint64(arr[i].getDivisionValue())
+		}
+	}
+	return
+}
+
+// UpperUint64Values returns the highest address in the address section range as pair of uint64 values.
+func (section *IPv6AddressSection) UpperUint64Values() (high, low uint64) {
+	segCount := section.GetSegmentCount()
+	if segCount == 0 {
+		return
+	}
+	arr := section.getDivArray()
+	bitsPerSegment := section.GetBitsPerSegment()
+	if segCount <= 4 {
+		low = uint64(arr[0].getUpperDivisionValue())
+		for i := 1; i < segCount; i++ {
+			low = (low << uint(bitsPerSegment)) | uint64(arr[i].getUpperDivisionValue())
+		}
+	} else {
+		high = uint64(arr[0].getUpperDivisionValue())
+		highCount := segCount - 4
+		i := 1
+		for ; i < highCount; i++ {
+			high = (high << uint(bitsPerSegment)) | uint64(arr[i].getUpperDivisionValue())
+		}
+		low = uint64(arr[i].getUpperDivisionValue())
+		for i++; i < segCount; i++ {
+			low = (low << uint(bitsPerSegment)) | uint64(arr[i].getUpperDivisionValue())
+		}
+	}
+	return
 }
 
 // ToZeroHost converts the address section to one in which all individual address sections have a host of zero,
@@ -1192,7 +1268,6 @@ func (section *IPv6AddressSection) checkSectionCounts(sections []*IPv6AddressSec
 	return nil
 }
 
-//
 // MergeToSequentialBlocks merges this with the list of sections to produce the smallest array of sequential blocks.
 //
 // The resulting slice is sorted from lowest address value to highest, regardless of the size of each prefix block.
@@ -1205,7 +1280,6 @@ func (section *IPv6AddressSection) MergeToSequentialBlocks(sections ...*IPv6Addr
 	return cloneToIPv6Sections(blocks), nil
 }
 
-//
 // MergeToPrefixBlocks merges this section with the list of sections to produce the smallest array of prefix blocks.
 //
 // The resulting slice is sorted from lowest value to highest, regardless of the size of each prefix block.
@@ -1411,7 +1485,7 @@ func (section *IPv6AddressSection) toBase85String(zone Zone) (string, addrerr.In
 // https://en.wikipedia.org/wiki/IPv6_address#Representation
 // http://tools.ietf.org/html/rfc5952
 //
-//If this section has a prefix length, it will be included in the string.
+// If this section has a prefix length, it will be included in the string.
 func (section *IPv6AddressSection) ToCanonicalString() string {
 	if section == nil {
 		return nilString()
@@ -2049,9 +2123,9 @@ func (grouping *IPv6v4MixedAddressGrouping) String() string {
 // When called by a function in the fmt package, nil values are detected before this method is called, avoiding a panic when calling this method.
 
 // Format implements [fmt.Formatter] interface. It accepts the formats
-//  - 'v' for the default address and section format (either the normalized or canonical string),
-//  - 's' (string) for the same
-//  - 'q' for a quoted string
+//   - 'v' for the default address and section format (either the normalized or canonical string),
+//   - 's' (string) for the same
+//   - 'q' for a quoted string
 func (grouping IPv6v4MixedAddressGrouping) Format(state fmt.State, verb rune) {
 	var str string
 	switch verb {

@@ -23,6 +23,7 @@ import (
 	"math/big"
 	"net"
 	"net/netip"
+	"unsafe"
 )
 
 const (
@@ -434,8 +435,6 @@ func initZeroIPv6() *IPv6Address {
 	return newIPv6Address(section)
 }
 
-//
-//
 // IPv6Address is an IPv6 address, or a subnet of multiple IPv6 addresses.
 // An IPv6 address is composed of 8 2-byte segments and can optionally have an associated prefix length.
 // Each segment can represent a single value or a range of values.
@@ -575,7 +574,13 @@ func (addr *IPv6Address) GetHostSectionLen(prefLen BitCount) *IPv6AddressSection
 // GetNetworkMask returns the network mask associated with the CIDR network prefix length of this address or subnet.
 // If this address or subnet has no prefix length, then the all-ones mask is returned.
 func (addr *IPv6Address) GetNetworkMask() *IPv6Address {
-	return addr.getNetworkMask(ipv6Network).ToIPv6()
+	var prefLen BitCount
+	if pref := addr.getPrefixLen(); pref != nil {
+		prefLen = pref.bitCount()
+	} else {
+		prefLen = IPv6BitCount
+	}
+	return ipv6Network.GetNetworkMask(prefLen).ToIPv6()
 }
 
 // GetHostMask returns the host mask associated with the CIDR network prefix length of this address or subnet.
@@ -1072,6 +1077,16 @@ func (addr *IPv6Address) GetUpperValue() *big.Int {
 	return addr.init().section.GetUpperValue()
 }
 
+// Uint64Values returns the lowest address in the address range as a pair of uint64 values.
+func (addr *IPv6Address) Uint64Values() (high, low uint64) {
+	return addr.GetSection().Uint64Values()
+}
+
+// UpperUint64Values returns the highest address in the address section range as a pair of uint64 values.
+func (addr *IPv6Address) UpperUint64Values() (high, low uint64) {
+	return addr.GetSection().UpperUint64Values()
+}
+
 // GetNetIPAddr returns the lowest address in this subnet or address as a net.IPAddr.
 func (addr *IPv6Address) GetNetIPAddr() *net.IPAddr {
 	return addr.ToIP().GetNetIPAddr()
@@ -1242,8 +1257,8 @@ func (addr *IPv6Address) CompareSize(other AddressItem) int {
 // The comparison is intended for individual addresses and CIDR prefix blocks.
 // If an address is neither an individual address nor a prefix block, it is treated like one:
 //
-//	- ranges that occur inside the prefix length are ignored, only the lower value is used.
-//	- ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
+//   - ranges that occur inside the prefix length are ignored, only the lower value is used.
+//   - ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
 func (addr *IPv6Address) TrieCompare(other *IPv6Address) int {
 	return addr.init().trieCompare(other.ToAddressBase())
 }
@@ -1252,8 +1267,8 @@ func (addr *IPv6Address) TrieCompare(other *IPv6Address) int {
 //
 // If an address is neither an individual address nor a prefix block, it is treated like one:
 //
-//	- ranges that occur inside the prefix length are ignored, only the lower value is used.
-//	- ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
+//   - ranges that occur inside the prefix length are ignored, only the lower value is used.
+//   - ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
 func (addr *IPv6Address) TrieIncrement() *IPv6Address {
 	if res, ok := trieIncrement(addr); ok {
 		return res
@@ -1265,8 +1280,8 @@ func (addr *IPv6Address) TrieIncrement() *IPv6Address {
 //
 // If an address is neither an individual address nor a prefix block, it is treated like one:
 //
-//	- ranges that occur inside the prefix length are ignored, only the lower value is used.
-//	- ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
+//   - ranges that occur inside the prefix length are ignored, only the lower value is used.
+//   - ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
 func (addr *IPv6Address) TrieDecrement() *IPv6Address {
 	if res, ok := trieDecrement(addr); ok {
 		return res
@@ -1823,7 +1838,7 @@ func (addr *IPv6Address) ToEUI(extended bool) (*MACAddress, addrerr.Incompatible
 	return newMACAddress(sect), nil
 }
 
-//prefix length in this section is ignored when converting to MAC.
+// prefix length in this section is ignored when converting to MAC.
 func (addr *IPv6Address) toEUISegments(extended bool) ([]*AddressDivision, addrerr.IncompatibleAddressError) {
 	seg1 := addr.GetSegment(5)
 	seg2 := addr.GetSegment(6)
@@ -1878,11 +1893,12 @@ func (addr *IPv6Address) toEUISegments(extended bool) ([]*AddressDivision, addre
 }
 
 // Format implements [fmt.Formatter] interface. It accepts the formats
-//  - 'v' for the default address and section format (either the normalized or canonical string),
-//  - 's' (string) for the same,
-//  - 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
-//  - 'd' (decimal), 'x' (lowercase hexadecimal), and
-//  - 'X' (uppercase hexadecimal).
+//   - 'v' for the default address and section format (either the normalized or canonical string),
+//   - 's' (string) for the same,
+//   - 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
+//   - 'd' (decimal), 'x' (lowercase hexadecimal), and
+//   - 'X' (uppercase hexadecimal).
+//
 // Also supported are some of fmt's format flags for integral types.
 // Sign control is not supported since addresses and sections are never negative.
 // '#' for an alternate format is supported, which adds a leading zero for octal, and for hexadecimal it adds
@@ -2160,7 +2176,15 @@ func (addr *IPv6Address) toMinUpper() *IPv6Address {
 //
 // ToAddressBase can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (addr *IPv6Address) ToAddressBase() *Address {
-	return addr.ToIP().ToAddressBase()
+	if addr != nil {
+		addr = addr.init()
+	}
+	return (*Address)(unsafe.Pointer(addr))
+}
+
+// toAddressBase is needed for tries, it skips the init() call
+func (addr *IPv6Address) toAddressBase() *Address {
+	return (*Address)(unsafe.Pointer(addr))
 }
 
 // ToIP converts to an IPAddress, a polymorphic type usable with all IP addresses and subnets.

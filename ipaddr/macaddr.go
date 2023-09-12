@@ -663,8 +663,8 @@ func (addr *MACAddress) CompareSize(other AddressItem) int { // this is here to 
 // The comparison is intended for individual addresses and CIDR prefix blocks.
 // If an address is neither an individual address nor a prefix block, it is treated like one:
 //
-//	- ranges that occur inside the prefix length are ignored, only the lower value is used.
-//	- ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
+//   - ranges that occur inside the prefix length are ignored, only the lower value is used.
+//   - ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
 func (addr *MACAddress) TrieCompare(other *MACAddress) (int, addrerr.IncompatibleAddressError) {
 	if addr.GetSegmentCount() != other.GetSegmentCount() {
 		return 0, &incompatibleAddressError{addressError{key: "ipaddress.error.mismatched.bit.size"}}
@@ -676,8 +676,8 @@ func (addr *MACAddress) TrieCompare(other *MACAddress) (int, addrerr.Incompatibl
 //
 // If an address is neither an individual address nor a prefix block, it is treated like one:
 //
-//	- ranges that occur inside the prefix length are ignored, only the lower value is used.
-//	- ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
+//   - ranges that occur inside the prefix length are ignored, only the lower value is used.
+//   - ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
 func (addr *MACAddress) TrieIncrement() *MACAddress {
 	if res, ok := trieIncrement(addr); ok {
 		return res
@@ -689,8 +689,8 @@ func (addr *MACAddress) TrieIncrement() *MACAddress {
 //
 // If an address is neither an individual address nor a prefix block, it is treated like one:
 //
-//	- ranges that occur inside the prefix length are ignored, only the lower value is used.
-//	- ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
+//   - ranges that occur inside the prefix length are ignored, only the lower value is used.
+//   - ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
 func (addr *MACAddress) TrieDecrement() *MACAddress {
 	if res, ok := trieDecrement(addr); ok {
 		return res
@@ -1024,11 +1024,12 @@ func (addr *MACAddress) String() string {
 }
 
 // Format implements [fmt.Formatter] interface. It accepts the formats
-//  - 'v' for the default address and section format (either the normalized or canonical string),
-//  - 's' (string) for the same,
-//  - 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
-//  - 'd' (decimal), 'x' (lowercase hexadecimal), and
-//  - 'X' (uppercase hexadecimal).
+//   - 'v' for the default address and section format (either the normalized or canonical string),
+//   - 's' (string) for the same,
+//   - 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
+//   - 'd' (decimal), 'x' (lowercase hexadecimal), and
+//   - 'X' (uppercase hexadecimal).
+//
 // Also supported are some of fmt's format flags for integral types.
 // Sign control is not supported since addresses and sections are never negative.
 // '#' for an alternate format is supported, which adds a leading zero for octal, and for hexadecimal it adds
@@ -1210,6 +1211,11 @@ func (addr *MACAddress) ToAddressBase() *Address {
 	if addr != nil {
 		addr = addr.init()
 	}
+	return (*Address)(addr)
+}
+
+// toAddressBase is needed for tries, it skips the init() call
+func (addr *MACAddress) toAddressBase() *Address {
 	return (*Address)(addr)
 }
 
