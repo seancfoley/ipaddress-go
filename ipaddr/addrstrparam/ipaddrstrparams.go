@@ -16,8 +16,6 @@
 
 package addrstrparam
 
-import "strings"
-
 // CopyIPAddressStringParams produces an immutable copy of the original IPAddressStringParams.
 // Copying an IPAddressStringParams created by an IPAddressStringParamsBuilder is unnecessary since it is already immutable.
 func CopyIPAddressStringParams(orig IPAddressStringParams) IPAddressStringParams {
@@ -355,7 +353,7 @@ func (builder *IPAddressStringParamsBuilder) ParseEmptyStrAs(option EmptyStrOpti
 }
 
 // ParseAllStrAs dictates how the "all" string "*" is translated to addresses.
-//// If the option is AllPreferredIPVersion, then it defers to GetPreferredVersion for the version.
+// If the option is AllPreferredIPVersion, then it defers to GetPreferredVersion for the version.
 func (builder *IPAddressStringParamsBuilder) ParseAllStrAs(option AllStrOption) *IPAddressStringParamsBuilder {
 	builder.params.allStringOption = option
 	return builder
@@ -853,6 +851,7 @@ func (builder *IPv4AddressStringParamsBuilder) Allow_inet_aton_octal(allow bool)
 }
 
 // Allow_inet_aton_leading_zeros dictates whether to allow IPv4 inet_aton hexadecimal or octal to have leading zeros, such as in the first two segments of "0x0a.00b.c.d".
+//
 //	The first 0 is not considered a leading zero, it either denotes octal or hex depending on whether it is followed by an 'x'.
 //	Zeros that appear afterwards are inet_aton leading zeros.
 func (builder *IPv4AddressStringParamsBuilder) Allow_inet_aton_leading_zeros(allow bool) *IPv4AddressStringParamsBuilder {
@@ -927,40 +926,41 @@ func (builder *IPv4AddressStringParamsBuilder) AllowBinary(allow bool) *IPv4Addr
 
 // IPVersion is the version type used by IP string parameters.
 // It is interchangeable with the ipaddr.Version, the more generic version type used by the library as a whole.
-type IPVersion string
+type IPVersion int
 
 const (
 	// IndeterminateIPVersion represents an unspecified IP address version.
-	IndeterminateIPVersion IPVersion = ""
+	IndeterminateIPVersion IPVersion = 0
 
 	// IPv4 represents Internet Protocol version 4.
-	IPv4 IPVersion = "IPv4"
+	IPv4 IPVersion = 4
 
 	// IPv6 represents Internet Protocol version 6.
-	IPv6 IPVersion = "IPv6"
+	IPv6 IPVersion = 6
 )
 
-// IsIPv6 returns true if this represents version 6.
+// IsIPv6 returns true if this represents version 6
 func (version IPVersion) IsIPv6() bool {
-	return strings.EqualFold(string(version), string(IPv6))
+	return version == IPv6
 }
 
-// IsIPv4 returns true if this represents version 4.
+// IsIPv4 returns true if this represents version 4
 func (version IPVersion) IsIPv4() bool {
-	return strings.EqualFold(string(version), string(IPv4))
+	return version == IPv4
 }
 
-// IsIndeterminate returns true if this represents an unspecified IP address version.
+// IsIndeterminate returns true if this represents an unspecified IP address version
 func (version IPVersion) IsIndeterminate() bool {
-	if len(version) == 4 {
-		// we allow mixed case in the event code is converted a string to IPVersion
-		dig := version[3]
-		return (dig != '4' && dig != '6') || !strings.EqualFold(string(version[:3]), "IPv")
-	}
-	return true
+	return version != IPv4 && version != IPv6
 }
 
-// String returns "IPv4", "IPv6", or the zero-value "" representing an indeterminate version.
+// String returns "IPv4", "IPv6", or the zero-value "" representing an indeterminate version
 func (version IPVersion) String() string {
-	return string(version)
+	switch version {
+	case 4:
+		return "IPv4"
+	case 6:
+		return "IPv6"
+	}
+	return ""
 }

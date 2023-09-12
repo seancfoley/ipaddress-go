@@ -798,7 +798,7 @@ func (t trieTesterGeneric) createIPSampleTree(tree *AddressTrie, addrs []string)
 	}
 }
 
-//<R extends AddressTrie<T>, T extends Address>
+// <R extends AddressTrie<T>, T extends Address>
 func (t trieTesterGeneric) testIterationContainment(tree *AddressTrie) {
 	t.testIterationContainmentTree(tree, func(trie *AddressTrie) ipaddr.CachingTrieIterator[*AddressTrieNode] {
 		return trie.BlockSizeCachingAllNodeIterator()
@@ -1101,7 +1101,11 @@ func (t trieTesterGeneric) testIterator(
 
 func (t trieTesterGeneric) testContains(trie *AddressTrie) {
 	if trie.Size() > 0 {
-		last := trie.GetAddedNode(trie.LastAddedNode().GetKey())
+		lastAddedNode := trie.LastAddedNode()
+		last := trie.GetAddedNode(lastAddedNode.GetKey())
+		if last == nil {
+			t.addFailure(newTrieFailure("no last node in trie ", trie))
+		}
 		if !trie.Contains(last.GetKey()) {
 			t.addFailure(newTrieFailure("failure "+last.String()+" not in trie ", trie))
 		}
@@ -1195,7 +1199,9 @@ func (t trieTesterGeneric) testContains(trie *AddressTrie) {
 					}
 				}
 			}
-			if lastContaining == nil || !lastContaining.GetKey().Equal(addedParent.GetKey()) {
+			if lastContaining == nil {
+				t.addFailure(newTrieFailure("containing ends with nil for address "+halfwayAddr.String()+" instead of expected "+addedParent.String(), trie))
+			} else if !lastContaining.GetKey().Equal(addedParent.GetKey()) {
 				t.addFailure(newTrieFailure("containing ends with "+lastContaining.String()+" for address "+halfwayAddr.String()+" instead of expected "+addedParent.String(), trie))
 			} else if !lastContaining.GetKey().Equal(smallestContaining.GetKey()) {
 				t.addFailure(newTrieFailure("containing ends with "+lastContaining.String()+" for address "+halfwayAddr.String()+" instead of expected smallest containing "+smallestContaining.String(), trie))
