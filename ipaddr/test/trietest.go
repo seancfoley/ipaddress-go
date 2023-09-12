@@ -1361,7 +1361,7 @@ func (t trieTesterGeneric) testAdd(trie *AddressTrie, addrs []*ipaddr.Address) {
 }
 
 func (t trieTesterGeneric) testMap(trie *ipaddr.AssociativeTrie[*ipaddr.Address, any], addrs []*ipaddr.Address,
-	valueProducer func(int) any, mapper func(any) any) { // seems we used to use the mapper but no now
+	valueProducer func(int) any, _ func(any) any) { // seems we used to use the mapper but no now
 	// put tests
 	trie2 := trie.Clone()
 	trie4 := trie.Clone()
@@ -1372,9 +1372,7 @@ func (t trieTesterGeneric) testMap(trie *ipaddr.AssociativeTrie[*ipaddr.Address,
 		v, _ := trie.Get(addr)
 		expected := valueProducer(i)
 		if !reflect.DeepEqual(v, expected) { //reflect deep equal
-			//fmt.Println(trie)
 			t.addFailure(newAssocTrieFailure(fmt.Sprintf("got mismatch, got %v, not %v for %v", v, expected, addr), trie))
-			//v, _ = trie.Get(addr)
 		}
 	}
 	// all trie2 from now on
