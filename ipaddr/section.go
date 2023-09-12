@@ -84,10 +84,7 @@ func assignStringCache(section *addressDivisionGroupingBase, addrType addrType) 
 	}
 }
 
-//////////////////////////////////////////////////////////////////
-//
-//
-//
+// ////////////////////////////////////////////////////////////////
 type addressSectionInternal struct {
 	addressDivisionGroupingInternal
 }
@@ -1227,11 +1224,12 @@ var (
 // When called by a function in the fmt package, nil values are detected before this method is called, avoiding a panic when calling this method.
 
 // Format implements [fmt.Formatter] interface. It accepts the formats
-//  - 'v' for the default address and section format (either the normalized or canonical string),
-//  - 's' (string) for the same,
-//  - 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
-//  - 'd' (decimal), 'x' (lowercase hexadecimal), and
-//  - 'X' (uppercase hexadecimal).
+//   - 'v' for the default address and section format (either the normalized or canonical string),
+//   - 's' (string) for the same,
+//   - 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
+//   - 'd' (decimal), 'x' (lowercase hexadecimal), and
+//   - 'X' (uppercase hexadecimal).
+//
 // Also supported are some of fmt's format flags for integral types.
 // Sign control is not supported since addresses and sections are never negative.
 // '#' for an alternate format is supported, which adds a leading zero for octal, and for hexadecimal it adds
@@ -2145,10 +2143,11 @@ func (section *AddressSection) Contains(other AddressSectionType) bool {
 // Equal returns whether the given address section is equal to this address section.
 // Two address sections are equal if they represent the same set of sections.
 // They must match:
-//  - type/version (IPv4, IPv6, MAC, etc)
-//  - segment counts
-//  - bits per segment
-//  - segment value ranges
+//   - type/version (IPv4, IPv6, MAC, etc)
+//   - segment counts
+//   - bits per segment
+//   - segment value ranges
+//
 // Prefix lengths are ignored.
 func (section *AddressSection) Equal(other AddressSectionType) bool {
 	if section == nil {

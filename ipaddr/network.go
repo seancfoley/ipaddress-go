@@ -18,7 +18,6 @@ package ipaddr
 
 import (
 	"net"
-	"sync"
 	"unsafe"
 )
 
@@ -47,11 +46,6 @@ type ipAddressNetwork struct {
 	subnetsMasksWithPrefix, subnetMasks, hostMasksWithPrefix, hostMasks []*IPAddress
 }
 
-//
-//
-//
-//
-//
 type ipv6AddressNetwork struct {
 	ipAddressNetwork
 	creator ipv6AddressCreator
@@ -70,22 +64,34 @@ func (network *ipv6AddressNetwork) GetLoopback() *IPAddress {
 }
 
 func (network *ipv6AddressNetwork) GetNetworkMask(prefLen BitCount) *IPAddress {
-	return getMask(IPv6, zeroIPv6Seg.ToDiv(), prefLen, network.subnetMasks, true, false)
+	return network.subnetMasks[adjustBits(IPv6, prefLen)]
 }
 
 func (network *ipv6AddressNetwork) GetPrefixedNetworkMask(prefLen BitCount) *IPAddress {
-	return getMask(IPv6, zeroIPv6Seg.ToDiv(), prefLen, network.subnetsMasksWithPrefix, true, true)
+	return network.subnetsMasksWithPrefix[adjustBits(IPv6, prefLen)]
 }
 
 func (network *ipv6AddressNetwork) GetHostMask(prefLen BitCount) *IPAddress {
-	return getMask(IPv6, zeroIPv6Seg.ToDiv(), prefLen, network.hostMasks, false, false)
+	return network.hostMasks[adjustBits(IPv6, prefLen)]
 }
 
 func (network *ipv6AddressNetwork) GetPrefixedHostMask(prefLen BitCount) *IPAddress {
-	return getMask(IPv6, zeroIPv6Seg.ToDiv(), prefLen, network.hostMasksWithPrefix, false, true)
+	return network.hostMasksWithPrefix[adjustBits(IPv6, prefLen)]
 }
 
 var _ IPAddressNetwork = &ipv6AddressNetwork{}
+
+func adjustBits(version IPVersion, bits BitCount) BitCount {
+	if bits < 0 {
+		bits = 0
+	} else {
+		addressBitLength := version.GetBitCount()
+		if bits > addressBitLength {
+			bits = addressBitLength
+		}
+	}
+	return bits
+}
 
 // IPv6AddressNetwork is the implementation of IPAddressNetwork for IPv6
 type IPv6AddressNetwork struct {
@@ -112,16 +118,39 @@ func (network IPv6AddressNetwork) GetPrefixedHostMask(prefLen BitCount) *IPv6Add
 	return network.ipv6AddressNetwork.GetPrefixedHostMask(prefLen).ToIPv6()
 }
 
-var ipv6Network = &ipv6AddressNetwork{
-	ipAddressNetwork: ipAddressNetwork{
-		make([]*IPAddress, IPv6BitCount+1),
-		make([]*IPAddress, IPv6BitCount+1),
-		make([]*IPAddress, IPv6BitCount+1),
-		make([]*IPAddress, IPv6BitCount+1),
-	},
+func createIPv6AddressNetwork() *ipv6AddressNetwork {
+	network := &ipv6AddressNetwork{
+		ipAddressNetwork: ipAddressNetwork{
+			make([]*IPAddress, IPv6BitCount+1),
+			make([]*IPAddress, IPv6BitCount+1),
+			make([]*IPAddress, IPv6BitCount+1),
+			make([]*IPAddress, IPv6BitCount+1),
+		},
+	}
+	populateNetwork(IPv6, &network.ipAddressNetwork, zeroIPv6Seg.ToDiv())
+	for i := 0; i <= IPv6BitCount; i++ {
+		addr := network.subnetMasks[i].ToIPv6()
+		high, low := addr.Uint64Values()
+		ipv6NetworkMasks[i] = [2]uint64{high, low}
+	}
+	return network
 }
 
+func populateNetwork(version IPVersion, network *ipAddressNetwork, zeroDiv *AddressDivision) {
+	addressBitLength := version.GetBitCount()
+	for i := 0; i <= addressBitLength; i++ {
+		_ = createMask(version, zeroDiv, i, network.subnetMasks, true, false)
+		_ = createMask(version, zeroDiv, i, network.subnetsMasksWithPrefix, true, true)
+		_ = createMask(version, zeroDiv, i, network.hostMasks, false, false)
+		_ = createMask(version, zeroDiv, i, network.hostMasksWithPrefix, false, true)
+	}
+}
+
+var ipv6Network = createIPv6AddressNetwork()
+
 var IPv6Network = &IPv6AddressNetwork{ipv6Network}
+
+var ipv6NetworkMasks [IPv6BitCount + 1][2]uint64
 
 //
 //
@@ -147,19 +176,19 @@ func (network *ipv4AddressNetwork) GetLoopback() *IPAddress {
 }
 
 func (network *ipv4AddressNetwork) GetNetworkMask(prefLen BitCount) *IPAddress {
-	return getMask(IPv4, zeroIPv4Seg.ToDiv(), prefLen, network.subnetMasks, true, false)
+	return network.subnetMasks[adjustBits(IPv4, prefLen)]
 }
 
 func (network *ipv4AddressNetwork) GetPrefixedNetworkMask(prefLen BitCount) *IPAddress {
-	return getMask(IPv4, zeroIPv4Seg.ToDiv(), prefLen, network.subnetsMasksWithPrefix, true, true)
+	return network.subnetsMasksWithPrefix[adjustBits(IPv4, prefLen)]
 }
 
 func (network *ipv4AddressNetwork) GetHostMask(prefLen BitCount) *IPAddress {
-	return getMask(IPv4, zeroIPv4Seg.ToDiv(), prefLen, network.hostMasks, false, false)
+	return network.hostMasks[adjustBits(IPv4, prefLen)]
 }
 
 func (network *ipv4AddressNetwork) GetPrefixedHostMask(prefLen BitCount) *IPAddress {
-	return getMask(IPv4, zeroIPv4Seg.ToDiv(), prefLen, network.hostMasksWithPrefix, false, true)
+	return network.hostMasksWithPrefix[adjustBits(IPv4, prefLen)]
 }
 
 var _ IPAddressNetwork = &ipv4AddressNetwork{}
@@ -189,42 +218,41 @@ func (network IPv4AddressNetwork) GetPrefixedHostMask(prefLen BitCount) *IPv4Add
 	return network.ipv4AddressNetwork.GetPrefixedHostMask(prefLen).ToIPv4()
 }
 
-var ipv4Network = &ipv4AddressNetwork{
-	ipAddressNetwork: ipAddressNetwork{
-		make([]*IPAddress, IPv4BitCount+1),
-		make([]*IPAddress, IPv4BitCount+1),
-		make([]*IPAddress, IPv4BitCount+1),
-		make([]*IPAddress, IPv4BitCount+1),
-	},
+func createIPv4AddressNetwork() *ipv4AddressNetwork {
+	network := &ipv4AddressNetwork{
+		ipAddressNetwork: ipAddressNetwork{
+			make([]*IPAddress, IPv4BitCount+1),
+			make([]*IPAddress, IPv4BitCount+1),
+			make([]*IPAddress, IPv4BitCount+1),
+			make([]*IPAddress, IPv4BitCount+1),
+		},
+	}
+	populateNetwork(IPv4, &network.ipAddressNetwork, zeroIPv4Seg.ToDiv())
+	for i := 0; i <= IPv4BitCount; i++ {
+		addr := network.subnetMasks[i].ToIPv4()
+		ipv4NetworkMasks[i] = addr.Uint32Value()
+	}
+	return network
 }
+
+var ipv4Network = createIPv4AddressNetwork()
 
 var IPv4Network = &IPv4AddressNetwork{ipv4Network}
 
-var maskMutex sync.Mutex
+var ipv4NetworkMasks [IPv4BitCount + 1]uint32
 
-func getMask(version IPVersion, zeroSeg *AddressDivision, networkPrefixLength BitCount, cache []*IPAddress, network, withPrefixLength bool) *IPAddress {
+func createMask(version IPVersion, zeroSeg *AddressDivision, networkPrefixLength BitCount, cache []*IPAddress, network, withPrefixLength bool) *IPAddress {
 	bits := networkPrefixLength
 	addressBitLength := version.GetBitCount()
-	if bits < 0 {
-		bits = 0
-	} else if bits > addressBitLength {
-		bits = addressBitLength
-	}
+
+	bits = adjustBits(version, bits)
+
 	cacheIndex := bits
 
-	subnet := (*IPAddress)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&cache[cacheIndex]))))
+	subnet := cache[cacheIndex]
 	if subnet != nil {
 		return subnet
 	}
-	maskMutex.Lock()
-	subnet = cache[cacheIndex]
-	if subnet != nil {
-		maskMutex.Unlock()
-		return subnet
-	}
-	//
-	//
-	//
 
 	var onesSubnetIndex, zerosSubnetIndex int
 	if network {
@@ -259,8 +287,7 @@ func getMask(version IPVersion, zeroSeg *AddressDivision, networkPrefixLength Bi
 			fillDivs(newSegments, segment)
 			onesSubnet = createIPAddress(createSection(newSegments, nil, version.toType()), NoZone) /* address creation */
 		}
-		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache[onesSubnetIndex]))
-		atomicStorePointer(dataLoc, unsafe.Pointer(onesSubnet))
+		cache[onesSubnetIndex] = onesSubnet
 	}
 	zerosSubnet := (*IPAddress)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&cache[zerosSubnetIndex]))))
 	if zerosSubnet == nil {
@@ -283,8 +310,7 @@ func getMask(version IPVersion, zeroSeg *AddressDivision, networkPrefixLength Bi
 			fillDivs(newSegments, segment)
 			zerosSubnet = createIPAddress(createSection(newSegments, nil, version.toType()), NoZone)
 		}
-		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache[zerosSubnetIndex]))
-		atomicStorePointer(dataLoc, unsafe.Pointer(zerosSubnet))
+		cache[zerosSubnetIndex] = zerosSubnet
 	}
 	prefix := bits
 	onesSegment := onesSubnet.getDivision(0)
@@ -347,9 +373,7 @@ func getMask(version IPVersion, zeroSeg *AddressDivision, networkPrefixLength Bi
 		prefLen = cacheBitCount(prefix)
 	}
 	subnet = createIPAddress(createSection(newSegments, prefLen, version.toType()), NoZone)
-	dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache[cacheIndex]))
-	atomicStorePointer(dataLoc, unsafe.Pointer(subnet))
-	maskMutex.Unlock()
+	cache[cacheIndex] = subnet
 	return subnet
 }
 

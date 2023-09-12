@@ -216,7 +216,7 @@ func (seg *addressSegmentInternal) GetMaxValue() SegInt {
 // TestBit will panic if n < 0, or if it matches or exceeds the bit count of this item.
 func (seg *addressSegmentInternal) TestBit(n BitCount) bool {
 	value := seg.GetSegmentValue()
-	if n < 0 || n > seg.GetBitCount() {
+	if n < 0 || n >= seg.GetBitCount() {
 		panic("invalid bit index")
 	}
 	return (value & (1 << uint(n))) != 0
@@ -227,7 +227,7 @@ func (seg *addressSegmentInternal) TestBit(n BitCount) bool {
 func (seg *addressSegmentInternal) IsOneBit(segmentBitIndex BitCount) bool {
 	value := seg.GetSegmentValue()
 	bitCount := seg.GetBitCount()
-	if segmentBitIndex < 0 || segmentBitIndex > seg.GetBitCount() {
+	if segmentBitIndex < 0 || segmentBitIndex >= seg.GetBitCount() {
 		panic("invalid bit index")
 	}
 	return (value & (1 << uint(bitCount-(segmentBitIndex+1)))) != 0
@@ -777,8 +777,9 @@ func (seg *AddressSegment) Contains(other AddressSegmentType) bool {
 
 // Equal returns whether the given segment is equal to this segment.
 // Two segments are equal if they match:
-//  - type/version (IPv4, IPv6, MAC)
-//  - value range
+//   - type/version (IPv4, IPv6, MAC)
+//   - value range
+//
 // Prefix lengths are ignored.
 func (seg *AddressSegment) Equal(other AddressSegmentType) bool {
 	if seg == nil {
