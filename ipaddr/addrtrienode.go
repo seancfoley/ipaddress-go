@@ -34,7 +34,9 @@ type TrieKeyConstraint[T any] interface {
 
 	IsOneBit(index BitCount) bool // AddressComponent
 
-	ToAddressBase() *Address // AddressType - used by MatchBits
+	toAddressBase() *Address // AddressType - used by MatchBits
+
+	getPrefixLen() PrefixLen
 
 	toMaxLower() T
 	toMinUpper() T
@@ -45,6 +47,20 @@ type TrieKeyConstraint[T any] interface {
 
 type trieKey[T TrieKeyConstraint[T]] struct {
 	address T
+}
+
+func createKey[T TrieKeyConstraint[T]](addr T) trieKey[T] {
+	return trieKey[T]{address: addr}
+}
+
+// ToPrefixBlockLen returns the address key associated with the prefix length provided,
+// the address key whose prefix of that length matches the prefix of this address key, and the remaining bits span all values.
+//
+// The returned address key will represent all addresses with the same prefix as this one, the prefix "block".
+func (a trieKey[T]) ToPrefixBlockLen(bitCount BitCount) trieKey[T] {
+	addr := a.address.ToPrefixBlockLen(bitCount)
+	addr.toAddressBase().assignTrieCache()
+	return trieKey[T]{address: addr}
 }
 
 func (a trieKey[T]) GetBitCount() tree.BitCount {
@@ -64,15 +80,7 @@ func (a trieKey[T]) GetTrailingBitCount(ones bool) tree.BitCount {
 }
 
 func (a trieKey[T]) GetPrefixLen() tree.PrefixLen {
-	return tree.PrefixLen(a.address.GetPrefixLen())
-}
-
-// ToPrefixBlockLen returns the address key associated with the prefix length provided,
-// the address key whose prefix of that length matches the prefix of this address key, and the remaining bits span all values.
-//
-// The returned address key will represent all addresses with the same prefix as this one, the prefix "block".
-func (a trieKey[T]) ToPrefixBlockLen(bitCount BitCount) trieKey[T] {
-	return trieKey[T]{a.address.ToPrefixBlockLen(bitCount)}
+	return tree.PrefixLen(a.address.getPrefixLen())
 }
 
 // Compare compares to provide the same ordering used by the trie,
@@ -99,21 +107,194 @@ func (a trieKey[T]) ToPrefixBlockLen(bitCount BitCount) trieKey[T] {
 // When comparing 0.0.0.0/0, which has no prefix, to other addresses, the first bit in the other address determines the ordering.
 // If 1 it is larger and if 0 it is smaller than 0.0.0.0/0.
 func (a trieKey[T]) Compare(other trieKey[T]) int {
-	return a.address.trieCompare(other.address.ToAddressBase())
+	return a.address.trieCompare(other.address.toAddressBase())
+}
+
+func (a trieKey[T]) GetTrieKeyData() *tree.TrieKeyData {
+	return a.address.toAddressBase().getTrieCache()
 }
 
 // MatchBits returns false if we need to keep going and try to match sub-nodes.
 // MatchBits returns true if the bits do not match, or the bits match to the very end.
-func (a trieKey[T]) MatchBits(key trieKey[T], bitIndex int, handleMatch tree.KeyCompareResult) bool {
-	existingAddr := key.address.ToAddressBase()
+func (a trieKey[T]) MatchBits(key trieKey[T], bitIndex int, simpleSearch bool, handleMatch tree.KeyCompareResult, newTrieCache *tree.TrieKeyData) (continueToNext bool, followingBitsFlag uint64) {
+	existingAddr := key.address.toAddressBase()
+
+	if simpleSearch {
+		// this is the optimized path for the case where we do not need to know how many of the initial bits match in a mismatch
+		// when we have a match, all bits match
+		// when we have a mismatch, we do not need to know how many of the initial bits match
+		// So there is no callback for a mismatch here.
+
+		// The non-optimized code has 8 cases, 2 for each fully nested if or else block
+		// I have added comments to see how this code matches up to those 8 cases
+
+		existingTrieCache := existingAddr.getTrieCache()
+		if existingTrieCache.Is32Bits {
+			if newTrieCache != nil && newTrieCache.Is32Bits {
+				existingVal := existingTrieCache.Uint32Val
+				existingPrefLen := PrefixLen(existingTrieCache.PrefLen)
+				if existingPrefLen == nil {
+					if newTrieCache.Uint32Val == existingVal {
+						handleMatch.BitsMatch()
+					}
+				} else {
+					existingPrefLenBits := existingPrefLen.bitCount()
+					newPrefLen := PrefixLen(newTrieCache.PrefLen)
+					if existingPrefLenBits == 0 {
+						if newPrefLen != nil && newPrefLen.bitCount() == 0 {
+							handleMatch.BitsMatch()
+						} else {
+							handleMatch.BitsMatchPartially()
+							continueToNext = true
+							followingBitsFlag = uint64(newTrieCache.Uint32Val & 0x80000000)
+						}
+					} else if existingPrefLenBits == bitIndex {
+						if newPrefLen != nil && existingPrefLenBits >= newPrefLen.bitCount() {
+							handleMatch.BitsMatch()
+						} else if handleMatch.BitsMatchPartially() {
+							continueToNext = true
+							nextBitMask := existingTrieCache.NextBitMask32Val
+							followingBitsFlag = uint64(newTrieCache.Uint32Val & nextBitMask)
+						}
+					} else {
+						existingMask := existingTrieCache.Mask32Val
+						newVal := newTrieCache.Uint32Val
+						if newVal&existingMask == existingVal&existingMask {
+							if newPrefLen != nil && existingPrefLenBits >= newPrefLen.bitCount() {
+								handleMatch.BitsMatch()
+							} else if handleMatch.BitsMatchPartially() {
+								continueToNext = true
+								nextBitMask := existingTrieCache.NextBitMask32Val
+								followingBitsFlag = uint64(newVal & nextBitMask)
+							}
+						} else if newPrefLen != nil {
+							newPrefLenBits := newPrefLen.bitCount()
+							if existingPrefLenBits > newPrefLenBits {
+								newMask := newTrieCache.Mask32Val
+								if newTrieCache.Uint32Val&newMask == existingVal&newMask {
+									// rest of case 1 and rest of case 5
+									handleMatch.BitsMatch()
+								}
+							}
+						} // else case 4, 7
+					}
+				}
+				return
+			}
+		} else if existingTrieCache.Is128Bits {
+			if newTrieCache != nil && newTrieCache.Is128Bits {
+				existingPrefLen := PrefixLen(existingTrieCache.PrefLen)
+				if existingPrefLen == nil {
+					if newTrieCache.Uint64HighVal == existingTrieCache.Uint64HighVal &&
+						newTrieCache.Uint64LowVal == existingTrieCache.Uint64LowVal {
+						handleMatch.BitsMatch()
+					}
+				} else {
+					existingPrefLenBits := existingPrefLen.bitCount()
+					newPrefLen := PrefixLen(newTrieCache.PrefLen)
+					if existingPrefLenBits == 0 {
+						if newPrefLen != nil && newPrefLen.bitCount() == 0 {
+							handleMatch.BitsMatch()
+						} else {
+							handleMatch.BitsMatchPartially()
+							continueToNext = true
+							followingBitsFlag = newTrieCache.Uint64HighVal & 0x8000000000000000
+						}
+					} else if existingPrefLenBits == bitIndex {
+						if newPrefLen != nil && existingPrefLenBits >= newPrefLen.bitCount() {
+							handleMatch.BitsMatch()
+						} else if handleMatch.BitsMatchPartially() {
+							continueToNext = true
+							nextBitMask := existingTrieCache.NextBitMask64Val
+							if bitIndex > 63 /* IPv6BitCount - 65 */ {
+								followingBitsFlag = newTrieCache.Uint64LowVal & nextBitMask
+							} else {
+								followingBitsFlag = newTrieCache.Uint64HighVal & nextBitMask
+							}
+						}
+					} else if existingPrefLenBits == 64 {
+						if newTrieCache.Uint64HighVal == existingTrieCache.Uint64HighVal {
+							if newPrefLen != nil && newPrefLen.bitCount() <= 64 {
+								handleMatch.BitsMatch()
+							} else if handleMatch.BitsMatchPartially() {
+								continueToNext = true
+								followingBitsFlag = newTrieCache.Uint64LowVal & 0x8000000000000000
+							}
+						} else {
+							if newPrefLen != nil && newPrefLen.bitCount() < 64 {
+								newMaskHigh := newTrieCache.Mask64HighVal
+								if newTrieCache.Uint64HighVal&newMaskHigh == existingTrieCache.Uint64HighVal&newMaskHigh {
+									// rest of case 1 and rest of case 5
+									handleMatch.BitsMatch()
+								}
+							}
+						} // else case 4, 7
+					} else if existingPrefLenBits > 64 {
+						existingMaskLow := existingTrieCache.Mask64LowVal
+						newLowVal := newTrieCache.Uint64LowVal
+						if newLowVal&existingMaskLow == existingTrieCache.Uint64LowVal&existingMaskLow {
+							existingMaskHigh := existingTrieCache.Mask64HighVal
+							if newTrieCache.Uint64HighVal&existingMaskHigh == existingTrieCache.Uint64HighVal&existingMaskHigh {
+								if newPrefLen != nil && existingPrefLenBits >= newPrefLen.bitCount() {
+									handleMatch.BitsMatch()
+								} else if handleMatch.BitsMatchPartially() {
+									continueToNext = true
+									nextBitMask := existingTrieCache.NextBitMask64Val
+									followingBitsFlag = newLowVal & nextBitMask
+								}
+							} else if newPrefLen != nil && existingPrefLenBits > newPrefLen.bitCount() {
+								newMaskLow := newTrieCache.Mask64LowVal
+								if newTrieCache.Uint64LowVal&newMaskLow == existingTrieCache.Uint64LowVal&newMaskLow {
+									newMaskHigh := newTrieCache.Mask64HighVal
+									if newTrieCache.Uint64HighVal&newMaskHigh == existingTrieCache.Uint64HighVal&newMaskHigh {
+										// rest of case 1 and rest of case 5
+										handleMatch.BitsMatch()
+									}
+								}
+							} // else case 4, 7
+						} else if newPrefLen != nil && existingPrefLenBits > newPrefLen.bitCount() {
+							newMaskLow := newTrieCache.Mask64LowVal
+							if newTrieCache.Uint64LowVal&newMaskLow == existingTrieCache.Uint64LowVal&newMaskLow {
+								newMaskHigh := newTrieCache.Mask64HighVal
+								if newTrieCache.Uint64HighVal&newMaskHigh == existingTrieCache.Uint64HighVal&newMaskHigh {
+									// rest of case 1 and rest of case 5
+									handleMatch.BitsMatch()
+								}
+							}
+						} // else case 4, 7
+					} else { // existingPrefLen.bitCount() < 64
+						existingMaskHigh := existingTrieCache.Mask64HighVal
+						newHighVal := newTrieCache.Uint64HighVal
+						if newHighVal&existingMaskHigh == existingTrieCache.Uint64HighVal&existingMaskHigh {
+							if newPrefLen != nil && existingPrefLenBits >= newPrefLen.bitCount() {
+								handleMatch.BitsMatch()
+							} else if handleMatch.BitsMatchPartially() {
+								continueToNext = true
+								nextBitMask := existingTrieCache.NextBitMask64Val
+								followingBitsFlag = newHighVal & nextBitMask
+							}
+						} else if newPrefLen != nil && existingPrefLenBits > newPrefLen.bitCount() {
+							newMaskHigh := newTrieCache.Mask64HighVal
+							if newTrieCache.Uint64HighVal&newMaskHigh == existingTrieCache.Uint64HighVal&newMaskHigh {
+								// rest of case 1 and rest of case 5
+								handleMatch.BitsMatch()
+							}
+						} // else case 4, 7
+					}
+				}
+				return
+			}
+		}
+	}
+
+	newAddr := a.address.toAddressBase()
 	bitsPerSegment := existingAddr.GetBitsPerSegment()
 	bytesPerSegment := existingAddr.GetBytesPerSegment()
-	newAddr := a.address.ToAddressBase()
 	segmentIndex := getHostSegmentIndex(bitIndex, bytesPerSegment, bitsPerSegment)
 	segmentCount := existingAddr.GetSegmentCount()
 	// the caller already checks total bits, so we only need to check either bitsPerSegment or segmentCount, but not both
 	if /* newAddr.GetSegmentCount() != segmentCount || */ bitsPerSegment != newAddr.GetBitsPerSegment() {
-		panic("mismatched bit length between address trie keys")
+		panic("mismatched segment bit length between address trie keys")
 	}
 	existingPref := existingAddr.GetPrefixLen()
 	newPrefLen := newAddr.GetPrefixLen()
@@ -124,57 +305,71 @@ func (a trieKey[T]) MatchBits(key trieKey[T], bitIndex int, handleMatch tree.Key
 	if segmentIndex >= segmentCount {
 		// all the bits match
 		handleMatch.BitsMatch()
-		return true
+		return
 	}
 
 	bitsMatchedSoFar := segmentIndex * bitsPerSegment
 	for {
 		existingSegment := existingAddr.getSegment(segmentIndex)
 		newSegment := newAddr.getSegment(segmentIndex)
-		segmentPref := getSegmentPrefLen(existingAddr, existingPref, bitsPerSegment, bitsMatchedSoFar, existingSegment)
+		existingSegmentPref := getSegmentPrefLen(existingAddr, existingPref, bitsPerSegment, bitsMatchedSoFar, existingSegment)
 		newSegmentPref := getSegmentPrefLen(newAddr, newPrefLen, bitsPerSegment, bitsMatchedSoFar, newSegment)
-		if segmentPref != nil {
-			segmentPrefLen := segmentPref.Len()
+		if existingSegmentPref != nil {
+			existingSegmentPrefLen := existingSegmentPref.Len()
 			newPrefixLen := newSegmentPref.Len()
-			if newSegmentPref != nil && newPrefixLen <= segmentPrefLen {
+			if newSegmentPref != nil && newPrefixLen <= existingSegmentPrefLen {
 				matchingBits := getMatchingBits(existingSegment, newSegment, newPrefixLen, bitsPerSegment)
 				if matchingBits >= newPrefixLen {
 					handleMatch.BitsMatch()
 				} else {
 					// no match - the bits don't match
-					// matchingBits < newPrefLen < segmentPrefLen
+					// matchingBits < newPrefLen <= segmentPrefLen
 					handleMatch.BitsDoNotMatch(bitsMatchedSoFar + matchingBits)
 				}
 			} else {
-				matchingBits := getMatchingBits(existingSegment, newSegment, segmentPrefLen, bitsPerSegment)
-				if matchingBits >= segmentPrefLen { // match - the current subnet/address is a match so far, and we must go further to check smaller subnets
-					return false
+				matchingBits := getMatchingBits(existingSegment, newSegment, existingSegmentPrefLen, bitsPerSegment)
+				if matchingBits >= existingSegmentPrefLen { // match - the current subnet/address is a match so far, and we must go further to check smaller subnets
+					if handleMatch.BitsMatchPartially() {
+						continueToNext = true
+						if existingSegmentPrefLen == bitsPerSegment {
+							segmentIndex++
+							if segmentIndex == segmentCount {
+								return
+							}
+							newSegment = newAddr.getSegment(segmentIndex)
+							existingSegmentPrefLen = 0
+						}
+						if newSegment.IsOneBit(existingSegmentPrefLen) {
+							followingBitsFlag = 0x8000000000000000
+						}
+					}
+					return
 				}
 				// matchingBits < segmentPrefLen - no match - the bits in current prefix do not match the prefix of the existing address
 				handleMatch.BitsDoNotMatch(bitsMatchedSoFar + matchingBits)
 			}
-			return true
+			return
 		} else if newSegmentPref != nil {
-			newPrefixLen := newSegmentPref.Len()
-			matchingBits := getMatchingBits(existingSegment, newSegment, newPrefixLen, bitsPerSegment)
-			if matchingBits >= newPrefixLen { // the current bits match the current prefix, but the existing has no prefix
+			newSegmentPrefLen := newSegmentPref.Len()
+			matchingBits := getMatchingBits(existingSegment, newSegment, newSegmentPrefLen, bitsPerSegment)
+			if matchingBits >= newSegmentPrefLen { // the current bits match the current prefix, but the existing has no prefix
 				handleMatch.BitsMatch()
 			} else {
 				// no match - the current subnet does not match the existing address
 				handleMatch.BitsDoNotMatch(bitsMatchedSoFar + matchingBits)
 			}
-			return true
+			return
 		} else {
 			matchingBits := getMatchingBits(existingSegment, newSegment, bitsPerSegment, bitsPerSegment)
 			if matchingBits < bitsPerSegment { // no match - the current subnet/address is not here
 				handleMatch.BitsDoNotMatch(bitsMatchedSoFar + matchingBits)
-				return true
+				return
 			} else {
 				segmentIndex++
 				if segmentIndex == segmentCount { // match - the current subnet/address is a match
 					// note that "added" is already true here, we can only be here if explicitly inserted already since it is a non-prefixed full address
 					handleMatch.BitsMatch()
-					return true
+					return
 				}
 			}
 			bitsMatchedSoFar += bitsPerSegment
@@ -184,12 +379,12 @@ func (a trieKey[T]) MatchBits(key trieKey[T], bitIndex int, handleMatch tree.Key
 
 // ToMaxLower changes this key to a new key with a 0 at the first bit beyond the prefix, followed by all ones, and with no prefix length.
 func (a trieKey[T]) ToMaxLower() trieKey[T] {
-	return trieKey[T]{a.address.toMaxLower()}
+	return createKey(a.address.toMaxLower())
 }
 
 // ToMinUpper changes this key to a new key with a 1 at the first bit beyond the prefix, followed by all zeros, and with no prefix length.
 func (a trieKey[T]) ToMinUpper() trieKey[T] {
-	return trieKey[T]{a.address.toMinUpper()}
+	return createKey(a.address.toMinUpper())
 }
 
 var (
@@ -200,10 +395,6 @@ var (
 	_ tree.BinTrieNode[trieKey[*MACAddress], any]
 )
 
-//
-//
-//
-//
 type trieNode[T TrieKeyConstraint[T], V any] struct {
 	binNode tree.BinTrieNode[trieKey[T], V]
 }
@@ -215,27 +406,27 @@ func (node *trieNode[T, V]) getKey() (t T) {
 
 func (node *trieNode[T, V]) get(addr T) (V, bool) {
 	addr = mustBeBlockOrAddress(addr)
-	return node.toBinTrieNode().Get(trieKey[T]{addr})
+	return node.toBinTrieNode().Get(createKey(addr))
 }
 
 func (node *trieNode[T, V]) lowerAddedNode(addr T) *tree.BinTrieNode[trieKey[T], V] {
 	addr = mustBeBlockOrAddress(addr)
-	return node.toBinTrieNode().LowerAddedNode(trieKey[T]{addr})
+	return node.toBinTrieNode().LowerAddedNode(createKey(addr))
 }
 
 func (node *trieNode[T, V]) floorAddedNode(addr T) *tree.BinTrieNode[trieKey[T], V] {
 	addr = mustBeBlockOrAddress(addr)
-	return node.toBinTrieNode().FloorAddedNode(trieKey[T]{addr})
+	return node.toBinTrieNode().FloorAddedNode(createKey(addr))
 }
 
 func (node *trieNode[T, V]) higherAddedNode(addr T) *tree.BinTrieNode[trieKey[T], V] {
 	addr = mustBeBlockOrAddress(addr)
-	return node.toBinTrieNode().HigherAddedNode(trieKey[T]{addr})
+	return node.toBinTrieNode().HigherAddedNode(createKey(addr))
 }
 
 func (node *trieNode[T, V]) ceilingAddedNode(addr T) *tree.BinTrieNode[trieKey[T], V] {
 	addr = mustBeBlockOrAddress(addr)
-	return node.toBinTrieNode().CeilingAddedNode(trieKey[T]{addr})
+	return node.toBinTrieNode().CeilingAddedNode(createKey(addr))
 }
 
 // iterator returns an iterator that iterates through the elements of the sub-trie with this node as the root.
@@ -300,53 +491,53 @@ func (node *trieNode[T, V]) containedFirstAllNodeIterator(forwardSubNodeOrder bo
 
 func (node *trieNode[T, V]) contains(addr T) bool {
 	addr = mustBeBlockOrAddress(addr)
-	return node.toBinTrieNode().Contains(trieKey[T]{addr})
+	return node.toBinTrieNode().Contains(createKey(addr))
 }
 
 func (node *trieNode[T, V]) removeNode(addr T) bool {
 	addr = mustBeBlockOrAddress(addr)
-	return node.toBinTrieNode().RemoveNode(trieKey[T]{addr})
+	return node.toBinTrieNode().RemoveNode(createKey(addr))
 }
 
 func (node *trieNode[T, V]) removeElementsContainedBy(addr T) *tree.BinTrieNode[trieKey[T], V] {
 	addr = mustBeBlockOrAddress(addr)
-	return node.toBinTrieNode().RemoveElementsContainedBy(trieKey[T]{addr})
+	return node.toBinTrieNode().RemoveElementsContainedBy(createKey(addr))
 }
 
 func (node *trieNode[T, V]) elementsContainedBy(addr T) *tree.BinTrieNode[trieKey[T], V] {
 	addr = mustBeBlockOrAddress(addr)
-	return node.toBinTrieNode().ElementsContainedBy(trieKey[T]{addr})
+	return node.toBinTrieNode().ElementsContainedBy(createKey(addr))
 }
 
 func (node *trieNode[T, V]) elementsContaining(addr T) *containmentPath[T, V] {
 	addr = mustBeBlockOrAddress(addr)
-	return toContainmentPath[T, V](node.toBinTrieNode().ElementsContaining(trieKey[T]{addr}))
+	return toContainmentPath[T, V](node.toBinTrieNode().ElementsContaining(createKey(addr)))
 }
 
 func (node *trieNode[T, V]) longestPrefixMatch(addr T) (t T) {
 	addr = mustBeBlockOrAddress(addr)
-	key, _ := node.toBinTrieNode().LongestPrefixMatch(trieKey[T]{addr})
+	key, _ := node.toBinTrieNode().LongestPrefixMatch(createKey(addr))
 	return key.address
 }
 
 func (node *trieNode[T, V]) longestPrefixMatchNode(addr T) *tree.BinTrieNode[trieKey[T], V] {
 	addr = mustBeBlockOrAddress(addr)
-	return node.toBinTrieNode().LongestPrefixMatchNode(trieKey[T]{addr})
+	return node.toBinTrieNode().LongestPrefixMatchNode(createKey(addr))
 }
 
 func (node *trieNode[T, V]) elementContains(addr T) bool {
 	addr = mustBeBlockOrAddress(addr)
-	return node.toBinTrieNode().ElementContains(trieKey[T]{addr})
+	return node.toBinTrieNode().ElementContains(createKey(addr))
 }
 
 func (node *trieNode[T, V]) getNode(addr T) *tree.BinTrieNode[trieKey[T], V] {
 	addr = mustBeBlockOrAddress(addr)
-	return node.toBinTrieNode().GetNode(trieKey[T]{addr})
+	return node.toBinTrieNode().GetNode(createKey(addr))
 }
 
 func (node *trieNode[T, V]) getAddedNode(addr T) *tree.BinTrieNode[trieKey[T], V] {
 	addr = mustBeBlockOrAddress(addr)
-	return node.toBinTrieNode().GetAddedNode(trieKey[T]{addr})
+	return node.toBinTrieNode().GetAddedNode(createKey(addr))
 }
 
 func (node *trieNode[T, V]) toBinTrieNode() *tree.BinTrieNode[trieKey[T], V] {
@@ -687,7 +878,7 @@ func (node *TrieNode[T]) RemoveNode(addr T) bool {
 // If the argument is not a single address nor prefix block, this method will panic.
 // The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
 //
-//Returns the root node of the subtrie that was removed from the trie, or nil if nothing was removed.
+// Returns the root node of the subtrie that was removed from the trie, or nil if nothing was removed.
 func (node *TrieNode[T]) RemoveElementsContainedBy(addr T) *TrieNode[T] {
 	return toAddressTrieNode[T](node.tobase().removeElementsContainedBy(addr))
 }
@@ -801,8 +992,8 @@ func (node *TrieNode[T]) IsEmpty() bool {
 
 // TreeString returns a visual representation of the sub-trie with this node as the root, with one node per line.
 //
-//  - withNonAddedKeys: whether to show nodes that are not added nodes.
-//  - withSizes: whether to include the counts of added nodes in each sub-trie.
+//   - withNonAddedKeys: whether to show nodes that are not added nodes.
+//   - withSizes: whether to include the counts of added nodes in each sub-trie.
 func (node *TrieNode[T]) TreeString(withNonAddedKeys, withSizes bool) string {
 	return node.toBinTrieNode().TreeString(withNonAddedKeys, withSizes)
 }
@@ -1176,7 +1367,7 @@ func (node *AssociativeTrieNode[T, V]) RemoveNode(addr T) bool {
 // If the argument is not a single address nor prefix block, this method will panic.
 // The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
 //
-//Returns the root node of the subtrie that was removed from the trie, or nil if nothing was removed.
+// Returns the root node of the subtrie that was removed from the trie, or nil if nothing was removed.
 func (node *AssociativeTrieNode[T, V]) RemoveElementsContainedBy(addr T) *AssociativeTrieNode[T, V] {
 	return toAssociativeTrieNode[T, V](node.toBase().removeElementsContainedBy(addr))
 }
@@ -1301,8 +1492,8 @@ func (node *AssociativeTrieNode[T, V]) IsEmpty() bool {
 
 // TreeString returns a visual representation of the sub-trie with this node as the root, with one node per line.
 //
-//  - withNonAddedKeys: whether to show nodes that are not added nodes
-//  - withSizes: whether to include the counts of added nodes in each sub-trie
+//   - withNonAddedKeys: whether to show nodes that are not added nodes
+//   - withSizes: whether to include the counts of added nodes in each sub-trie
 func (node *AssociativeTrieNode[T, V]) TreeString(withNonAddedKeys, withSizes bool) string {
 	return node.toBinTrieNode().TreeString(withNonAddedKeys, withSizes)
 }

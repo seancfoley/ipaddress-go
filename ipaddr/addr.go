@@ -91,12 +91,72 @@ type addressCache struct {
 	stringCache *stringCache // only used by IPv6 when there is a zone
 
 	identifierStr *identifierStr
+
+	trieKeyCache *tree.TrieKeyData
 }
 
 type addressInternal struct {
 	section *AddressSection
 	zone    Zone
 	cache   *addressCache
+}
+
+func (addr *addressInternal) assignTrieCache() {
+	cache := addr.cache
+	if cache != nil && cache.trieKeyCache != nil {
+		cache.trieKeyCache = addr.constructTrieCache()
+	}
+}
+
+func (addr *addressInternal) constructTrieCache() *tree.TrieKeyData {
+	sect := addr.section
+	prefLen := sect.getPrefixLen()
+	var cache *tree.TrieKeyData
+	if sectionIPv4 := sect.ToIPv4(); sectionIPv4 != nil {
+		cache = &tree.TrieKeyData{
+			Is32Bits:  true,
+			PrefLen:   tree.PrefixLen(prefLen),
+			Uint32Val: sectionIPv4.Uint32Value(),
+		}
+		if prefLen != nil {
+			bits := prefLen.bitCount()
+			cache.NextBitMask32Val = uint32(0x80000000) >> bits
+			cache.Mask32Val = ipv4NetworkMasks[bits]
+		}
+	} else if sectionIPv6 := sect.ToIPv6(); sectionIPv6 != nil {
+		cache = &tree.TrieKeyData{
+			Is128Bits: true,
+			PrefLen:   tree.PrefixLen(prefLen),
+		}
+		cache.Uint64HighVal, cache.Uint64LowVal = sectionIPv6.Uint64Values()
+		if prefLen != nil {
+			bits := prefLen.bitCount()
+			mask := ipv6NetworkMasks[bits]
+			cache.Mask64HighVal, cache.Mask64LowVal = mask[0], mask[1]
+			if bits > 63 {
+				cache.NextBitMask64Val = uint64(0x8000000000000000) >> (bits - 64)
+			} else {
+				cache.NextBitMask64Val = uint64(0x8000000000000000) >> bits
+			}
+		}
+	} else {
+		cache = &tree.TrieKeyData{}
+	}
+	return cache
+}
+
+func (addr *addressInternal) getTrieCache() *tree.TrieKeyData {
+	cache := addr.cache
+	if cache != nil {
+		cached := (*tree.TrieKeyData)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&cache.trieKeyCache))))
+		if cached == nil {
+			cached = addr.constructTrieCache()
+			dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache.trieKeyCache))
+			atomicStorePointer(dataLoc, unsafe.Pointer(cached))
+		}
+		return cached
+	}
+	return &tree.TrieKeyData{}
 }
 
 // GetBitCount returns the number of bits comprising this address,
@@ -296,13 +356,13 @@ func (addr *addressInternal) GetMinPrefixLenForBlock() BitCount {
 // If this segment grouping represents a single value, returns the bit length of this address.
 //
 // IP address examples:
-//  - 1.2.3.4 returns 32
-//  - 1.2.3.4/16 returns 32
-//  - 1.2.*.* returns 16
-//  - 1.2.*.0/24 returns 16
-//  - 1.2.0.0/16 returns 16
-//  - 1.2.*.4 returns nil
-//  - 1.2.252-255.* returns 22
+//   - 1.2.3.4 returns 32
+//   - 1.2.3.4/16 returns 32
+//   - 1.2.*.* returns 16
+//   - 1.2.*.0/24 returns 16
+//   - 1.2.0.0/16 returns 16
+//   - 1.2.*.4 returns nil
+//   - 1.2.252-255.* returns 22
 func (addr *addressInternal) GetPrefixLenForSingleBlock() PrefixLen {
 	section := addr.section
 	if section == nil {
@@ -401,14 +461,14 @@ func (addr *addressInternal) trieCompare(other *Address) int {
 }
 
 func trieIncrement[T TrieKeyConstraint[T]](addr T) (t T, ok bool) {
-	if res, ok := tree.TrieIncrement(trieKey[T]{addr}); ok {
+	if res, ok := tree.TrieIncrement(createKey(addr)); ok {
 		return res.address, true
 	}
 	return
 }
 
 func trieDecrement[T TrieKeyConstraint[T]](addr T) (t T, ok bool) {
-	if res, ok := tree.TrieDecrement(trieKey[T]{addr}); ok {
+	if res, ok := tree.TrieDecrement(createKey(addr)); ok {
 		return res.address, true
 	}
 	return
@@ -1193,8 +1253,8 @@ func (addr *Address) CompareSize(other AddressItem) int {
 // The comparison is intended for individual addresses and CIDR prefix blocks.
 // If an address is neither an individual address nor a prefix block, it is treated like one:
 //
-//	- ranges that occur inside the prefix length are ignored, only the lower value is used.
-//	- ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
+//   - ranges that occur inside the prefix length are ignored, only the lower value is used.
+//   - ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
 func (addr *Address) TrieCompare(other *Address) (int, addrerr.IncompatibleAddressError) {
 	if thisAddr := addr.ToIPv4(); thisAddr != nil {
 		if oth := other.ToIPv4(); oth != nil {
@@ -1221,8 +1281,8 @@ func (addr *Address) TrieCompare(other *Address) (int, addrerr.IncompatibleAddre
 //
 // If an address is neither an individual address nor a prefix block, it is treated like one:
 //
-//	- ranges that occur inside the prefix length are ignored, only the lower value is used.
-//	- ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
+//   - ranges that occur inside the prefix length are ignored, only the lower value is used.
+//   - ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
 func (addr *Address) TrieIncrement() *Address {
 	if res, ok := trieIncrement(addr); ok {
 		return res
@@ -1234,8 +1294,8 @@ func (addr *Address) TrieIncrement() *Address {
 //
 // If an address is neither an individual address nor a prefix block, it is treated like one:
 //
-//	- ranges that occur inside the prefix length are ignored, only the lower value is used.
-//	- ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
+//   - ranges that occur inside the prefix length are ignored, only the lower value is used.
+//   - ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
 func (addr *Address) TrieDecrement() *Address {
 	if res, ok := trieDecrement(addr); ok {
 		return res
@@ -1478,14 +1538,14 @@ func (addr *Address) AdjustPrefixLenZeroed(prefixLen BitCount) (*Address, addrer
 // If there is no such address, then nil is returned.
 //
 // Examples:
-//  - 1.2.3.4 returns 1.2.3.4/32
-//  - 1.2.*.* returns 1.2.0.0/16
-//  - 1.2.*.0/24 returns 1.2.0.0/16
-//  - 1.2.*.4 returns nil
-//  - 1.2.0-1.* returns 1.2.0.0/23
-//  - 1.2.1-2.* returns nil
-//  - 1.2.252-255.* returns 1.2.252.0/22
-//  - 1.2.3.4/16 returns 1.2.3.4/32
+//   - 1.2.3.4 returns 1.2.3.4/32
+//   - 1.2.*.* returns 1.2.0.0/16
+//   - 1.2.*.0/24 returns 1.2.0.0/16
+//   - 1.2.*.4 returns nil
+//   - 1.2.0-1.* returns 1.2.0.0/23
+//   - 1.2.1-2.* returns nil
+//   - 1.2.252-255.* returns 1.2.252.0/22
+//   - 1.2.3.4/16 returns 1.2.3.4/32
 func (addr *Address) AssignPrefixForSingleBlock() *Address {
 	return addr.init().assignPrefixForSingleBlock()
 }
@@ -1496,14 +1556,14 @@ func (addr *Address) AssignPrefixForSingleBlock() *Address {
 // In other words, this method assigns a prefix length to this subnet matching the largest prefix block in this subnet.
 //
 // Examples:
-//  - 1.2.3.4 returns 1.2.3.4/32
-//  - 1.2.*.* returns 1.2.0.0/16
-//  - 1.2.*.0/24 returns 1.2.0.0/16
-//  - 1.2.*.4 returns 1.2.*.4/32
-//  - 1.2.0-1.* returns 1.2.0.0/23
-//  - 1.2.1-2.* returns 1.2.1-2.0/24
-//  - 1.2.252-255.* returns 1.2.252.0/22
-//  - 1.2.3.4/16 returns 1.2.3.4/32
+//   - 1.2.3.4 returns 1.2.3.4/32
+//   - 1.2.*.* returns 1.2.0.0/16
+//   - 1.2.*.0/24 returns 1.2.0.0/16
+//   - 1.2.*.4 returns 1.2.*.4/32
+//   - 1.2.0-1.* returns 1.2.0.0/23
+//   - 1.2.1-2.* returns 1.2.1-2.0/24
+//   - 1.2.252-255.* returns 1.2.252.0/22
+//   - 1.2.3.4/16 returns 1.2.3.4/32
 func (addr *Address) AssignMinPrefixForBlock() *Address {
 	return addr.init().assignMinPrefixForBlock()
 }
@@ -1708,11 +1768,12 @@ func (addr *Address) GetTrailingBitCount(ones bool) BitCount {
 }
 
 // Format implements [fmt.Formatter] interface. It accepts the formats
-//  - 'v' for the default address and section format (either the normalized or canonical string),
-//  - 's' (string) for the same,
-//  - 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
-//  - 'd' (decimal), 'x' (lowercase hexadecimal), and
-//  - 'X' (uppercase hexadecimal).
+//   - 'v' for the default address and section format (either the normalized or canonical string),
+//   - 's' (string) for the same,
+//   - 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
+//   - 'd' (decimal), 'x' (lowercase hexadecimal), and
+//   - 'X' (uppercase hexadecimal).
+//
 // Also supported are some of fmt's format flags for integral types.
 // Sign control is not supported since addresses and sections are never negative.
 // '#' for an alternate format is supported, which adds a leading zero for octal, and for hexadecimal it adds
@@ -1887,6 +1948,11 @@ func (addr *Address) IsMAC() bool {
 //
 // ToAddressBase can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 func (addr *Address) ToAddressBase() *Address {
+	return addr
+}
+
+// toAddressBase is needed for tries
+func (addr *Address) toAddressBase() *Address {
 	return addr
 }
 
