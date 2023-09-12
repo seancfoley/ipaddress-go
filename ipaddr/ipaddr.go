@@ -23,7 +23,6 @@ import (
 	"math/big"
 	"net"
 	"net/netip"
-	"strings"
 	"unsafe"
 )
 
@@ -33,52 +32,43 @@ const (
 )
 
 // IPVersion is the version type used by IP address types.
-type IPVersion string
+type IPVersion int
 
 const (
 	// IndeterminateIPVersion represents an unspecified IP address version
-	IndeterminateIPVersion IPVersion = ""
+	IndeterminateIPVersion IPVersion = 0
 
 	// IPv4 represents Internet Protocol version 4
-	IPv4 IPVersion = "IPv4"
+	IPv4 IPVersion = 4
 
 	// IPv6 represents Internet Protocol version 6
-	IPv6 IPVersion = "IPv6"
+	IPv6 IPVersion = 6
 )
 
 // IsIPv6 returns true if this represents version 6
 func (version IPVersion) IsIPv6() bool {
-	return len(version) == 4 && strings.EqualFold(string(version), string(IPv6))
+	return version == IPv6
 }
 
 // IsIPv4 returns true if this represents version 4
 func (version IPVersion) IsIPv4() bool {
-	return len(version) == 4 && strings.EqualFold(string(version), string(IPv4))
+	return version == IPv4
 }
 
 // IsIndeterminate returns true if this represents an unspecified IP address version
 func (version IPVersion) IsIndeterminate() bool {
-	if len(version) == 4 {
-		// we allow mixed case in the event code is converted a string to IPVersion
-		dig := version[3]
-		if dig != '4' && dig != '6' {
-			return true
-		}
-		dig = version[0]
-		if dig != 'I' && dig != 'i' {
-			return true
-		}
-		dig = version[1]
-		if dig != 'P' && dig != 'p' {
-			return true
-		}
-		dig = version[2]
-		if dig != 'v' && dig != 'V' {
-			return true
-		}
-		return false
+	return version != IPv4 && version != IPv6
+}
+
+// String returns "IPv4", "IPv6", or the zero-value "" representing an indeterminate version
+func (version IPVersion) String() string {
+	switch version {
+	case IPv4:
+		return "IPv4"
+	case IPv6:
+		return "IPv6"
 	}
-	return true
+	return ""
 }
 
 // index returns an index starting from 0 with IndeterminateIPVersion being the highest
@@ -93,12 +83,12 @@ func (version IPVersion) index() int {
 
 // Equal returns whether the given version matches this version.  Two indeterminate versions always match, even if their associated strings do not.
 func (version IPVersion) Equal(other IPVersion) bool {
-	return strings.EqualFold(string(version), string(other)) || (version.IsIndeterminate() && other.IsIndeterminate())
-}
-
-// String returns "IPv4", "IPv6", or the zero-value "" representing an indeterminate version
-func (version IPVersion) String() string {
-	return string(version)
+	switch version {
+	case IPv4, IPv6:
+		return version == other
+	default:
+		return other != IPv4 && other != IPv6
+	}
 }
 
 func (version IPVersion) GetNetwork() (network IPAddressNetwork) {
@@ -451,8 +441,8 @@ func (addr *ipAddressInternal) coverWithPrefixBlockTo(other *IPAddress) *IPAddre
 
 func (addr *ipAddressInternal) getNetworkMask(network IPAddressNetwork) *IPAddress {
 	var prefLen BitCount
-	if addr.isPrefixed() {
-		prefLen = addr.getNetworkPrefixLen().bitCount()
+	if pref := addr.getPrefixLen(); pref != nil {
+		prefLen = pref.bitCount()
 	} else {
 		prefLen = addr.GetBitCount()
 	}
@@ -686,13 +676,13 @@ func (addr *ipAddressInternal) GetMinPrefixLenForBlock() BitCount {
 // If this segment grouping represents a single value, returns the bit length of this address division series.
 //
 // IP address examples:
-//  - 1.2.3.4 returns 32
-//  - 1.2.3.4/16 returns 32
-//  - 1.2.*.* returns 16
-//  - 1.2.*.0/24 returns 16
-//  - 1.2.0.0/16 returns 16
-//  - 1.2.*.4 returns nil
-//  - 1.2.252-255.* returns 22
+//   - 1.2.3.4 returns 32
+//   - 1.2.3.4/16 returns 32
+//   - 1.2.*.* returns 16
+//   - 1.2.*.0/24 returns 16
+//   - 1.2.0.0/16 returns 16
+//   - 1.2.*.4 returns nil
+//   - 1.2.252-255.* returns 22
 func (addr *ipAddressInternal) GetPrefixLenForSingleBlock() PrefixLen {
 	return addr.addressInternal.GetPrefixLenForSingleBlock()
 }
@@ -885,11 +875,12 @@ func (addr *IPAddress) IsMultiple() bool {
 }
 
 // Format implements [fmt.Formatter] interface. It accepts the formats
-//  - 'v' for the default address and section format (either the normalized or canonical string),
-//  - 's' (string) for the same,
-//  - 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
-//  - 'd' (decimal), 'x' (lowercase hexadecimal), and
-//  - 'X' (uppercase hexadecimal).
+//   - 'v' for the default address and section format (either the normalized or canonical string),
+//   - 's' (string) for the same,
+//   - 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
+//   - 'd' (decimal), 'x' (lowercase hexadecimal), and
+//   - 'X' (uppercase hexadecimal).
+//
 // Also supported are some of fmt's format flags for integral types.
 // Sign control is not supported since addresses and sections are never negative.
 // '#' for an alternate format is supported, which adds a leading zero for octal, and for hexadecimal it adds
@@ -1250,14 +1241,14 @@ func (addr *IPAddress) AdjustPrefixLenZeroed(prefixLen BitCount) (*IPAddress, ad
 // If there is no such address, then nil is returned.
 //
 // Examples:
-//  - 1.2.3.4 returns 1.2.3.4/32
-//  - 1.2.*.* returns 1.2.0.0/16
-//  - 1.2.*.0/24 returns 1.2.0.0/16
-//  - 1.2.*.4 returns nil
-//  - 1.2.0-1.* returns 1.2.0.0/23
-//  - 1.2.1-2.* returns nil
-//  - 1.2.252-255.* returns 1.2.252.0/22
-//  - 1.2.3.4/16 returns 1.2.3.4/32
+//   - 1.2.3.4 returns 1.2.3.4/32
+//   - 1.2.*.* returns 1.2.0.0/16
+//   - 1.2.*.0/24 returns 1.2.0.0/16
+//   - 1.2.*.4 returns nil
+//   - 1.2.0-1.* returns 1.2.0.0/23
+//   - 1.2.1-2.* returns nil
+//   - 1.2.252-255.* returns 1.2.252.0/22
+//   - 1.2.3.4/16 returns 1.2.3.4/32
 func (addr *IPAddress) AssignPrefixForSingleBlock() *IPAddress {
 	return addr.init().assignPrefixForSingleBlock().ToIP()
 }
@@ -1268,14 +1259,14 @@ func (addr *IPAddress) AssignPrefixForSingleBlock() *IPAddress {
 // In other words, this method assigns a prefix length to this subnet matching the largest prefix block in this subnet.
 //
 // Examples:
-//  - 1.2.3.4 returns 1.2.3.4/32
-//  - 1.2.*.* returns 1.2.0.0/16
-//  - 1.2.*.0/24 returns 1.2.0.0/16
-//  - 1.2.*.4 returns 1.2.*.4/32
-//  - 1.2.0-1.* returns 1.2.0.0/23
-//  - 1.2.1-2.* returns 1.2.1-2.0/24
-//  - 1.2.252-255.* returns 1.2.252.0/22
-//  - 1.2.3.4/16 returns 1.2.3.4/32
+//   - 1.2.3.4 returns 1.2.3.4/32
+//   - 1.2.*.* returns 1.2.0.0/16
+//   - 1.2.*.0/24 returns 1.2.0.0/16
+//   - 1.2.*.4 returns 1.2.*.4/32
+//   - 1.2.0-1.* returns 1.2.0.0/23
+//   - 1.2.1-2.* returns 1.2.1-2.0/24
+//   - 1.2.252-255.* returns 1.2.252.0/22
+//   - 1.2.3.4/16 returns 1.2.3.4/32
 func (addr *IPAddress) AssignMinPrefixForBlock() *IPAddress {
 	return addr.init().assignMinPrefixForBlock().ToIP()
 }
@@ -1566,6 +1557,11 @@ func (addr *IPAddress) ToAddressBase() *Address {
 	if addr != nil {
 		addr = addr.init()
 	}
+	return (*Address)(unsafe.Pointer(addr))
+}
+
+// toAddressBase is needed for tries, it skips the init() call
+func (addr *IPAddress) toAddressBase() *Address {
 	return (*Address)(unsafe.Pointer(addr))
 }
 
