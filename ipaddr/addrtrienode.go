@@ -134,8 +134,18 @@ func (a trieKey[T]) MatchBits(key trieKey[T], bitIndex int, simpleSearch bool, h
 				existingVal := existingTrieCache.Uint32Val
 				existingPrefLen := PrefixLen(existingTrieCache.PrefLen)
 				if existingPrefLen == nil {
-					if newTrieCache.Uint32Val == existingVal {
+					newVal := newTrieCache.Uint32Val
+					if newVal == existingVal {
 						handleMatch.BitsMatch()
+					} else {
+						newPrefLen := PrefixLen(newTrieCache.PrefLen)
+						if newPrefLen != nil {
+							newMask := newTrieCache.Mask32Val
+							if newVal&newMask == existingVal&newMask {
+								// rest of case 1 and rest of case 5
+								handleMatch.BitsMatch()
+							}
+						}
 					}
 				} else {
 					existingPrefLenBits := existingPrefLen.bitCount()
@@ -185,9 +195,23 @@ func (a trieKey[T]) MatchBits(key trieKey[T], bitIndex int, simpleSearch bool, h
 			if newTrieCache != nil && newTrieCache.Is128Bits {
 				existingPrefLen := PrefixLen(existingTrieCache.PrefLen)
 				if existingPrefLen == nil {
-					if newTrieCache.Uint64HighVal == existingTrieCache.Uint64HighVal &&
-						newTrieCache.Uint64LowVal == existingTrieCache.Uint64LowVal {
+					newLowVal := newTrieCache.Uint64LowVal
+					existingLowVal := existingTrieCache.Uint64LowVal
+					if newLowVal == existingLowVal &&
+						newTrieCache.Uint64HighVal == existingTrieCache.Uint64HighVal {
 						handleMatch.BitsMatch()
+					} else {
+						newPrefLen := PrefixLen(newTrieCache.PrefLen)
+						if newPrefLen != nil {
+							newMaskLow := newTrieCache.Mask64LowVal
+							if newLowVal&newMaskLow == existingLowVal&newMaskLow {
+								newMaskHigh := newTrieCache.Mask64HighVal
+								if newTrieCache.Uint64HighVal&newMaskHigh == existingTrieCache.Uint64HighVal&newMaskHigh {
+									// rest of case 1 and rest of case 5
+									handleMatch.BitsMatch()
+								}
+							}
+						} // else case 4, 7
 					}
 				} else {
 					existingPrefLenBits := existingPrefLen.bitCount()
@@ -308,14 +332,14 @@ func (a trieKey[T]) MatchBits(key trieKey[T], bitIndex int, simpleSearch bool, h
 		return
 	}
 
-	bitsMatchedSoFar := segmentIndex * bitsPerSegment
+	bitsMatchedSoFar := getTotalBits(segmentIndex, bytesPerSegment, bitsPerSegment)
 	for {
 		existingSegment := existingAddr.getSegment(segmentIndex)
 		newSegment := newAddr.getSegment(segmentIndex)
 		existingSegmentPref := getSegmentPrefLen(existingAddr, existingPref, bitsPerSegment, bitsMatchedSoFar, existingSegment)
 		newSegmentPref := getSegmentPrefLen(newAddr, newPrefLen, bitsPerSegment, bitsMatchedSoFar, newSegment)
 		if existingSegmentPref != nil {
-			existingSegmentPrefLen := existingSegmentPref.Len()
+			existingSegmentPrefLen := existingSegmentPref.bitCount()
 			newPrefixLen := newSegmentPref.Len()
 			if newSegmentPref != nil && newPrefixLen <= existingSegmentPrefLen {
 				matchingBits := getMatchingBits(existingSegment, newSegment, newPrefixLen, bitsPerSegment)
@@ -350,7 +374,7 @@ func (a trieKey[T]) MatchBits(key trieKey[T], bitIndex int, simpleSearch bool, h
 			}
 			return
 		} else if newSegmentPref != nil {
-			newSegmentPrefLen := newSegmentPref.Len()
+			newSegmentPrefLen := newSegmentPref.bitCount()
 			matchingBits := getMatchingBits(existingSegment, newSegment, newSegmentPrefLen, bitsPerSegment)
 			if matchingBits >= newSegmentPrefLen { // the current bits match the current prefix, but the existing has no prefix
 				handleMatch.BitsMatch()

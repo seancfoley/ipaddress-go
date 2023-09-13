@@ -1166,9 +1166,6 @@ func (t trieTesterGeneric) testContains(trie *AddressTrie) {
 			}
 		}
 		lpm := trie.LongestPrefixMatch(halfwayAddr)
-		//if ok != (lpm != nil) {
-		//	t.addFailure(newTrieFailure("expecting a match for "+halfwayAddr.String(), trie))
-		//}
 		smallestContaining := trie.LongestPrefixMatchNode(halfwayAddr)
 		containing := trie.ElementsContaining(halfwayAddr)
 		elementsContains := trie.ElementContains(halfwayAddr)
@@ -1180,7 +1177,6 @@ func (t trieTesterGeneric) testContains(trie *AddressTrie) {
 			addedParent = next
 		}
 		if addedParent == nil {
-			//fmt.Printf("empty containing is %s\n", containing)
 			if (containing != nil && containing.Count() > 0) || lpm != nil {
 				t.addFailure(newTrieFailure("containing is "+containing.String()+" for address "+halfwayAddr.String()+" instead of expected nil", trie))
 			} else if elementsContains {
@@ -1188,7 +1184,6 @@ func (t trieTesterGeneric) testContains(trie *AddressTrie) {
 			}
 		} else {
 			var lastContaining *ipaddr.ContainmentPathNode[*ipaddr.Address]
-			//fmt.Printf("containing is %s\n", containing)
 			if containing.Count() > 0 {
 				lastContaining = containing.ShortestPrefixMatch()
 				for {

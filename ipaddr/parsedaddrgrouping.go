@@ -42,6 +42,16 @@ func getHostSegmentIndex(networkPrefixLength BitCount, bytesPerSegment int, bits
 	return int(networkPrefixLength >> ipv4BitsToSegmentBitshift)
 }
 
+func getTotalBits(segmentCount, bytesPerSegment int, bitsPerSegment BitCount) BitCount {
+	if bytesPerSegment != 1 {
+		if bytesPerSegment == 2 {
+			return BitCount(segmentCount << ipv6BitsToSegmentBitshift)
+		}
+		return BitCount(segmentCount * bitsPerSegment)
+	}
+	return BitCount(segmentCount << ipv4BitsToSegmentBitshift)
+}
+
 /**
  * Across an address prefixes are:
  * IPv6: (nil):...:(nil):(1 to 16):(0):...:(0)
@@ -308,7 +318,6 @@ const (
 	zerosOrFullRange
 )
 
-//
 // For explicit prefix config this always returns false.
 // For all prefix subnets config this always returns true if the prefix length does not extend beyond the address end.
 func isPrefixSubnet(
