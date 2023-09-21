@@ -68,15 +68,16 @@ type addressKeyIterator[T TrieKeyConstraint[T]] struct {
 	tree.TrieKeyIterator[trieKey[T]]
 }
 
-func (iter addressKeyIterator[T]) Next() (t T) {
+func (iter addressKeyIterator[T]) Next() T {
 	return iter.TrieKeyIterator.Next().address
 }
 
-func (iter addressKeyIterator[T]) Remove() (t T) {
+func (iter addressKeyIterator[T]) Remove() T {
 	return iter.TrieKeyIterator.Remove().address
 }
 
 //
+
 type addrTrieNodeIteratorRem[T TrieKeyConstraint[T], V any] struct {
 	tree.TrieNodeIteratorRem[trieKey[T], V]
 }
@@ -90,6 +91,7 @@ func (iter addrTrieNodeIteratorRem[T, V]) Remove() *TrieNode[T] {
 }
 
 //
+
 type addrTrieNodeIterator[T TrieKeyConstraint[T], V any] struct {
 	tree.TrieNodeIterator[trieKey[T], V]
 }
@@ -99,6 +101,7 @@ func (iter addrTrieNodeIterator[T, V]) Next() *TrieNode[T] {
 }
 
 //
+
 type cachingAddressTrieNodeIterator[T TrieKeyConstraint[T], V any] struct {
 	tree.CachingTrieNodeIterator[trieKey[T], V]
 }
@@ -127,6 +130,7 @@ func (iter associativeAddressTrieNodeIteratorRem[T, V]) Remove() *AssociativeTri
 }
 
 //
+
 type associativeAddressTrieNodeIterator[T TrieKeyConstraint[T], V any] struct {
 	tree.TrieNodeIterator[trieKey[T], V]
 }
@@ -136,6 +140,7 @@ func (iter associativeAddressTrieNodeIterator[T, V]) Next() *AssociativeTrieNode
 }
 
 //
+
 type cachingAssociativeAddressTrieNodeIteratorX[T TrieKeyConstraint[T], V any] struct {
 	tree.CachingTrieNodeIterator[trieKey[T], V]
 }
@@ -149,6 +154,7 @@ func (iter cachingAssociativeAddressTrieNodeIteratorX[T, V]) Remove() *Associati
 }
 
 //
+
 type emptyIterator[T any] struct{}
 
 func (it emptyIterator[T]) HasNext() bool {
