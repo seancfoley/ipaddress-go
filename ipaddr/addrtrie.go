@@ -90,21 +90,26 @@ func (trie *trieBase[T, V]) longestPrefixMatch(addr T) (t T) {
 	return key.address
 }
 
-// only added nodes are added to the linked list
 func (trie *trieBase[T, V]) longestPrefixMatchNode(addr T) *tree.BinTrieNode[trieKey[T], V] {
 	addr = mustBeBlockOrAddress(addr)
 	return trie.trie.LongestPrefixMatchNode(createKey(addr))
+}
+
+func (trie *trieBase[T, V]) shortestPrefixMatch(addr T) (t T) {
+	addr = mustBeBlockOrAddress(addr)
+	key, _ := trie.trie.ShortestPrefixMatch(createKey(addr))
+	return key.address
+}
+
+func (trie *trieBase[T, V]) shortestPrefixMatchNode(addr T) *tree.BinTrieNode[trieKey[T], V] {
+	addr = mustBeBlockOrAddress(addr)
+	return trie.trie.ShortestPrefixMatchNode(createKey(addr))
 }
 
 func (trie *trieBase[T, V]) elementContains(addr T) bool {
 	addr = mustBeBlockOrAddress(addr)
 	return trie.trie.ElementContains(createKey(addr))
 }
-
-//func (trie *trieBase[T, V]) elementContainsSpecial(addr T) bool {
-//	addr = mustBeBlockOrAddress(addr)
-//	return trie.trie.ElementContainsSpecial(createKey(addr))
-//}
 
 func (trie *trieBase[T, V]) getNode(addr T) *tree.BinTrieNode[trieKey[T], V] {
 	addr = mustBeBlockOrAddress(addr)
@@ -445,11 +450,19 @@ func (trie *Trie[T]) LongestPrefixMatch(addr T) T {
 	return trie.longestPrefixMatch(addr)
 }
 
-// only added nodes are added to the linked list
-
 // LongestPrefixMatchNode returns the node of address added to the trie with the longest matching prefix compared to the provided address, or nil if no matching address.
 func (trie *Trie[T]) LongestPrefixMatchNode(addr T) *TrieNode[T] {
 	return toAddressTrieNode[T](trie.longestPrefixMatchNode(addr))
+}
+
+// ShortestPrefixMatch returns the address added to the trie with the shortest matching prefix compared to the provided address, or nil if no matching address.
+func (trie *Trie[T]) ShortestPrefixMatch(addr T) T {
+	return trie.shortestPrefixMatch(addr)
+}
+
+// ShortestPrefixMatchNode returns the node of the address added to the trie with the shortest matching prefix compared to the provided address, or nil if no matching address.
+func (trie *Trie[T]) ShortestPrefixMatchNode(addr T) *TrieNode[T] {
+	return toAddressTrieNode[T](trie.shortestPrefixMatchNode(addr))
 }
 
 // ElementContains checks if a prefix block subnet or address in the trie contains the given subnet or address.
