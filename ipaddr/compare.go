@@ -22,10 +22,10 @@ var (
 	// CountComparator compares by count first, then by value.
 	CountComparator = AddressComparator{countComparator{}}
 
-	// HighValueComparator compares by high value first, then low, then count.
+	// HighValueComparator compares by high value first, then low.
 	HighValueComparator = AddressComparator{valueComparator{compareHighValue: true}}
 
-	// LowValueComparator compares by low value first, then high, then count.
+	// LowValueComparator compares by low value first, then high.
 	LowValueComparator = AddressComparator{valueComparator{}}
 
 	// With the reverse comparators, ordering with the secondary values (higher or lower) follow a reverse ordering than the primary values (lower or higher)
@@ -149,29 +149,34 @@ func checkSectionType(sect AddressSectionType) (isNil bool, groupingType groupin
 	} else {
 		section := sect.ToSectionBase()
 		if isNil = section == nil; !isNil {
-			if section.IsAdaptiveZero() {
-				// The zero grouping can represent a zero-length section of any address type.
-				// This is necessary because sections and groupings have no init() method to ensure zero-sections are always assigned an address type.
-				// We would need the zero grouping to be less than everything else or more than everything else for comparison consistency.
-				// Empty sections or groupings that have an address type are not considered equal.  They can represent only one address type.
-				// This is similar to the fact that a MAC section and an IPv4 section can be structurally identical but not equal due to the type.
-				//
-				// See IsAdaptiveZero() method for more details.
-				groupingType = adaptivezerotype
-			} else if section.IsIPv6() {
-				groupingType = ipv6sectype
-			} else if section.IsIPv4() {
-				groupingType = ipv4sectype
-			} else if section.IsMAC() {
-				groupingType = macsectype
-			} else if section.IsIP() {
-				groupingType = ipsectype
-			} else {
-				groupingType = sectype
-			}
+			groupingType = checkSectionGroupingType(section)
 		} else {
 			groupingType = unknowntype
 		}
+	}
+	return
+}
+
+func checkSectionGroupingType(section *AddressSection) (groupingType groupingType) {
+	if section.IsIPv4() {
+		groupingType = ipv4sectype
+	} else if section.IsIPv6() {
+		groupingType = ipv6sectype
+	} else if section.IsIP() {
+		groupingType = ipsectype
+	} else if section.IsMAC() {
+		groupingType = macsectype
+	} else if section.IsAdaptiveZero() {
+		// The zero grouping can represent a zero-length section of any address type.
+		// This is necessary because sections and groupings have no init() method to ensure zero-sections are always assigned an address type.
+		// We would need the zero grouping to be less than everything else or more than everything else for comparison consistency.
+		// Empty sections or groupings that have an address type are not considered equal.  They can represent only one address type.
+		// This is similar to the fact that a MAC section and an IPv4 section can be structurally identical but not equal due to the type.
+		//
+		// See IsAdaptiveZero() method for more details.
+		groupingType = adaptivezerotype
+	} else {
+		groupingType = sectype
 	}
 	return
 }
@@ -227,7 +232,7 @@ func checkGroupingType(series AddressDivisionSeries) (
 	return
 }
 
-func checkRangeTypeX(r IPAddressSeqRangeType) (isNil bool, rngType rangeType, rng *SequentialRange[*IPAddress]) {
+func checkRangeType(r IPAddressSeqRangeType) (isNil bool, rngType rangeType, rng *SequentialRange[*IPAddress]) {
 	if isNil = r == nil; isNil {
 		rngType = unknownrangetype
 	} else {
@@ -243,6 +248,42 @@ func checkRangeTypeX(r IPAddressSeqRangeType) (isNil bool, rngType rangeType, rn
 			}
 		} else {
 			rngType = unknownrangetype
+		}
+	}
+	return
+}
+
+// compareAddressLowerValues compares any two individual addresses (including different versions or address types)
+// It returns a negative integer, zero, or a positive integer if address item one is less than, equal, or greater than address item two.
+// It ignores IPv6 zone and panics on nil AddressType or nil addresses.
+// If an address is not a single address, then the lower values are used.
+func compareAddressLowerValues(one, two AddressType) int {
+	oneAddr := one.ToAddressBase()
+	twoAddr := two.ToAddressBase()
+	return compareSegmentValues(false, oneAddr.GetSection(), twoAddr.GetSection())
+}
+
+// called only when it is known the sections have same segment count and segment bit size
+func compareSegmentValues(compareUpper bool, one, two *AddressSection) (result int) {
+	segCount := one.GetSegmentCount()
+	for i := 0; i < segCount; i++ {
+		segOne := one.GetSegment(i)
+		segTwo := two.GetSegment(i)
+		var s1, s2 SegInt
+		if compareUpper {
+			s1 = segOne.GetUpperSegmentValue()
+			s2 = segTwo.GetUpperSegmentValue()
+		} else {
+			s1 = segOne.GetSegmentValue()
+			s2 = segTwo.GetSegmentValue()
+		}
+		if s1 != s2 {
+			if s1 > s2 {
+				result = 1
+			} else {
+				result = -1
+			}
+			return
 		}
 	}
 	return
@@ -424,8 +465,8 @@ func (comp AddressComparator) CompareDivisions(one, two DivisionType) int {
 // CompareRanges compares any two IP address sequential ranges (including from different IP versions).
 // It returns a negative integer, zero, or a positive integer if address item one is less than, equal, or greater than address item two.
 func (comp AddressComparator) CompareRanges(one, two IPAddressSeqRangeType) int {
-	oneIsNil, r1Type, r1 := checkRangeTypeX(one)
-	twoIsNil, r2Type, r2 := checkRangeTypeX(two)
+	oneIsNil, r1Type, r1 := checkRangeType(one)
+	twoIsNil, r2Type, r2 := checkRangeType(two)
 	if oneIsNil {
 		if twoIsNil {
 			return 0
@@ -504,30 +545,12 @@ type valueComparator struct {
 func (comp valueComparator) compareSectionParts(one, two *AddressSection) int {
 	compareHigh := comp.compareHighValue
 	for {
-		segCount := one.GetSegmentCount()
-		for i := 0; i < segCount; i++ {
-			segOne := one.GetSegment(i)
-			segTwo := two.GetSegment(i)
-			var s1, s2 SegInt
-			if compareHigh {
-				s1 = segOne.GetUpperSegmentValue()
-				s2 = segTwo.GetUpperSegmentValue()
-			} else {
-				s1 = segOne.GetSegmentValue()
-				s2 = segTwo.GetSegmentValue()
+		result := compareSegmentValues(compareHigh, one, two)
+		if result != 0 {
+			if comp.flipSecond && compareHigh != comp.compareHighValue {
+				result = -result
 			}
-			if s1 != s2 {
-				var result int
-				if s1 > s2 {
-					result = 1
-				} else {
-					result = -1
-				}
-				if comp.flipSecond && compareHigh != comp.compareHighValue {
-					result = -result
-				}
-				return result
-			}
+			return result
 		}
 		compareHigh = !compareHigh
 		if compareHigh == comp.compareHighValue {
@@ -794,14 +817,10 @@ func (comp valueComparator) compareLargeValues(oneUpper, oneLower, twoUpper, two
 type countComparator struct{}
 
 func (comp countComparator) compareSectionParts(one, two *AddressSection) int {
-	//result := int(one.GetBitCount() - two.GetBitCount())
-	//if result == 0 {
-	//result := compareSectionCount(one, two)
 	result := compareCount(one, two)
 	if result == 0 {
 		result = comp.compareEqualSizedSections(one, two)
 	}
-	//}
 	return result
 }
 
