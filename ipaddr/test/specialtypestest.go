@@ -796,6 +796,47 @@ func (t specialTypesTester) testZeros() {
 		t.addFailure(newAddressItemFailure("range from nil "+iprange.String(), iprange))
 	}
 
+	rng1 := ipaddr.NewSequentialRange[*ipaddr.IPAddress](nil, nil)
+	rng2 := ipaddr.NewSequentialRange[*ipaddr.IPv4Address](nil, nil)
+	rng3 := ipaddr.NewSequentialRange[*ipaddr.IPv6Address](nil, nil)
+
+	if !rng1.Equal(iprange) || !iprange.Equal(rng1) {
+		t.addFailure(newAddressItemFailure("range from double nil "+rng1.String()+" not same as zero range "+ipRangeZero.String(), iprange))
+	}
+	if !rng2.Equal(ipv4range) || !ipv4range.Equal(rng2) {
+		t.addFailure(newAddressItemFailure("range from double nil "+rng2.String()+" not same as zero range "+ipv4range.String(), ipv4range))
+	}
+	if !rng3.Equal(ipv6range) || !ipv6range.Equal(rng3) {
+		t.addFailure(newAddressItemFailure("range from double nil "+rng3.String()+" not same as zero range "+ipv6range.String(), ipv6range))
+	}
+
+	if !rng1.Equal(&ipRangeZero) || !ipRangeZero.Equal(rng1) {
+		t.addFailure(newAddressItemFailure("range from double nil "+rng1.String()+" not same as zero range "+ipRangeZero.String(), iprange))
+	}
+	if !rng2.Equal(&ipv4RangeZero) || !ipv4RangeZero.Equal(rng2) {
+		t.addFailure(newAddressItemFailure("range from double nil "+rng2.String()+" not same as zero range "+ipv4range.String(), ipv4range))
+	}
+	if !rng3.Equal(&ipv6RangeZero) || !ipv6RangeZero.Equal(rng3) {
+		t.addFailure(newAddressItemFailure("range from double nil "+rng3.String()+" not same as zero range "+ipv6range.String(), ipv6range))
+	}
+
+	iprange = ipaddr.NewIPSeqRange(&ipZero, &ipZero)
+	ipv4range = ipaddr.NewIPv4SeqRange(&ipv4Zero, &ipv4Zero).ToIP()
+	ipv6range = ipaddr.NewIPv6SeqRange(&ipv6Zero, &ipv6Zero).ToIP()
+	if iprange.ToKey() != iprange.ToKey() || iprange.ToKey() == ipv4range.ToKey() || iprange.ToKey() == ipv6range.ToKey() {
+		t.addFailure(newAddressItemFailure("range from zeros "+iprange.String(), iprange))
+	}
+
+	if !rng1.Equal(iprange) || !iprange.Equal(rng1) {
+		t.addFailure(newAddressItemFailure("range from double nil "+rng1.String()+" not same as zero range "+ipRangeZero.String(), iprange))
+	}
+	if !rng2.Equal(ipv4range) || !ipv4range.Equal(rng2) {
+		t.addFailure(newAddressItemFailure("range from double nil "+rng2.String()+" not same as zero range "+ipv4range.String(), ipv4range))
+	}
+	if !rng3.Equal(ipv6range) || !ipv6range.Equal(rng3) {
+		t.addFailure(newAddressItemFailure("range from double nil "+rng3.String()+" not same as zero range "+ipv6range.String(), ipv6range))
+	}
+
 	t.incrementTestCount()
 }
 
