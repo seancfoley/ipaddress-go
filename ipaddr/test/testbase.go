@@ -34,7 +34,7 @@ func Test(isLimited bool) {
 	acc := testAccumulator{lock: &sync.Mutex{}}
 
 	var addresses addresses
-	fullTest := false
+	fullTest := false // this is not exposed as a command line option, and it could be
 	//fullTest := true
 	fmt.Println("Starting TestRunner")
 	startTime := time.Now()
