@@ -959,7 +959,7 @@ func (addr *IPv4Address) Contains(other AddressType) bool {
 		return false
 	}
 	addr = addr.init()
-	otherAddr := other.ToAddressBase()
+	otherAddr := other.ToAddressBase() // runs init before calling getAddrType below
 	if addr.ToAddressBase() == otherAddr {
 		return true
 	}
