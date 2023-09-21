@@ -759,6 +759,7 @@ func (addr *addressInternal) equals(other AddressType) bool {
 		addr.isSameZone(otherAddr)
 }
 
+// returns whether two addresses, already known to be the same version and address type, are equal
 func (addr *addressInternal) equalsSameVersion(other AddressType) bool {
 	otherAddr := other.ToAddressBase()
 	if addr.toAddress() == otherAddr {
@@ -841,6 +842,8 @@ func (addr *addressInternal) isSameZone(other *Address) bool {
 	return addr.zone == other.ToAddressBase().zone
 }
 
+// Be careful when calling this, because for IPv6Address{} and IPv4Address{} it gives the wrong answer without the init method called first.
+// An alternative is to call GetIPVersion, or to be sure you have called the init method.
 func (addr *addressInternal) getAddrType() addrType {
 	if addr.section == nil {
 		return zeroType

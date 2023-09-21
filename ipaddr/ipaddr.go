@@ -1835,10 +1835,11 @@ func (addr *IPAddress) Intersect(other *IPAddress) *IPAddress {
 // This is set subtraction, not subtraction of address values (use Increment for the latter).  We have a subnet of addresses and we are removing those addresses found in the argument subnet.
 // If there are no remaining addresses, nil is returned.
 func (addr *IPAddress) Subtract(other *IPAddress) []*IPAddress {
+	addr = addr.init()
+	other = other.init()
 	if !versionsMatch(addr, other) {
 		return []*IPAddress{addr}
 	}
-	addr = addr.init()
 	sects, _ := addr.GetSection().subtract(other.GetSection())
 	sectLen := len(sects)
 	if sectLen == 0 {
@@ -1912,22 +1913,12 @@ func versionsMatch(one, two *IPAddress) bool {
 	return one.getAddrType() == two.getAddrType()
 }
 
-//func allVersionsMatch(one *IPAddress, two []*IPAddress) bool {
-//	addrType := one.getAddrType()
-//	for _, addr := range two {
-//		if addr.getAddrType() != addrType {
-//			return false
-//		}
-//	}
-//	return true
-//}
-
 // MergeToSequentialBlocks merges this with the list of addresses to produce the smallest array of sequential blocks.
 //
 // The resulting slice is sorted from lowest address value to highest, regardless of the size of each prefix block.
 // Arguments that are not the same IP version are ignored.
 func (addr *IPAddress) MergeToSequentialBlocks(addrs ...*IPAddress) []*IPAddress {
-	series := filterCloneIPAddrs(addr, addrs)
+	series := filterCloneIPAddrs(addr.init(), addrs)
 	blocks := getMergedSequentialBlocks(series)
 	return cloneToIPAddrs(blocks)
 }
@@ -1937,7 +1928,7 @@ func (addr *IPAddress) MergeToSequentialBlocks(addrs ...*IPAddress) []*IPAddress
 // The resulting slice is sorted from lowest address value to highest, regardless of the size of each prefix block.
 // Arguments that are not the same IP version are ignored.
 func (addr *IPAddress) MergeToPrefixBlocks(addrs ...*IPAddress) []*IPAddress {
-	series := filterCloneIPAddrs(addr, addrs)
+	series := filterCloneIPAddrs(addr.init(), addrs)
 	blocks := getMergedPrefixBlocks(series)
 	return cloneToIPAddrs(blocks)
 }
@@ -1968,13 +1959,15 @@ func (addr *IPAddress) SpanWithPrefixBlocks() []*IPAddress {
 // From the list of returned subnets you can recover the original range (this to other) by converting each to IPAddressRange with ToSequentialRange
 // and them joining them into a single range with the Join method of IPAddressSeqRange.
 func (addr *IPAddress) SpanWithPrefixBlocksTo(other *IPAddress) []*IPAddress {
+	addr = addr.init()
+	other = other.init()
 	if !versionsMatch(addr, other) {
 		return addr.SpanWithPrefixBlocks()
 	}
 	return cloneToIPAddrs(
 		getSpanningPrefixBlocks(
-			addr.init().Wrap(),
-			other.init().Wrap(),
+			addr.Wrap(),
+			other.Wrap(),
 		),
 	)
 }
@@ -1983,10 +1976,12 @@ func (addr *IPAddress) SpanWithPrefixBlocksTo(other *IPAddress) []*IPAddress {
 //
 // If the argument is not the same IP version as the receiver, the argument is ignored, and the result is the same as CoverWithPrefixBlock.
 func (addr *IPAddress) CoverWithPrefixBlockTo(other *IPAddress) *IPAddress {
+	addr = addr.init()
+	other = other.init()
 	if !versionsMatch(addr, other) {
 		return addr.CoverWithPrefixBlock()
 	}
-	return addr.init().coverWithPrefixBlockTo(other)
+	return addr.coverWithPrefixBlockTo(other)
 }
 
 // CoverWithPrefixBlock returns the minimal-size prefix block that covers all the addresses in this subnet.
@@ -2019,13 +2014,15 @@ func (addr *IPAddress) SpanWithSequentialBlocks() []*IPAddress {
 //
 // The resulting slice is sorted from lowest address value to highest, regardless of the size of each prefix block.
 func (addr *IPAddress) SpanWithSequentialBlocksTo(other *IPAddress) []*IPAddress {
+	addr = addr.init()
+	other = other.init()
 	if !versionsMatch(addr, other) {
 		return addr.SpanWithSequentialBlocks()
 	}
 	return cloneToIPAddrs(
 		getSpanningSequentialBlocks(
-			addr.init().Wrap(),
-			other.init().Wrap(),
+			addr.Wrap(),
+			other.Wrap(),
 		),
 	)
 }
@@ -2710,7 +2707,7 @@ func NewIPAddressFromNetIPNet(ipnet *net.IPNet) (*IPAddress, addrerr.AddressErro
 	} else if mask == nil {
 		return nil, &addressValueError{addressError: addressError{key: "ipaddress.error.exceeds.size"}}
 	} else if addr.getAddrType() != mask.getAddrType() {
-		//} else if !addr.GetIPVersion().Equal(mask.GetIPVersion()) {
+		// could also be } else if !addr.GetIPVersion().Equal(mask.GetIPVersion()) {
 		return nil, &incompatibleAddressError{addressError{key: "ipaddress.error.ipMismatch"}}
 	}
 	prefLen := mask.GetBlockMaskPrefixLen(true)
