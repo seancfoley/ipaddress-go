@@ -119,8 +119,8 @@ func fastIncrement( // used by IPv6
 	return nil
 }
 
-//this does not handle overflow, overflow should be checked before calling this
-func increment( // used by IPv4 and MAC
+// this does not handle overflow, overflow should be checked before calling this
+func increment( // used by IPv4 and MAC, but also IPv6 addresses with prefix ::/64
 	section *AddressSection,
 	increment int64,
 	creator addressSegmentCreator,
@@ -151,7 +151,7 @@ func increment( // used by IPv4 and MAC
 	return addBig(upperProducer(), new(big.Int).SetUint64(uIncrement-countMinus1), creator, prefixLength)
 }
 
-//this does not handle overflow, overflow should be checked before calling this
+// this does not handle overflow, overflow should be checked before calling this
 func incrementBig( // used by MAC and IPv6
 	section *AddressSection,
 	increment int64,
@@ -216,7 +216,7 @@ func incrementRange(
 	return createSection(newSegments, prefixLength, section.getAddrType())
 }
 
-//this does not handle overflow, overflow should be checked before calling this
+// this does not handle overflow, overflow should be checked before calling this
 func addBig(section *AddressSection, increment *big.Int, creator addressSegmentCreator, prefixLength PrefixLen) *AddressSection {
 	segCount := section.GetSegmentCount()
 	fullValue := section.GetValue()
@@ -228,7 +228,6 @@ func addBig(section *AddressSection, increment *big.Int, creator addressSegmentC
 		segCount,
 		section.GetBytesPerSegment(),
 		section.GetBitsPerSegment(),
-		//expectedByteCount,
 		creator,
 		prefixLength)
 	res := createSection(segments, prefixLength, section.getAddrType())
@@ -242,17 +241,27 @@ func addBig(section *AddressSection, increment *big.Int, creator addressSegmentC
 }
 
 func add(section *AddressSection, fullValue uint64, increment int64, creator addressSegmentCreator, prefixLength PrefixLen) *AddressSection {
-	segCount := section.GetSegmentCount()
-	var val uint64
+	var highBytes, lowBytes uint64
 	if increment < 0 {
-		val = fullValue - uint64(-increment)
+		lowBytes = fullValue - uint64(-increment)
 	} else {
-		val = fullValue + uint64(increment)
+		space := math.MaxUint64 - fullValue
+		uIncrement := uint64(increment)
+		if uIncrement > space {
+			// val := inc + fullValue
+			// val = (math.MaxUint64 + 1)  + (fullValue - (MaxUint64 - inc + 1))
+			// val = (highBytes of 1) + (loweBytes of fullValue - (MaxUint64 - inc + 1)))
+			highBytes = 1
+			lowBytes = fullValue - (math.MaxUint64 - (uIncrement - 1))
+		} else {
+			lowBytes = fullValue + uint64(increment)
+		}
 	}
+	segCount := section.GetSegmentCount()
 	newSegs := createSegmentsUint64(
 		segCount,
-		0,
-		val,
+		highBytes,
+		lowBytes,
 		section.GetBytesPerSegment(),
 		section.GetBitsPerSegment(),
 		creator,
