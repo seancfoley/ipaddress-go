@@ -27,3 +27,8 @@ func main() {
 	flag.Parse()
 	test.Test(*isLimitedPtr)
 }
+
+/*
+export GORACE="log_path=/Users/scfoley/GolandProjects/ipaddress-go-workspace/races  strip_path_prefix=/Users/scfoley/GolandProjects/ipaddress-go-workspace/ipaddress-go/ipaddr/"
+/usr/local/go/bin/go run -race  /Users/scfoley/GolandProjects/ipaddress-go-workspace/ipaddress-go/ipaddr/cmd/test/test.go
+*/

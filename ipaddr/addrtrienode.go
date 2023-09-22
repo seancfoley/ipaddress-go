@@ -59,7 +59,9 @@ func createKey[T TrieKeyConstraint[T]](addr T) trieKey[T] {
 // The returned address key will represent all addresses with the same prefix as this one, the prefix "block".
 func (a trieKey[T]) ToPrefixBlockLen(bitCount BitCount) trieKey[T] {
 	addr := a.address.ToPrefixBlockLen(bitCount)
-	addr.toAddressBase().assignTrieCache()
+	if addr != a.address {
+		addr.toAddressBase().assignTrieCache()
+	}
 	return trieKey[T]{address: addr}
 }
 
