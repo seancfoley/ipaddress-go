@@ -10,6 +10,8 @@ IP address and network manipulation, CIDR, operations, iterations, containment c
 
 [View Code Examples](https://github.com/seancfoley/ipaddress-go/wiki/Code-Examples)
 
+[View Benchmark Results](https://github.com/seancfoley/ipaddress-go/wiki/Benchmarks)
+
 [View List of Users](https://github.com/seancfoley/ipaddress-go/wiki)
 
 | Version | Notes         |
