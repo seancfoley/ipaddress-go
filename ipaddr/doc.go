@@ -45,7 +45,7 @@ If you have numeric bytes or integers, then start with [IPv4Address], [IPv6Addre
 
 This library allows you to scale down from more specific address types to more generic address types, and then to scale back up again.
 The polymorphism is useful for IP-version ambiguous code.  The most-specific types allow for method sets tailored to the address version or type.
-You can only scale up to a specific version or address type if the lower level instance was originally derived from an instance of the specific type.
+You can only scale up to a specific version or address type if the more generic instance was originally derived from an instance of the specific type.
 So, for instance, an [IPv6Address] can be converted to an [IPAddress] using [IPv6Address.ToIP], or to an [Address] using [IPv6Address.ToAddressBase], which can then be converted back to [IPAddress] or an [IPv6Address] using [Address.ToIP] or [Address.ToIPv6].
 But that [IPv6Address] cannot be scaled back to IPv4.  If you wish to convert that [IPv6Address] to IPv4, you would need to use an implementation of [IPv4AddressConverter].
 
