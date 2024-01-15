@@ -26,7 +26,7 @@ require github.com/seancfoley/ipaddress-go v1.5.5
 In your source file:\
 import "github.com/seancfoley/ipaddress-go/ipaddr"
 
-Packaged as a [Linux Fedora rpm](https://src.fedoraproject.org/rpms/golang-github-seancfoley-ipaddress)
+Packaged as a [Linux Fedora rpm](https://src.fedoraproject.org/rpms/golang-github-seancfoley-ipaddress) and as a [Linux Debian](https://tracker.debian.org/pkg/golang-github-seancfoley-ipaddress-go)
 
 Also available as a [Java](https://www.oracle.com/java/) library from the [IPAddress repository](https://github.com/seancfoley/IPAddress)
 
