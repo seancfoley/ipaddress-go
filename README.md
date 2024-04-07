@@ -2,7 +2,7 @@
 
 [Go](https://golang.org/) library for handling IP addresses and subnets, both IPv4 and IPv6
 
-IP address and network manipulation, CIDR, operations, iterations, containment checks, longest prefix match, subnetting, spanning, merging, ranges, and address tries, with polymorphic code
+IP address and network manipulation, CIDR, address and subnet operations, iterations, containment checks, IP to CIDR block lookup, longest prefix match, subnetting, spanning, merging, ranges, and address tries, with polymorphic code
 
 [View Project Page](https://seancfoley.github.io/IPAddress/)
 
@@ -26,7 +26,7 @@ require github.com/seancfoley/ipaddress-go v1.5.5
 In your source file:\
 import "github.com/seancfoley/ipaddress-go/ipaddr"
 
-Packaged as a [Linux Fedora rpm](https://src.fedoraproject.org/rpms/golang-github-seancfoley-ipaddress)
+Packaged as a [Linux Fedora rpm](https://src.fedoraproject.org/rpms/golang-github-seancfoley-ipaddress) and as a [Linux Debian](https://tracker.debian.org/pkg/golang-github-seancfoley-ipaddress-go)
 
 Also available as a [Java](https://www.oracle.com/java/) library from the [IPAddress repository](https://github.com/seancfoley/IPAddress)
 
