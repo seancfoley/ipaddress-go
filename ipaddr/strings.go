@@ -1174,21 +1174,6 @@ func getMaxDigitCount(radix int, bitCount BitCount, maxValue uint64) int {
 	})
 }
 
-/*
-TODO NEXT RELEASE all these:
-- YES anything I added to Java 5.5.0 not in Go
-	- DONE I need the radix and bitcount fixes, especially infinite loops
-	- DONE enumerate method
-	- dual tries? maybe
-	- new parsing of those inet_aton addresses (a straight port from Java should to it)
-	- overlaps
-	- DONE increment with big integer added to ipv6
-	- floor/lower/ceiling/higher in tries from floorAddedNode/lowerAddeNode...
-
-	https://github.com/seancfoley/IPAddress/compare/v5.4.2...v5.5.0
-
-*/
-
 func getMaxDigitCountCalc(radix int, bitCount BitCount, calc func() int) int {
 	rad64 := uint64(radix)
 	key := (rad64 << 32) | uint64(bitCount)
