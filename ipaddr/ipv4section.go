@@ -374,7 +374,7 @@ func (section *IPv4AddressSection) GetPrefixCountLen(prefixLen BitCount) *big.In
 	} else if bc := section.GetBitCount(); prefixLen > bc {
 		prefixLen = bc
 	}
-	return section.calcCount(func() *big.Int { return new(big.Int).SetUint64(section.GetIPv4PrefixCountLen(prefixLen)) })
+	return section.calcCount(func() *big.Int { return bigZero().SetUint64(section.GetIPv4PrefixCountLen(prefixLen)) })
 }
 
 // GetIPv4PrefixCountLen returns the number of distinct prefix values in this item for the given prefix length.
@@ -406,7 +406,7 @@ func (section *IPv4AddressSection) GetBlockCount(segmentCount int) *big.Int {
 	if segmentCount <= 0 {
 		return bigOne()
 	}
-	return section.calcCount(func() *big.Int { return new(big.Int).SetUint64(section.GetIPv4BlockCount(segmentCount)) })
+	return section.calcCount(func() *big.Int { return bigZero().SetUint64(section.GetIPv4BlockCount(segmentCount)) })
 }
 
 // GetSegment returns the segment at the given index.
@@ -905,23 +905,110 @@ func (section *IPv4AddressSection) Increment(inc int64) *IPv4AddressSection {
 	if inc == 0 && !section.isMultiple() {
 		return section
 	}
-	lowerValue := uint64(section.Uint32Value())
-	upperValue := uint64(section.UpperUint32Value())
-	count := section.GetIPv4Count()
-	isOverflow := checkOverflow(inc, lowerValue, upperValue, count-1, getIPv4MaxValueLong(section.GetSegmentCount()))
-	if isOverflow {
+	lowerValueFunc := func() uint64 {
+		return uint64(section.Uint32Value())
+	}
+	upperValueFunc := func() uint64 {
+		return uint64(section.UpperUint32Value())
+	}
+	if isOverflow := checkOverflow(inc, lowerValueFunc, upperValueFunc, section.GetIPv4Count, func() uint64 { return getIPv4MaxValueLong(section.GetSegmentCount()) }, section.IsSequential); isOverflow {
 		return nil
 	}
+
 	return increment(
 		section.ToSectionBase(),
 		inc,
 		ipv4Network.getIPAddressCreator(),
-		count-1,
-		lowerValue,
-		upperValue,
+		section.GetIPv4Count,
+		lowerValueFunc,
+		upperValueFunc,
 		section.getLower,
 		section.getUpper,
 		section.getPrefixLen()).ToIPv4()
+}
+
+func low64IPv4(section *AddressSection) uint64 {
+	return uint64(section.ToIPv4().Uint32Value())
+}
+
+func low64UpperIPv4(section *AddressSection) uint64 {
+	return uint64(section.ToIPv4().UpperUint32Value())
+}
+
+func (section *IPv4AddressSection) enumerateAddrIPv4(other AddressSectionType) (val int64, ok bool) {
+	if otherSection := other.ToSectionBase(); otherSection.IsIPv4() {
+		return enumerateSmall(section.ToSectionBase(), otherSection, low64IPv4, low64UpperIPv4)
+	}
+	return
+}
+
+// Enumerate indicates where an individual address section sits relative to the address section range ordering.
+//
+// Determines how many address section elements of a range precede the given address section element, if the address section is in the range.
+// If above the range, it is the distance to the upper boundary added to the range count less one, and if below the range, the distance to the lower boundary.
+//
+// In other words, if the given address section is not in the range but above it, returns the number of address sections preceding the address from the upper range boundary,
+// added to one less than the total number of range address sections.  If the given address section is not in the subnet but below it, returns the number of address sections following the address section to the lower subnet boundary.
+//
+// If the argument is not in the range, but neither above nor below the range, then 0 is returned and ok is false.
+//
+// Enumerate returns 0 and false when the argument is multi-valued. The argument must be an individual address section.
+//
+// When this is also an individual address section, the returned value is the distance (difference) between the two address section values.
+//
+// If the given address section does not have the same version or type, then ok is false.
+//
+// Sections must also have the same number of segments to be comparable, otherwise ok is false.
+func (section *IPv4AddressSection) EnumerateIPv4(other AddressSectionType) (val int64, ok bool) {
+	if other != nil {
+		if otherSection := other.ToSectionBase(); otherSection != nil && otherSection.IsIPv4() {
+			if matches, count := section.matchesTypeAndCount(otherSection); matches && count <= 8 {
+				return enumerateSmall(section.ToSectionBase(), otherSection, low64IPv4, low64UpperIPv4)
+			}
+		}
+	}
+	return
+}
+
+func (section *IPv4AddressSection) enumerateAddr(other AddressSectionType) *big.Int {
+	if val, ok := section.enumerateAddrIPv4(other); ok {
+		return big.NewInt(val)
+	}
+	return nil
+}
+
+// Enumerate indicates where an individual address section sits relative to the address section range ordering.
+//
+// Determines how many address section elements of a range precede the given address section element, if the address section is in the range.
+// If above the range, it is the distance to the upper boundary added to the range count less one, and if below the range, the distance to the lower boundary.
+//
+// In other words, if the given address section is not in the range but above it, returns the number of address sections preceding the address from the upper range boundary,
+// added to one less than the total number of range address sections.  If the given address section is not in the subnet but below it, returns the number of address sections following the address section to the lower subnet boundary.
+//
+// If the argument is not in the range, but neither above nor below the range, then nil is returned.
+//
+// Enumerate returns nil when the argument is multi-valued. The argument must be an individual address section.
+//
+// When this is also an individual address section, the returned value is the distance (difference) between the two address section values.
+//
+// If the given address section does not have the same version or type, then nil is returned.
+//
+// Sections must also have the same number of segments to be comparable, otherwise nil is returned.
+func (section *IPv4AddressSection) Enumerate(other AddressSectionType) *big.Int {
+	if other != nil {
+		if otherSection := other.ToSectionBase(); otherSection != nil {
+			if matches, count := section.matchesTypeAndCount(otherSection); matches {
+				if count <= 8 {
+					if val, ok := enumerateSmall(section.ToSectionBase(), otherSection, low64IPv4, low64UpperIPv4); ok {
+						return big.NewInt(val)
+					}
+					return nil
+				}
+				return enumerateBig(section.ToSectionBase(), otherSection, low64IPv4, low64UpperIPv4)
+			}
+		}
+	}
+	return nil
 }
 
 // SpanWithPrefixBlocks returns an array of prefix blocks that spans the same set of individual address sections as this section.
@@ -1313,6 +1400,8 @@ func (section *IPv4AddressSection) ToCompressedWildcardString() string {
 // ToInetAtonString returns a string with a format that is styled from the inet_aton routine.
 // The string can have an octal or hexadecimal radix rather than decimal.
 // When using octal, the octal segments each have a leading zero prefix of "0", and when using hex, a prefix of "0x".
+//
+// The allowable radices are 8, 10, and 16.  Any other radix causes a panic.
 func (section *IPv4AddressSection) ToInetAtonString(radix Inet_aton_radix) string {
 	if section == nil {
 		return nilString()
@@ -1334,8 +1423,10 @@ func (section *IPv4AddressSection) ToInetAtonString(radix Inet_aton_radix) strin
 			func() string {
 				return section.toNormalizedString(inetAtonHexParams)
 			})
-	} else {
+	} else if radix == Inet_aton_radix_decimal {
 		return section.ToCanonicalString()
+	} else {
+		panic(invalidRadix)
 	}
 }
 
@@ -1348,6 +1439,8 @@ func (section *IPv4AddressSection) ToInetAtonString(radix Inet_aton_radix) strin
 //
 // If this represents a subnet section, this returns an error when unable to join two or more segments
 // into a division of a larger bit-length that represents the same set of values.
+//
+// The allowable radices are 8, 10, and 16.  Any other radix causes a panic.
 func (section *IPv4AddressSection) ToInetAtonJoinedString(radix Inet_aton_radix, joinedCount int) (string, addrerr.IncompatibleAddressError) {
 	if section == nil {
 		return nilString(), nil
@@ -1360,8 +1453,10 @@ func (section *IPv4AddressSection) ToInetAtonJoinedString(radix Inet_aton_radix,
 		stringParams = inetAtonOctalParams
 	} else if radix == Inet_aton_radix_hex {
 		stringParams = inetAtonHexParams
-	} else {
+	} else if radix == Inet_aton_radix_decimal {
 		stringParams = ipv4CanonicalParams
+	} else {
+		panic(invalidRadix)
 	}
 	return section.ToNormalizedJoinedString(stringParams, joinedCount)
 }

@@ -116,7 +116,7 @@ func (div *divIntValues) isMultiple() bool {
 }
 
 func (div *divIntValues) getCount() *big.Int {
-	res := new(big.Int)
+	res := bigZero()
 	return res.SetUint64(uint64(div.upperValue-div.value)).Add(res, bigOneConst())
 }
 
@@ -247,11 +247,12 @@ func (div *addressDivisionInternal) toString() string { // this can be moved to 
 }
 
 // Format implements [fmt.Formatter] interface. It accepts the formats
-//  - 'v' for the default address and section format (either the normalized or canonical string),
-//  - 's' (string) for the same,
-//  - 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
-//  - 'd' (decimal), 'x' (lowercase hexadecimal), and
-//  - 'X' (uppercase hexadecimal).
+//   - 'v' for the default address and section format (either the normalized or canonical string),
+//   - 's' (string) for the same,
+//   - 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
+//   - 'd' (decimal), 'x' (lowercase hexadecimal), and
+//   - 'X' (uppercase hexadecimal).
+//
 // Also supported are some of fmt's format flags for integral types.
 // Sign control is not supported since addresses and sections are never negative.
 // '#' for an alternate format is supported, which adds a leading zero for octal, and for hexadecimal it adds
@@ -834,7 +835,7 @@ func (div *addressDivisionInternal) getDefaultSegmentWildcardString() string {
 //
 // Since no parameters for the string are provided, default settings are used, but they must be consistent with the address.
 //
-//For instance, generally the '-' is used as a range separator, but in some cases that character is used for a segment separator.
+// For instance, generally the '-' is used as a range separator, but in some cases that character is used for a segment separator.
 //
 // Note that this only applies to "default" settings, there are additional string methods that allow you to specify these separator characters.
 // Those methods must be aware of the defaults as well, to know when they can defer to the defaults and when they cannot.

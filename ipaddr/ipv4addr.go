@@ -1296,6 +1296,57 @@ func (addr *IPv4Address) Increment(increment int64) *IPv4Address {
 	return addr.init().increment(increment).ToIPv4()
 }
 
+// Enumerate indicates where an address sits relative to the subnet ordering.
+//
+// Determines how many address elements of the subnet precede the given address element, if the address is in the subnet.
+// If above the subnet range, it is the distance to the upper boundary added to the subnet count less one, and if below the subnet range, the distance to the lower boundary.
+// If not in the subnet, but neither above nor below the range, then 0 is returned and ok is false.
+//
+// In other words, if the given address is not in the subnet but above it, returns the number of addresses preceding the address from the upper range boundary,
+// added to one less than the total number of subnet addresses.  If the given address is not in the subnet but below it, returns the number of addresses following the address to the lower subnet boundary.
+//
+// The ok value is false when the argument is multi-valued. The argument must be an individual address.
+//
+// When this is also an individual address, the returned value is the distance (difference) between the two addresses.
+//
+// If the given address does not have the same version or type, then ok is false.
+func (addr *IPv4Address) EnumerateIPv4(other AddressType) (val int64, ok bool) {
+	if other != nil {
+		if otherAddr := other.ToAddressBase(); otherAddr != nil {
+			return addr.GetSection().enumerateAddrIPv4(otherAddr.GetSection())
+		}
+	}
+	return
+}
+
+// Enumerate indicates where an address sits relative to the subnet ordering.
+//
+// Determines how many address elements of the subnet precede the given address element, if the address is in the subnet.
+// If above the subnet range, it is the distance to the upper boundary added to the subnet count less one, and if below the subnet range, the distance to the lower boundary.
+//
+// In other words, if the given address is not in the subnet but above it, returns the number of addresses preceding the address from the upper range boundary,
+// added to one less than the total number of subnet addresses.  If the given address is not in the subnet but below it, returns the number of addresses following the address to the lower subnet boundary.
+//
+// If the argument is not in the subnet, but neither above nor below the range, then nil is returned.
+//
+// Enumerate returns nil when the argument is multi-valued. The argument must be an individual address.
+//
+// When this is also an individual address, the returned value is the distance (difference) between the two addresses.
+//
+// Enumerate is the inverse of the increment method:
+//   - subnet.Enumerate(subnet.Increment(inc)) = inc
+//   - subnet.Increment(subnet.Enumerate(newAddr)) = newAddr
+//
+// If the given address does not have the same version or type, then nil is returned.
+func (addr *IPv4Address) Enumerate(other AddressType) *big.Int {
+	if other != nil {
+		if otherAddr := other.ToAddressBase(); otherAddr != nil {
+			return addr.GetSection().enumerateAddr(otherAddr.GetSection())
+		}
+	}
+	return nil
+}
+
 // SpanWithPrefixBlocks returns an array of prefix blocks that cover the same set of addresses as this subnet.
 //
 // Unlike SpanWithPrefixBlocksTo, the result only includes addresses that are a part of this subnet.

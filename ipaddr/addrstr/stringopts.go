@@ -37,6 +37,11 @@ const (
 	macColonSegmentSeparator = ':'
 	rangeSeparatorStr        = "-"
 	segmentWildcardStr       = "*"
+
+	MinRadix = 2
+	MaxRadix = 85
+
+	invalidRadix = "invalid radix"
 )
 
 // Wildcards specifies the wildcards to use when constructing an address string.
@@ -295,7 +300,11 @@ func (builder *StringOptionsBuilder) SetExpandedSegments(expandSegments bool) *S
 }
 
 // SetRadix sets the radix to be used.
+// A radix less than MinRadix or greater than MaxRadix results in a panic.
 func (builder *StringOptionsBuilder) SetRadix(base int) *StringOptionsBuilder {
+	if base < MinRadix && base > MaxRadix {
+		panic(invalidRadix)
+	}
 	builder.base = base
 	return builder
 }

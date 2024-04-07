@@ -1161,6 +1161,45 @@ func (section *addressSectionInternal) contains(other AddressSectionType) bool {
 	return true
 }
 
+func low64(section *AddressSection) (res uint64) {
+	return low64Bytes(section.Bytes())
+}
+
+func low64Upper(section *AddressSection) (res uint64) {
+	return low64Bytes(section.UpperBytes())
+}
+
+func low64Bytes(bts []byte) (res uint64) {
+	byteLen := len(bts)
+	if byteLen > 8 {
+		bts = bts[byteLen-8:]
+	} else if byteLen > 0 {
+		res = uint64(bts[0])
+		for i := 1; i < byteLen; i++ {
+			res = (res << 8) | uint64(bts[i])
+		}
+	}
+	return
+}
+
+func (section *addressSectionInternal) enumerate(other AddressSectionType) *big.Int {
+	if sect := section.toIPv4AddressSection(); sect != nil {
+		return sect.Enumerate(other)
+	} else if sect := section.toIPv6AddressSection(); sect != nil {
+		return sect.Enumerate(other)
+	} else if sect := section.toMACAddressSection(); sect != nil {
+		return sect.Enumerate(other)
+	}
+	if other != nil {
+		if otherSection := other.ToSectionBase(); otherSection != nil {
+			if matches, _ := section.matchesTypeAndCount(otherSection); matches {
+				return enumerateBig(section.toAddressSection(), otherSection, low64, low64Upper)
+			}
+		}
+	}
+	return nil
+}
+
 func (section *addressSectionInternal) getStringCache() *stringCache {
 	if section.hasNoDivisions() {
 		return &zeroStringCache
@@ -2553,6 +2592,27 @@ func (section *AddressSection) IncrementBoundary(increment int64) *AddressSectio
 // On overflow or underflow, Increment returns nil.
 func (section *AddressSection) Increment(increment int64) *AddressSection {
 	return section.increment(increment)
+}
+
+// Enumerate indicates where an individual address section sits relative to the address section range ordering.
+//
+// Determines how many address section elements of a range precede the given address section element, if the address section is in the range.
+// If above the range, it is the distance to the upper boundary added to the range count less one, and if below the range, the distance to the lower boundary.
+//
+// In other words, if the given address section is not in the range but above it, returns the number of address sections preceding the address from the upper range boundary,
+// added to one less than the total number of range address sections.  If the given address section is not in the subnet but below it, returns the number of address sections following the address section to the lower subnet boundary.
+//
+// If the argument is not in the range, but neither above nor below the range, then nil is returned.
+//
+// Enumerate returns nil when the argument is multi-valued. The argument must be an individual address section.
+//
+// When this is also an individual address section, the returned value is the distance (difference) between the two address section values.
+//
+// If the given address section does not have the same version or type, then nil is returned.
+//
+// Sections must also have the same number of segments to be comparable, otherwise nil is returned.
+func (section *AddressSection) Enumerate(other AddressSectionType) *big.Int {
+	return section.enumerate(other)
 }
 
 // ReverseBits returns a new section with the bits reversed.  Any prefix length is dropped.

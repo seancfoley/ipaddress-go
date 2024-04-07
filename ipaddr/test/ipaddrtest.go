@@ -2063,8 +2063,7 @@ func (t ipAddressTester) run() {
 	t.testIncrement("ffff:ffff:ffff:ffff:7fff:ffff:ffff:ffff", math.MinInt64, "ffff:ffff:ffff:fffe:ffff:ffff:ffff:ffff")
 	t.testIncrement("ffff:ffff:ffff:ffff:7fff:ffff:ffff:fffe", math.MinInt64, "ffff:ffff:ffff:fffe:ffff:ffff:ffff:fffe")
 	t.testIncrement("::8000:0:0:0", math.MinInt64, "::")
-	t.testIncrement("::7fff:ffff:ffff:ffff", math.MinInt64, "")
-	t.testIncrement("::7fff:ffff:ffff:ffff", math.MinInt64, "")
+	t.testIncrement("::7fff:ffff:ffff:ffff", math.MinInt64, "") //7fffffffffffffff or 9223372036854775807 vs -9223372036854775808
 	t.testIncrement("::7fff:ffff:ffff:fffe", math.MinInt64, "")
 	t.testIncrement("ffff:ffff:ffff:ffff:8000::0", math.MaxInt64, "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")
 	t.testIncrement("ffff:ffff:ffff:ffff:8000::1", math.MaxInt64, "")
@@ -2092,6 +2091,18 @@ func (t ipAddressTester) run() {
 	t.testIncrement("::1:ffff", -2, "::1:fffd")
 	t.testIncrement("::1:ffff", -0x10000, "::ffff")
 	t.testIncrement("::1:ffff", -0x10001, "::fffe")
+
+	oneShifted126 := bigZero().Lsh(bigOne(), 126)
+	t.testIncrementBig("1::1:ffff", oneShifted126, "4001::1:ffff")
+	t.testIncrementBig("1::1:ffff", oneShifted126.Lsh(oneShifted126, 1), "8001::1:ffff")
+	t.testIncrementBig("1::1:ffff", oneShifted126.Lsh(oneShifted126, 1), "")
+	t.testIncrementBig("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff", bigOne(), "")
+	t.testIncrementBig("ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffe", bigOne(), "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")
+	t.testIncrementBig("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff", bigZero().Neg(bigOne()), "ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffe")
+	t.testIncrementBig("::", bigZero().Neg(bigOne()), "")
+	t.testIncrementBig("::1", bigZero().Neg(bigOne()), "::")
+	t.testIncrementBig("::", bigOneConst(), "::1")
+	t.testIncrementBig("::", bigZeroConst(), "::")
 
 	t.testLeadingZeroAddr("00.1.2.3", true)
 	t.testLeadingZeroAddr("1.00.2.3", true)
@@ -4767,7 +4778,33 @@ func (t ipAddressTester) testIncrement(originalStr string, increment int64, resu
 	if resultStr != "" {
 		addr = t.createAddress(resultStr).GetAddress()
 	}
-	t.testBase.testIncrement(t.createAddress(originalStr).GetAddress().ToAddressBase(), increment, addr.ToAddressBase())
+	orig := t.createAddress(originalStr).GetAddress().ToAddressBase()
+	if orig.IsIPv6() { // test the variant that takes BigInteger increments
+		t.testIncrementBigAddrs(orig.ToIPv6(), big.NewInt(increment), addr.ToIPv6())
+	}
+	t.testBase.testIncrement(orig, increment, addr.ToAddressBase())
+}
+
+func (t ipAddressTester) testIncrementBigAddrs(orig *ipaddr.IPv6Address, increment *big.Int, expectedResult *ipaddr.IPv6Address) {
+	t.testBase.testIncrementBig(orig, increment, expectedResult)
+	if expectedResult != nil {
+		if orig.IsSequential() {
+			val := orig.GetValue()
+			newAddr, err := ipaddr.NewIPv6AddressFromInt(val.Add(val, increment))
+			if err != nil || !newAddr.Equal(expectedResult) {
+				t.addFailure(newIPAddrFailure("increment creation mismatch result "+
+					newAddr.String()+" vs expected "+expectedResult.String(), orig.ToIP()))
+			}
+		}
+	}
+}
+
+func (t ipAddressTester) testIncrementBig(originalStr string, increment *big.Int, resultStr string) {
+	var addr *ipaddr.IPAddress
+	if resultStr != "" {
+		addr = t.createAddress(resultStr).GetAddress()
+	}
+	t.testIncrementBigAddrs(t.createAddress(originalStr).GetAddress().ToIPv6(), increment, addr.ToIPv6())
 }
 
 func (t ipAddressTester) testLeadingZeroAddr(addrStr string, hasLeadingZeros bool) {

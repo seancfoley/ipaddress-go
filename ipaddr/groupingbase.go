@@ -344,7 +344,7 @@ func (grouping *addressDivisionGroupingBase) cacheCount(counter func() *big.Int)
 		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache.cachedCount))
 		atomicStorePointer(dataLoc, unsafe.Pointer(count))
 	}
-	return new(big.Int).Set(count)
+	return bigZero().Set(count)
 }
 
 // cachedCount returns the cached count value, not a duplicate
@@ -384,7 +384,7 @@ func (grouping *addressDivisionGroupingBase) cacheUint64PrefixCount(counter func
 	count := (*big.Int)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&cache.cachedPrefixCount))))
 	if count == nil {
 		count64 := grouping.calcUint64PrefixCount(counter)
-		count = new(big.Int).SetUint64(count64)
+		count = bigZero().SetUint64(count64)
 		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache.cachedPrefixCount))
 		atomicStorePointer(dataLoc, unsafe.Pointer(count))
 		return count64
@@ -403,7 +403,7 @@ func (grouping *addressDivisionGroupingBase) cachePrefixCount(counter func() *bi
 		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache.cachedPrefixCount))
 		atomicStorePointer(dataLoc, unsafe.Pointer(count))
 	}
-	return new(big.Int).Set(count)
+	return bigZero().Set(count)
 }
 
 func (grouping *addressDivisionGroupingBase) calcPrefixCount(counter func() *big.Int) *big.Int {
@@ -452,16 +452,18 @@ func (grouping *addressDivisionGroupingBase) getCachedBytes(calcBytes func() (by
 //
 // Generally, this means that any division covering a range of values must be followed by divisions that are full range, covering all values.
 func (grouping *addressDivisionGroupingBase) IsSequential() bool {
-	count := grouping.GetDivisionCount()
-	if count > 1 {
-		for i := 0; i < count; i++ {
-			if grouping.getDivision(i).isMultiple() {
-				for i++; i < count; i++ {
-					if !grouping.getDivision(i).IsFullRange() {
-						return false
+	if grouping.isMultiple() {
+		count := grouping.GetDivisionCount()
+		if count > 1 {
+			for i := 0; i < count; i++ {
+				if grouping.getDivision(i).isMultiple() {
+					for i++; i < count; i++ {
+						if !grouping.getDivision(i).IsFullRange() {
+							return false
+						}
 					}
+					return true
 				}
-				return true
 			}
 		}
 	}

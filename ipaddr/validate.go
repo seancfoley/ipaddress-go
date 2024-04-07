@@ -2529,7 +2529,7 @@ func isHexDelimiter(c byte) bool {
 }
 
 var lowBitsVal uint64 = 0xffffffffffffffff
-var lowBitsMask = new(big.Int).SetUint64(lowBitsVal)
+var lowBitsMask = bigZero().SetUint64(lowBitsVal)
 
 func parseBase85(
 	validationOptions addrstrparam.IPAddressStringParams,
@@ -3449,7 +3449,7 @@ func parse85(s string, start, end int) *big.Int {
 			next := charArray[s[start]]
 			partialResult = (partialResult * 85) + uint64(next)
 		}
-		result.Mul(&result, &base85Powers[power]).Add(&result, new(big.Int).SetUint64(partialResult))
+		result.Mul(&result, &base85Powers[power]).Add(&result, bigZero().SetUint64(partialResult))
 		if last {
 			break
 		}

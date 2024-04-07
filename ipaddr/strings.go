@@ -18,16 +18,19 @@ package ipaddr
 
 import (
 	"math/big"
+	"math/bits"
 	"strconv"
 	"strings"
 	"unsafe"
 
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
+	"github.com/seancfoley/ipaddress-go/ipaddr/addrstr"
 )
 
 const (
 	digits = "0123456789abcdefghijklmnopqrstuvwxyz"
 
+	// for radix > 36, upper and lower case letters represent different digits.
 	extendedDigits = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!#$%&()*+-;<=>?@^_`{|}~"
 
 	uppercaseDigits = extendedDigits
@@ -42,6 +45,14 @@ const (
 		"70717273747576777879" +
 		"80818283848586878889" +
 		"90919293949596979899"
+
+	// MinRadix is the mininum radix allowed by this library whem printing values in strings
+	MinRadix = addrstr.MinRadix
+
+	// MaxRadix is the maxumum radix allowed by this library whem printing values in strings
+	MaxRadix = addrstr.MaxRadix
+
+	invalidRadix = "invalid radix"
 )
 
 func isExtendedDigits(radix int) bool {
@@ -548,7 +559,7 @@ func getRadixPower(radix *big.Int, power int) *big.Int {
 	if res, ok := theMap[key]; ok {
 		return res
 	}
-	result := new(big.Int)
+	result := bigZero()
 	if (power & 1) == 0 {
 		halfPower := getRadixPower(radix, power>>1)
 		result.Mul(halfPower, halfPower)
@@ -1106,16 +1117,77 @@ func createDigitMap() *map[uint64]int {
 }
 
 func getBigMaxDigitCount(radix int, bitCount BitCount, maxValue *BigDivInt) int {
+	if digs, ok := getDigitCountFromBitCount(radix, bitCount); ok {
+		return digs
+	}
 	return getMaxDigitCountCalc(radix, bitCount, func() int {
 		return getBigDigitCount(maxValue, big.NewInt(int64(radix)))
 	})
 }
 
 func getMaxDigitCount(radix int, bitCount BitCount, maxValue uint64) int {
+	if digs, ok := getDigitCountFromBitCount(radix, bitCount); ok {
+		return digs
+	} else if radix == 10 {
+		// by far the most common cases will be the first few, justifying this multiple if/else block
+		if maxValue < 10 {
+			return 1
+		} else if maxValue < 100 {
+			return 2
+		} else if maxValue < 1000 {
+			return 3
+		} else if maxValue < 10000 {
+			return 4
+		} else if maxValue < 100000 {
+			return 5
+		} else if maxValue < 1000000 {
+			return 6
+		} else if maxValue < 10000000 {
+			return 7
+		} else if maxValue < 100000000 {
+			return 8
+		} else if maxValue < 1000000000 {
+			return 9
+		} else if maxValue < 10000000000 {
+			return 10
+		} else if maxValue < 100000000000 {
+			return 11
+		} else if maxValue < 1000000000000 {
+			return 12
+		} else if maxValue < 10000000000000 {
+			return 13
+		} else if maxValue < 100000000000000 {
+			return 14
+		} else if maxValue < 1000000000000000 {
+			return 15
+		} else if maxValue < 10000000000000000 {
+			return 16
+		} else if maxValue < 100000000000000000 {
+			return 17
+		} else if maxValue < 1000000000000000000 {
+			return 18
+		}
+		return 19
+	}
 	return getMaxDigitCountCalc(radix, bitCount, func() int {
 		return getDigitCount(maxValue, radix)
 	})
 }
+
+/*
+TODO NEXT RELEASE all these:
+- YES anything I added to Java 5.5.0 not in Go
+	- DONE I need the radix and bitcount fixes, especially infinite loops
+	- DONE enumerate method
+	- dual tries? maybe
+	- new parsing of those inet_aton addresses (a straight port from Java should to it)
+	- overlaps
+	- DONE increment with big integer added to ipv6
+	- floor/lower/ceiling/higher in tries from floorAddedNode/lowerAddeNode...
+
+	https://github.com/seancfoley/IPAddress/compare/v5.4.2...v5.5.0
+
+*/
 
 func getMaxDigitCountCalc(radix int, bitCount BitCount, calc func() int) int {
 	rad64 := uint64(radix)
@@ -1137,16 +1209,28 @@ func getMaxDigitCountCalc(radix int, bitCount BitCount, calc func() int) int {
 	return digs
 }
 
+func getDigitCountFromBitCount(radix int, bitCount BitCount) (int, bool) {
+	if bitCount == 0 {
+		return 1, true
+	}
+	switch radix {
+	case 16:
+		return (bitCount + 3) >> 2, true //every 4 bits is another digit
+	case 8:
+		return (bitCount + 2) / 3, true //every 3 bits is another digit
+	case 4:
+		return (bitCount + 1) >> 1, true //every 2 bits is another digit
+	case 2:
+		return bitCount, true //every bit is another digit
+	default:
+	}
+	return 0, false
+}
+
 func getDigitCount(value uint64, radix int) int {
 	result := 1
 	if radix == 16 {
-		for {
-			value >>= 4
-			if value == 0 {
-				break
-			}
-			result++
-		}
+		result, _ = getDigitCountFromBitCount(16, bits.Len64(value))
 	} else {
 		if radix == 10 {
 			if value < 10 {
@@ -1159,6 +1243,7 @@ func getDigitCount(value uint64, radix int) int {
 			value /= 1000
 			result = 3 //we start with 3 in the loop below
 		} else if radix == 8 {
+			// could have used getDigitCountFromBitCount but chose to avoid the division
 			for {
 				value >>= 3
 				if value == 0 {
@@ -1167,6 +1252,14 @@ func getDigitCount(value uint64, radix int) int {
 				result++
 			}
 			return result
+		} else if radix == 2 {
+			result, _ = getDigitCountFromBitCount(2, bits.Len64(value))
+			return result
+		} else if radix == 4 {
+			result, _ = getDigitCountFromBitCount(4, bits.Len64(value))
+		} else if radix == 1 || radix == -1 {
+			// this is unnecessary because the library disallows radix < MinRadix, but is here for safety
+			panic(invalidRadix)
 		}
 		rad64 := uint64(radix)
 		for {
@@ -1181,8 +1274,34 @@ func getDigitCount(value uint64, radix int) int {
 }
 
 func getBigDigitCount(val, radix *BigDivInt) int {
-	if bigIsZero(val) || bigAbsIsOne(val) {
+	if bigAbsIsOne(radix) {
+		// this is unnecessary because the library disallows radix < MinRadix, but is here for safety
+		panic(invalidRadix)
+	} else if bigIsZero(val) || bigAbsIsOne(val) {
 		return 1
+	}
+	smallRadix := radix.Uint64()
+	if smallRadix == 16 {
+		result, _ := getDigitCountFromBitCount(16, val.BitLen())
+		return result
+	} else if smallRadix == 8 {
+		// could have used getDigitCount like hex, but chose to avoid the division
+		result := 1
+		var v big.Int
+		v.Set(val)
+		for {
+			v.Rsh(&v, 3)
+			if bigIsZero(&v) {
+				break
+			}
+			result++
+		}
+		return result
+	} else if smallRadix == 2 {
+		return val.BitLen()
+	} else if smallRadix == 4 {
+		result, _ := getDigitCountFromBitCount(4, val.BitLen())
+		return result
 	}
 	result := 1
 	var v big.Int

@@ -149,7 +149,7 @@ func (rng *SequentialRange[T]) getCachedCount(copy bool) (res *big.Int) {
 			if ipv4Lower, ok := any(lower).(*IPv4Address); ok {
 				ipv4Upper := any(upper).(*IPv4Address)
 				val := int64(ipv4Upper.Uint32Value()) - int64(ipv4Lower.Uint32Value()) + 1
-				count = new(big.Int).SetInt64(val)
+				count = bigZero().SetInt64(val)
 			} else {
 				count = upper.GetValue()
 				res = lower.GetValue()
@@ -162,7 +162,7 @@ func (rng *SequentialRange[T]) getCachedCount(copy bool) (res *big.Int) {
 	}
 	if res == nil {
 		if copy {
-			res = new(big.Int).Set(count)
+			res = bigZero().Set(count)
 		} else {
 			res = count
 		}
@@ -188,7 +188,7 @@ func (rng *SequentialRange[T]) GetPrefixCountLen(prefixLen BitCount) *big.Int {
 		upperAdjusted := ipv4Upper.Uint32Value() >> uint(shiftAdjustment)
 		lowerAdjusted := ipv4Lower.Uint32Value() >> uint(shiftAdjustment)
 		result := int64(upperAdjusted) - int64(lowerAdjusted) + 1
-		return new(big.Int).SetInt64(result)
+		return bigZero().SetInt64(result)
 	}
 	upperVal := rng.upper.GetValue()
 	ushiftAdjustment := uint(shiftAdjustment)
@@ -573,6 +573,33 @@ func (rng *SequentialRange[T]) ContainsRange(other IPAddressSeqRangeType) bool {
 	}
 	return compareLowIPAddressValues(otherRange.GetLower(), rng.lower) >= 0 &&
 		compareLowIPAddressValues(otherRange.GetUpper(), rng.upper) <= 0
+}
+
+// Enumerate indicates where an address sits relative to the range ordering.
+//
+// Determines how many address elements of a range precede the given address element, if the address is in the range.
+// If above the range, it is the distance to the upper boundary added to the range count less one, and if below the range, the distance to the lower boundary.
+//
+// In other words, if the given address is not in the range but above it, returns the number of addresses preceding the address from the upper range boundary,
+// added to one less than the total number of range addresses.  If the given address is not in the subnet but below it, returns the number of addresses following the address to the lower subnet boundary.
+//
+// Returns nil when the argument is multi-valued. The argument must be an individual address.
+//
+// Enumerate is the inverse of the increment method:
+//   - rng.Enumerate(rng.Increment(inc)) = inc
+//   - rng.Increment(rng.Enumerate(newAddr)) = newAddr
+//
+// If the given address is not the same version as this range, then nil is returned.
+func (rng *SequentialRange[T]) Enumerate(other IPAddressType) *big.Int {
+	lower := rng.GetLower()
+	otherIpAddr := other.ToIP()
+	if otherIpAddr == lower.ToIP() {
+		return bigZero()
+	} else if other == rng.GetUpper().ToIP() {
+		count := rng.GetCount()
+		return count.Sub(count, bigOneConst())
+	}
+	return lower.Enumerate(other)
 }
 
 // Equal returns whether the given sequential address range is equal to this sequential address range.

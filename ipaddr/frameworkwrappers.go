@@ -17,6 +17,8 @@
 package ipaddr
 
 import (
+	"math/big"
+
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrstr"
 )
@@ -143,6 +145,21 @@ type ExtendedSegmentSeries interface {
 	//
 	// On overflow or underflow, IncrementBoundary returns nil.
 	IncrementBoundary(int64) ExtendedSegmentSeries
+
+	// Enumerate indicates where an address series sits relative to the range ordering.
+	//
+	// Determines how many address series elements of a range precede the given address series element, if the address series is in the range.
+	// If above the range, it is the distance to the upper boundary added to the range count less one, and if below the range, the distance to the lower boundary.
+	//
+	// In other words, if the given address series is not in the range but above it, returns the number of address series preceding the address series from the upper range boundary,
+	// added to one less than the total number of range address series.  If the given address series is not in the subnet but below it, returns the number of address series following the address to the lower subnet boundary.
+	//
+	// Returns nil when the argument is multi-valued. The argument must be an individual address series.
+	//
+	// When this is also an individual address series, the returned value is the distance (difference) between the two address series values.
+	//
+	// If the given address does not have the same version or type, then nil is returned.
+	Enumerate(ExtendedSegmentSeries) *big.Int
 
 	// GetLower returns the series in the range with the lowest numeric value,
 	// which will be the same series if it represents a single value.
@@ -376,6 +393,30 @@ func (addr WrappedAddress) Increment(i int64) ExtendedSegmentSeries {
 // On overflow or underflow, IncrementBoundary returns nil.
 func (addr WrappedAddress) IncrementBoundary(i int64) ExtendedSegmentSeries {
 	return convAddrToIntf(addr.Address.IncrementBoundary(i))
+}
+
+// Enumerate indicates where an address sits relative to the subnet ordering.
+//
+// Determines how many address elements of the subnet precede the given address element, if the address is in the subnet.
+// If above the subnet range, it is the distance to the upper boundary added to the subnet count less one, and if below the subnet range, the distance to the lower boundary.
+//
+// In other words, if the given address is not in the subnet but above it, returns the number of addresses preceding the address from the upper range boundary,
+// added to one less than the total number of subnet addresses.  If the given address is not in the subnet but below it, returns the number of addresses following the address to the lower subnet boundary.
+//
+// Returns nil when the argument is multi-valued. The argument must be an individual address.
+//
+// When this is also an individual address, the returned value is the distance (difference) between the two addresses.
+//
+// Enumerate is the inverse of the increment method:
+//   - subnet.Enumerate(subnet.Increment(inc)) = inc
+//   - subnet.Increment(subnet.Enumerate(newAddr)) = newAddr
+//
+// If the given argument is not an address or does not have the same address version or type, then nil is returned.
+func (addr WrappedAddress) Enumerate(other ExtendedSegmentSeries) *big.Int {
+	if a, ok := other.Unwrap().(AddressType); ok {
+		return addr.Address.Enumerate(a)
+	}
+	return nil
 }
 
 // GetLower returns the series in the range with the lowest numeric value,
@@ -635,6 +676,30 @@ func (section WrappedAddressSection) Increment(i int64) ExtendedSegmentSeries {
 // On overflow or underflow, IncrementBoundary returns nil.
 func (section WrappedAddressSection) IncrementBoundary(i int64) ExtendedSegmentSeries {
 	return convSectToIntf(section.AddressSection.IncrementBoundary(i))
+}
+
+// Enumerate indicates where an individual address section sits relative to the address section range ordering.
+//
+// Determines how many address section elements of a range precede the given address section element, if the address section is in the range.
+// If above the range, it is the distance to the upper boundary added to the range count less one, and if below the range, the distance to the lower boundary.
+//
+// In other words, if the given address section is not in the range but above it, returns the number of address sections preceding the address from the upper range boundary,
+// added to one less than the total number of range address sections.  If the given address section is not in the subnet but below it, returns the number of address sections following the address section to the lower subnet boundary.
+//
+// If the argument is not in the range, but neither above nor below the range, then nil is returned.
+//
+// Enumerate returns nil when the argument is multi-valued. The argument must be an individual address section.
+//
+// When this is also an individual address section, the returned value is the distance (difference) between the two address section values.
+//
+// If the given argument is not an address section, or does not have the same version or type, then nil is returned.
+//
+// Sections must also have the same number of segments to be comparable, otherwise nil is returned.
+func (section WrappedAddressSection) Enumerate(other ExtendedSegmentSeries) *big.Int {
+	if a, ok := other.Unwrap().(AddressSectionType); ok {
+		return section.AddressSection.Enumerate(a)
+	}
+	return nil
 }
 
 // GetLower returns the series in the range with the lowest numeric value,

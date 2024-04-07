@@ -17,9 +17,10 @@ package ipaddr
 
 import (
 	"fmt"
+	"unsafe"
+
 	"github.com/seancfoley/bintree/tree"
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
-	"unsafe"
 )
 
 // TrieKeyConstraint is the generic type constraint used for tree keys, which are individual addresses and prefix block subnets.
@@ -116,6 +117,10 @@ func (a trieKey[T]) GetTrieKeyData() *tree.TrieKeyData {
 	return a.address.toAddressBase().getTrieCache()
 }
 
+// Note: We could instead have implemented followingBitsFlag as a *uint64 returned from BitsMatchPartially.
+// The code calling BitsMatchPartially would be responsible for filling in the flag before returning true to continue.
+// But it is unclear if there is any benefit and we'd want to measure the performance impact.
+
 // MatchBits returns false if we need to keep going and try to match sub-nodes.
 // MatchBits returns true if the bits do not match, or the bits match to the very end.
 func (a trieKey[T]) MatchBits(key trieKey[T], bitIndex int, simpleSearch bool, handleMatch tree.KeyCompareResult, newTrieCache *tree.TrieKeyData) (continueToNext bool, followingBitsFlag uint64) {
@@ -160,7 +165,7 @@ func (a trieKey[T]) MatchBits(key trieKey[T], bitIndex int, simpleSearch bool, h
 							continueToNext = true
 							followingBitsFlag = uint64(newTrieCache.Uint32Val & 0x80000000)
 						}
-					} else if existingPrefLenBits == bitIndex {
+					} else if existingPrefLenBits == bitIndex { // optimized case where no matching is required because bit index had advanced by just one
 						if newPrefLen != nil && existingPrefLenBits >= newPrefLen.bitCount() {
 							handleMatch.BitsMatch()
 						} else if handleMatch.BitsMatchPartially() {
@@ -226,7 +231,7 @@ func (a trieKey[T]) MatchBits(key trieKey[T], bitIndex int, simpleSearch bool, h
 							continueToNext = true
 							followingBitsFlag = newTrieCache.Uint64HighVal & 0x8000000000000000
 						}
-					} else if existingPrefLenBits == bitIndex {
+					} else if existingPrefLenBits == bitIndex { // optimized case where no matching is required because bit index had advanced by just one
 						if newPrefLen != nil && existingPrefLenBits >= newPrefLen.bitCount() {
 							handleMatch.BitsMatch()
 						} else if handleMatch.BitsMatchPartially() {
@@ -357,6 +362,10 @@ func (a trieKey[T]) MatchBits(key trieKey[T], bitIndex int, simpleSearch bool, h
 				if matchingBits >= existingSegmentPrefLen { // match - the current subnet/address is a match so far, and we must go further to check smaller subnets
 					if handleMatch.BitsMatchPartially() {
 						continueToNext = true
+
+						// calculate the followingBitsFlag
+
+						// check if at end of segment, advance to next if so
 						if existingSegmentPrefLen == bitsPerSegment {
 							segmentIndex++
 							if segmentIndex == segmentCount {
@@ -365,6 +374,8 @@ func (a trieKey[T]) MatchBits(key trieKey[T], bitIndex int, simpleSearch bool, h
 							newSegment = newAddr.getSegment(segmentIndex)
 							existingSegmentPrefLen = 0
 						}
+
+						// check the bit for followingBitsFlag
 						if newSegment.IsOneBit(existingSegmentPrefLen) {
 							followingBitsFlag = 0x8000000000000000
 						}

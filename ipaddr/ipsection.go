@@ -98,10 +98,6 @@ func deriveIPAddressSectionPrefLen(from *IPAddressSection, segments []*AddressDi
 	return
 }
 
-//
-//
-//
-//
 type ipAddressSectionInternal struct {
 	addressSectionInternal
 }
@@ -1582,9 +1578,10 @@ func (section *IPAddressSection) Contains(other AddressSectionType) bool {
 // Equal returns whether the given address section is equal to this address section.
 // Two address sections are equal if they represent the same set of sections.
 // They must match:
-//  - type/version: IPv4, IPv6
-//  - segment counts
-//  - segment value ranges
+//   - type/version: IPv4, IPv6
+//   - segment counts
+//   - segment value ranges
+//
 // Prefix lengths are ignored.
 func (section *IPAddressSection) Equal(other AddressSectionType) bool {
 	if section == nil {
@@ -2058,6 +2055,27 @@ func (section *IPAddressSection) IncrementBoundary(increment int64) *IPAddressSe
 // On overflow or underflow, Increment returns nil.
 func (section *IPAddressSection) Increment(increment int64) *IPAddressSection {
 	return section.increment(increment).ToIP()
+}
+
+// Enumerate indicates where an individual address section sits relative to the address section range ordering.
+//
+// Determines how many address section elements of a range precede the given address section element, if the address section is in the range.
+// If above the range, it is the distance to the upper boundary added to the range count less one, and if below the range, the distance to the lower boundary.
+//
+// In other words, if the given address section is not in the range but above it, returns the number of address sections preceding the address from the upper range boundary,
+// added to one less than the total number of range address sections.  If the given address section is not in the subnet but below it, returns the number of address sections following the address section to the lower subnet boundary.
+//
+// If the argument is not in the range, but neither above nor below the range, then nil is returned.
+//
+// Enumerate returns nil when the argument is multi-valued. The argument must be an individual address section.
+//
+// When this is also an individual address section, the returned value is the distance (difference) between the two address section values.
+//
+// If the given address section does not have the same version or type, then nil is returned.
+//
+// Sections must also have the same number of segments to be comparable, otherwise nil is returned.
+func (section *IPAddressSection) Enumerate(other AddressSectionType) *big.Int {
+	return section.enumerate(other)
 }
 
 // SpanWithPrefixBlocks returns an array of prefix blocks that spans the same set of individual address sections as this section.

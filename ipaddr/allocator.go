@@ -193,7 +193,7 @@ func (alloc *PrefixBlockAllocator[T]) AllocateSizes(blockSizes ...uint64) []Allo
 		allocated := alloc.AllocateSize(blockSize)
 		if allocated.IsMultiple() || bigIsOne(allocated.GetCount()) { // count is non-zero
 			result = append(result, AllocatedBlock[T]{
-				blockSize:     new(big.Int).SetUint64(blockSize),
+				blockSize:     bigZero().SetUint64(blockSize),
 				reservedCount: alloc.reservedCount,
 				block:         allocated,
 			})

@@ -911,6 +911,7 @@ func (t addressOrderTest) testLowValueOrder(comparator OrderingComparator, ipAdd
 }
 
 func (t addressOrderTest) checkOrdering(ordering []*Ordering, orderCount int, comparator OrderingComparator) {
+	_ = orderCount
 	length := len(ordering)
 	for i := 0; i < length; i++ {
 		val := ordering[i]

@@ -1647,6 +1647,11 @@ func (t ipAddressRangeTester) run() {
 	t.testIncrement("ffff:3-4:ffff:ffff:ffff:1-2:2-3::", 7, "ffff:4:ffff:ffff:ffff:2:3::")
 	t.testIncrement("ffff:3-4:ffff:ffff:ffff:1-2:2-3::", 9, "ffff:4:ffff:ffff:ffff:2:3:2")
 
+	oneShiftedThree := bigZero().Lsh(bigOne(), 3)
+	t.testIncrementBig("::2-4:1-3", oneShiftedThree, "::4:3")
+	t.testIncrementBig("::2-4:1-3", bigZero().Lsh(bigOne(), 128), "")
+	t.testIncrementBig("::2-4:1-3", oneShiftedThree.Sub(oneShiftedThree, bigOneConst()), "::4:2")
+
 	t.testLeadingZeroAddr("00-1.1.2.3", true)
 	t.testLeadingZeroAddr("1.00-1.2.3", true)
 	t.testLeadingZeroAddr("1.2.00-1.3", true)
@@ -3190,7 +3195,7 @@ func (t ipAddressRangeTester) testMergeImpl(result string, prefix bool, addresse
 	t.incrementTestCount()
 }
 
-//like testMerge but the merge results in two addresses
+// like testMerge but the merge results in two addresses
 func (t ipAddressRangeTester) testMerge2Impl(result, result2 string, prefix bool, addresses ...string) {
 	resultStr := t.createAddress(result)
 	resultStr2 := t.createAddress(result2)

@@ -19,10 +19,11 @@ package ipaddr
 import (
 	"bytes"
 	"fmt"
-	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
 	"math/big"
 	"strings"
 	"unsafe"
+
+	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
 )
 
 // BigDivInt is an unsigned integer type for unlimited size division values.
@@ -94,12 +95,12 @@ func newLargeDivValuesDivIntUnchecked(value, upperValue DivInt, prefLen PrefixLe
 		prefLen:  prefLen,
 		bitCount: bitCount,
 	}
-	val := new(big.Int).SetUint64(uint64(value))
+	val := bigZero().SetUint64(uint64(value))
 	if value == upperValue {
 		result.value, result.upperValue = val, val
 	} else {
 		result.isMult = true
-		result.value, result.upperValue = val, new(big.Int).SetUint64(uint64(upperValue))
+		result.value, result.upperValue = val, bigZero().SetUint64(uint64(upperValue))
 	}
 	result.maxValue = setMax(result.upperValue, bitCount)
 	var isSinglePrefBlock bool
@@ -248,8 +249,10 @@ func createLargeAddressDiv(vals divisionValues, defaultRadix int) *IPAddressLarg
 			addressDivisionBase: addressDivisionBase{vals},
 		},
 	}
-	if defaultRadix >= 2 {
-		res.defaultRadix = new(big.Int).SetInt64(int64(defaultRadix))
+	if defaultRadix >= MinRadix && defaultRadix <= MaxRadix {
+		res.defaultRadix = bigZero().SetInt64(int64(defaultRadix))
+	} else {
+		panic(invalidRadix)
 	}
 	return res
 }
@@ -304,11 +307,12 @@ func (div *addressLargeDivInternal) toString() string { // this can be moved to 
 }
 
 // Format implements [fmt.Formatter] interface. It accepts the formats
-//  - 'v' for the default address and section format (either the normalized or canonical string),
-//  - 's' (string) for the same,
-//  - 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
-//  - 'd' (decimal), 'x' (lowercase hexadecimal), and
-//  - 'X' (uppercase hexadecimal).
+//   - 'v' for the default address and section format (either the normalized or canonical string),
+//   - 's' (string) for the same,
+//   - 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
+//   - 'd' (decimal), 'x' (lowercase hexadecimal), and
+//   - 'X' (uppercase hexadecimal).
+//
 // Also supported are some of fmt's format flags for integral types.
 // Sign control is not supported since addresses and sections are never negative.
 // '#' for an alternate format is supported, which adds a leading zero for octal, and for hexadecimal it adds
@@ -333,12 +337,14 @@ func (div addressLargeDivInternal) Format(state fmt.State, verb rune) {
 
 // NewIPAddressLargeDivision creates a division of the given arbitrary bit-length, assigning it the given value.
 // If the value's bit length exceeds the given bit length, it is truncated.
+// A radix less than MinRadix or greater than MaxRadix will result in a panic.
 func NewIPAddressLargeDivision(val []byte, bitCount BitCount, defaultRadix int) *IPAddressLargeDivision {
 	return createLargeAddressDiv(newLargeDivValue(val, bitCount), defaultRadix)
 }
 
 // NewIPAddressLargeRangeDivision creates a division of the given arbitrary bit-length, assigning it the given value range.
 // If a value's bit length exceeds the given bit length, it is truncated.
+// A radix less than MinRadix or greater than MaxRadix will result in a panic.
 func NewIPAddressLargeRangeDivision(val, upperVal []byte, bitCount BitCount, defaultRadix int) *IPAddressLargeDivision {
 	return createLargeAddressDiv(newLargeDivValues(val, upperVal, bitCount), defaultRadix)
 }
@@ -346,6 +352,7 @@ func NewIPAddressLargeRangeDivision(val, upperVal []byte, bitCount BitCount, def
 // NewIPAddressLargePrefixDivision creates a division of the given arbitrary bit-length, assigning it the given value and prefix length.
 // If the value's bit length exceeds the given bit length, it is truncated.
 // If the prefix length exceeds the bit length, it is adjusted to the bit length.  If the prefix length is negative, it is adjusted to zero.
+// A radix less than MinRadix or greater than MaxRadix will result in a panic.
 func NewIPAddressLargePrefixDivision(val []byte, prefixLen PrefixLen, bitCount BitCount, defaultRadix int) *IPAddressLargeDivision {
 	return createLargeAddressDiv(newLargeDivPrefixedValue(val, prefixLen, bitCount), defaultRadix)
 }
@@ -353,6 +360,7 @@ func NewIPAddressLargePrefixDivision(val []byte, prefixLen PrefixLen, bitCount B
 // NewIPAddressLargeRangePrefixDivision creates a division of the given arbitrary bit-length, assigning it the given value range and prefix length.
 // If a value's bit length exceeds the given bit length, it is truncated.
 // If the prefix length exceeds the bit length, it is adjusted to the bit length.  If the prefix length is negative, it is adjusted to zero.
+// A radix less than MinRadix or greater than MaxRadix will result in a panic.
 func NewIPAddressLargeRangePrefixDivision(val, upperVal []byte, prefixLen PrefixLen, bitCount BitCount, defaultRadix int) *IPAddressLargeDivision {
 	return createLargeAddressDiv(newLargeDivPrefixedValues(val, upperVal, prefixLen, bitCount), defaultRadix)
 }
@@ -366,12 +374,12 @@ type IPAddressLargeDivision struct {
 
 // GetValue returns the lowest value in the address division range as a big integer.
 func (div *IPAddressLargeDivision) GetValue() *BigDivInt {
-	return new(big.Int).Set(div.addressLargeDivInternal.GetValue())
+	return bigZero().Set(div.addressLargeDivInternal.GetValue())
 }
 
 // GetUpperValue returns the highest value in the address division range as a big integer.
 func (div *IPAddressLargeDivision) GetUpperValue() *BigDivInt {
-	return new(big.Int).Set(div.addressLargeDivInternal.GetUpperValue())
+	return bigZero().Set(div.addressLargeDivInternal.GetUpperValue())
 }
 
 // GetDivisionPrefixLen returns the network prefix for the division.
@@ -935,7 +943,7 @@ func setVal(valueBytes []byte, bitCount BitCount) (assignedValue *BigDivInt, ass
 	if len(valueBytes) >= maxLen {
 		valueBytes = valueBytes[:maxLen]
 	}
-	assignedValue = new(big.Int).SetBytes(valueBytes)
+	assignedValue = bigZero().SetBytes(valueBytes)
 	maxVal = setMax(assignedValue, bitCount)
 	return
 }
@@ -969,11 +977,11 @@ func setVals(valueBytes []byte, upperBytes []byte, bitCount BitCount) (assignedV
 			}
 		}
 	}
-	assignedValue = new(big.Int).SetBytes(valueBytes)
+	assignedValue = bigZero().SetBytes(valueBytes)
 	if upperBytes == nil || bytes.Compare(valueBytes, upperBytes) == 0 {
 		assignedUpper = assignedValue
 	} else {
-		assignedUpper = new(big.Int).SetBytes(upperBytes)
+		assignedUpper = bigZero().SetBytes(upperBytes)
 		cmp := assignedValue.CmpAbs(assignedUpper)
 		if cmp == 0 {
 			assignedUpper = assignedValue
@@ -987,6 +995,9 @@ func setVals(valueBytes []byte, upperBytes []byte, bitCount BitCount) (assignedV
 }
 
 func setMax(assignedUpper *BigDivInt, bitCount BitCount) (max *BigDivInt) {
+	if bitCount <= 0 {
+		return bigZeroConst()
+	}
 	var maxVal big.Int
 	max = maxVal.Lsh(bigOneConst(), uint(bitCount)).Sub(&maxVal, bigOneConst())
 	if max.CmpAbs(assignedUpper) == 0 {

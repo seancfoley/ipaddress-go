@@ -827,6 +827,34 @@ func (addr *MACAddress) Increment(increment int64) *MACAddress {
 	return addr.init().increment(increment).ToMAC()
 }
 
+// Enumerate indicates where an address sits relative to the address collection ordering.
+//
+// Determines how many address elements of the address collection precede the given address element, if the address is in the address collection.
+// If above the address collection range, it is the distance to the upper boundary added to the count less one, and if below the address collection range, the distance to the lower boundary.
+//
+// In other words, if the given address is not in the address collection but above it, returns the number of addresses preceding the address from the upper range boundary,
+// added to one less than the total number of address collection addresses.  If the given address is not in the address collection but below it, returns the number of addresses following the address to the lower address collection boundary.
+//
+// If the argument is not in the address collection, but neither above nor below the range, then nil is returned.
+//
+// Enumerate returns nil when the argument is multi-valued. The argument must be an individual address.
+//
+// When this is also an individual address, the returned value is the distance (difference) between the two addresses.
+//
+// Enumerate is the inverse of the increment method:
+//   - subnet.Enumerate(subnet.Increment(inc)) = inc
+//   - subnet.Increment(subnet.Enumerate(newAddr)) = newAddr
+//
+// If the given address does not have the same MAC address type and size, then nil is returned.
+func (addr *MACAddress) Enumerate(other AddressType) *big.Int {
+	if other != nil {
+		if otherAddr := other.ToAddressBase(); otherAddr != nil {
+			return addr.GetSection().Enumerate(otherAddr.GetSection())
+		}
+	}
+	return nil
+}
+
 // ReverseBytes returns a new address with the bytes reversed.  Any prefix length is dropped.
 func (addr *MACAddress) ReverseBytes() *MACAddress {
 	return addr.checkIdentity(addr.GetSection().ReverseBytes())

@@ -750,8 +750,38 @@ func (t testBase) testIncrementF(orig *ipaddr.Address, increment int64, expected
 		if !result.Equal(expectedResult) {
 			t.addFailure(newSegmentSeriesFailure("increment mismatch result "+result.String()+" vs expected "+expectedResult.String(), orig))
 		}
-		if first && !orig.IsMultiple() && increment > math.MinInt64 { //negating Long.MIN_VALUE results in same address
+		enumerated := orig.Enumerate(result)
+		if enumerated.Int64() != increment {
+			t.addFailure(newSegmentSeriesFailure("enumerate mismatch result "+enumerated.String()+" vs expected "+strconv.FormatInt(increment, 10)+", "+result.String()+" enumerated", orig))
+		}
+		if first && !orig.IsMultiple() && increment > math.MinInt64 { //negating math.MinInt64 results in the same integer
 			t.testIncrementF(expectedResult, -increment, orig, false)
+		}
+	}
+	t.incrementTestCount()
+}
+
+func (t testBase) testIncrementBig(orig *ipaddr.IPv6Address, increment *big.Int, expectedResult *ipaddr.IPv6Address) {
+	t.testIncrementB(orig, increment, expectedResult, true)
+}
+
+func (t testBase) testIncrementB(orig *ipaddr.IPv6Address, increment *big.Int, expectedResult *ipaddr.IPv6Address, first bool) {
+	result := orig.IncrementBig(increment)
+	if expectedResult == nil {
+		if result != nil {
+			t.addFailure(newSegmentSeriesFailure("increment mismatch result "+result.String()+" vs none expected", orig))
+		}
+	} else {
+		if !result.Equal(expectedResult) {
+			t.addFailure(newSegmentSeriesFailure("increment mismatch result "+result.String()+" vs expected "+expectedResult.String(), orig))
+		}
+		enumerated := orig.Enumerate(result)
+		if enumerated.Cmp(increment) != 0 {
+			t.addFailure(newSegmentSeriesFailure("enumerate mismatch result "+enumerated.String()+" vs expected "+increment.String()+", "+result.String()+" enumerated", orig))
+		}
+		if first && !orig.IsMultiple() {
+			neg := bigZero().Neg(increment)
+			t.testIncrementB(expectedResult, neg, orig, false)
 		}
 	}
 	t.incrementTestCount()

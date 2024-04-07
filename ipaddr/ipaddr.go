@@ -18,12 +18,13 @@ package ipaddr
 
 import (
 	"fmt"
-	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
-	"github.com/seancfoley/ipaddress-go/ipaddr/addrstr"
 	"math/big"
 	"net"
 	"net/netip"
 	"unsafe"
+
+	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
+	"github.com/seancfoley/ipaddress-go/ipaddr/addrstr"
 )
 
 const (
@@ -1751,6 +1752,27 @@ func (addr *IPAddress) IncrementBoundary(increment int64) *IPAddress {
 // On address overflow or underflow, Increment returns nil.
 func (addr *IPAddress) Increment(increment int64) *IPAddress {
 	return addr.init().increment(increment).ToIP()
+}
+
+// Enumerate indicates where an address sits relative to the subnet ordering.
+//
+// Determines how many address elements of the subnet precede the given address element, if the address is in the subnet.
+// If above the subnet range, it is the distance to the upper boundary added to the subnet count less one, and if below the subnet range, the distance to the lower boundary.
+//
+// In other words, if the given address is not in the subnet but above it, returns the number of addresses preceding the address from the upper range boundary,
+// added to one less than the total number of subnet addresses.  If the given address is not in the subnet but below it, returns the number of addresses following the address to the lower subnet boundary.
+//
+// Returns nil when the argument is multi-valued. The argument must be an individual address.
+//
+// When this is also an individual address, the returned value is the distance (difference) between the two addresses.
+//
+// Enumerate is the inverse of the increment method:
+//   - subnet.Enumerate(subnet.Increment(inc)) = inc
+//   - subnet.Increment(subnet.Enumerate(newAddr)) = newAddr
+//
+// If the given address does not have the same version or type, then nil is returned.
+func (addr *IPAddress) Enumerate(other AddressType) *big.Int {
+	return addr.init().enumerate(other)
 }
 
 // SpanWithRange returns an IPAddressSeqRange instance that spans this subnet to the given subnet.

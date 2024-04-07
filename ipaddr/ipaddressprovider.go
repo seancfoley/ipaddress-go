@@ -624,6 +624,7 @@ func newMaskCreator(options addrstrparam.IPAddressStringParams, adjustedVersion 
 		adjustedVersion = IPVersion(options.GetPreferredVersion())
 	}
 	createVersionedMask := func(version IPVersion, prefLen PrefixLen, withPrefixLength bool) *IPAddress {
+		_ = withPrefixLength
 		if version == IPv4 {
 			network := ipv4Network
 			return network.GetNetworkMask(prefLen.bitCount())

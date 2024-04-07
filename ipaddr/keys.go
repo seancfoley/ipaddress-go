@@ -82,7 +82,7 @@ type SequentialRangeKey[T SequentialRangeConstraint[T]] struct {
 		lower,
 		upper uint64
 	}
-	addrType addrType // only used when T is *IPAddress to indicate version for non-zero valued address
+	addrType addrType // only used when T is *IPAddress to indicate version for non-zero-valued address
 }
 
 // ToSeqRange converts back to a sequential range instance.
@@ -306,15 +306,15 @@ var (
 	_ Key[*IPv6Address]
 	_ Key[*MACAddress]
 
-	_ AddressKey
-	_ IPAddressKey
+	_ AddressKey   // Key[*Address]
+	_ IPAddressKey // Key[*IPAddress]
 	_ IPv4AddressKey
 	_ IPv6AddressKey
 	_ MACAddressKey
 
-	_ IPAddressSeqRangeKey
-	_ IPv4AddressSeqRangeKey
-	_ IPv6AddressSeqRangeKey
+	_ IPAddressSeqRangeKey   // SequentialRangeKey[*IPAddress]
+	_ IPv4AddressSeqRangeKey // SequentialRangeKey[*IPv4Address]
+	_ IPv6AddressSeqRangeKey // SequentialRangeKey[*IPv6Address]
 )
 
 // PrefixKey is a representation of a prefix length that is comparable as defined by the language specification.
@@ -349,3 +349,13 @@ func PrefixKeyFrom(addr AddressType) PrefixKey {
 	}
 	return PrefixKey{}
 }
+
+// TODO LATER serialization of addresses using https://pkg.go.dev/encoding/gob#GobDecoder - need to use custom encoder and decoder
+// You may need new types that have both the prefix key and the address key, due to the MarshalBinary and UnmarshalBinary signatures.
+// Don't encode the prefix unless there is one.  So you may need to encode a boolean for that.
+// Of course, using strings is an alternative that is faily effective, but not quite as effective.
+// For instance, IPv4AddressKey is a uint64, 8 bytes, while an ascii string is 15 bytes.
+// IPv6AddressKey is 32 bytes.  In fact, to make this worthwhile, you should check for multiple, check for prefix, check for zone, use a bit for each.
+// Otherwise, there is no point, using a string is just as good.
+// https://stackoverflow.com/questions/28020070/golang-serialize-and-deserialize-back
+// https://stackoverflow.com/questions/12854125/how-do-i-dump-the-struct-into-the-byte-array-without-reflection/12854659#12854659
