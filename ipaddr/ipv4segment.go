@@ -191,10 +191,19 @@ func (seg *IPv4AddressSegment) Contains(other AddressSegmentType) bool {
 	return seg.init().contains(other)
 }
 
+// Overlaps returns whether this is same type and version as the given segment and whether it overlaps with the values in the given segment.
+func (seg *IPv4AddressSegment) Overlaps(other AddressSegmentType) bool {
+	if seg == nil {
+		return other == nil || other.ToSegmentBase() == nil
+	}
+	return seg.init().overlaps(other)
+}
+
 // Equal returns whether the given segment is equal to this segment.
 // Two segments are equal if they match:
-//  - type/version: IPv4
-//  - value range
+//   - type/version: IPv4
+//   - value range
+//
 // Prefix lengths are ignored.
 func (seg *IPv4AddressSegment) Equal(other AddressSegmentType) bool {
 	if seg == nil {
@@ -332,7 +341,7 @@ func (seg *IPv4AddressSegment) GetPrefixValueCount() SegIntCount {
 }
 
 // MatchesWithPrefixMask applies the network mask of the given bit-length to this segment and then compares the result with the given value masked by the same mask,
-//returning true if the resulting range matches the given single value.
+// returning true if the resulting range matches the given single value.
 func (seg *IPv4AddressSegment) MatchesWithPrefixMask(value IPv4SegInt, networkBits BitCount) bool {
 	return seg.init().ipAddressSegmentInternal.MatchesWithPrefixMask(SegInt(value), networkBits)
 }
@@ -567,11 +576,12 @@ func (seg *IPv4AddressSegment) GetWildcardString() string {
 }
 
 // Format implements [fmt.Formatter] interface. It accepts the formats
-//  - 'v' for the default address and section format (either the normalized or canonical string),
-//  - 's' (string) for the same,
-//  - 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
-//  - 'd' (decimal), 'x' (lowercase hexadecimal), and
-//  - 'X' (uppercase hexadecimal).
+//   - 'v' for the default address and section format (either the normalized or canonical string),
+//   - 's' (string) for the same,
+//   - 'b' (binary), 'o' (octal with 0 prefix), 'O' (octal with 0o prefix),
+//   - 'd' (decimal), 'x' (lowercase hexadecimal), and
+//   - 'X' (uppercase hexadecimal).
+//
 // Also supported are some of fmt's format flags for integral types.
 // Sign control is not supported since addresses and sections are never negative.
 // '#' for an alternate format is supported, which adds a leading zero for octal, and for hexadecimal it adds

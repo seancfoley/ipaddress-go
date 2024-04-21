@@ -1151,11 +1151,31 @@ func (section *addressSectionInternal) contains(other AddressSectionType) bool {
 	matches, count := section.matchesTypeAndCount(otherSection)
 	if !matches {
 		return false
-	} else {
-		for i := count - 1; i >= 0; i-- {
-			if !section.GetSegment(i).sameTypeContains(otherSection.GetSegment(i)) {
-				return false
-			}
+	}
+	for i := count - 1; i >= 0; i-- {
+		if !section.GetSegment(i).sameTypeContains(otherSection.GetSegment(i)) {
+			return false
+		}
+	}
+	return true
+}
+
+func (section *addressSectionInternal) overlaps(other AddressSectionType) bool {
+	if other == nil {
+		return true
+	}
+	otherSection := other.ToSectionBase()
+	if section.toAddressSection() == otherSection || otherSection == nil {
+		return true
+	}
+	//check if they are comparable first
+	matches, count := section.matchesTypeAndCount(otherSection)
+	if !matches {
+		return false
+	}
+	for i := count - 1; i >= 0; i-- {
+		if !section.GetSegment(i).sameTypeOverlaps(otherSection.GetSegment(i)) {
+			return false
 		}
 	}
 	return true
@@ -2177,6 +2197,16 @@ func (section *AddressSection) Contains(other AddressSectionType) bool {
 		return other == nil || other.ToSectionBase() == nil
 	}
 	return section.contains(other)
+}
+
+// Overlaps returns whether this is same type and version as the given address section and whether it overlaps the given section, both sections containing at least individual section in common.
+//
+// Sections must also have the same number of segments to be comparable, otherwise false is returned.
+func (section *AddressSection) Overlaps(other AddressSectionType) bool {
+	if section == nil {
+		return other == nil || other.ToSectionBase() == nil
+	}
+	return section.overlaps(other)
 }
 
 // Equal returns whether the given address section is equal to this address section.

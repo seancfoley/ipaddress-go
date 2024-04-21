@@ -120,6 +120,18 @@ type IPv4AddressStringParams interface {
 	// Allows_inet_aton_single_segment_mask indicates whether you allow a mask that looks like a prefix length when you allow IPv4 joined segments: "1.2.3.5/255".
 	Allows_inet_aton_single_segment_mask() bool
 
+	// Allows single-segment inet_aton strings to have extraneous digits.
+	// This allows up to 31 digits when parsing for both IPv4 and IPv6.
+	// This allows an unlimited number of digits when parsing for just IPv4 (ie {@link IPAddressStringParameters#allowIPv6} is false).
+	//
+	// Digits that go beyond 32 bits are essentially ignored.
+	// The number of digits before exceeding 32 bits depends on the radix.
+	// The value of the most significant digit before exceeding 32 bits depends on the radix.
+	//
+	// The resulting address is the modulus of the address with the 32-bit unsigned int maximum value,
+	// or equivalently the truncation of the address to 32 bits.
+	Allows_inet_aton_extraneous_digits() bool
+
 	// Allows_inet_aton_leading_zeros allows IPv4 inet_aton hexadecimal or octal to have leading zeros, such as in the first two segments of "0x0a.00b.c.d".
 	// The first 0 is not considered a leading zero, it either denotes octal or hex depending on whether it is followed by an 'x'.
 	// Zeros that appear afterwards are inet_aton leading zeros.
@@ -596,12 +608,6 @@ func (builder *IPv6AddressStringParamsBuilder) AllowsBase85() bool {
 	return builder.params.AllowsBase85()
 }
 
-// AllowBase85 dictates whether to allow IPv6 single-segment base 85 addresses.
-func (builder *IPv6AddressStringParamsBuilder) AllowBase85(allow bool) *IPv6AddressStringParamsBuilder {
-	builder.params.noBase85 = !allow
-	return builder
-}
-
 // Set populates this builder with the values from the given IPv6AddressStringParams.
 func (builder *IPv6AddressStringParamsBuilder) Set(params IPv6AddressStringParams) *IPv6AddressStringParamsBuilder {
 	return builder.set(params, false)
@@ -622,6 +628,12 @@ func (builder *IPv6AddressStringParamsBuilder) set(params IPv6AddressStringParam
 	if !isMixed {
 		builder.getEmbeddedIPv4ParametersBuilder().ipv4Builder.Set(params.GetEmbeddedIPv4AddressParams())
 	}
+	return builder
+}
+
+// AllowBase85 dictates whether to allow IPv6 single-segment base 85 addresses.
+func (builder *IPv6AddressStringParamsBuilder) AllowBase85(allow bool) *IPv6AddressStringParamsBuilder {
+	builder.params.noBase85 = !allow
 	return builder
 }
 
@@ -747,6 +759,7 @@ type ipv4AddressStringParameters struct {
 	no_inet_aton_octal,
 	no_inet_aton_joinedSegments,
 	inet_aton_single_segment_mask,
+	inet_aton_extraneous_digits,
 	no_inet_aton_leading_zeros bool
 }
 
@@ -771,6 +784,20 @@ func (params *ipv4AddressStringParameters) Allows_inet_aton_joinedSegments() boo
 // Allows_inet_aton_single_segment_mask indicates whether you allow a mask that looks like a prefix length when you allow IPv4 joined segments: "1.2.3.5/255".
 func (params *ipv4AddressStringParameters) Allows_inet_aton_single_segment_mask() bool {
 	return params.inet_aton_single_segment_mask
+}
+
+// Allows single-segment inet_aton strings to have extraneous digits.
+// This allows up to 31 digits when parsing for both IPv4 and IPv6.
+// This allows an unlimited number of digits when parsing for just IPv4 (ie {@link IPAddressStringParameters#allowIPv6} is false).
+//
+// Digits that go beyond 32 bits are essentially ignored.
+// The number of digits before exceeding 32 bits depends on the radix.
+// The value of the most significant digit before exceeding 32 bits depends on the radix.
+//
+// The resulting address is the modulus of the address with the 32-bit unsigned int maximum value,
+// or equivalently the truncation of the address to 32 bits.
+func (params *ipv4AddressStringParameters) Allows_inet_aton_extraneous_digits() bool {
+	return params.inet_aton_extraneous_digits
 }
 
 // Allows_inet_aton_leading_zeros allows IPv4 inet_aton hexadecimal or octal to have leading zeros, such as in the first two segments of "0x0a.00b.c.d".
@@ -812,6 +839,50 @@ func (builder *IPv4AddressStringParamsBuilder) GetRangeParamsBuilder() *RangePar
 	return result
 }
 
+// Allows_inet_aton_hex allows IPv4 inet_aton hexadecimal format "0xa.0xb.0xc.0cd".
+func (builder *IPv4AddressStringParamsBuilder) Allows_inet_aton_hex() bool {
+	return !builder.params.no_inet_aton_hex
+}
+
+// Allows_inet_aton_octal allows IPv4 inet_aton octal format, "04.05.06.07" being an example.
+// Can be overridden by AllowLeadingZeros
+func (builder *IPv4AddressStringParamsBuilder) Allows_inet_aton_octal() bool {
+	return !builder.params.no_inet_aton_octal
+}
+
+// Allows_inet_aton_joinedSegments allows IPv4 joined segments like "1.2.3", "1.2', or just "1".
+//
+// For the case of just 1 segment, the behaviour is controlled by allowSingleSegment
+func (builder *IPv4AddressStringParamsBuilder) Allows_inet_aton_joinedSegments() bool {
+	return !builder.params.no_inet_aton_joinedSegments
+}
+
+// Allows_inet_aton_single_segment_mask indicates whether you allow a mask that looks like a prefix length when you allow IPv4 joined segments: "1.2.3.5/255".
+func (builder *IPv4AddressStringParamsBuilder) Allows_inet_aton_single_segment_mask() bool {
+	return builder.params.inet_aton_single_segment_mask
+}
+
+// Allows single-segment inet_aton strings to have extraneous digits.
+// This allows up to 31 digits when parsing for both IPv4 and IPv6.
+// This allows an unlimited number of digits when parsing for just IPv4 (ie {@link IPAddressStringParameters#allowIPv6} is false).
+//
+// Digits that go beyond 32 bits are essentially ignored.
+// The number of digits before exceeding 32 bits depends on the radix.
+// The value of the most significant digit before exceeding 32 bits depends on the radix.
+//
+// The resulting address is the modulus of the address with the 32-bit unsigned int maximum value,
+// or equivalently the truncation of the address to 32 bits.
+func (builder *IPv4AddressStringParamsBuilder) Allows_inet_aton_extraneous_digits() bool {
+	return builder.params.inet_aton_extraneous_digits
+}
+
+// Allows_inet_aton_leading_zeros allows IPv4 inet_aton hexadecimal or octal to have leading zeros, such as in the first two segments of "0x0a.00b.c.d".
+// The first 0 is not considered a leading zero, it either denotes octal or hex depending on whether it is followed by an 'x'.
+// Zeros that appear afterwards are inet_aton leading zeros.
+func (builder *IPv4AddressStringParamsBuilder) Allows_inet_aton_leading_zeros() bool {
+	return !builder.params.no_inet_aton_leading_zeros
+}
+
 // Set populates this builder with the values from the given IPv4AddressStringParams.
 func (builder *IPv4AddressStringParamsBuilder) Set(params IPv4AddressStringParams) *IPv4AddressStringParamsBuilder {
 	if p, ok := params.(*ipv4AddressStringParameters); ok {
@@ -822,6 +893,7 @@ func (builder *IPv4AddressStringParamsBuilder) Set(params IPv4AddressStringParam
 			no_inet_aton_octal:            !params.Allows_inet_aton_octal(),
 			no_inet_aton_joinedSegments:   !params.Allows_inet_aton_joinedSegments(),
 			inet_aton_single_segment_mask: params.Allows_inet_aton_single_segment_mask(),
+			inet_aton_extraneous_digits:   params.Allows_inet_aton_extraneous_digits(),
 			no_inet_aton_leading_zeros:    !params.Allows_inet_aton_leading_zeros(),
 		}
 	}
@@ -830,6 +902,10 @@ func (builder *IPv4AddressStringParamsBuilder) Set(params IPv4AddressStringParam
 }
 
 // Allow_inet_aton dictates whether to allow any IPv4 inet_aton format, whether hex, octal, or joined segments.
+// Allows joined segments, resulting in just 2, 3 or 4 segments.  Allows octal or hex segments.
+// Allows an unlimited number of leading zeros.
+// To allow just a single segment, use AllowSingleSegment
+// This does not affect whether extraneous digits are allowed, which can be allowed with Allow_inet_aton_extraneous_digits
 func (builder *IPv4AddressStringParamsBuilder) Allow_inet_aton(allow bool) *IPv4AddressStringParamsBuilder {
 	builder.params.no_inet_aton_joinedSegments = !allow
 	builder.params.no_inet_aton_octal = !allow
@@ -870,6 +946,21 @@ func (builder *IPv4AddressStringParamsBuilder) Allow_inet_aton_joinedSegments(al
 // Allow_inet_aton_single_segment_mask dictates whether to allow a mask that looks like a prefix length when you allow IPv4 joined segments: "1.2.3.5/255".
 func (builder *IPv4AddressStringParamsBuilder) Allow_inet_aton_single_segment_mask(allow bool) *IPv4AddressStringParamsBuilder {
 	builder.params.inet_aton_single_segment_mask = allow
+	return builder
+}
+
+// Allows single-segment inet_aton strings to have extraneous digits.
+// This allows up to 31 digits when parsing for both IPv4 and IPv6.
+// This allows an unlimited number of digits when parsing for just IPv4 (ie {@link IPAddressStringParameters#allowIPv6} is false).
+//
+// Digits that go beyond 32 bits are essentially ignored.
+// The number of digits before exceeding 32 bits depends on the radix.
+// The value of the most significant digit before exceeding 32 bits depends on the radix.
+//
+// The resulting address is the modulus of the address with the 32-bit unsigned int maximum value,
+// or equivalently the truncation of the address to 32 bits.
+func (builder *IPv4AddressStringParamsBuilder) Allow_inet_aton_extraneous_digits(allow bool) *IPv4AddressStringParamsBuilder {
+	builder.params.inet_aton_extraneous_digits = allow
 	return builder
 }
 

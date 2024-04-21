@@ -662,6 +662,67 @@ func (t ipAddressTester) run() {
 	t.ipv4testOnly(false, "1:2:3:4:5:6:7:8")
 	t.ipv4testOnly(false, "::1")
 
+	// ipv6 not disallowed, but this can pass because < 20 digits, if the extraneous chars ipv4 option is enabled
+	t.ip_inet_aton_test(t.allowExtraneous(), "0xBAAAaaaaaaa7f000001", false) // 19 chars
+
+	// these two always fail because they are not ipv4-only, and they exceed 19 chars.  The only time we allow these is when ipv6 is disallowed.
+	t.ip_inet_aton_test(false, "0xBAAAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa7f000001", false)                                                                                                                                                                                                                // 57 chars
+	t.ip_inet_aton_test(false, "30109660652968258587507720208869004917586231558044182760080879711850530871933298651275092531995635415866341562622743621197068644363147150162264995175351264755702053831226873618925872264083816948685971914830816722015764794244138634937665528586884556100653009798956899", false) // 57 chars
+
+	// ipv6 disallowed parsing means these are allowed when the extraneous chars ipv4 option is enabled
+	t.ipv4_inet_aton_test(t.allowExtraneous(), "0xBAAAaaaaaaa7f000001")                                                                                                                                                                                                                                                      // 19 chars
+	t.ipv4_inet_aton_test(t.allowExtraneous(), "0xBAAAaaaaaaaaaaaaaaaaaaa7f000001")                                                                                                                                                                                                                                          // 31 chars
+	t.ipv4_inet_aton_test(t.allowExtraneous(), "0xBAAAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa7f000001")                                                                                                                                                                                                                // 57 chars
+	t.ipv4_inet_aton_test(t.allowExtraneous(), "30109660652968258587507720208869004917586231558044182760080879711850530871933298651275092531995635415866341562622743621197068644363147150162264995175351264755702053831226873618925872264083816948685971914830816722015764794244138634937665528586884556100653009798956899") // 31 chars
+
+	t.testMatchesInetAton(t.allowExtraneous(), "166.84.7.99",
+		"30109660652968258587507720208869004917586231558044182760080879711850530871933298651275092531995635415866341562622743621197068644363147150162264995175351264755702053831226873618925872264083816948685971914830816722015764794244138634937665528586884556100653009798956899",
+		true)
+	t.testMatches(t.isLenient(), "166.84.7.99", "2790524771")
+	t.testMatches(t.isLenient(), "166.84.7.99", "2790524771")
+	t.testMatches(t.isLenient(), "166.84.7.99", "0b10100110010101000000011101100011")
+	t.testMatches(t.isLenient(), "166.84.7.99", "024625003543")
+	t.testMatches(t.isLenient(), "166.84.7.99", "166.0x540763")
+	t.testMatches(t.isLenient(), "166.84.7.99", "0246.84.07.0x63")
+
+	t.testMatches(t.isLenient(), "127.0.0.1", "127.0.00000000000000000000000000000000001")
+	t.testMatches(t.isLenient(), "127.0.0.1", "0177.0.0.01")
+	t.testMatches(t.isLenient(), "127.0.0.1", "0x7f.0x0.0x0.0x1")
+	t.testMatches(t.isLenient(), "127.0.0.1", "0x7f000001")
+	t.testMatchesInetAton(t.allowExtraneous(), "127.0.0.1", "0xDEADBEEF7f000001", true)
+	t.testMatchesInetAton(t.allowExtraneous(), "127.0.0.1", "0xBADF00D7f000001", true)
+	t.testMatchesInetAton(t.allowExtraneous(), "127.0.0.1", "0xDEADC0DE7f000001", true)
+	t.testMatchesInetAton(t.allowExtraneous(), "127.0.0.1", "0xBADC0DE7f000001", true)
+
+	t.testMatchesInetAton(false, "127.0.0.1", "0xBA C0DE7f000001", true)
+	t.testMatchesInetAton(false, "127.0.0.1", "0xBA%C0DE7f000001", true) //
+	t.testMatchesInetAton(false, "127.0.0.1", "0xBA.C0DE7f000001", true)
+	t.testMatchesInetAton(false, "127.0.0.1", "0xBA:C0DE7f000001", true)
+	t.testMatchesInetAton(false, "127.0.0.1", "0xBA-C0DE7f000001", true)
+	t.testMatchesInetAton(false, "127.0.0.1", "0xBA_C0DE7f000001", true) //
+	t.testMatchesInetAton(false, "127.0.0.1", "0xBA*C0DE7f000001", true) //
+	t.testMatchesInetAton(false, "127.0.0.1", "0xBAXC0DE7f000001", true)
+	t.testMatchesInetAton(false, "127.0.0.1", "0xBAxC0DE7f000001", true)
+	t.testMatchesInetAton(false, "127.0.0.1", "0xBA"+ipaddr.ExtendedDigitsRangeSeparatorStr+"C0DE7f000001", true)
+	t.testMatchesInetAton(false, "127.0.0.1", "0xBA"+ipaddr.IPv6AlternativeZoneSeparatorStr+"C0DE7f000001", true)
+	t.testMatchesInetAton(false, "127.0.0.1", "0xBA?C0DE7f000001", true)
+	t.testMatchesInetAton(false, "127.0.0.1", "0xBA+C0DE7f000001", true)
+	t.testMatchesInetAton(false, "127.0.0.1", "0xBA/C0DE7f000001", true)
+
+	t.testMatchesInetAton(t.allowExtraneous(), "127.0.0.1", "0xBAAAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa7f000001", true)
+	t.testMatchesInetAton(t.allowExtraneous(), "127.0.0.1", "0xBAAAaaaaaaaaaaaaaaaaaaa7f000001", true) // 31 chars
+
+	t.testMatches(t.isLenient(), "127.0.0.1", "2130706433")
+	t.testMatches(t.isLenient(), "127.0.0.1",
+		"00000000000000000000000000000000000000000000000000177.1")
+	t.testMatches(t.isLenient(), "127.0.0.1", "0x7f.1")
+	t.testMatches(t.isLenient(), "127.0.0.1", "127.0x1")
+
+	t.testMatches(t.isLenient(), "172.217.166.174", "172.14263982")
+	t.testMatches(t.isLenient(), "172.217.166.174", "0254.0xd9a6ae")
+	t.testMatches(t.isLenient(), "172.217.166.174", "0xac.000000000000000000331.0246.174")
+	t.testMatches(t.isLenient(), "172.217.166.174", "0254.14263982")
+
 	// in this test, the validation will fail unless validation options have allowEmpty
 	t.ipv6zerotest(t.isLenient(), "") // empty string //this needs special validation options to be valid
 
@@ -2957,7 +3018,7 @@ func (t ipAddressTester) testHostAddress(addressStr string) {
 		hostAddress := str.GetHostAddress()
 		prefixIndex := strings.Index(addressStr, ipaddr.PrefixLenSeparatorStr)
 		if prefixIndex < 0 {
-			if !address.Equal(hostAddress) || !address.Contains(hostAddress) {
+			if !address.Equal(hostAddress) || !address.Contains(hostAddress) || !address.Overlaps(hostAddress) {
 				t.addFailure(newFailure("failed host address with no prefix: "+hostAddress.String()+" expected: "+address.String(), str))
 			}
 		} else {
@@ -3161,6 +3222,11 @@ func (t ipAddressTester) ipv4test(pass bool, x string) {
 func (t ipAddressTester) ipv4test2(pass bool, x string, isZero, notBothTheSame bool) {
 	addr := t.createAddress(x)
 	t.iptest(pass, addr, isZero, notBothTheSame, true)
+}
+
+func (t ipAddressTester) ip_inet_aton_test(pass bool, x string, isZero bool) {
+	addr := t.createIPInetAtonAddress(x)
+	t.iptest(pass, addr, isZero, false, true)
 }
 
 func (t ipAddressTester) ipv4testOnly(pass bool, x string) {
@@ -3631,6 +3697,11 @@ func (t ipAddressTester) testContainsEqual(cidr1, cidr2 string, result, equal bo
 				if w2.Contains(w) || conversionContains(w2, w) {
 					t.addFailure(newIPAddrFailure("failed "+w.String(), w2))
 				}
+			}
+		}
+		if firstContains {
+			if !w.Overlaps(w2) || !w2.Overlaps(w) {
+				t.addFailure(newIPAddrFailure("overlap passed "+w2.String(), w))
 			}
 		}
 	}

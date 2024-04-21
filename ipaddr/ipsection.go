@@ -611,7 +611,14 @@ func (section *ipAddressSectionInternal) withoutPrefixLen() *IPAddressSection {
 	return res
 }
 
-func (section *ipAddressSectionInternal) checkSectionCount(other *IPAddressSection) addrerr.SizeMismatchError {
+func (section *ipAddressSectionInternal) checkSegmentCount(other *IPAddressSection) addrerr.SizeMismatchError {
+	if other.GetSegmentCount() != section.GetSegmentCount() {
+		return &sizeMismatchError{incompatibleAddressError{addressError{key: "ipaddress.error.sizeMismatch"}}}
+	}
+	return nil
+}
+
+func (section *ipAddressSectionInternal) checkMaskSegmentCount(other *IPAddressSection) addrerr.SizeMismatchError {
 	if other.GetSegmentCount() < section.GetSegmentCount() {
 		return &sizeMismatchError{incompatibleAddressError{addressError{key: "ipaddress.error.sizeMismatch"}}}
 	}
@@ -620,7 +627,7 @@ func (section *ipAddressSectionInternal) checkSectionCount(other *IPAddressSecti
 
 // error can be addrerr.IncompatibleAddressError or addrerr.SizeMismatchError
 func (section *ipAddressSectionInternal) mask(msk *IPAddressSection, retainPrefix bool) (*IPAddressSection, addrerr.IncompatibleAddressError) {
-	if err := section.checkSectionCount(msk); err != nil {
+	if err := section.checkMaskSegmentCount(msk); err != nil {
 		return nil, err
 	}
 	var prefLen PrefixLen
@@ -637,7 +644,7 @@ func (section *ipAddressSectionInternal) mask(msk *IPAddressSection, retainPrefi
 
 // error can be addrerr.IncompatibleAddressError or addrerr.SizeMismatchError
 func (section *ipAddressSectionInternal) bitwiseOr(msk *IPAddressSection, retainPrefix bool) (*IPAddressSection, addrerr.IncompatibleAddressError) {
-	if err := section.checkSectionCount(msk); err != nil {
+	if err := section.checkMaskSegmentCount(msk); err != nil {
 		return nil, err
 	}
 	var prefLen PrefixLen
@@ -652,9 +659,9 @@ func (section *ipAddressSectionInternal) bitwiseOr(msk *IPAddressSection, retain
 }
 
 func (section *ipAddressSectionInternal) matchesWithMask(other *IPAddressSection, mask *IPAddressSection) bool {
-	if err := section.checkSectionCount(other); err != nil {
+	if err := section.checkMaskSegmentCount(other); err != nil {
 		return false
-	} else if err := section.checkSectionCount(mask); err != nil {
+	} else if err := section.checkMaskSegmentCount(mask); err != nil {
 		return false
 	}
 	divCount := section.GetSegmentCount()
@@ -674,7 +681,7 @@ func (section *ipAddressSectionInternal) matchesWithMask(other *IPAddressSection
 
 func (section *ipAddressSectionInternal) intersect(other *IPAddressSection) (res *IPAddressSection, err addrerr.SizeMismatchError) {
 	//check if they are comparable section.  We only check segment count, we do not care about start index.
-	err = section.checkSectionCount(other)
+	err = section.checkSegmentCount(other)
 	if err != nil {
 		return
 	}
@@ -756,7 +763,7 @@ func (section *ipAddressSectionInternal) intersect(other *IPAddressSection) (res
 
 func (section *ipAddressSectionInternal) subtract(other *IPAddressSection) (res []*IPAddressSection, err addrerr.SizeMismatchError) {
 	//check if they are comparable section
-	err = section.checkSectionCount(other)
+	err = section.checkSegmentCount(other)
 	if err != nil {
 		return
 	}
@@ -932,7 +939,7 @@ func (section *ipAddressSectionInternal) coverWithPrefixBlock() *IPAddressSectio
 }
 
 func (section *ipAddressSectionInternal) coverWithPrefixBlockTo(other *IPAddressSection) (*IPAddressSection, addrerr.SizeMismatchError) {
-	if err := section.checkSectionCount(other); err != nil {
+	if err := section.checkSegmentCount(other); err != nil {
 		return nil, err
 	}
 	res := getCoveringPrefixBlock(
@@ -1573,6 +1580,16 @@ func (section *IPAddressSection) Contains(other AddressSectionType) bool {
 		return other == nil || other.ToSectionBase() == nil
 	}
 	return section.contains(other)
+}
+
+// Overlaps returns whether this is same type and version as the given address section and whether it overlaps the given section, both sections containing at least individual section in common.
+//
+// Sections must also have the same number of segments to be comparable, otherwise false is returned.
+func (section *IPAddressSection) Overlaps(other AddressSectionType) bool {
+	if section == nil {
+		return other == nil || other.ToSectionBase() == nil
+	}
+	return section.overlaps(other)
 }
 
 // Equal returns whether the given address section is equal to this address section.

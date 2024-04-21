@@ -350,6 +350,16 @@ func (section *IPv6AddressSection) Contains(other AddressSectionType) bool {
 	return section.contains(other)
 }
 
+// Overlaps returns whether this is same type and version as the given address section and whether it overlaps the given section, both sections containing at least individual section in common.
+//
+// Sections must also have the same number of segments to be comparable, otherwise false is returned.
+func (section *IPv6AddressSection) Overlaps(other AddressSectionType) bool {
+	if section == nil {
+		return other == nil || other.ToSectionBase() == nil
+	}
+	return section.overlaps(other)
+}
+
 // Equal returns whether the given address section is equal to this address section.
 // Two address sections are equal if they represent the same set of sections.
 // They must match:
@@ -720,6 +730,9 @@ func (section *IPv6AddressSection) uint64Values() (high, low uint64) {
 
 // UpperUint64Values returns the highest address in the address section range as pair of uint64 values.
 func (section *IPv6AddressSection) UpperUint64Values() (high, low uint64) {
+	if !section.IsMultiple() {
+		return section.Uint64Values()
+	}
 	segCount := section.GetSegmentCount()
 	if segCount == 0 {
 		return
@@ -1266,7 +1279,7 @@ func (section *IPv6AddressSection) SpanWithPrefixBlocks() []*IPv6AddressSection 
 //
 // The resulting slice is sorted from lowest address value to highest, regardless of the size of each prefix block.
 func (section *IPv6AddressSection) SpanWithPrefixBlocksTo(other *IPv6AddressSection) ([]*IPv6AddressSection, addrerr.SizeMismatchError) {
-	if err := section.checkSectionCount(other.ToIP()); err != nil {
+	if err := section.checkSegmentCount(other.ToIP()); err != nil {
 		return nil, err
 	}
 	return cloneToIPv6Sections(
@@ -1292,7 +1305,7 @@ func (section *IPv6AddressSection) SpanWithSequentialBlocks() []*IPv6AddressSect
 
 // SpanWithSequentialBlocksTo produces the smallest slice of sequential block address sections that span from this section to the given section.
 func (section *IPv6AddressSection) SpanWithSequentialBlocksTo(other *IPv6AddressSection) ([]*IPv6AddressSection, addrerr.SizeMismatchError) {
-	if err := section.checkSectionCount(other.ToIP()); err != nil {
+	if err := section.checkSegmentCount(other.ToIP()); err != nil {
 		return nil, err
 	}
 	return cloneToIPv6Sections(

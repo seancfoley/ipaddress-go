@@ -1438,6 +1438,27 @@ func (addr *IPAddress) Contains(other AddressType) bool {
 	return addr.init().contains(other)
 }
 
+// ContainsRange returns true if this address contains the given sequential range
+func (addr *IPAddress) ContainsRange(other IPAddressSeqRangeType) bool {
+	return isContainedBy(other, addr.init())
+}
+
+// Overlaps returns true if this address overlaps the given address or subnet
+func (addr *IPAddress) Overlaps(other AddressType) bool {
+	if addr == nil {
+		return true
+	}
+	return addr.init().overlaps(other)
+}
+
+// Overlaps returns true if this address overlaps the given sequential range
+func (addr *IPAddress) OverlapsRange(other IPAddressSeqRangeType) bool {
+	if other == nil {
+		return true
+	}
+	return other.OverlapsAddress(addr)
+}
+
 // Compare returns a negative integer, zero, or a positive integer if this address or subnet is less than, equal, or greater than the given item.
 // Any address item is comparable to any other.  All address items use CountComparator to compare.
 func (addr *IPAddress) Compare(item AddressItem) int {

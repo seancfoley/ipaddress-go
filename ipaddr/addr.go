@@ -737,6 +737,24 @@ func (addr *addressInternal) contains(other AddressType) bool {
 		addr.isSameZone(otherAddr)
 }
 
+// Returns whether this is same type and version of the given address and whether it overlaps with the values in the given address or subnet
+func (addr *addressInternal) overlaps(other AddressType) bool {
+	if other == nil {
+		return true
+	}
+	otherAddr := other.ToAddressBase()
+	if addr.toAddress() == otherAddr || otherAddr == nil {
+		return true
+	}
+	otherSection := otherAddr.GetSection()
+	if addr.section == nil {
+		return otherSection.GetSegmentCount() == 0
+	}
+	return addr.section.Overlaps(otherSection) &&
+		// if it is IPv6 and has a zone, then it does not overlap addresses from other zones
+		addr.isSameZone(otherAddr)
+}
+
 func (addr *addressInternal) equals(other AddressType) bool {
 	if other == nil {
 		return false
@@ -1224,6 +1242,14 @@ func (addr *Address) Contains(other AddressType) bool {
 		return other == nil || other.ToAddressBase() == nil
 	}
 	return addr.init().contains(other)
+}
+
+// Overlaps returns true if this address overlaps the given address or subnet
+func (addr *Address) Overlaps(other AddressType) bool {
+	if addr == nil {
+		return true
+	}
+	return addr.init().overlaps(other)
 }
 
 // Compare returns a negative integer, zero, or a positive integer if this address or subnet is less than, equal, or greater than the given item.

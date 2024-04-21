@@ -631,6 +631,14 @@ func (addr *MACAddress) Contains(other AddressType) bool {
 	return addr.init().contains(other)
 }
 
+// Overlaps returns true if this address overlaps the given address or address collection
+func (addr *MACAddress) Overlaps(other AddressType) bool {
+	if addr == nil {
+		return true
+	}
+	return addr.init().overlaps(other)
+}
+
 // Equal returns whether the given address or address collection is equal to this address or address collection.
 // Two address instances are equal if they represent the same set of addresses.
 func (addr *MACAddress) Equal(other AddressType) bool {

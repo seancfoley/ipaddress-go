@@ -617,6 +617,13 @@ type AddressSectionType interface {
 	// Sections must also have the same number of segments to be comparable, otherwise false is returned.
 	Contains(AddressSectionType) bool
 
+	// Overlaps returns whether this section overlaps with another.
+	//
+	// Sections must have the same number of segments to be comparable.
+	//
+	//For sections which are aware of their position in an address (IPv6 and MAC), their respective positions must match to be comparable.
+	Overlaps(AddressSectionType) bool
+
 	// Enumerate indicates where an individual address section sits relative to the address section range ordering.
 	//
 	// Determines how many address section elements of a range precede the given address section element, if the address section is in the range.
@@ -676,8 +683,11 @@ type AddressType interface {
 	// Two address instances are equal if they represent the same set of addresses.
 	Equal(AddressType) bool
 
-	// Contains returns whether this is same type and version as the given address or subnet and whether it contains all addresses in the given address or subnet.
+	// Contains returns whether this is the same type and version as the given address or subnet and whether it contains all addresses in the given address or subnet.
 	Contains(AddressType) bool
+
+	// Overlaps returns whether this is the same type and version as the given address and whether it overlaps with the other, containing at least one individual address common to both.
+	Overlaps(AddressType) bool
 
 	// Enumerate indicates where an address sits relative to the subnet ordering.
 	//
@@ -782,6 +792,12 @@ type IPAddressType interface {
 
 	IPAddressRange
 
+	// ContainsRange returns whether all the addresses in the given sequential range are also contained in this sequential range.
+	ContainsRange(IPAddressSeqRangeType) bool
+
+	// Overlaps returns whether this IP address is the same version as the given range and whether it overlaps with the given range, containing at least one individual address common to both.
+	OverlapsRange(IPAddressSeqRangeType) bool
+
 	// Wrap wraps this IP address, returning a WrappedIPAddress, an implementation of ExtendedIPSegmentSeries,
 	// which can be used to write code that works with both IP addresses and IP address sections.
 	Wrap() WrappedIPAddress
@@ -817,6 +833,9 @@ type IPAddressSeqRangeType interface {
 
 	// Contains returns whether this range contains all IP addresses in the given address or subnet.
 	Contains(IPAddressType) bool // this is not in IPAddressRange because addresses use Contains(AddressType)
+
+	// OverlapsAddress indicates whether this range is the same type and version as the given address and whether it overlaps with the given address, containing at least one individual address common to both.
+	OverlapsAddress(IPAddressType) bool
 
 	// Enumerate indicates where an address sits relative to the range ordering.
 	//

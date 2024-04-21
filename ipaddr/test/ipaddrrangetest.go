@@ -435,6 +435,76 @@ func (t ipAddressRangeTester) run() {
 	t.ipv6test(false, "1:*::1/1:*::2")
 	t.ipv6test(true, "1:*::1/1::2")
 
+	t.testOverlapsRange(true, "1.1.254.255", "1.2.0.0", "1.1.0.0/16")
+	t.testOverlapsRange(true, "1.1.254.255", "1.2.0.0", "1.0.0.0/14")
+	t.testOverlapsRange(true, "1.1.255.255", "1.2.0.0", "1.1.0.0/16")
+	t.testOverlapsRange(true, "1.1.255.255", "1.2.0.0", "1.0.0.0/14")
+	t.testOverlapsRange(false, "1.1.254.255", "1.2.0.0", "1.1.253-254.1-3")
+	t.testOverlapsRange(true, "1.1.254.255", "1.2.0.0", "1.1.253-255.1-3")
+	t.testOverlapsRange(true, "1.1.100.255", "1.2.0.0", "1.1.0.0/16")
+	t.testOverlapsRange(true, "1.1.100.255", "1.2.0.0", "1.1.253-255.1-3")
+	t.testOverlapsRange(false, "1.1.100.255", "1.2.0.0", "1.2.253-255.1-3")
+	t.testOverlapsRange(false, "1.1.100.255", "1.2.0.0", "1.2-5.253-255.1-3")
+	t.testOverlapsRange(true, "1.1.100.255", "1.2.0.0", "1.2-5.*.*")
+	t.testOverlapsRange(true, "1.1.100.255", "1.2.0.0", "1.2-5.*.*")
+	t.testOverlapsRange(true, "1.1.100.255", "1.2.0.0", "1.1-5.*.*")
+	t.testOverlapsRange(true, "1.1.100.255", "1.2.0.0", "1.0-5.*.*")
+	t.testOverlapsRange(true, "1.1.100.255", "1.2.0.0", "1.0-2.*.*")
+	t.testOverlapsRange(true, "1.1.100.255", "1.2.0.0", "1.0-1.*.*")
+	t.testOverlapsRange(true, "1::1", "1::a:b:c:d", "1::/64")
+	t.testOverlapsRange(false, "1::1", "1::a:b:c:d", "1:2::/64")
+	t.testOverlapsRange(true, "1::1", "1::a:b:c:d", "1::a:b:c:d")
+	t.testOverlapsRange(true, "1::1", "1::a:b:c:d", "1::1")
+	t.testOverlapsRange(true, "1::1", "1::a:b:c:d", "1::a:b:c:*")
+	t.testOverlapsRange(true, "1::2:1", "1::5:ff", "1::1-3:1")
+	t.testOverlapsRange(true, "1::2:1", "1::5:ff", "1::2-3:1")
+	t.testOverlapsRange(true, "1::2:1", "1::5:ff", "1::5-6:1")
+	t.testOverlapsRange(false, "1::2:1", "1::5:ff", "1::5-6:fff")
+
+	t.testOverlaps(true, "1::2-4:1", "1::1-3:1")
+	t.testContainsEqual("1::2-4:1", "1::1-3:1", false, false)
+	t.testOverlaps(true, "1::1-4:1", "1::1-3:1")
+	t.testContainsEqual("1::1-4:1", "1::1-3:1", true, false)
+	t.testOverlaps(false, "1::1-4:1", "1::1-3:2")
+	t.testContainsEqual("1::1-4:1", "1::1-3:2", false, false)
+	t.testOverlaps(false, "2::1-4:2", "1::1-3:2")
+	t.testContainsEqual("2::1-4:2", "1::1-3:2", false, false)
+	t.testOverlaps(true, "1-2::1-4:2", "1::1-3:2")
+	t.testContainsEqual("1-2::1-4:2", "1::1-3:2", true, false)
+	t.testOverlaps(true, "1-2::1-4:2", "1-2::1-4:2")
+	t.testContainsEqual("1-2::1-4:2", "1-2::1-4:2", true, true)
+
+	t.testSubnetContainsRange(false, "1.1.254.255", "1.2.0.0", "1.1.0.0/16")
+	t.testSubnetContainsRange(true, "1.1.254.255", "1.2.0.0", "1.0.0.0/14")
+	t.testSubnetContainsRange(false, "1.1.255.255", "1.2.0.0", "1.1.0.0/16")
+	t.testSubnetContainsRange(true, "1.1.255.255", "1.2.0.0", "1.0.0.0/14")
+	t.testSubnetContainsRange(false, "1.1.254.255", "1.2.0.0", "1.1.253-254.1-3")
+	t.testSubnetContainsRange(false, "1.1.254.255", "1.2.0.0", "1.1.253-255.1-3")
+	t.testSubnetContainsRange(false, "1.1.100.255", "1.2.0.0", "1.1.0.0/16")
+	t.testSubnetContainsRange(false, "1.1.100.255", "1.2.0.0", "1.1.253-255.1-3")
+	t.testSubnetContainsRange(false, "1.1.100.255", "1.2.0.0", "1.2.253-255.1-3")
+	t.testSubnetContainsRange(false, "1.1.100.255", "1.2.0.0", "1.2-5.253-255.1-3")
+	t.testSubnetContainsRange(false, "1.1.100.255", "1.2.0.0", "1.2-5.*.*")
+	t.testSubnetContainsRange(false, "1.1.100.255", "1.2.0.0", "1.2-5.*.*")
+	t.testSubnetContainsRange(true, "1.1.100.255", "1.2.0.0", "1.1-5.*.*")
+	t.testSubnetContainsRange(true, "1.1.100.255", "1.2.0.0", "1.0-5.*.*")
+	t.testSubnetContainsRange(true, "1.1.100.255", "1.2.0.0", "1.0-2.*.*")
+	t.testSubnetContainsRange(false, "1.1.100.255", "1.2.0.0", "1.0-1.*.*")
+	t.testSubnetContainsRange(true, "1::1", "1::a:b:c:d", "1::/64")
+	t.testSubnetContainsRange(false, "1::1", "1::a:b:c:d", "1:2::/64")
+	t.testSubnetContainsRange(false, "1::1", "1::a:b:c:d", "1::a:b:c:d")
+	t.testSubnetContainsRange(false, "1::1", "1::a:b:c:d", "1::1")
+	t.testSubnetContainsRange(false, "1::1", "1::a:b:c:d", "1::a:b:c:*")
+	t.testSubnetContainsRange(false, "1::a:2:c:1", "1::a:b:c:d", "1::a:*:c:*")      // 1::a:3:0:0 not in the subnet
+	t.testSubnetContainsRange(false, "1::a:2:c:1", "1::a:3:c:d", "1::a:*:c:*")      // 1::a:3:0:0 not in the subnet
+	t.testSubnetContainsRange(false, "1::a:ffff:c:1", "1::b:0:c:d", "1::a-b:*:c:*") // 1::b:0:0:0 not in the subnet
+	t.testSubnetContainsRange(true, "1::a:2:c:1", "1::a:2:c:d", "1::a:*:c:*")
+	t.testSubnetContainsRange(true, "1::a:2:c:1", "1::a:2:c:d", "1::a:2:c:*")
+	t.testSubnetContainsRange(true, "1::a:2:c:1", "1::a:b:c:d", "1::a:*:*:*")
+	t.testSubnetContainsRange(true, "1::a:b:c:1", "1::a:b:c:d", "1::a:b:c:*")
+	t.testSubnetContainsRange(true, "1::1", "1::a:b:c:d", "1:*")
+	t.testSubnetContainsRange(false, "1::2:1", "1::5:ff", "1::1-3:1")
+
 	t.ipv4rangetest(true, "1.1.*.100-101", addrstrparam.WildcardAndRange)
 	t.ipv4rangetest(true, "1.2.*.101-100", addrstrparam.WildcardAndRange)   //downwards range
 	t.ipv4rangetest(false, "1.2.*.1010-100", addrstrparam.WildcardAndRange) //downwards range
@@ -1646,6 +1716,12 @@ func (t ipAddressRangeTester) run() {
 
 	t.testIncrement("ffff:3-4:ffff:ffff:ffff:1-2:2-3::", 7, "ffff:4:ffff:ffff:ffff:2:3::")
 	t.testIncrement("ffff:3-4:ffff:ffff:ffff:1-2:2-3::", 9, "ffff:4:ffff:ffff:ffff:2:3:2")
+
+	t.testIncrement("1.*.*.*/16", 65539, "1.1.0.3")
+	t.testIncrement("1::*:*:*/80", 65539, "1::1:3")
+
+	t.testIncrement("1.*.*.1-254", 65539, "1.1.2.8")
+	t.testIncrement("1::*:*:1-fffe", 65539, "1::1:6")
 
 	oneShiftedThree := bigZero().Lsh(bigOne(), 3)
 	t.testIncrementBig("::2-4:1-3", oneShiftedThree, "::4:3")
@@ -3574,6 +3650,50 @@ func (t ipAddressRangeTester) testIPv6Strings(addr,
 		base85String,
 		singleHex,
 		singleOctal)
+}
+
+func (t ipAddressRangeTester) testOverlaps(overlaps bool, subnetStr1, subnetStr2 string) {
+	subnet1 := t.createAddress(subnetStr1).GetAddress()
+	subnet2 := t.createAddress(subnetStr2).GetAddress()
+	result := subnet1.Overlaps(subnet2)
+	if result != overlaps {
+		t.addFailure(newIPAddrFailure("failed expected overlap: "+strconv.FormatBool(overlaps)+" for "+subnet1.String()+" with "+subnet2.String(), subnet1))
+	}
+	result = subnet2.Overlaps(subnet1)
+	if result != overlaps {
+		t.addFailure(newIPAddrFailure("failed expected overlap: "+strconv.FormatBool(overlaps)+" for "+subnet2.String()+" with "+subnet1.String(), subnet1))
+	}
+	t.incrementTestCount()
+}
+
+func (t ipAddressRangeTester) testOverlapsRange(overlaps bool, rangeLow, rangeHigh, subnetStr string) {
+	w := t.createAddress(rangeLow)
+	w2 := t.createAddress(rangeHigh)
+	rng := w.GetAddress().SpanWithRange(w2.GetAddress())
+	subnet := t.createAddress(subnetStr).GetAddress()
+	result := rng.OverlapsAddress(subnet)
+	if result != overlaps {
+		t.addFailure(newIPAddrFailure("failed expected overlap: "+strconv.FormatBool(overlaps)+" for "+rng.String()+" with "+subnet.String(), subnet))
+	}
+	t.incrementTestCount()
+}
+
+func (t ipAddressRangeTester) testSubnetContainsRange(contains bool, rangeLow, rangeHigh, subnetStr string) {
+	w := t.createAddress(rangeLow)
+	w2 := t.createAddress(rangeHigh)
+	rng := w.GetAddress().SpanWithRange(w2.GetAddress())
+	subnet := t.createAddress(subnetStr).GetAddress()
+	result := subnet.ContainsRange(rng)
+	if result != contains {
+		t.addFailure(newIPAddrFailure("failed expected contains: "+strconv.FormatBool(contains)+" for "+subnet.String()+" containing "+rng.String(), subnet))
+	}
+	if contains {
+		result = rng.OverlapsAddress(subnet)
+		if !result {
+			t.addFailure(newIPAddrFailure("failed expected overlap for "+rng.String()+" with "+subnet.String(), subnet))
+		}
+	}
+	t.incrementTestCount()
 }
 
 //each ipv4 failure is 6, each ipv6 is 10, current total is 520

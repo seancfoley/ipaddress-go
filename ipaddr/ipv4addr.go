@@ -966,6 +966,27 @@ func (addr *IPv4Address) Contains(other AddressType) bool {
 	return otherAddr.getAddrType() == ipv4Type && addr.section.sameCountTypeContains(otherAddr.GetSection())
 }
 
+// ContainsRange returns true if this address contains the given sequential range
+func (addr *IPv4Address) ContainsRange(other IPAddressSeqRangeType) bool {
+	return isContainedBy(other, addr.ToIP())
+}
+
+// Overlaps returns true if this address overlaps the given address or subnet
+func (addr *IPv4Address) Overlaps(other AddressType) bool {
+	if addr == nil {
+		return true
+	}
+	return addr.init().overlaps(other)
+}
+
+// OverlapsRange returns true if this address overlaps the given sequential range
+func (addr *IPv4Address) OverlapsRange(other IPAddressSeqRangeType) bool {
+	if other == nil {
+		return true
+	}
+	return other.OverlapsAddress(addr)
+}
+
 // Compare returns a negative integer, zero, or a positive integer if this address or subnet is less than, equal, or greater than the given item.
 // Any address item is comparable to any other.
 func (addr *IPv4Address) Compare(item AddressItem) int {

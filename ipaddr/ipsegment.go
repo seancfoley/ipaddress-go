@@ -98,7 +98,7 @@ func (seg *ipAddressSegmentInternal) GetSegmentPrefixLen() PrefixLen {
 }
 
 // MatchesWithPrefixMask applies the network mask of the given bit-length to this segment and then compares the result with the given value masked by the same mask,
-//returning true if the resulting range matches the given single value.
+// returning true if the resulting range matches the given single value.
 func (seg *ipAddressSegmentInternal) MatchesWithPrefixMask(value SegInt, networkBits BitCount) bool {
 	mask := seg.GetSegmentNetworkMask(networkBits)
 	matchingValue := value & mask
@@ -569,10 +569,19 @@ func (seg *IPAddressSegment) Contains(other AddressSegmentType) bool {
 	return seg.contains(other)
 }
 
+// Overlaps returns whether this is same type and version as the given segment and whether it overlaps with the values in the given segment.
+func (seg *IPAddressSegment) Overlaps(other AddressSegmentType) bool {
+	if seg == nil {
+		return other == nil || other.ToSegmentBase() == nil
+	}
+	return seg.overlaps(other)
+}
+
 // Equal returns whether the given segment is equal to this segment.
 // Two segments are equal if they match:
-//  - type/version IPv4, IPv6
-//  - value range
+//   - type/version IPv4, IPv6
+//   - value range
+//
 // Prefix lengths are ignored.
 func (seg *IPAddressSegment) Equal(other AddressSegmentType) bool {
 	if seg == nil {

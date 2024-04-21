@@ -185,10 +185,19 @@ func (seg *MACAddressSegment) Contains(other AddressSegmentType) bool {
 	return seg.init().contains(other)
 }
 
+// Overlaps returns whether this is same type and version as the given segment and whether it overlaps with the values in the given segment.
+func (seg *MACAddressSegment) Overlaps(other AddressSegmentType) bool {
+	if seg == nil {
+		return other == nil || other.ToSegmentBase() == nil
+	}
+	return seg.init().overlaps(other)
+}
+
 // Equal returns whether the given segment is equal to this segment.
 // Two segments are equal if they match:
-//  - type/version: MAC
-//  - value range
+//   - type/version: MAC
+//   - value range
+//
 // Prefix lengths are ignored.
 func (seg *MACAddressSegment) Equal(other AddressSegmentType) bool {
 	if seg == nil {

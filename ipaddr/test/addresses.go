@@ -81,6 +81,8 @@ type testAddresses interface {
 
 	createInetAtonAddress(string) *ipaddr.IPAddressString
 
+	createIPInetAtonAddress(string) *ipaddr.IPAddressString
+
 	createParametrizedAddress(string, addrstrparam.RangeParams) *ipaddr.IPAddressString
 
 	createParamsAddress(string, addrstrparam.IPAddressStringParams) *ipaddr.IPAddressString
@@ -108,6 +110,8 @@ type testAddresses interface {
 	createMACParamsAddress(string, addrstrparam.MACAddressStringParams) *ipaddr.MACAddressString
 
 	isLenient() bool
+
+	allowExtraneous() bool
 
 	allowsRange() bool
 
@@ -387,6 +391,10 @@ func (t *addresses) createInetAtonAddress(str string) (res *ipaddr.IPAddressStri
 	return
 }
 
+func (t *addresses) createIPInetAtonAddress(x string) *ipaddr.IPAddressString {
+	return t.createInetAtonAddress(x)
+}
+
 func (t *addresses) createAddressFromIP(ip net.IP) (res *ipaddr.IPAddress) {
 	if t.caching {
 		if ipv4 := ip.To4(); ipv4 != nil {
@@ -609,6 +617,10 @@ func (t *addresses) isLenient() bool {
 	return false
 }
 
+func (t *addresses) allowExtraneous() bool {
+	return false
+}
+
 func (t *addresses) allowsRange() bool {
 	return false
 }
@@ -776,8 +788,10 @@ func (t *rangedAddresses) allowsRange() bool {
 }
 
 var (
-	defaultOptions     = new(addrstrparam.IPAddressStringParamsBuilder).ToParams()
-	defaultHostOptions = new(addrstrparam.HostNameParamsBuilder).ToParams()
+	defaultOptions             = new(addrstrparam.IPAddressStringParamsBuilder).ToParams()
+	defaultHostOptions         = new(addrstrparam.HostNameParamsBuilder).ToParams()
+	extranousDigitsOptions     = new(addrstrparam.IPAddressStringParamsBuilder).Set(defaultOptions).GetIPv4AddressParamsBuilder().Allow_inet_aton_extraneous_digits(true).GetParentBuilder().ToParams()
+	extranousDigitsOptionsIPv4 = new(addrstrparam.IPAddressStringParamsBuilder).Set(extranousDigitsOptions).AllowIPv6(false).ToParams()
 )
 
 type allAddresses struct {
@@ -791,6 +805,10 @@ type allAddresses struct {
 
 	ainetAtonStrHostStrCache      map[string]*ipaddr.HostName
 	ainetAtonStrIHostStrCacheLock *sync.Mutex
+}
+
+func (t *allAddresses) allowExtraneous() bool {
+	return true
 }
 
 func (t *allAddresses) useCache(use bool) {
@@ -848,8 +866,14 @@ func (t *allAddresses) createAddress(str string) (res *ipaddr.IPAddressString) {
 	return
 }
 
-func (t *allAddresses) createInetAtonAddress(str string) *ipaddr.IPAddressString {
-	return t.createAddress(str)
+func (t *allAddresses) createInetAtonAddress(str string) (res *ipaddr.IPAddressString) {
+	res = ipaddr.NewIPAddressStringParams(str, extranousDigitsOptionsIPv4)
+	return
+}
+
+func (t *allAddresses) createIPInetAtonAddress(str string) (res *ipaddr.IPAddressString) { // extraneous chars allowed
+	res = ipaddr.NewIPAddressStringParams(str, extranousDigitsOptions)
+	return
 }
 
 func (t *allAddresses) createHost(str string) (res *ipaddr.HostName) {

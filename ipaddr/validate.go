@@ -137,6 +137,21 @@ func isSingleSegmentIPv4(
 	return
 }
 
+func hasExtraneousDigitsIPv4(
+	validationOptions addrstrparam.IPAddressStringParams,
+	ipv4SpecificOptions addrstrparam.IPv4AddressStringParams,
+	ipv6SpecificOptions addrstrparam.IPv6AddressStringParams,
+	totalDigits int) bool {
+	if !ipv4SpecificOptions.Allows_inet_aton_extraneous_digits() {
+		return false
+	} else if !validationOptions.AllowsIPv6() {
+		return true // any number of digits is allowed when IPv6 is ruled out
+	} else if !ipv6SpecificOptions.AllowsBase85() {
+		return totalDigits < ipv6SingleSegmentDigitCount
+	}
+	return totalDigits < ipv6Base85SingleSegmentDigitCount
+}
+
 type strValidator struct{}
 
 func (strValidator) validateIPAddressStr(fromString *IPAddressString, validationOptions addrstrparam.IPAddressStringParams) (prov ipAddressProvider, err addrerr.AddressStringError) {
@@ -255,7 +270,7 @@ func validateAddress(
 		ipParseData.init(str)
 		parseData = ipParseData.getAddressParseData()
 		ipv6SpecificOptions = validationOptions.GetIPv6Params()
-		canBeBase85 = ipv6SpecificOptions.AllowsBase85()
+		canBeBase85 = ipv6SpecificOptions.AllowsBase85() && validationOptions.AllowsIPv6()
 		ipv4SpecificOptions = validationOptions.GetIPv4Params()
 	}
 
@@ -331,9 +346,7 @@ func validateAddress(
 					if totalCharacterCount == 0 {
 						//it is ""
 						if !isMac && ipParseData.hasPrefixSeparator() {
-							//if !validationOptions.AllowsPrefixOnly() {
 							return &addressStringError{addressError{str: str, key: "ipaddress.error.prefix.only"}}
-							//}
 						} else if !baseOptions.AllowsEmpty() {
 							return &addressStringError{addressError{str: str, key: "ipaddress.error.empty"}}
 						}
@@ -425,58 +438,118 @@ func validateAddress(
 							return &addressStringError{addressError{str: str, key: "ipaddress.error.single.segment"}}
 						}
 
+						if canBeBase85 {
+							if canBeBase85, base85Err := parseBase85(
+								validationOptions, str, strStartIndex, strEndIndex, ipParseData,
+								extendedRangeWildcardIndex, totalCharacterCount, index); canBeBase85 {
+								break
+							} else if base85Err != nil {
+								// base85Err can only be non-nil when returning false
+								return base85Err
+							}
+						}
+						// we are not base 85, so error if necessary
+						if extendedCharacterIndex >= 0 {
+							return &addressStringIndexError{
+								addressStringError{addressError{str: str, key: "ipaddress.error.invalid.character.at.index"}},
+								extendedCharacterIndex,
+							}
+						}
+
 						isRange := rangeWildcardIndex >= 0
-						isSingleSeg, serr := isSingleSegmentIPv6(str, totalDigits, isRange, frontTotalDigits, ipv6SpecificOptions)
-						if serr != nil {
+						if isSingleSeg, serr := isSingleSegmentIPv6(
+							str,
+							totalDigits,
+							isRange,
+							frontTotalDigits,
+							ipv6SpecificOptions); serr != nil {
 							return serr
 						} else if isSingleSeg {
-							// we are not base 85, so error if necessary
-							if extendedCharacterIndex >= 0 {
-								return &addressStringIndexError{
-									addressStringError{addressError{str: str, key: "ipaddress.error.invalid.character.at.index"}},
-									extendedCharacterIndex,
-								}
-							}
 							isSingleIPv6 = true
 							currentChar = IPv6SegmentSeparator
-						} else {
-							if canBeBase85 {
-								if canBeBase85, serr = parseBase85(
-									validationOptions, str, strStartIndex, strEndIndex, ipParseData,
-									extendedRangeWildcardIndex, totalCharacterCount, index); canBeBase85 {
-									break
-								}
-								if serr != nil {
-									return serr
-								}
-							}
+						} else if validationOptions.AllowsIPv4() {
+
 							leadingZeros := leadingZeroCount
 							if leadingWithZero {
 								leadingZeros++
 							}
-							isSingleSeg, serr = isSingleSegmentIPv4(
+
+							if isSingleSeg, serr = isSingleSegmentIPv4(
 								str,
 								totalDigits-leadingZeros,
 								totalDigits,
 								isRange,
 								frontDigitCount,
 								frontTotalDigits,
-								ipv4SpecificOptions)
-							if serr != nil {
+								ipv4SpecificOptions); serr != nil {
 								return serr
 							} else if isSingleSeg {
-								// we are not base 85, so error if necessary
-								if extendedCharacterIndex >= 0 {
+								currentChar = IPv4SegmentSeparator
+							} else if hasExtraneousDigitsIPv4(validationOptions, ipv4SpecificOptions, ipv6SpecificOptions, totalDigits) {
+								if singleWildcardCount > 0 || wildcardCount > 0 {
+									return &addressStringError{addressError{str: str, key: "ipaddress.error.invalid.character"}}
+								} else if isRange {
 									return &addressStringIndexError{
 										addressStringError{addressError{str: str, key: "ipaddress.error.invalid.character.at.index"}},
-										extendedCharacterIndex,
+										rangeWildcardIndex}
+								} else if ipParseData.getQualifierIndex() >= 0 {
+									return &addressStringIndexError{
+										addressStringError{addressError{str: str, key: "ipaddress.error.invalid.character.at.index"}},
+										ipParseData.getQualifierIndex()}
+
+								}
+								var val, radix uint32
+								if hexDelimiterIndex >= 0 {
+									if !ipv4SpecificOptions.AllowsLeadingZeros() {
+										// the '0' preceding the 'x' is not allowed
+										return &addressStringError{addressError{str: str, key: "ipaddress.error.segment.leading.zeros"}}
+									} else if !ipv4SpecificOptions.Allows_inet_aton_hex() {
+										return &addressStringError{addressError{str: str, key: "ipaddress.error.ipv4.segment.hex"}}
+									} else if leadingZeros > 1 && !ipv4SpecificOptions.Allows_inet_aton_leading_zeros() {
+										// the '0' following the 'x' is not allowed
+										return &addressStringError{addressError{str: str, key: "ipaddress.error.segment.leading.zeros"}}
+									}
+									radix = 16
+									val = parseInt16(str, strEndIndex-8, strEndIndex)
+								} else if leadingZeros > 0 && ipv4SpecificOptions.Allows_inet_aton_octal() {
+									if !ipv4SpecificOptions.AllowsLeadingZeros() {
+										return &addressStringError{addressError{str: str, key: "ipaddress.error.segment.leading.zeros"}}
+									} else if leadingZeros > 1 && !ipv4SpecificOptions.Allows_inet_aton_leading_zeros() {
+										return &addressStringError{addressError{str: str, key: "ipaddress.error.segment.leading.zeros"}}
+									}
+									radix = 8
+									if val, serr = parseInt8(str, strStartIndex, strEndIndex); serr != nil {
+										return serr
+									}
+								} else {
+									radix = 10
+									if val, serr = parseInt10(str, strStartIndex, strEndIndex); serr != nil {
+										return serr
 									}
 								}
-								currentChar = IPv4SegmentSeparator
+
+								// We cannot allow normal parsing for decimal, because the remainder (mod of max uint32) does not work with the way we shift-store values hex values currentValueHex.
+								// We cannot allow normal parsing for octal.  This is because, even though the way we shift-store hex digits in currentValueHex works for octal, giving us the correct mod of max uint32,
+								// it does not allow us to check if overflow chars are octal.
+								// For hex, maybe we could use normal parsing, but we'd need to check for range chars here, we need to disallow them, and the code as written does not.
+								// So far all radices, we parse extraneous digits here.
+
+								ipParseData.setVersion(IPv4)
+								ipParseData.set_has_inet_aton_value(true)
+								parseData.initSegmentData(1)
+								parseData.incrementSegmentCount()
+								val64 := uint64(val)
+								assign3Attributes1Values1Flags(strStartIndex+leadingZeros, strEndIndex, strStartIndex, parseData, 0, val64, radix)
+								parseData.setSingleSegment()
+								break
 							} else {
 								return &addressStringError{addressError{str: str, key: "ipaddress.error.too.few.segments.digit.count"}}
 							}
+						} else {
+							return &addressStringError{addressError{str: str, key: "ipaddress.error.too.few.segments.digit.count"}}
 						}
+
+						// single segment IPv4 or single-segment IPv6
 						isSingleSegment = true
 						parseData.setSingleSegment()
 						checkCharCounts = false // counted chars already
@@ -2544,9 +2617,6 @@ func parseBase85(
 	parseData := ipAddressParseData.getAddressParseData()
 	if extendedRangeWildcardIndex < 0 {
 		if totalCharacterCount == ipv6Base85SingleSegmentDigitCount {
-			if !validationOptions.AllowsIPv6() {
-				return false, &addressStringError{addressError{str: str, key: "ipaddress.error.ipv6"}}
-			}
 			ipAddressParseData.setVersion(IPv6)
 			val := parse85(str, strStartIndex, strEndIndex)
 			var lowBits, highBits big.Int
@@ -2569,9 +2639,6 @@ func parseBase85(
 		if totalCharacterCount == (ipv6Base85SingleSegmentDigitCount<<1)+len(IPv6AlternativeRangeSeparatorStr) /* two base 85 addresses */ ||
 			(totalCharacterCount == ipv6Base85SingleSegmentDigitCount+len(IPv6AlternativeRangeSeparatorStr) &&
 				(extendedRangeWildcardIndex == 0 || extendedRangeWildcardIndex+len(IPv6AlternativeRangeSeparatorStr) == strEndIndex)) { /* note that we already check that extendedRangeWildcardIndex is at index 20 */
-			if !validationOptions.AllowsIPv6() {
-				return false, &addressStringError{addressError{str: str, key: "ipaddress.error.ipv6"}}
-			}
 			ipv6SpecificOptions := validationOptions.GetIPv6Params()
 			if !ipv6SpecificOptions.GetRangeParams().AllowsRangeSeparator() {
 				return false, &addressStringError{addressError{str: str, key: "ipaddress.error.no.range"}}
@@ -2960,17 +3027,22 @@ func checkSegments(
 		hasWildcardSeparator := addressParseData.hasWildcard() && ipv4Options.AllowsWildcardedSeparator()
 
 		//single segments are handled in the parsing code with the allowSingleSegment setting
-		if missingCount > 0 && segCount > 1 {
-			if ipv4Options.Allows_inet_aton_joinedSegments() {
-				parseData.set_inet_aton_joined(true)
-			} else if !hasWildcardSeparator {
-				return &addressStringError{addressError{str: fullAddr, key: "ipaddress.error.ipv4.too.few.segments"}}
+		hasMissingSegs := false
+		if missingCount > 0 {
+			if segCount > 1 {
+				if ipv4Options.Allows_inet_aton_joinedSegments() {
+					hasMissingSegs = true
+					parseData.set_inet_aton_joined(true)
+				} else if !hasWildcardSeparator {
+					return &addressStringError{addressError{str: fullAddr, key: "ipaddress.error.ipv4.too.few.segments"}}
+				}
+			} else {
+				hasMissingSegs = ipv4Options.Allows_inet_aton_joinedSegments()
 			}
 		}
 
 		//here we check whether values are too large
 		notUnlimitedLength := !ipv4Options.AllowsUnlimitedLeadingZeros()
-		hasMissingSegs := missingCount > 0 && ipv4Options.Allows_inet_aton_joinedSegments()
 		for i := 0; i < segCount; i++ {
 			var max uint64
 			if hasMissingSegs && i == segCount-1 {
@@ -3391,6 +3463,24 @@ func parseLong2(s string, start, end int) uint64 {
 	return result
 }
 
+func parseInt8(s string, start, end int) (result uint32, err addrerr.AddressStringError) {
+	charArray := chars
+	result = uint32(charArray[s[start]])
+	if result >= 8 {
+		err = &addressStringError{addressError{str: s, key: "ipaddress.error.ipv4.invalid.octal.digit"}}
+		return
+	}
+	for start++; start < end; start++ {
+		next := uint32(charArray[s[start]])
+		if next >= 8 {
+			err = &addressStringError{addressError{str: s, key: "ipaddress.error.ipv4.invalid.octal.digit"}}
+			return
+		}
+		result = (result << 3) | next
+	}
+	return
+}
+
 func parseLong8(s string, start, end int) uint64 {
 	charArray := chars
 	result := uint64(charArray[s[start]])
@@ -3400,11 +3490,38 @@ func parseLong8(s string, start, end int) uint64 {
 	return result
 }
 
+func parseInt10(s string, start, end int) (result uint32, err addrerr.AddressStringError) {
+	charArray := chars
+	result = uint32(charArray[s[start]])
+	if result >= 10 {
+		err = &addressStringError{addressError{str: s, key: "ipaddress.error.ipv4.invalid.decimal.digit"}}
+		return
+	}
+	for start++; start < end; start++ {
+		next := uint32(charArray[s[start]])
+		if next >= 10 {
+			err = &addressStringError{addressError{str: s, key: "ipaddress.error.ipv4.invalid.decimal.digit"}}
+			return
+		}
+		result = (result * 10) + next
+	}
+	return
+}
+
 func parseLong10(s string, start, end int) uint64 {
 	charArray := chars
 	result := uint64(charArray[s[start]])
 	for start++; start < end; start++ {
 		result = (result * 10) + uint64(charArray[s[start]])
+	}
+	return result
+}
+
+func parseInt16(s string, start, end int) uint32 {
+	charArray := chars
+	result := uint32(charArray[s[start]])
+	for start++; start < end; start++ {
+		result = (result << 4) | uint32(charArray[s[start]])
 	}
 	return result
 }

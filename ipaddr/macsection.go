@@ -188,6 +188,16 @@ func (section *MACAddressSection) Contains(other AddressSectionType) bool {
 	return section.contains(other)
 }
 
+// Overlaps returns whether this is same type and version as the given address section and whether it overlaps the given section, both sections containing at least individual section in common.
+//
+// Sections must also have the same number of segments to be comparable, otherwise false is returned.
+func (section *MACAddressSection) Overlaps(other AddressSectionType) bool {
+	if section == nil {
+		return other == nil || other.ToSectionBase() == nil
+	}
+	return section.overlaps(other)
+}
+
 // Equal returns whether the given address section is equal to this address section.
 // Two address sections are equal if they represent the same set of sections.
 // They must match:

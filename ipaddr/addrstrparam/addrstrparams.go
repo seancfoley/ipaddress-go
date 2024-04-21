@@ -126,7 +126,7 @@ func (builder *rangeParameters) AllowsSingleWildcard() bool {
 // RangeParamsBuilder is used to build an immutable RangeParams for parsing address strings.
 type RangeParamsBuilder struct {
 	rangeParameters
-	parent interface{}
+	parent any
 }
 
 // ToParams returns an immutable RangeParams instance built by this builder.
@@ -262,8 +262,6 @@ func (builder *AddressStringParamsBuilder) allowSingleSegment(allow bool) {
 	builder.noSingleSegment = !allow
 }
 
-//
-//
 // AddressStringFormatParams are parameters specific to a given address type or version that is supplied.
 type addressStringFormatParameters struct {
 	rangeParams rangeParameters
@@ -300,8 +298,6 @@ func (params *addressStringFormatParameters) GetRangeParams() RangeParams {
 	return &params.rangeParams
 }
 
-//
-//
 // AddressStringFormatParamsBuilder creates parameters for parsing a specific address type or address version.
 type AddressStringFormatParamsBuilder struct {
 	addressStringFormatParameters
