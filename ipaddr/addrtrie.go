@@ -18,9 +18,10 @@ package ipaddr
 
 import (
 	"fmt"
+	"unsafe"
+
 	"github.com/seancfoley/bintree/tree"
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
-	"unsafe"
 )
 
 type trieBase[T TrieKeyConstraint[T], V any] struct {
@@ -184,9 +185,17 @@ func (trie *trieBase[T, V]) lowerAddedNode(addr T) *tree.BinTrieNode[trieKey[T],
 	return trie.trie.LowerAddedNode(createKey(addr))
 }
 
+func (trie *trieBase[T, V]) lower(addr T) T {
+	return trie.lowerAddedNode(addr).GetKey().address
+}
+
 func (trie *trieBase[T, V]) floorAddedNode(addr T) *tree.BinTrieNode[trieKey[T], V] {
 	addr = mustBeBlockOrAddress(addr)
 	return trie.trie.FloorAddedNode(createKey(addr))
+}
+
+func (trie *trieBase[T, V]) floor(addr T) T {
+	return trie.floorAddedNode(addr).GetKey().address
 }
 
 func (trie *trieBase[T, V]) higherAddedNode(addr T) *tree.BinTrieNode[trieKey[T], V] {
@@ -194,9 +203,17 @@ func (trie *trieBase[T, V]) higherAddedNode(addr T) *tree.BinTrieNode[trieKey[T]
 	return trie.trie.HigherAddedNode(createKey(addr))
 }
 
+func (trie *trieBase[T, V]) higher(addr T) T {
+	return trie.higherAddedNode(addr).GetKey().address
+}
+
 func (trie *trieBase[T, V]) ceilingAddedNode(addr T) *tree.BinTrieNode[trieKey[T], V] {
 	addr = mustBeBlockOrAddress(addr)
 	return trie.trie.CeilingAddedNode(createKey(addr))
+}
+
+func (trie *trieBase[T, V]) ceiling(addr T) T {
+	return trie.ceilingAddedNode(addr).GetKey().address
 }
 
 func (trie *trieBase[T, V]) clone() *tree.BinTrie[trieKey[T], V] {
@@ -612,9 +629,19 @@ func (trie *Trie[T]) LowerAddedNode(addr T) *TrieNode[T] {
 	return toAddressTrieNode[T](trie.lowerAddedNode(addr))
 }
 
+// Lower returns the highest address strictly less than the given address.
+func (trie *Trie[T]) Lower(addr T) T {
+	return trie.lower(addr)
+}
+
 // FloorAddedNode returns the added node whose address is the highest address less than or equal to the given address.
 func (trie *Trie[T]) FloorAddedNode(addr T) *TrieNode[T] {
 	return toAddressTrieNode[T](trie.floorAddedNode(addr))
+}
+
+// Floor returns the highest address less than or equal to the given address.
+func (trie *Trie[T]) Floor(addr T) T {
+	return trie.floor(addr)
 }
 
 // HigherAddedNode returns the added node whose address is the lowest address strictly greater than the given address.
@@ -622,9 +649,19 @@ func (trie *Trie[T]) HigherAddedNode(addr T) *TrieNode[T] {
 	return toAddressTrieNode[T](trie.higherAddedNode(addr))
 }
 
+// Higher returns the lowest address strictly greater than the given address.
+func (trie *Trie[T]) Higher(addr T) T {
+	return trie.higher(addr)
+}
+
 // CeilingAddedNode returns the added node whose address is the lowest address greater than or equal to the given address.
 func (trie *Trie[T]) CeilingAddedNode(addr T) *TrieNode[T] {
 	return toAddressTrieNode[T](trie.ceilingAddedNode(addr))
+}
+
+// Ceiling returns the lowest address greater than or equal to the given address.
+func (trie *Trie[T]) Ceiling(addr T) T {
+	return trie.ceiling(addr)
 }
 
 // Clone clones this trie.
@@ -991,27 +1028,47 @@ func (trie *AssociativeTrie[T, V]) LastAddedNode() *AssociativeTrieNode[T, V] {
 }
 
 // LowerAddedNode returns the added node whose address is the highest address strictly less than the given address,
-// or nil if there are no added entries in this trie.
+// or nil if there are no such added entries in this trie.
 func (trie *AssociativeTrie[T, V]) LowerAddedNode(addr T) *AssociativeTrieNode[T, V] {
 	return toAssociativeTrieNode[T, V](trie.lowerAddedNode(addr))
 }
 
+// Lower returns the highest address strictly less than the given address.
+func (trie *AssociativeTrie[T, V]) Lower(addr T) T {
+	return trie.lower(addr)
+}
+
 // FloorAddedNode returns the added node whose address is the highest address less than or equal to the given address,
-// or nil if there are no added entries in this trie.
+// or nil if there are no such added entries in this trie.
 func (trie *AssociativeTrie[T, V]) FloorAddedNode(addr T) *AssociativeTrieNode[T, V] {
 	return toAssociativeTrieNode[T, V](trie.floorAddedNode(addr))
 }
 
+// Floor returns the highest address less than or equal to the given address.
+func (trie *AssociativeTrie[T, V]) Floor(addr T) T {
+	return trie.floor(addr)
+}
+
 // HigherAddedNode returns the added node whose address is the lowest address strictly greater than the given address,
-// or nil if there are no added entries in this trie.
+// or nil if there are no such added entries in this trie.
 func (trie *AssociativeTrie[T, V]) HigherAddedNode(addr T) *AssociativeTrieNode[T, V] {
 	return toAssociativeTrieNode[T, V](trie.higherAddedNode(addr))
 }
 
+// Higher returns the lowest address strictly greater than the given address.
+func (trie *AssociativeTrie[T, V]) Higher(addr T) T {
+	return trie.higher(addr)
+}
+
 // CeilingAddedNode returns the added node whose address is the lowest address greater than or equal to the given address,
-// or nil if there are no added entries in this trie.
+// or nil if there are no such added entries in this trie.
 func (trie *AssociativeTrie[T, V]) CeilingAddedNode(addr T) *AssociativeTrieNode[T, V] {
 	return toAssociativeTrieNode[T, V](trie.ceilingAddedNode(addr))
+}
+
+// Ceiling returns the lowest address greater than or equal to the given address.
+func (trie *AssociativeTrie[T, V]) Ceiling(addr T) T {
+	return trie.ceiling(addr)
 }
 
 // Clone clones this trie.
