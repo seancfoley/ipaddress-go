@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2022 Sean C Foley
+// Copyright 2020-2023 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -227,7 +227,7 @@ type hostCache struct {
 // It can also include a port number or service name (which maps to a port).
 // It can include a prefix length or mask for either an ipaddress or host name string.  An IPv6 address can have an IPv6 zone.
 //
-// Supported Formats
+// # Supported Formats
 //
 // You can use all host or address formats supported by nmap and all address formats supported by IPAddressString.
 // All manners of domain names are supported. When adding a prefix length or mask to a host name string, it is to denote the subnet of the resolved address.

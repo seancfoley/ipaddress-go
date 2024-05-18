@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2022 Sean C Foley
+// Copyright 2020-2024 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -407,7 +407,7 @@ func (addrStr *IPAddressString) ToHostAddress() (*IPAddress, addrerr.AddressErro
 	return provider.getProviderHostAddress()
 }
 
-// TODO getDivisionGrouping: allows for isSequential
+// TODO LATER getDivisionGrouping: allows for isSequential
 //// IsSequential returns whether the addresses returned by this IPAddressString are sequential,
 //// meaning that if any address has a numerical value that lies in between the numerical values of two addresses represented by this IPAddressString,
 //// then that address is also represented by this IPAddressString.  In other words, the range of addresses is sequential.

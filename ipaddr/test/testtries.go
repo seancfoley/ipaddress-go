@@ -1,5 +1,5 @@
 //
-// Copyright 2022 Sean C Foley
+// Copyright 2022-2024 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -131,12 +131,12 @@ var treeOne = trieStrings{
 
 var treeTwo = trieStrings{
 	addrs: []string{
-		"ff80::/8",
-		"ff80:8000::/16",
+		"ff80::",
+		"ff80:8000::",
 		"ff80:8000::/24",
 		"ff80:8000::/32",
 		"ff80:8000:c000::/34",
-		"ff80:8000:c800::/36",
+		"ff80:8000:c800::",
 		"ff80:8000:cc00::/38",
 		"ff80:8000:cc00::/40",
 	},
@@ -323,12 +323,21 @@ var testIPAddressTries = [][]string{
 		"0.128.0.0/24",
 		"0.128.0.128",
 	}, {
-		"ff80::/8",
-		"ff80:8000::/16",
+		"ff80::",
+		"ff80:8000::",
 		"ff80:8000::/24",
 		"ff80:8000::/32",
 		"ff80:8000:c000::/34",
-		"ff80:8000:c800::/36",
+		"ff80:8000:c800::",
+		"ff80:8000:cc00::/38",
+		"ff80:8000:cc00::/40",
+	}, {
+		"ff80::/16",
+		"ff80:8000::/20",
+		"ff80:8000::/24",
+		"ff80:8000::/32",
+		"ff80:8000:c000::/34",
+		"ff80:8000:c800::/37",
 		"ff80:8000:cc00::/38",
 		"ff80:8000:cc00::/40",
 	}, {

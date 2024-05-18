@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2022 Sean C Foley
+// Copyright 2020-2024 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -551,11 +551,11 @@ func (addr *MACAddress) ToSinglePrefixBlockOrAddress() *MACAddress {
 
 func (addr *MACAddress) toSinglePrefixBlockOrAddress() (*MACAddress, addrerr.IncompatibleAddressError) {
 	if addr == nil {
-		return nil, &incompatibleAddressError{addressError{key: "ipaddress.error.address.not.block"}}
+		return nil, &incompatibleAddressError{addressError{key: "ipaddress.error.address.not.block", str: addr.String()}}
 	}
 	res := addr.ToSinglePrefixBlockOrAddress()
 	if res == nil {
-		return nil, &incompatibleAddressError{addressError{key: "ipaddress.error.address.not.block"}}
+		return nil, &incompatibleAddressError{addressError{key: "ipaddress.error.address.not.block", str: addr.String()}}
 	}
 	return res, nil
 }

@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2022 Sean C Foley
+// Copyright 2020-2023 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -65,30 +65,27 @@ var zeroMACAddressString = NewMACAddressString("")
 // You can control all the supported formats using MACAddressStringParamsBuilder to build a parameters instance of  MACAddressStringParams.
 // When not using the constructor that takes a MACAddressStringParams, a default instance of MACAddressStringParams is used that is generally permissive.
 //
-// Supported Formats
+// # Supported Formats
 //
 // Ranges are supported:
 //
-//  • wildcards '*' and ranges '-' (for example "1:*:1-3:1-4:5:6"), useful for working with MAC address collections
-//  • SQL wildcards '%" and "_", although '%' is considered an SQL wildcard only when it is not considered an IPv6 zone indicator
-//
+//   - wildcards '*' and ranges '-' (for example "1:*:1-3:1-4:5:6"), useful for working with MAC address collections
+//   - SQL wildcards '%" and "_", although '%' is considered an SQL wildcard only when it is not considered an IPv6 zone indicator
 //
 // The different methods of representing MAC addresses are supported:
 //
-//  • 6 or 8 bytes in hex representation like "aa:bb:cc:dd:ee:ff"
-//  • The same but with a hyphen separator like "aa-bb-cc-dd-ee-ff" (the range separator in this case becomes '/')
-//  • The same but with space separator like "aa bb cc dd ee ff"
-//  • The dotted representation, 4 sets of 12 bits in hex representation like "aaa.bbb.ccc.ddd"
-//  • The 12 or 16 hex representation with no separators like "aabbccddeeff"
-//
+//   - 6 or 8 bytes in hex representation like "aa:bb:cc:dd:ee:ff"
+//   - The same but with a hyphen separator like "aa-bb-cc-dd-ee-ff" (the range separator in this case becomes '/')
+//   - The same but with space separator like "aa bb cc dd ee ff"
+//   - The dotted representation, 4 sets of 12 bits in hex representation like "aaa.bbb.ccc.ddd"
+//   - The 12 or 16 hex representation with no separators like "aabbccddeeff"
 //
 // All of the above range variations also work for each of these ways of representing MAC addresses.
 //
 // Some additional formats:
 //
-//  • null or empty strings representing an unspecified address
-//  • the single wildcard address "*" which represents all MAC addresses
-//
+//   - null or empty strings representing an unspecified address
+//   - the single wildcard address "*" which represents all MAC addresses
 //
 // Usage
 // Once you have constructed a MACAddressString object, you can convert it to a [MACAddress] object with GetAddress or ToAddress.

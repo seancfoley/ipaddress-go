@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2022 Sean C Foley
+// Copyright 2020-2024 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -102,6 +102,18 @@ func (iter addrTrieNodeIterator[T, V]) Next() *TrieNode[T] {
 
 //
 
+type addrTrieIteratorRem[T TrieKeyConstraint[T], V any] struct {
+	tree.TrieNodeIteratorRem[trieKey[T], V]
+}
+
+func (iter addrTrieIteratorRem[T, V]) Next() T {
+	return iter.TrieNodeIteratorRem.Next().GetKey().address
+}
+
+func (iter addrTrieIteratorRem[T, V]) Remove() T {
+	return iter.TrieNodeIteratorRem.Remove().GetKey().address
+}
+
 type cachingAddressTrieNodeIterator[T TrieKeyConstraint[T], V any] struct {
 	tree.CachingTrieNodeIterator[trieKey[T], V]
 }
@@ -165,6 +177,10 @@ func (it emptyIterator[T]) Next() (t T) {
 	return
 }
 
-func nilAddressIterator[T any]() Iterator[T] {
+func (it emptyIterator[T]) Remove() (t T) {
+	return
+}
+
+func nilAddressIterator[T any]() IteratorWithRemove[T] {
 	return emptyIterator[T]{}
 }

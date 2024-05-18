@@ -1,5 +1,5 @@
 //
-// Copyright 2022 Sean C Foley
+// Copyright 2022-2024 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,13 +17,14 @@ package test
 
 import (
 	"fmt"
-	"github.com/seancfoley/ipaddress-go/ipaddr"
 	"reflect"
 	"strconv"
 	"sync/atomic"
+
+	"github.com/seancfoley/ipaddress-go/ipaddr"
 )
 
-type trieTesterGeneric struct { //TODO to truly test the generics, need to create trieTesterGeneric[T][V] and then filter out the code for each in run()
+type trieTesterGeneric struct {
 	testBase
 }
 
@@ -67,7 +68,8 @@ func (t trieTesterGeneric) run() {
 	}
 	notDoneEmptyIPv6 := true
 	notDoneEmptyIPv4 := true
-	for _, treeAddrs := range sampleIPAddressTries {
+	for i, treeAddrs := range sampleIPAddressTries {
+		_ = i
 		ipv6Tree := NewIPv6AddressGenericTrie()
 		t.createIPv6SampleTree(ipv6Tree, treeAddrs)
 		size := ipv6Tree.Size()
@@ -88,6 +90,141 @@ func (t trieTesterGeneric) run() {
 			}
 			t.testIterate(ipv4Tree)
 			t.testContains(ipv4Tree)
+		}
+
+		for j := i + 1; j < len(sampleIPAddressTries); j++ {
+			// construct into the IPv4 and IPv6 component tries
+
+			dualTries := ipaddr.DualIPv4v6Tries{}
+			t.createIPv4SampleIPTree(dualTries.GetIPv4Trie(), treeAddrs)
+			t.createIPv6SampleIPTree(dualTries.GetIPv6Trie(), treeAddrs)
+			treeAddrs2 := sampleIPAddressTries[j]
+			t.createIPv4SampleIPTree(dualTries.GetIPv4Trie(), treeAddrs2)
+			t.createIPv6SampleIPTree(dualTries.GetIPv6Trie(), treeAddrs2)
+			t.testIterateDual(&dualTries)
+			dualTriesOrig := dualTries
+
+			//fmt.Println(dualTriesOrig.String())
+			//fmt.Println(dualTriesOrig.AddedNodesTreeString())
+			// ○ * (10)
+			// └─● 0.0.0.0/0
+			//   ├─● 0.0.0.0/8
+			//   │ └─● 0.0.0.0/16
+			//   │   └─● 0.0.0.0/24
+			//   │     └─● 0.0.0.0
+			//   └─● 1.2.3.0/30
+			//     ├─● 1.2.3.0/31
+			//     │ ├─● 1.2.3.0
+			//     │ └─● 1.2.3.1
+			//     └─● 1.2.3.2
+
+			//construct the 4 IPv4 and IPv6 tries, then use the AddTrie method.
+
+			dualTries = ipaddr.DualIPv4v6Tries{}
+			ipv4Trie := ipaddr.Trie[*ipaddr.IPAddress]{}
+			ipv6Trie := ipaddr.Trie[*ipaddr.IPAddress]{}
+			t.createIPv4SampleIPTree(&ipv4Trie, treeAddrs)
+			t.createIPv6SampleIPTree(&ipv6Trie, treeAddrs)
+			t.createIPv4SampleIPTree(&ipv4Trie, treeAddrs2)
+			t.createIPv6SampleIPTree(&ipv6Trie, treeAddrs2)
+			dualTries.AddTrie(ipv4Trie.GetRoot())
+			dualTries.AddTrie(ipv6Trie.GetRoot())
+			if dualTries.Size() != ipv4Trie.Size()+ipv6Trie.Size() {
+				t.addFailure(newDualTrieFailure("unexpected node size "+strconv.Itoa(dualTries.Size()), &dualTries))
+			}
+			if !dualTries.Equal(&dualTriesOrig) || !dualTriesOrig.Equal(&dualTries) {
+				t.addFailure(newDualTrieFailure("unexpected trie inequality ", &dualTries))
+			}
+			t.testIterateDual(&dualTries)
+
+			//construct the 4 IPv4 and IPv6 tries, then use the AddIPv4Trie and AddIPv6Trie method.
+
+			dualTries.Clear()
+			if dualTries.Size() != 0 {
+				t.addFailure(newDualTrieFailure("unexpected node size "+strconv.Itoa(dualTries.Size()), &dualTries))
+			}
+			ipv4Trie2 := ipaddr.Trie[*ipaddr.IPv4Address]{}
+			ipv6Trie2 := ipaddr.Trie[*ipaddr.IPv6Address]{}
+			t.createIPv4SampleIPv4Tree(&ipv4Trie2, treeAddrs)
+			t.createIPv6SampleIPv6Tree(&ipv6Trie2, treeAddrs)
+			t.createIPv4SampleIPv4Tree(&ipv4Trie2, treeAddrs2)
+			t.createIPv6SampleIPv6Tree(&ipv6Trie2, treeAddrs2)
+			dualTries.AddIPv4Trie(ipv4Trie2.GetRoot())
+			dualTries.AddIPv6Trie(ipv6Trie2.GetRoot())
+			if dualTries.Size() != ipv4Trie.Size()+ipv6Trie.Size() {
+				t.addFailure(newDualTrieFailure("unexpected node size "+strconv.Itoa(dualTries.Size()), &dualTries))
+			}
+			if !dualTries.Equal(&dualTriesOrig) || !dualTriesOrig.Equal(&dualTries) {
+				t.addFailure(newDualTrieFailure("unexpected trie inequality ", &dualTries))
+			}
+			t.testIterateDual(&dualTries)
+
+			dualTries.Clear()
+			dualTries2 := ipaddr.DualIPv4v6Tries{}
+			if !dualTries.Equal(&dualTries2) || !dualTries2.Equal(&dualTries) {
+				t.addFailure(newDualTrieFailure("unexpected trie inequality ", &dualTries))
+			}
+
+			// Create the dual trie directly with the Add method
+
+			dualTries = ipaddr.DualIPv4v6Tries{}
+			t.createDualTrieSample(&dualTries, treeAddrs)
+			t.createDualTrieSample(&dualTries, treeAddrs2)
+			if dualTries.Size() != ipv4Trie.Size()+ipv6Trie.Size() {
+				t.addFailure(newDualTrieFailure("unexpected trie size "+strconv.Itoa(dualTries.Size()), &dualTries))
+			}
+			if !dualTries.Equal(&dualTriesOrig) || !dualTriesOrig.Equal(&dualTries) {
+				t.addFailure(newDualTrieFailure("unexpected trie inequality ", &dualTries))
+			}
+			t.testIterateDual(&dualTries)
+		}
+
+		for j := i + 1; j < len(sampleIPAddressTries); j++ {
+			// construct into the IPv4 and IPv6 component tries
+			treeAddrs2 := sampleIPAddressTries[j]
+			dualTries := ipaddr.DualIPv4v6AssociativeTries[string]{}
+			var strset map[string]struct{} = make(map[string]struct{}, len(treeAddrs)+len(treeAddrs2))
+			for k, addr := range append(treeAddrs2, treeAddrs...) {
+				addressStr := t.createAddress(addr)
+				address := addressStr.GetAddress()
+				strset[address.String()] = struct{}{}
+				if k%2 == 0 {
+					dualTries.Put(address, address.String())
+				} else {
+					dualTries.PutNode(address, address.String())
+				}
+			}
+
+			//fmt.Println(dualTries.AddedNodesTreeString())
+			// ○ * (13)
+			// ├─● 0.0.0.0/0 = 0.0.0.0/0
+			// │ └─● 0.0.0.0/8 = 0.0.0.0/8
+			// │   └─● 0.0.0.0/16 = 0.0.0.0/16
+			// │     └─● 0.0.0.0/24 = 0.0.0.0/24
+			// │       └─● 0.0.0.0 = 0.0.0.0
+			// ├─● ff80:: = ff80::
+			// └─● ff80:8000::/24 = ff80:8000::/24
+			//   └─● ff80:8000::/32 = ff80:8000::/32
+			//     ├─● ff80:8000:: = ff80:8000::
+			//     └─● ff80:8000:c000::/34 = ff80:8000:c000::/34
+			//       ├─● ff80:8000:c800:: = ff80:8000:c800::
+			//       └─● ff80:8000:cc00::/38 = ff80:8000:cc00::/38
+			//         └─● ff80:8000:cc00::/40 = ff80:8000:cc00::/40
+
+			if dualTries.Size() != len(strset) {
+				t.addFailure(newDualAssocTrieFailure("unexpected trie size "+strconv.Itoa(dualTries.Size()), &dualTries))
+			}
+			counter := 0
+			iter := dualTries.NodeIterator(true)
+			for node := iter.Next(); node != nil; node = iter.Next() {
+				counter++
+				if node.GetKey().String() != node.GetValue() {
+					t.addFailure(newIPAddrFailure("unexpected trie value "+node.GetValue(), node.GetKey()))
+				}
+			}
+			if counter != len(strset) {
+				t.addFailure(newDualAssocTrieFailure("unexpected trie counted size "+strconv.Itoa(dualTries.Size()), &dualTries))
+			}
 		}
 	}
 	notDoneEmptyIPv6 = true
@@ -756,6 +893,26 @@ func (t trieTesterGeneric) createIPv6SampleTree(tree *AddressTrie, addrs []strin
 	}
 }
 
+func (t trieTesterGeneric) createIPv6SampleIPTree(tree *ipaddr.Trie[*ipaddr.IPAddress], addrs []string) {
+	for _, addr := range addrs {
+		addressStr := t.createAddress(addr)
+		if addressStr.IsIPv6() {
+			address := addressStr.GetAddress()
+			tree.Add(address)
+		}
+	}
+}
+
+func (t trieTesterGeneric) createIPv6SampleIPv6Tree(tree *ipaddr.Trie[*ipaddr.IPv6Address], addrs []string) {
+	for _, addr := range addrs {
+		addressStr := t.createAddress(addr)
+		if addressStr.IsIPv6() {
+			address := addressStr.GetAddress()
+			tree.Add(address.ToIPv6())
+		}
+	}
+}
+
 func (t trieTesterGeneric) createIPv6SampleTreeAddrs(tree *AddressTrie, addrs []*ipaddr.IPAddress) {
 	for _, addr := range addrs {
 		if addr.IsIPv6() {
@@ -790,11 +947,39 @@ func (t trieTesterGeneric) createIPv4SampleTree(tree *AddressTrie, addrs []strin
 	}
 }
 
+func (t trieTesterGeneric) createIPv4SampleIPTree(tree *ipaddr.Trie[*ipaddr.IPAddress], addrs []string) {
+	for _, addr := range addrs {
+		addressStr := t.createAddress(addr)
+		if addressStr.IsIPv4() {
+			address := addressStr.GetAddress()
+			tree.Add(address)
+		}
+	}
+}
+
+func (t trieTesterGeneric) createIPv4SampleIPv4Tree(tree *ipaddr.Trie[*ipaddr.IPv4Address], addrs []string) {
+	for _, addr := range addrs {
+		addressStr := t.createAddress(addr)
+		if addressStr.IsIPv4() {
+			address := addressStr.GetAddress()
+			tree.Add(address.ToIPv4())
+		}
+	}
+}
+
 func (t trieTesterGeneric) createIPSampleTree(tree *AddressTrie, addrs []string) {
 	for _, addr := range addrs {
 		addressStr := t.createAddress(addr)
 		address := addressStr.GetAddress()
 		tree.Add(address.ToAddressBase())
+	}
+}
+
+func (t trieTesterGeneric) createDualTrieSample(tree *ipaddr.DualIPv4v6Tries, addrs []string) {
+	for _, addr := range addrs {
+		addressStr := t.createAddress(addr)
+		address := addressStr.GetAddress()
+		tree.Add(address)
 	}
 }
 
@@ -920,17 +1105,108 @@ func (t trieTesterGeneric) testIterate(tree *AddressTrie) {
 	t.incrementTestCount()
 }
 
+func (t trieTesterGeneric) testIterateDual(tries *ipaddr.DualIPv4v6Tries) {
+
+	type triePtr = *ipaddr.DualIPv4v6Tries
+	t.testDualIteratorRem(tries, func(trie *ipaddr.DualIPv4v6Tries) ipaddr.IteratorWithRemove[*ipaddr.TrieNode[*ipaddr.IPAddress]] {
+		return trie.BlockSizeNodeIterator(true)
+	}, triePtr.Size)
+	t.testDualIteratorRem(tries, func(trie *ipaddr.DualIPv4v6Tries) ipaddr.IteratorWithRemove[*ipaddr.TrieNode[*ipaddr.IPAddress]] {
+		return trie.BlockSizeNodeIterator(false)
+	}, triePtr.Size)
+
+	t.testDualIteratorRem(tries, func(trie *ipaddr.DualIPv4v6Tries) ipaddr.IteratorWithRemove[*ipaddr.TrieNode[*ipaddr.IPAddress]] {
+		return trie.NodeIterator(true)
+	}, triePtr.Size)
+	t.testDualIteratorRem(tries, func(trie *ipaddr.DualIPv4v6Tries) ipaddr.IteratorWithRemove[*ipaddr.TrieNode[*ipaddr.IPAddress]] {
+		return trie.NodeIterator(false)
+	}, triePtr.Size)
+
+	t.testDualIteratorRem(tries, func(trie *ipaddr.DualIPv4v6Tries) ipaddr.IteratorWithRemove[*ipaddr.TrieNode[*ipaddr.IPAddress]] {
+		return trie.ContainedFirstIterator(true)
+	}, triePtr.Size)
+	t.testDualIteratorRem(tries, func(trie *ipaddr.DualIPv4v6Tries) ipaddr.IteratorWithRemove[*ipaddr.TrieNode[*ipaddr.IPAddress]] {
+		return trie.ContainedFirstIterator(false)
+	}, triePtr.Size)
+
+	t.testDualIteratorRem(tries, func(trie *ipaddr.DualIPv4v6Tries) ipaddr.IteratorWithRemove[*ipaddr.TrieNode[*ipaddr.IPAddress]] {
+		return trie.ContainingFirstIterator(true)
+	}, triePtr.Size)
+	t.testDualIteratorRem(tries, func(trie *ipaddr.DualIPv4v6Tries) ipaddr.IteratorWithRemove[*ipaddr.TrieNode[*ipaddr.IPAddress]] {
+		return trie.ContainingFirstIterator(false)
+	}, triePtr.Size)
+
+	t.incrementTestCount()
+}
+
 func (t trieTesterGeneric) testIteratorRem(
 	trie *AddressTrie,
-	iteratorFunc func(*AddressTrie) ipaddr.IteratorWithRemove[*AddressTrieNode],
+	//trie trieInterface,
+	iteratorFunc func(*AddressTrie) ipaddr.IteratorWithRemove[*ipaddr.TrieNode[*ipaddr.Address]],
 	countFunc func(*AddressTrie) int) {
+	testIteratorRemGeneric(
+		t,
+		trie,
+		iteratorFunc,
+		countFunc,
+		(*ipaddr.Trie[*ipaddr.Address]).NodeSize,
+		(*ipaddr.Trie[*ipaddr.Address]).FirstNode,
+		(*ipaddr.Trie[*ipaddr.Address]).GetNode,
+		newTrieFailure)
+}
+
+func (t trieTesterGeneric) testDualIteratorRem(
+	tries *ipaddr.DualIPv4v6Tries,
+	//trie trieInterface,
+	iteratorFunc func(*ipaddr.DualIPv4v6Tries) ipaddr.IteratorWithRemove[*ipaddr.TrieNode[*ipaddr.IPAddress]],
+	countFunc func(*ipaddr.DualIPv4v6Tries) int) {
+	testIteratorRemGeneric(
+		t,
+		tries,
+		iteratorFunc,
+		countFunc,
+		nil,
+		func(tries *ipaddr.DualIPv4v6Tries) *ipaddr.TrieNode[*ipaddr.IPAddress] {
+			v4Trie := tries.GetIPv4Trie()
+			if !v4Trie.IsEmpty() {
+				return v4Trie.FirstNode()
+			} else {
+				v6Trie := tries.GetIPv6Trie()
+				if !v6Trie.IsEmpty() {
+					return v6Trie.FirstNode()
+				}
+				return nil
+			}
+		},
+		(*ipaddr.DualIPv4v6Tries).GetAddedNode, newDualTrieFailure)
+}
+
+func testIteratorRemGeneric[T interface {
+	Add(R) bool
+	Clone() T
+	Size() int
+	IsEmpty() bool
+	Contains(R) bool
+	GetAddedNode(R) *ipaddr.TrieNode[R]
+}, R interface {
+	ipaddr.TrieKeyConstraint[R]
+	ipaddr.KeyConstraint[R]
+	ToKey() ipaddr.Key[R]
+}](t trieTesterGeneric,
+	trie T,
+	iteratorFunc func(T) ipaddr.IteratorWithRemove[*ipaddr.TrieNode[R]],
+	countFunc func(T) int,
+	nodeSizeFunc func(T) int,
+	firstNodeFunc func(T) *ipaddr.TrieNode[R],
+	getNodeFunc func(T, R) *ipaddr.TrieNode[R],
+	newTrieFailure func(string, T) failure) {
 	// iterate the tree, confirm the size by counting
 	// clone the trie, iterate again, but remove each time, confirm the size
 	// confirm trie is empty at the end
 
 	if trie.Size() > 0 {
 		clonedTrie := trie.Clone()
-		node := clonedTrie.FirstNode()
+		node := firstNodeFunc(clonedTrie)
 		toAdd := node.GetKey()
 		node.Remove()
 		modIterator := iteratorFunc(clonedTrie)
@@ -966,7 +1242,7 @@ func (t trieTesterGeneric) testIteratorRem(
 	for {
 		expectedSize := countFunc(trie)
 		actualSize := 0
-		set := make(map[AddressKey]struct{})
+		set := make(map[ipaddr.Key[R]]struct{})
 		iterator := iteratorFunc(trie)
 		for iterator.HasNext() {
 			next := iterator.Next()
@@ -995,7 +1271,7 @@ func (t trieTesterGeneric) testIteratorRem(
 				} else {
 					if trie.Contains(nextAddr) {
 						t.addFailure(newTrieFailure("non-added node "+next.String()+" in trie ", trie))
-					} else if trie.GetNode(nextAddr) == nil {
+					} else if getNodeFunc(trie, nextAddr) == nil {
 						t.addFailure(newTrieFailure("after iteration address node for "+nextAddr.String()+" not in trie ", trie))
 					} else if trie.GetAddedNode(nextAddr) != nil {
 						t.addFailure(newTrieFailure("after iteration non-added node for "+nextAddr.String()+" added in trie ", trie))
@@ -1016,25 +1292,80 @@ func (t trieTesterGeneric) testIteratorRem(
 	}
 	if !trie.IsEmpty() {
 		t.addFailure(newTrieFailure("trie not empty, size "+strconv.Itoa(trie.Size())+" after removing everything", trie))
-	} else if trie.NodeSize() > 1 {
-		t.addFailure(newTrieFailure("trie node size not 1, "+strconv.Itoa(trie.NodeSize())+" after removing everything", trie))
+	} else if nodeSizeFunc != nil && nodeSizeFunc(trie) > 1 {
+		t.addFailure(newTrieFailure("trie node size not 1, "+strconv.Itoa(nodeSizeFunc(trie))+" after removing everything", trie))
 	} else if trie.Size() > 0 {
 		t.addFailure(newTrieFailure("trie size not 0, "+strconv.Itoa(trie.Size())+" after removing everything", trie))
 	}
 	t.incrementTestCount()
 }
 
+func (t trieTesterGeneric) testDualIterator(
+	tries *ipaddr.DualIPv4v6Tries,
+	iteratorFunc func(*ipaddr.DualIPv4v6Tries) ipaddr.Iterator[*ipaddr.TrieNode[*ipaddr.IPAddress]],
+	countFunc func(*ipaddr.DualIPv4v6Tries) int) {
+	testIterator(
+		t,
+		tries,
+		iteratorFunc,
+		countFunc,
+		func(tries *ipaddr.DualIPv4v6Tries) *ipaddr.TrieNode[*ipaddr.IPAddress] {
+			v4Trie := tries.GetIPv4Trie()
+			if !v4Trie.IsEmpty() {
+				return v4Trie.FirstNode()
+			} else {
+				v6Trie := tries.GetIPv6Trie()
+				if !v6Trie.IsEmpty() {
+					return v6Trie.FirstNode()
+				}
+				return nil
+			}
+		},
+		(*ipaddr.DualIPv4v6Tries).GetAddedNode,
+		newDualTrieFailure)
+
+}
+
 func (t trieTesterGeneric) testIterator(
 	trie *AddressTrie,
 	iteratorFunc func(*AddressTrie) ipaddr.Iterator[*AddressTrieNode],
 	countFunc func(*AddressTrie) int) {
+	testIterator(
+		t,
+		trie,
+		iteratorFunc,
+		countFunc,
+		(*ipaddr.Trie[*ipaddr.Address]).FirstNode,
+		(*ipaddr.Trie[*ipaddr.Address]).GetNode,
+		newTrieFailure)
+}
+
+func testIterator[T interface {
+	Add(R) bool
+	Clone() T
+	Size() int
+	IsEmpty() bool
+	Contains(R) bool
+	GetAddedNode(R) *ipaddr.TrieNode[R]
+}, R interface {
+	ipaddr.TrieKeyConstraint[R]
+	ipaddr.KeyConstraint[R]
+	ToKey() ipaddr.Key[R]
+}](
+	t trieTesterGeneric,
+	trie T,
+	iteratorFunc func(T) ipaddr.Iterator[*ipaddr.TrieNode[R]],
+	countFunc func(T) int,
+	firstNodeFunc func(T) *ipaddr.TrieNode[R],
+	getNodeFunc func(T, R) *ipaddr.TrieNode[R],
+	newTrieFailure func(string, T) failure) {
 	// iterate the tree, confirm the size by counting
 	// clone the trie, iterate again, but remove each time, confirm the size
 	// confirm trie is empty at the end
 
 	if trie.Size() > 0 {
 		clonedTrie := trie.Clone()
-		node := clonedTrie.FirstNode()
+		node := firstNodeFunc(clonedTrie)
 		toAdd := node.GetKey()
 		node.Remove()
 		modIterator := iteratorFunc(clonedTrie)
@@ -1067,7 +1398,7 @@ func (t trieTesterGeneric) testIterator(
 
 	expectedSize := countFunc(trie)
 	actualSize := 0
-	set := make(map[AddressKey]struct{})
+	set := make(map[ipaddr.Key[R]]struct{})
 	iterator := iteratorFunc(trie)
 	for iterator.HasNext() {
 		next := iterator.Next()
@@ -1084,7 +1415,7 @@ func (t trieTesterGeneric) testIterator(
 		} else {
 			if trie.Contains(nextAddr) {
 				t.addFailure(newTrieFailure("non-added node "+next.String()+" in trie ", trie))
-			} else if trie.GetNode(nextAddr) == nil {
+			} else if getNodeFunc != nil && getNodeFunc(trie, nextAddr) == nil {
 				t.addFailure(newTrieFailure("after iteration address node for "+nextAddr.String()+" not in trie ", trie))
 			} else if trie.GetAddedNode(nextAddr) != nil {
 				t.addFailure(newTrieFailure("after iteration non-added node for "+nextAddr.String()+" added in trie ", trie))

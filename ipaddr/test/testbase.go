@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2022 Sean C Foley
+// Copyright 2020-2024 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -1669,9 +1669,11 @@ type failure struct {
 	series ipaddr.AddressSegmentSeries
 	div    ipaddr.DivisionType
 	item   ipaddr.AddressItem
-	//trie         *ipaddr.AddressTrie
-	trieAssocNew *ipaddr.AssociativeTrie[*ipaddr.Address, any]
-	trieNew      *ipaddr.Trie[*ipaddr.Address]
+
+	trieAssocNew     *ipaddr.AssociativeTrie[*ipaddr.Address, any]
+	trieNew          *ipaddr.Trie[*ipaddr.Address]
+	dualTrieNew      *ipaddr.DualIPv4v6Tries
+	dualTrieAssocNew *ipaddr.DualIPv4v6AssociativeTries[string]
 }
 
 func (f failure) String() string {
@@ -1751,6 +1753,20 @@ func newAssocTrieFailure(str string, trie *ipaddr.AssociativeTrie[*ipaddr.Addres
 	return failure{
 		str:          str,
 		trieAssocNew: trie,
+	}
+}
+
+func newDualTrieFailure(str string, tries *ipaddr.DualIPv4v6Tries) failure {
+	return failure{
+		str:         str,
+		dualTrieNew: tries,
+	}
+}
+
+func newDualAssocTrieFailure(str string, tries *ipaddr.DualIPv4v6AssociativeTries[string]) failure {
+	return failure{
+		str:              str,
+		dualTrieAssocNew: tries,
 	}
 }
 

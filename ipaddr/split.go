@@ -21,9 +21,8 @@ import (
 	"math/bits"
 )
 
-// TODO LATER change to generics , this also allows us to possibly avoid the slice copy with the return slice
-// So, what was I thinking at the time?   Hate it when I do that, write a to-do without enough details.
-// I think I wanted the ExtendedIPSegmentSeries slice to be generic somehow.
+// TODO LATER change to generics , this also allows us to possibly avoid the slice copy with the return slice.
+// Here we would not be returning []ExtendedIPSegmentSeries, we'd be returning []T for the end-type T.
 // So, the idea I think, is that we can use the trick we used in tries, with [T TrieConstraint[T]], allowing us to specify methods like ToPrefixBlock T
 // So, then we can return []T.  Overall this is a bit of work.
 // In fact, when you think about it, generics can give you all the same things as ExtendedIPSegmentSeries
@@ -65,16 +64,8 @@ func checkPrefixBlockContainment(
 ) ExtendedIPSegmentSeries {
 	if first.Contains(other) {
 		return checkPrefixBlockFormat(first, other, true)
-		//return checkPrefixBlockFormat(first, other, true, prefixAdder, arrayProducer);
-		//return cloneToIPSections(checkPrefixBlockFormat(first, other, true,
-		//	func(series AddressSegmentSeries) AddressSegmentSeries { return prefixAdder(series.(*IPAddressSection)) },
-		//))
 	} else if other.Contains(first) {
 		return checkPrefixBlockFormat(other, first, false)
-		//return checkPrefixBlockFormat(other, first, false, prefixAdder, arrayProducer);
-		//return cloneToIPSections(checkPrefixBlockFormat(other, first, false,
-		//	func(series AddressSegmentSeries) AddressSegmentSeries { return prefixAdder(series.(*IPAddressSection)) },
-		//))
 	}
 	return nil
 }
@@ -92,9 +83,7 @@ func checkSequentialBlockContainment(
 ) ExtendedIPSegmentSeries {
 	if first.Contains(other) {
 		return checkSequentialBlockFormat(first, other, true)
-		//	return checkSequentialBlockFormat(first, other, true, prefixRemover, arrayProducer);
 	} else if other.Contains(first) {
-		//return checkSequentialBlockFormat(other, first, false, prefixRemover, arrayProducer);
 		return checkSequentialBlockFormat(other, first, false)
 	}
 	return nil

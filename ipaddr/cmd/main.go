@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2022 Sean C Foley
+// Copyright 2020-2024 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -524,13 +524,16 @@ func main() {
 	pAddr = addrStr.GetAddress()
 	fmt.Printf("bit count pref len is pref block: %t\n", pAddr.IsPrefixBlock())
 
+	ipTrie := NewIPAddressTrie()
 	trie := NewIPv4AddressTrie()
 	addrStr = ipaddr.NewIPAddressString("1.2.0.0/16")
 	trie.Add(pAddr.ToIPv4())
+	ipTrie.Add(pAddr)
 	addrStr = ipaddr.NewIPAddressString("1.2.3.4")
 	pAddr = addrStr.GetAddress()
 	fmt.Printf("no pref len is pref block: %t\n", pAddr.IsPrefixBlock())
 	trie.Add(pAddr.ToIPv4())
+	ipTrie.Add(pAddr)
 	str = trie.String()
 	fmt.Printf("%s", str)
 	fmt.Printf("trie default: %v", trie)
@@ -539,6 +542,10 @@ func main() {
 	fmt.Printf("node default: %v\n", *trie.GetRoot())
 	fmt.Printf("node decimal: %d\n", *trie.GetRoot())
 	fmt.Printf("node hex: %#x\n", *trie.GetRoot())
+
+	str = ipTrie.String()
+	fmt.Printf("%s", str)
+	fmt.Printf("ip trie default: %v", trie)
 
 	trie2 := ipaddr.IPv4AddressTrie{}
 	fmt.Println(ipaddr.TreesString[*ipaddr.IPv4Address](true, &trie, &trie2, &trie))
@@ -549,6 +556,28 @@ func main() {
 	fmt.Printf("nil trie %s\n", trie3)
 	fmt.Println("nil trie\n", trie3)
 	fmt.Println(ipaddr.TreesString(true, &trie, &trie2, &trie, trie3, &trie))
+
+	trie6 := NewIPv6AddressTrie()
+	addrStr = ipaddr.NewIPAddressString("1::2:0:0/112")
+	trie6.Add(addrStr.GetAddress().ToIPv6())
+	addrStr = ipaddr.NewIPAddressString("::1.2.3.4")
+	trie6.Add(addrStr.GetAddress().ToIPv6())
+
+	var dtp *ipaddr.DualIPv4v6Tries
+	fmt.Println("dual trie nil stringer")
+	fmt.Println(dtp)
+
+	dualTrie := ipaddr.DualIPv4v6Tries{}
+	dualTrie.AddIPv4Trie(trie.GetRoot())
+	dualTrie.AddIPv6Trie(trie6.GetRoot())
+
+	fmt.Println("dual trie stringer")
+	fmt.Println(&dualTrie)
+	fmt.Println("dual trie format")
+	fmt.Println(dualTrie)
+	fmt.Println("dual trie 0x format")
+	fmt.Printf("%0x\n", dualTrie)
+
 	trie = ipaddr.IPv4AddressTrie{}
 	fmt.Printf("%v %d %d %t %t",
 		trie,
@@ -1016,8 +1045,16 @@ func log2() {
 	fmt.Println(y + uint64(z))
 }
 
+func NewIPAddressTrie() ipaddr.Trie[*ipaddr.IPAddress] {
+	return ipaddr.Trie[*ipaddr.IPAddress]{}
+}
+
 func NewIPv4AddressTrie() ipaddr.IPv4AddressTrie {
 	return ipaddr.IPv4AddressTrie{}
+}
+
+func NewIPv6AddressTrie() ipaddr.IPv6AddressTrie {
+	return ipaddr.IPv6AddressTrie{}
 }
 
 func NewAddressTrieNode() ipaddr.TrieNode[*ipaddr.Address] {
