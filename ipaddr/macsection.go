@@ -116,7 +116,7 @@ func NewMACSectionFromBytes(bytes []byte, segmentCount int) (res *MACAddressSect
 		// note prefix len is nil
 		res = createMACSection(segments)
 		if expectedByteCount == len(bytes) {
-			bytes = cloneBytes(bytes)
+			bytes = clone(bytes)
 			res.cache.bytesCache = &bytesCache{lowerBytes: bytes}
 			if !res.isMult { // not a prefix block
 				res.cache.bytesCache.upperBytes = bytes
@@ -176,6 +176,11 @@ func NewMACSectionFromRange(vals, upperVals MACSegmentValueProvider, segmentCoun
 // It is a series of 0 to 8 individual MAC address segments.
 type MACAddressSection struct {
 	addressSectionInternal
+}
+
+// containsSame returns whether this address section contains all address sections in the given address section collection of the same type.
+func (addr *MACAddressSection) containsSame(other *MACAddressSection) bool {
+	return addr.Contains(other)
 }
 
 // Contains returns whether this is same type and version as the given address section and whether it contains all values in the given section.

@@ -1202,6 +1202,11 @@ func (addr *IPv6Address) PrefixContains(other AddressType) bool {
 	return addr.init().prefixContains(other)
 }
 
+// containsSame returns whether this address contains all addresses in the given address or subnet of the same type.
+func (addr *IPv6Address) containsSame(other *IPv6Address) bool {
+	return addr.Contains(other)
+}
+
 // Contains returns whether this is the same type and version as the given address or subnet and whether it contains all addresses in the given address or subnet.
 func (addr *IPv6Address) Contains(other AddressType) bool {
 	if other == nil || other.ToAddressBase() == nil {
@@ -1708,12 +1713,9 @@ func (addr *IPv6Address) SpanWithPrefixBlocks() []*IPv6Address {
 		if addr.IsSinglePrefixBlock() {
 			return []*IPv6Address{addr}
 		}
-		wrapped := wrapIPAddress(addr.ToIP())
-		spanning := getSpanningPrefixBlocks(wrapped, wrapped)
-		return cloneToIPv6Addrs(spanning)
+		return getSpanningPrefixBlocks(addr, addr)
 	}
-	wrapped := wrapIPAddress(addr.ToIP())
-	return cloneToIPv6Addrs(spanWithPrefixBlocks(wrapped))
+	return spanWithPrefixBlocks(addr)
 }
 
 // SpanWithPrefixBlocksTo returns the smallest slice of prefix block subnets that span from this subnet to the given subnet.
@@ -1723,12 +1725,7 @@ func (addr *IPv6Address) SpanWithPrefixBlocks() []*IPv6Address {
 // From the list of returned subnets you can recover the original range (from this to other) by converting each to [SequentialRange] with ToSequentialRange
 // and them joining them into a single range with the Join method of [SequentialRange].
 func (addr *IPv6Address) SpanWithPrefixBlocksTo(other *IPv6Address) []*IPv6Address {
-	return cloneToIPv6Addrs(
-		getSpanningPrefixBlocks(
-			wrapIPAddress(addr.ToIP()),
-			wrapIPAddress(other.ToIP()),
-		),
-	)
+	return getSpanningPrefixBlocks(addr, other)
 }
 
 // SpanWithSequentialBlocks produces the smallest slice of sequential blocks that cover the same set of addresses as this subnet.
@@ -1740,8 +1737,7 @@ func (addr *IPv6Address) SpanWithSequentialBlocks() []*IPv6Address {
 	if addr.IsSequential() {
 		return []*IPv6Address{addr}
 	}
-	wrapped := wrapIPAddress(addr.ToIP())
-	return cloneToIPv6Addrs(spanWithSequentialBlocks(wrapped))
+	return spanWithSequentialBlocks(addr)
 }
 
 // SpanWithSequentialBlocksTo produces the smallest slice of sequential block subnets that span all values from this subnet to the given subnet.
@@ -1749,12 +1745,7 @@ func (addr *IPv6Address) SpanWithSequentialBlocks() []*IPv6Address {
 //
 // The resulting slice is sorted from lowest address value to highest, regardless of the size of each prefix block.
 func (addr *IPv6Address) SpanWithSequentialBlocksTo(other *IPv6Address) []*IPv6Address {
-	return cloneToIPv6Addrs(
-		getSpanningSequentialBlocks(
-			wrapIPAddress(addr.ToIP()),
-			wrapIPAddress(other.ToIP()),
-		),
-	)
+	return getSpanningSequentialBlocks(addr, other)
 }
 
 // CoverWithPrefixBlockTo returns the minimal-size prefix block that covers all the addresses spanning from this subnet to the given subnet.
@@ -1772,18 +1763,14 @@ func (addr *IPv6Address) CoverWithPrefixBlock() *IPv6Address {
 //
 // The resulting slice is sorted from lowest address value to highest, regardless of the size of each prefix block.
 func (addr *IPv6Address) MergeToSequentialBlocks(addrs ...*IPv6Address) []*IPv6Address {
-	series := cloneIPv6Addrs(addr, addrs)
-	blocks := getMergedSequentialBlocks(series)
-	return cloneToIPv6Addrs(blocks)
+	return getMergedSequentialBlocks(cloneSeries(addr, addrs))
 }
 
 // MergeToPrefixBlocks merges this subnet with the list of subnets to produce the smallest array of prefix blocks.
 //
 // The resulting slice is sorted from lowest address value to highest, regardless of the size of each prefix block.
 func (addr *IPv6Address) MergeToPrefixBlocks(addrs ...*IPv6Address) []*IPv6Address {
-	series := cloneIPv6Addrs(addr, addrs)
-	blocks := getMergedPrefixBlocks(series)
-	return cloneToIPv6Addrs(blocks)
+	return getMergedPrefixBlocks(cloneSeries(addr, addrs))
 }
 
 // ReverseBytes returns a new address with the bytes reversed.  Any prefix length is dropped.

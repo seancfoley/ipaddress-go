@@ -643,7 +643,7 @@ func (grouping *addressDivisionGroupingInternal) Bytes() []byte {
 	if grouping.hasNoDivisions() {
 		return emptyBytes
 	}
-	return cloneBytes(grouping.getBytes())
+	return clone(grouping.getBytes())
 }
 
 // UpperBytes returns the highest individual division grouping in this grouping as a byte slice.
@@ -651,7 +651,7 @@ func (grouping *addressDivisionGroupingInternal) UpperBytes() []byte {
 	if grouping.hasNoDivisions() {
 		return emptyBytes
 	}
-	return cloneBytes(grouping.getUpperBytes())
+	return clone(grouping.getUpperBytes())
 }
 
 // CopyBytes copies the value of the lowest division grouping in the range into a byte slice.

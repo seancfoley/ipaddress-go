@@ -964,7 +964,7 @@ func setVals(valueBytes []byte, upperBytes []byte, bitCount BitCount) (assignedV
 			valueBytes = valueBytes[len(valueBytes)-maxLen:]
 			b := valueBytes[0]
 			if b&mask != b {
-				valueBytes = cloneBytes(valueBytes)
+				valueBytes = clone(valueBytes)
 				valueBytes[0] &= mask
 			}
 		}
@@ -972,7 +972,7 @@ func setVals(valueBytes []byte, upperBytes []byte, bitCount BitCount) (assignedV
 			upperBytes = upperBytes[len(upperBytes)-maxLen:]
 			b := upperBytes[0]
 			if b&mask != b {
-				upperBytes = cloneBytes(upperBytes)
+				upperBytes = clone(upperBytes)
 				upperBytes[0] &= mask
 			}
 		}

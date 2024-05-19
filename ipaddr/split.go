@@ -19,6 +19,8 @@ package ipaddr
 import (
 	"container/list"
 	"math/bits"
+
+	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
 )
 
 // TODO LATER change to generics , this also allows us to possibly avoid the slice copy with the return slice.
@@ -27,11 +29,33 @@ import (
 // So, then we can return []T.  Overall this is a bit of work.
 // In fact, when you think about it, generics can give you all the same things as ExtendedIPSegmentSeries
 
+type spannableType[S any, T any] interface {
+	*S
+
+	AddressSegmentSeries
+
+	containsSame(T) bool
+
+	WithoutPrefixLen() T
+	GetLower() T
+	GetUpper() T
+	AssignPrefixForSingleBlock() T
+	ToPrefixBlockLen(BitCount) T
+	ToBlock(segmentIndex int, lower, upper SegInt) T
+	Increment(int64) T
+
+	IncludesZeroHostLen(BitCount) bool
+	IncludesMaxHostLen(BitCount) bool
+
+	ToZeroHostLen(BitCount) (T, addrerr.IncompatibleAddressError)
+	ToMaxHostLen(BitCount) (T, addrerr.IncompatibleAddressError)
+
+	SequentialBlockIterator() Iterator[T]
+	SpanWithPrefixBlocks() []T
+}
+
 // getSpanningPrefixBlocks returns the smallest set of prefix blocks that spans both this and the supplied address or subnet.
-func getSpanningPrefixBlocks(
-	first,
-	other ExtendedIPSegmentSeries,
-) []ExtendedIPSegmentSeries {
+func getSpanningPrefixBlocks[S any, T spannableType[S, T]](first, other T) []T {
 	result := checkPrefixBlockContainment(first, other)
 	if result != nil {
 		return wrapNonNilInSlice(result)
@@ -40,13 +64,10 @@ func getSpanningPrefixBlocks(
 		first,
 		other,
 		true,
-		splitIntoPrefixBlocks)
+		splitIntoPrefixBlocks[S, T])
 }
 
-func getSpanningSequentialBlocks( // TODO LATER change to generics , this also allows us to possibly avoid the slice copy with the return slice
-	first,
-	other ExtendedIPSegmentSeries,
-) []ExtendedIPSegmentSeries {
+func getSpanningSequentialBlocks[S any, T spannableType[S, T]](first, other T) []T {
 	result := checkSequentialBlockContainment(first, other)
 	if result != nil {
 		return wrapNonNilInSlice(result)
@@ -55,45 +76,39 @@ func getSpanningSequentialBlocks( // TODO LATER change to generics , this also a
 		first,
 		other,
 		true,
-		splitIntoSequentialBlocks)
+		splitIntoSequentialBlocks[S, T])
 }
 
-func checkPrefixBlockContainment(
-	first,
-	other ExtendedIPSegmentSeries,
-) ExtendedIPSegmentSeries {
-	if first.Contains(other) {
+func checkPrefixBlockContainment[S any, T spannableType[S, T]](first, other T) T {
+	if first.containsSame(other) {
 		return checkPrefixBlockFormat(first, other, true)
-	} else if other.Contains(first) {
+	} else if other.containsSame(first) {
 		return checkPrefixBlockFormat(other, first, false)
 	}
 	return nil
 }
 
-func wrapNonNilInSlice(result ExtendedIPSegmentSeries) []ExtendedIPSegmentSeries {
+func wrapNonNilInSlice[S any, T spannableType[S, T]](result T) []T {
 	if result != nil {
-		return []ExtendedIPSegmentSeries{result}
+		return []T{result}
 	}
 	return nil
 }
 
-func checkSequentialBlockContainment(
-	first,
-	other ExtendedIPSegmentSeries,
-) ExtendedIPSegmentSeries {
-	if first.Contains(other) {
+func checkSequentialBlockContainment[S any, T spannableType[S, T]](first, other T) T {
+	if first.containsSame(other) {
 		return checkSequentialBlockFormat(first, other, true)
-	} else if other.Contains(first) {
+	} else if other.containsSame(first) {
 		return checkSequentialBlockFormat(other, first, false)
 	}
 	return nil
 }
 
-func checkPrefixBlockFormat(
+func checkPrefixBlockFormat[S any, T spannableType[S, T]](
 	container,
-	contained ExtendedIPSegmentSeries,
+	contained T,
 	checkEqual bool,
-) (result ExtendedIPSegmentSeries) {
+) (result T) {
 	if container.IsPrefixed() && container.IsSinglePrefixBlock() {
 		result = container
 	} else if checkEqual && contained.IsPrefixed() && container.CompareSize(contained) == 0 && contained.IsSinglePrefixBlock() {
@@ -104,11 +119,11 @@ func checkPrefixBlockFormat(
 	return
 }
 
-func checkSequentialBlockFormat(
+func checkSequentialBlockFormat[S any, T spannableType[S, T]](
 	container,
-	contained ExtendedIPSegmentSeries,
+	contained T,
 	checkEqual bool,
-) (result ExtendedIPSegmentSeries) {
+) (result T) {
 	if !container.IsPrefixed() {
 		if container.IsSequential() {
 			result = container
@@ -123,23 +138,20 @@ func checkSequentialBlockFormat(
 	return
 }
 
-func splitIntoSequentialBlocks(
-	lower,
-	upper ExtendedIPSegmentSeries) (blocks []ExtendedIPSegmentSeries) {
-
+func splitIntoSequentialBlocks[S any, T spannableType[S, T]](lower, upper T) (blocks []T) {
 	segCount := lower.GetDivisionCount()
 	if segCount == 0 {
 		//all segments match, it's just a single series
 		//blocks.add(lower);
-		return []ExtendedIPSegmentSeries{lower}
+		return []T{lower}
 	}
-	blocks = make([]ExtendedIPSegmentSeries, 0, IPv6SegmentCount)
+	blocks = make([]T, 0, IPv6SegmentCount)
 	var previousSegmentBits BitCount
 	var currentSegment int
 	bitsPerSegment := lower.GetBitsPerSegment()
 	var segSegment int
 	var lowerValue, upperValue SegInt
-	var stack seriesStack
+	var stack seriesStack[S, T]
 	var toAdd list.List
 	toAdd.Init()
 	for {
@@ -208,7 +220,7 @@ func splitIntoSequentialBlocks(
 					break
 				}
 				toAdd.Remove(saved)
-				blocks = append(blocks, saved.Value.(ExtendedIPSegmentSeries))
+				blocks = append(blocks, saved.Value.(T))
 			}
 		}
 		var popped bool
@@ -218,15 +230,15 @@ func splitIntoSequentialBlocks(
 	}
 }
 
-func splitIntoPrefixBlocks(
+func splitIntoPrefixBlocks[S any, T spannableType[S, T]](
 	lower,
-	upper ExtendedIPSegmentSeries) (blocks []ExtendedIPSegmentSeries) {
+	upper T) (blocks []T) {
 
-	blocks = make([]ExtendedIPSegmentSeries, 0, IPv6BitCount)
+	blocks = make([]T, 0, IPv6BitCount)
 
 	var previousSegmentBits BitCount
 	var currentSegment int
-	var stack seriesStack
+	var stack seriesStack[S, T]
 
 	segCount := lower.GetDivisionCount()
 	bitsPerSegment := lower.GetBitsPerSegment()
@@ -285,12 +297,12 @@ func splitIntoPrefixBlocks(
 	}
 }
 
-func applyOperatorToLowerUpper(
+func applyOperatorToLowerUpper[S any, T spannableType[S, T]](
 	first,
-	other ExtendedIPSegmentSeries,
+	other T,
 	removePrefixes bool,
-	operatorFunctor func(lower, upper ExtendedIPSegmentSeries) []ExtendedIPSegmentSeries) []ExtendedIPSegmentSeries {
-	var lower, upper ExtendedIPSegmentSeries
+	operatorFunctor func(lower, upper T) []T) []T {
+	var lower, upper T
 	if seriesValsSame(first, other) {
 		if removePrefixes && first.IsPrefixed() {
 			if other.IsPrefixed() {
@@ -326,28 +338,28 @@ func applyOperatorToLowerUpper(
 	return operatorFunctor(lower, upper)
 }
 
-type seriesStack struct {
-	seriesPairs []ExtendedIPSegmentSeries // stack items
-	indexes     []int                     // stack items
-	bits        []BitCount                // stack items
+type seriesStack[S any, T spannableType[S, T]] struct {
+	seriesPairs []T        // stack items
+	indexes     []int      // stack items
+	bits        []BitCount // stack items
 }
 
 // grows to have capacity at least as large as size
-func (stack *seriesStack) init(size int) {
+func (stack *seriesStack[S, T]) init(size int) {
 	if stack.seriesPairs == nil {
-		stack.seriesPairs = make([]ExtendedIPSegmentSeries, 0, size<<1)
+		stack.seriesPairs = make([]T, 0, size<<1)
 		stack.indexes = make([]int, 0, size)
 		stack.bits = make([]BitCount, 0, size)
 	}
 }
 
-func (stack *seriesStack) push(lower, upper ExtendedIPSegmentSeries, previousSegmentBits BitCount, currentSegment int) {
+func (stack *seriesStack[S, T]) push(lower, upper T, previousSegmentBits BitCount, currentSegment int) {
 	stack.seriesPairs = append(stack.seriesPairs, lower, upper)
 	stack.indexes = append(stack.indexes, currentSegment)
 	stack.bits = append(stack.bits, previousSegmentBits)
 }
 
-func (stack *seriesStack) pop() (popped bool, lower, upper ExtendedIPSegmentSeries, previousSegmentBits BitCount, currentSegment int) {
+func (stack *seriesStack[S, T]) pop() (popped bool, lower, upper T, previousSegmentBits BitCount, currentSegment int) {
 	seriesPairs := stack.seriesPairs
 	length := len(seriesPairs)
 	if length <= 0 {
@@ -369,7 +381,7 @@ func (stack *seriesStack) pop() (popped bool, lower, upper ExtendedIPSegmentSeri
 	return
 }
 
-func spanWithPrefixBlocks(orig ExtendedIPSegmentSeries) (list []ExtendedIPSegmentSeries) {
+func spanWithPrefixBlocks[S any, T spannableType[S, T]](orig T) (list []T) {
 	iterator := orig.SequentialBlockIterator()
 	for iterator.HasNext() {
 		list = append(list, iterator.Next().SpanWithPrefixBlocks()...)
@@ -377,7 +389,7 @@ func spanWithPrefixBlocks(orig ExtendedIPSegmentSeries) (list []ExtendedIPSegmen
 	return list
 }
 
-func spanWithSequentialBlocks(orig ExtendedIPSegmentSeries) (list []ExtendedIPSegmentSeries) {
+func spanWithSequentialBlocks[S any, T spannableType[S, T]](orig T) (list []T) {
 	iterator := orig.SequentialBlockIterator()
 	for iterator.HasNext() {
 		list = append(list, iterator.Next())

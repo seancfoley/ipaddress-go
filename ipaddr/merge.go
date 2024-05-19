@@ -18,7 +18,22 @@ package ipaddr
 
 import "sort"
 
-func getMergedPrefixBlocks(sections []ExtendedIPSegmentSeries) []ExtendedIPSegmentSeries { // TODO LATER change to generics , this also allows us to possibly avoid the slice copy with the return slice and maybe the passed in one too
+type mergeableType[S any, T any] interface {
+	*S
+
+	AddressSegmentSeries
+
+	IsSequential() bool
+	IsSinglePrefixBlock() bool
+	SequentialBlockIterator() Iterator[T]
+	SpanWithPrefixBlocks() []T
+	ToPrefixBlockLen(BitCount) T
+
+	WithoutPrefixLen() T
+	ToBlock(segmentIndex int, lower, upper SegInt) T
+}
+
+func getMergedPrefixBlocks[S any, T mergeableType[S, T]](sections []T) []T {
 	singleElement, list := organizeSequentially(sections)
 	if singleElement {
 		return list
@@ -168,7 +183,7 @@ top:
 	return list
 }
 
-func getMergedSequentialBlocks(sections []ExtendedIPSegmentSeries) []ExtendedIPSegmentSeries { // TODO change to generics , this also allows us to possibly avoid the slice copy with the return slice and maybe the passed in one too
+func getMergedSequentialBlocks[S any, T mergeableType[S, T]](sections []T) []T {
 	singleElement, list := organizeSequentialMerge(sections)
 	if singleElement {
 		list[0] = list[0].WithoutPrefixLen()
@@ -321,8 +336,8 @@ top:
 	return list
 }
 
-func organizeSequentially(sections []ExtendedIPSegmentSeries) (singleElement bool, list []ExtendedIPSegmentSeries) { //TODO change to generics
-	var sequentialList []ExtendedIPSegmentSeries
+func organizeSequentially[S any, T mergeableType[S, T]](sections []T) (singleElement bool, list []T) {
+	var sequentialList []T
 	length := len(sections)
 	for i := 0; i < length; i++ {
 		section := sections[i]
@@ -331,7 +346,7 @@ func organizeSequentially(sections []ExtendedIPSegmentSeries) (singleElement boo
 		}
 		if !section.IsSequential() {
 			if sequentialList == nil {
-				sequentialList = make([]ExtendedIPSegmentSeries, 0, length)
+				sequentialList = make([]T, 0, length)
 				for j := 0; j < i; j++ {
 					series := sections[j]
 					if series != nil {
@@ -369,7 +384,7 @@ func organizeSequentially(sections []ExtendedIPSegmentSeries) (singleElement boo
 	return false, list
 }
 
-func organizeSequentialMerge(sections []ExtendedIPSegmentSeries) (singleElement bool, list []ExtendedIPSegmentSeries) { // TODO LATER change to generics
+func organizeSequentialMerge[S any, T mergeableType[S, T]](sections []T) (singleElement bool, list []T) {
 	for i := 0; i < len(sections); i++ {
 		section := sections[i]
 		if section == nil {

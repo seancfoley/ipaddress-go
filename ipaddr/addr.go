@@ -1236,6 +1236,11 @@ func (addr *Address) PrefixContains(other AddressType) bool {
 	return addr.init().prefixContains(other)
 }
 
+// containsSame returns whether this address contains all addresses in the given address or subnet of the same type.
+func (addr *Address) containsSame(other *Address) bool {
+	return addr.Contains(other)
+}
+
 // Contains returns whether this is the same type and version as the given address or subnet and whether it contains all addresses in the given address or subnet.
 func (addr *Address) Contains(other AddressType) bool {
 	if addr == nil {

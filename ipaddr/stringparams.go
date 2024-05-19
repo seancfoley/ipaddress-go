@@ -221,7 +221,7 @@ func (params *addressStringParams) preferWildcards() bool {
 	return true
 }
 
-//returns -1 to expand
+// returns -1 to expand
 func (params *addressStringParams) getLeadingZeros(_ int) int {
 	if params.expandSegments {
 		return -1
@@ -400,7 +400,6 @@ func (params *addressStringParams) toString(addr AddressDivisionSeries) string {
 	return builder.String()
 }
 
-//
 func checkLengths(length int, builder *strings.Builder) {
 	//Note: re-enable this when doing development
 	//calcMatch := length == builder.Len()
@@ -447,7 +446,7 @@ func (params *ipAddressStringParams) expandSegment(index, expansionLength, segme
 	expandSegment[index] = expansionLength
 }
 
-//returns -1 for MAX, or 0, 1, 2, 3 to indicate the string prefix length
+// returns -1 for MAX, or 0, 1, 2, 3 to indicate the string prefix length
 func (params *ipAddressStringParams) getLeadingZeros(segmentIndex int) int {
 	expandSegment := params.expandSeg
 	if params.expandSegments {
@@ -629,7 +628,7 @@ func (params *ipAddressStringParams) clone() *ipAddressStringParams {
 	result := *params
 	expandSegment := params.expandSeg
 	if expandSegment != nil {
-		result.expandSeg = cloneInts(expandSegment)
+		result.expandSeg = clone(expandSegment)
 	}
 	return &result
 }

@@ -165,7 +165,7 @@ func newIPv6SectionFromBytes(bytes []byte, segmentCount int, prefixLength Prefix
 			assignPrefix(prefixLength, segments, res.ToIP(), singleOnly, false, BitCount(segmentCount<<ipv6BitsToSegmentBitshift))
 		}
 		if expectedByteCount == len(bytes) && len(bytes) > 0 {
-			bytes = cloneBytes(bytes)
+			bytes = clone(bytes)
 			res.cache.bytesCache = &bytesCache{lowerBytes: bytes}
 			if !res.isMult { // not a prefix block
 				res.cache.bytesCache.upperBytes = bytes
@@ -338,6 +338,11 @@ func NewIPv6SectionFromMAC(eui *MACAddress) (res *IPv6AddressSection, err addrer
 // The zero values is a section with zero-segments.
 type IPv6AddressSection struct {
 	ipAddressSectionInternal
+}
+
+// containsSame returns whether this address section contains all address sections in the given address section collection of the same type.
+func (addr *IPv6AddressSection) containsSame(other *IPv6AddressSection) bool {
+	return addr.Contains(other)
 }
 
 // Contains returns whether this is same type and version as the given address section and whether it contains all values in the given section.
@@ -1265,12 +1270,9 @@ func (section *IPv6AddressSection) SpanWithPrefixBlocks() []*IPv6AddressSection 
 		if section.IsSinglePrefixBlock() {
 			return []*IPv6AddressSection{section}
 		}
-		wrapped := wrapIPSection(section.ToIP())
-		spanning := getSpanningPrefixBlocks(wrapped, wrapped)
-		return cloneToIPv6Sections(spanning)
+		return getSpanningPrefixBlocks(section, section)
 	}
-	wrapped := wrapIPSection(section.ToIP())
-	return cloneToIPv6Sections(spanWithPrefixBlocks(wrapped))
+	return spanWithPrefixBlocks(section)
 }
 
 // SpanWithPrefixBlocksTo returns the smallest slice of prefix block subnet sections that span from this section to the given section.
@@ -1282,12 +1284,7 @@ func (section *IPv6AddressSection) SpanWithPrefixBlocksTo(other *IPv6AddressSect
 	if err := section.checkSegmentCount(other.ToIP()); err != nil {
 		return nil, err
 	}
-	return cloneToIPv6Sections(
-		getSpanningPrefixBlocks(
-			wrapIPSection(section.ToIP()),
-			wrapIPSection(other.ToIP()),
-		),
-	), nil
+	return getSpanningPrefixBlocks(section, other), nil
 }
 
 // SpanWithSequentialBlocks produces the smallest slice of sequential blocks that cover the same set of sections as this.
@@ -1299,8 +1296,7 @@ func (section *IPv6AddressSection) SpanWithSequentialBlocks() []*IPv6AddressSect
 	if section.IsSequential() {
 		return []*IPv6AddressSection{section}
 	}
-	wrapped := wrapIPSection(section.ToIP())
-	return cloneToIPv6Sections(spanWithSequentialBlocks(wrapped))
+	return spanWithSequentialBlocks(section)
 }
 
 // SpanWithSequentialBlocksTo produces the smallest slice of sequential block address sections that span from this section to the given section.
@@ -1308,12 +1304,7 @@ func (section *IPv6AddressSection) SpanWithSequentialBlocksTo(other *IPv6Address
 	if err := section.checkSegmentCount(other.ToIP()); err != nil {
 		return nil, err
 	}
-	return cloneToIPv6Sections(
-		getSpanningSequentialBlocks(
-			wrapIPSection(section.ToIP()),
-			wrapIPSection(other.ToIP()),
-		),
-	), nil
+	return getSpanningSequentialBlocks(section, other), nil
 }
 
 // CoverWithPrefixBlockTo returns the minimal-size prefix block section that covers all the address sections spanning from this to the given section.
@@ -1352,9 +1343,7 @@ func (section *IPv6AddressSection) MergeToSequentialBlocks(sections ...*IPv6Addr
 	if err := section.checkSectionCounts(sections); err != nil {
 		return nil, err
 	}
-	series := cloneIPv6Sections(section, sections)
-	blocks := getMergedSequentialBlocks(series)
-	return cloneToIPv6Sections(blocks), nil
+	return getMergedSequentialBlocks(cloneSeries(section, sections)), nil
 }
 
 // MergeToPrefixBlocks merges this section with the list of sections to produce the smallest array of prefix blocks.
@@ -1364,9 +1353,7 @@ func (section *IPv6AddressSection) MergeToPrefixBlocks(sections ...*IPv6AddressS
 	if err := section.checkSectionCounts(sections); err != nil {
 		return nil, err
 	}
-	series := cloneIPv6Sections(section, sections)
-	blocks := getMergedPrefixBlocks(series)
-	return cloneToIPv6Sections(blocks), nil
+	return getMergedPrefixBlocks(cloneSeries(section, sections)), nil
 }
 
 // ReverseBits returns a new section with the bits reversed.  Any prefix length is dropped.

@@ -33,20 +33,12 @@ func nilSection() string {
 	return ""
 }
 
-func cloneInts(orig []int) []int {
-	return append(make([]int, 0, len(orig)), orig...)
+func clone[T any](orig []T) []T {
+	return append(make([]T, 0, len(orig)), orig...)
 }
 
-func cloneDivs(orig []*AddressDivision) []*AddressDivision {
-	return append(make([]*AddressDivision, 0, len(orig)), orig...)
-}
-
-func cloneLargeDivs(orig []*IPAddressLargeDivision) []*IPAddressLargeDivision {
-	return append(make([]*IPAddressLargeDivision, 0, len(orig)), orig...)
-}
-
-func cloneBytes(orig []byte) []byte {
-	return append(make([]byte, 0, len(orig)), orig...)
+func cloneSeries[T any](addr T, orig []T) []T {
+	return append(append(make([]T, 0, len(orig)+1), addr), orig...)
 }
 
 func fillDivs(orig []*AddressDivision, val *AddressDivision) {
@@ -58,7 +50,7 @@ func fillDivs(orig []*AddressDivision, val *AddressDivision) {
 // copies cached into bytes, unless bytes is too small, in which case cached is cloned
 func getBytesCopy(bytes, cached []byte) []byte {
 	if bytes == nil || len(bytes) < len(cached) {
-		return cloneBytes(cached)
+		return clone(cached)
 	}
 	copy(bytes, cached)
 	return bytes[:len(cached)]
@@ -198,6 +190,9 @@ func flagsFromState(state fmt.State, verb rune) string {
 	return string(vals)
 }
 
+// TODO later when moving up to Go 1.21 you can use generic type cmp.Ordered to make the min/max funcs generic
+// in fact, there are predeclared functions min and max starting with 1.21
+
 func umin(a, b uint) uint {
 	if a < b {
 		return a
@@ -205,7 +200,7 @@ func umin(a, b uint) uint {
 	return b
 }
 
-func min(a, b int) int {
+func imin(a, b int) int {
 	if a < b {
 		return a
 	}

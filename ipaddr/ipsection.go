@@ -901,22 +901,22 @@ func (section *ipAddressSectionInternal) createDiffSection(
 }
 
 func (section *ipAddressSectionInternal) spanWithPrefixBlocks() []ExtendedIPSegmentSeries {
-	wrapped := wrapIPSection(section.toIPAddressSection())
 	if section.IsSequential() {
 		if section.IsSinglePrefixBlock() {
+			wrapped := wrapIPSection(section.toIPAddressSection())
 			return []ExtendedIPSegmentSeries{wrapped}
 		}
-		return getSpanningPrefixBlocks(wrapped, wrapped)
+		return cloneIPSections(nil, getSpanningPrefixBlocks(section.toIPAddressSection(), section.toIPAddressSection()))
 	}
-	return spanWithPrefixBlocks(wrapped)
+	return cloneIPSections(nil, spanWithPrefixBlocks(section.toIPAddressSection()))
 }
 
 func (section *ipAddressSectionInternal) spanWithSequentialBlocks() []ExtendedIPSegmentSeries {
-	wrapped := wrapIPSection(section.toIPAddressSection())
 	if section.IsSequential() {
+		wrapped := wrapIPSection(section.toIPAddressSection())
 		return []ExtendedIPSegmentSeries{wrapped}
 	}
-	return spanWithSequentialBlocks(wrapped)
+	return cloneIPSections(nil, spanWithSequentialBlocks(section.toIPAddressSection()))
 }
 
 func (section *ipAddressSectionInternal) coverSeriesWithPrefixBlock() ExtendedIPSegmentSeries {
@@ -924,28 +924,24 @@ func (section *ipAddressSectionInternal) coverSeriesWithPrefixBlock() ExtendedIP
 		return wrapIPSection(section.toIPAddressSection())
 	}
 	return coverWithPrefixBlock(
-		wrapIPSection(section.getLower().ToIP()),
-		wrapIPSection(section.getUpper().ToIP()))
+		section.getLower().ToIP(),
+		section.getUpper().ToIP()).Wrap()
 }
 
 func (section *ipAddressSectionInternal) coverWithPrefixBlock() *IPAddressSection {
 	if section.IsSinglePrefixBlock() {
 		return section.toIPAddressSection()
 	}
-	res := coverWithPrefixBlock(
-		wrapIPSection(section.getLower().ToIP()),
-		wrapIPSection(section.getUpper().ToIP()))
-	return res.(WrappedIPAddressSection).IPAddressSection
+	return coverWithPrefixBlock(section.getLower().ToIP(), section.getUpper().ToIP())
 }
 
 func (section *ipAddressSectionInternal) coverWithPrefixBlockTo(other *IPAddressSection) (*IPAddressSection, addrerr.SizeMismatchError) {
 	if err := section.checkSegmentCount(other); err != nil {
 		return nil, err
 	}
-	res := getCoveringPrefixBlock(
-		wrapIPSection(section.toIPAddressSection()),
-		wrapIPSection(other))
-	return res.(WrappedIPAddressSection).IPAddressSection, nil
+	return getCoveringPrefixBlock(
+		section.toIPAddressSection(),
+		other), nil
 }
 
 func (section *ipAddressSectionInternal) getNetworkSection() *IPAddressSection {
@@ -1572,6 +1568,11 @@ type IPAddressSection struct {
 	ipAddressSectionInternal
 }
 
+// containsSame returns whether this address section contains all address sections in the given address section collection of the same type.
+func (addr *IPAddressSection) containsSame(other *IPAddressSection) bool {
+	return addr.Contains(other)
+}
+
 // Contains returns whether this is same type and version as the given address section and whether it contains all values in the given section.
 //
 // Sections must also have the same number of segments to be comparable, otherwise false is returned.
@@ -2103,12 +2104,9 @@ func (section *IPAddressSection) SpanWithPrefixBlocks() []*IPAddressSection {
 		if section.IsSinglePrefixBlock() {
 			return []*IPAddressSection{section}
 		}
-		wrapped := wrapIPSection(section)
-		spanning := getSpanningPrefixBlocks(wrapped, wrapped)
-		return cloneToIPSections(spanning)
+		return getSpanningPrefixBlocks(section, section)
 	}
-	wrapped := wrapIPSection(section)
-	return cloneToIPSections(spanWithPrefixBlocks(wrapped))
+	return spanWithPrefixBlocks(section)
 }
 
 // SpanWithSequentialBlocks produces the smallest slice of sequential blocks that cover the same set of sections as this.
@@ -2118,8 +2116,7 @@ func (section *IPAddressSection) SpanWithSequentialBlocks() []*IPAddressSection 
 	if section.IsSequential() {
 		return []*IPAddressSection{section}
 	}
-	wrapped := wrapIPSection(section)
-	return cloneToIPSections(spanWithSequentialBlocks(wrapped))
+	return spanWithSequentialBlocks(section)
 }
 
 // CoverWithPrefixBlock returns the minimal-size prefix block that covers all the individual address sections in this section.

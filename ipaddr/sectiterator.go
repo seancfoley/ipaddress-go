@@ -98,7 +98,7 @@ func (it *multiSegmentsIterator) increment() (res []*AddressDivision) {
 	for j := it.networkSegmentIndex; j >= 0; j-- { //for regular iterators (not prefix block), networkSegmentIndex is last segment (count - 1)
 		for variations[j].HasNext() {
 			if previousSegs == nil {
-				previousSegs = cloneDivs(nextSet)
+				previousSegs = clone(nextSet)
 			}
 			nextSet[j] = variations[j].Next().ToDiv()
 			it.updateVariations(j + 1)
