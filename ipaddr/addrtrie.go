@@ -402,7 +402,7 @@ func (trie *Trie[T]) String() string {
 	return trie.toTrie().String()
 }
 
-// AddedNodesTreeString provides a flattened version of the trie showing only the contained added nodes and their containment structure, which is non-binary.
+// AddedNodesTreeString provides a string showing a flattened version of the trie showing only the contained added nodes and their containment structure, which is non-binary.
 // The root node is included, which may or may not be added.
 func (trie *Trie[T]) AddedNodesTreeString() string {
 	return trie.toTrie().AddedNodesTreeString()
@@ -421,12 +421,16 @@ func (trie *Trie[T]) Add(addr T) bool {
 
 // AddNode adds the address to this trie.
 // The address must match the same type and version of any existing addresses already in the trie.
+//
+// If the argument is not a single address nor prefix block, this method will panic.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+//
 // The new or existing node for the address is returned.
 func (trie *Trie[T]) AddNode(addr T) *TrieNode[T] {
 	return toAddressTrieNode(trie.addNode(addr))
 }
 
-// AddTrie adds nodes for the keys in the trie with the root node as the passed in node.
+// AddTrie adds nodes for the keys from the trie with the argument trie root.
 // AddTrie returns the sub-node in the trie where the added trie begins, where the first node of the added trie is located.
 func (trie *Trie[T]) AddTrie(added *TrieNode[T]) *TrieNode[T] {
 	return toAddressTrieNode(trie.addTrie(added.toBase()))
@@ -564,7 +568,7 @@ func (trie *Trie[T]) GetNode(addr T) *TrieNode[T] {
 // The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
 //
 // Use Contains to check for the existence of a given address in the trie,
-// as well as GetNode to search for all nodes including those not-added but also auto-generated nodes for subnet blocks.
+// as well as GetNode to search all nodes including those not-added but auto-generated for subnet blocks.
 func (trie *Trie[T]) GetAddedNode(addr T) *TrieNode[T] {
 	return toAddressTrieNode[T](trie.getAddedNode(addr))
 }
@@ -820,7 +824,7 @@ func (trie *AssociativeTrie[T, V]) String() string {
 	return trie.toTrie().String()
 }
 
-// AddedNodesTreeString provides a flattened version of the trie showing only the contained added nodes and their containment structure, which is non-binary.
+// AddedNodesTreeString provides a string showing a flattened version of the trie showing only the contained added nodes and their containment structure, which is non-binary.
 // The root node is included, which may or may not be added.
 func (trie *AssociativeTrie[T, V]) AddedNodesTreeString() string {
 	return trie.toTrie().AddedNodesTreeString()
@@ -838,12 +842,16 @@ func (trie *AssociativeTrie[T, V]) Add(addr T) bool {
 }
 
 // AddNode adds the address key to this trie.
+//
+// If the argument is not a single address nor prefix block, this method will panic.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+//
 // The new or existing node for the address is returned.
 func (trie *AssociativeTrie[T, V]) AddNode(addr T) *AssociativeTrieNode[T, V] {
 	return toAssociativeTrieNode[T, V](trie.addNode(addr))
 }
 
-// AddTrie adds nodes for the keys in the trie with the root node as the passed in node.  To add both keys and values, use PutTrie.
+// AddTrie adds nodes for the keys from the trie with the argument trie root.  To add both keys and values, use PutTrie.
 // AddTrie returns the sub-node in the trie where the added trie begins, where the first node of the added trie is located.
 func (trie *AssociativeTrie[T, V]) AddTrie(added *AssociativeTrieNode[T, V]) *AssociativeTrieNode[T, V] {
 	return toAssociativeTrieNode[T, V](trie.addTrie(added.toBase()))
@@ -938,12 +946,12 @@ func (trie *AssociativeTrie[T, V]) LongestPrefixMatch(addr T) T {
 	return trie.longestPrefixMatch(addr)
 }
 
-// LongestPrefixMatchNode returns the node of the address with the longest matching prefix compared to the provided address.
+// LongestPrefixMatchNode returns the node of the address with the longest matching prefix compared to the provided address, or nil if no matching address.
 func (trie *AssociativeTrie[T, V]) LongestPrefixMatchNode(addr T) *AssociativeTrieNode[T, V] {
 	return toAssociativeTrieNode[T, V](trie.longestPrefixMatchNode(addr))
 }
 
-// ShortestPrefixMatch returns the address added to the trie with the shortest matching prefix compared to the provided address, or nil if no matching address.
+// ShortestPrefixMatch returns the node of the address added to the trie with the shortest matching prefix compared to the provided address, or nil if no matching address.
 func (trie *AssociativeTrie[T, V]) ShortestPrefixMatch(addr T) T {
 	return trie.shortestPrefixMatch(addr)
 }
@@ -1155,22 +1163,22 @@ func (trie *AssociativeTrie[T, V]) DeepEqual(other *AssociativeTrie[T, V]) bool 
 	return trie.toBase().deepEqual(other.toBase())
 }
 
-// Put associates the specified value with the specified key in this map.
+// Put associates the specified value with the specified key in this trie.
 //
 // If the argument is not a single address nor prefix block, this method will panic.
 // The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
 //
-// If this map previously contained a mapping for a key,
+// If this trie previously contained a node for the given key,
 // the old value is replaced by the specified value, and false is returned along with the old value.
-// If this map did not previously contain a mapping for the key, true is returned along with a nil value.
-// The boolean return value allows you to distinguish whether the address was previously mapped to nil or not mapped at all.
+// If this trie did not previously contain a mapping for the key, true is returned along with the zero value.
+// The boolean return value allows you to distinguish whether the address was previously mapped to the zero value or not mapped at all.
 func (trie *AssociativeTrie[T, V]) Put(addr T, value V) (V, bool) {
 	return trie.put(addr, value)
 }
 
-// PutTrie adds nodes for the address keys and values in the trie with the root node as the passed in node.  To add only the keys, use AddTrie.
+// PutTrie adds nodes with the address keys and values from the trie with the argument trie root.  To add only the keys, use AddTrie.
 //
-// For each added in the given node that does not exist in the trie, a copy of each node will be made,
+// For each added node from the given trie that does not exist in this trie, a copy will be made,
 // the copy including the associated value, and the copy will be inserted into the trie.
 //
 // The address type/version of the keys must match.
@@ -1246,7 +1254,7 @@ func (trie *AssociativeTrie[T, V]) RemapIfAbsent(addr T, supplier func() V) *Ass
 // The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
 //
 // Returns the value for the given key.
-// Returns nil if the contains no mapping for that key or if the mapped value is nil.
+// Returns nil if the trie contains no mapping for that key or if the mapped value is nil.
 func (trie *AssociativeTrie[T, V]) Get(addr T) (V, bool) {
 	return trie.get(addr)
 }
