@@ -23,12 +23,6 @@ import (
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
 )
 
-// TODO LATER change to generics , this also allows us to possibly avoid the slice copy with the return slice.
-// Here we would not be returning []ExtendedIPSegmentSeries, we'd be returning []T for the end-type T.
-// So, the idea I think, is that we can use the trick we used in tries, with [T TrieConstraint[T]], allowing us to specify methods like ToPrefixBlock T
-// So, then we can return []T.  Overall this is a bit of work.
-// In fact, when you think about it, generics can give you all the same things as ExtendedIPSegmentSeries
-
 type spannableType[S any, T any] interface {
 	*S
 
