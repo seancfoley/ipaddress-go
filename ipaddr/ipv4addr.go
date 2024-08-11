@@ -1842,11 +1842,6 @@ func (addr *IPv4Address) ToAddressBase() *Address {
 	return (*Address)(unsafe.Pointer(addr))
 }
 
-// toAddressBase is needed for tries, it skips the init() call
-func (addr *IPv4Address) toAddressBase() *Address {
-	return (*Address)(unsafe.Pointer(addr))
-}
-
 // ToIP converts to an IPAddress, a polymorphic type usable with all IP addresses and subnets.
 // Afterwards, you can convert back with ToIPv4.
 //

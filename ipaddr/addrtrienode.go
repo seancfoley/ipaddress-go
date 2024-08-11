@@ -35,8 +35,11 @@ type TrieKeyConstraint[T any] interface {
 
 	IsOneBit(index BitCount) bool // AddressComponent
 
-	toAddressBase() *Address // AddressType - used by MatchBits
+	ToAddressBase() *Address // used by MatchBits, and made public for users who use TrieKeyConstraint in generic code.
 
+	// getPrefixLen is a performance enhancement.
+	// GetPrefixLen is also a part of this interface, through PrefixedConstraint,
+	// but getPrefixLen avoids the copy required so that the cached prefix len is not overwritten using the returned pointer.
 	getPrefixLen() PrefixLen
 
 	toMaxLower() T
@@ -61,7 +64,7 @@ func createKey[T TrieKeyConstraint[T]](addr T) trieKey[T] {
 func (a trieKey[T]) ToPrefixBlockLen(bitCount BitCount) trieKey[T] {
 	addr := a.address.ToPrefixBlockLen(bitCount)
 	if addr != a.address {
-		addr.toAddressBase().assignTrieCache()
+		addr.ToAddressBase().assignTrieCache()
 	}
 	return trieKey[T]{address: addr}
 }
@@ -110,11 +113,11 @@ func (a trieKey[T]) GetPrefixLen() tree.PrefixLen {
 // When comparing 0.0.0.0/0, which has no prefix, to other addresses, the first bit in the other address determines the ordering.
 // If 1 it is larger and if 0 it is smaller than 0.0.0.0/0.
 func (a trieKey[T]) Compare(other trieKey[T]) int {
-	return a.address.trieCompare(other.address.toAddressBase())
+	return a.address.trieCompare(other.address.ToAddressBase())
 }
 
 func (a trieKey[T]) GetTrieKeyData() *tree.TrieKeyData {
-	return a.address.toAddressBase().getTrieCache()
+	return a.address.ToAddressBase().getTrieCache()
 }
 
 // Note: We could instead have implemented followingBitsFlag as a *uint64 returned from BitsMatchPartially.
@@ -124,7 +127,7 @@ func (a trieKey[T]) GetTrieKeyData() *tree.TrieKeyData {
 // MatchBits returns false if we need to keep going and try to match sub-nodes.
 // MatchBits returns true if the bits do not match, or the bits match to the very end.
 func (a trieKey[T]) MatchBits(key trieKey[T], bitIndex int, simpleSearch bool, handleMatch tree.KeyCompareResult, newTrieCache *tree.TrieKeyData) (continueToNext bool, followingBitsFlag uint64) {
-	existingAddr := key.address.toAddressBase()
+	existingAddr := key.address.ToAddressBase()
 
 	if simpleSearch {
 		// this is the optimized path for the case where we do not need to know how many of the initial bits match in a mismatch
@@ -318,7 +321,7 @@ func (a trieKey[T]) MatchBits(key trieKey[T], bitIndex int, simpleSearch bool, h
 		}
 	}
 
-	newAddr := a.address.toAddressBase()
+	newAddr := a.address.ToAddressBase()
 	bitsPerSegment := existingAddr.GetBitsPerSegment()
 	bytesPerSegment := existingAddr.GetBytesPerSegment()
 	segmentIndex := getHostSegmentIndex(bitIndex, bytesPerSegment, bitsPerSegment)

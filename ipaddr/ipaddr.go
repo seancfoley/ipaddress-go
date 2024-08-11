@@ -1579,11 +1579,6 @@ func (addr *IPAddress) ToAddressBase() *Address {
 	return (*Address)(unsafe.Pointer(addr))
 }
 
-// toAddressBase is needed for tries, it skips the init() call
-func (addr *IPAddress) toAddressBase() *Address {
-	return (*Address)(unsafe.Pointer(addr))
-}
-
 // ToIP is an identity method.
 //
 // ToIP can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.

@@ -2225,11 +2225,6 @@ func (addr *IPv6Address) ToAddressBase() *Address {
 	return (*Address)(unsafe.Pointer(addr))
 }
 
-// toAddressBase is needed for tries, it skips the init() call
-func (addr *IPv6Address) toAddressBase() *Address {
-	return (*Address)(unsafe.Pointer(addr))
-}
-
 // ToIP converts to an IPAddress, a polymorphic type usable with all IP addresses and subnets.
 //
 // ToIP can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.

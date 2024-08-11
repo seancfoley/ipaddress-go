@@ -2015,11 +2015,6 @@ func (addr *Address) ToAddressBase() *Address {
 	return addr
 }
 
-// toAddressBase is needed for tries
-func (addr *Address) toAddressBase() *Address {
-	return addr
-}
-
 // ToIP converts to an IPAddress if this address or subnet originated as an IPv4 or IPv6 address or subnet, or an implicitly zero-valued IP.
 // If not, ToIP returns nil.
 //
