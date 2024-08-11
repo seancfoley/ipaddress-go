@@ -2947,7 +2947,7 @@ func (t ipAddressTester) testSubnet(addressStr, maskStr string, prefix ipaddr.Bi
 	normalizedPrefixSubnetString,
 	normalizedSubnetString,
 	normalizedPrefixString string) {
-
+	_ = normalizedPrefixSubnetString
 	t.testHostAddress(addressStr)
 	isValidMask := normalizedSubnetString != ""
 	str := t.createAddress(addressStr)
@@ -3100,6 +3100,7 @@ func (t ipAddressTester) testBitwiseOr(orig string, prefixAdjustment *ipaddr.Bit
 }
 
 func (t ipAddressTester) testPrefixBitwiseOr(orig string, prefix ipaddr.BitCount, or, expectedNetworkResult, expectedFullResult string) {
+	_, _ = prefix, expectedNetworkResult
 	original := t.createAddress(orig).GetAddress()
 	orAddr := t.createAddress(or).GetAddress()
 	result, err := original.BitwiseOr(orAddr)
@@ -3949,6 +3950,7 @@ func (t ipAddressTester) checkNotMask(addr string) {
 }
 
 func (t ipAddressTester) testSplit(address string, bits ipaddr.BitCount, network, networkNoRange, networkWithPrefix string, networkStringCount int, host string, hostStringCount int) {
+	_, _ = networkStringCount, hostStringCount
 	w := t.createAddress(address)
 	v := w.GetAddress()
 	section := v.GetNetworkSectionLen(bits)
@@ -4124,6 +4126,7 @@ func (t ipAddressTester) testMask(original, mask, expected string) {
 }
 
 func (t ipAddressTester) testNormalizedMC(original, expected string, keepMixed, compress bool) {
+	_ = keepMixed
 	w := t.createAddress(original)
 	if w.IsIPv6() {
 		val := w.GetAddress().ToIPv6()
@@ -4770,7 +4773,7 @@ func (t ipAddressTester) testByteExtension(addrString string, byteRepresentation
 func reconstitute(version ipaddr.IPVersion, bytes []byte, segmentByteSize int) []*ipaddr.IPAddress {
 	var addresses []*ipaddr.IPAddress
 	sets := createSets(bytes, segmentByteSize)
-	creator := ipaddr.IPAddressCreator{version}
+	creator := ipaddr.IPAddressCreator{IPVersion: version}
 	for _, set := range sets {
 		var segments, segments2 []*ipaddr.IPAddressSegment
 
@@ -5155,6 +5158,7 @@ func (t ipAddressTester) testRangeJoin2(inputs, expected []string) {
 // divs must be an []interface{} with each element a *big.Int/int/uint/uint64 or an array of two *big.Int/int/uint/uint64
 // Alternatively, instead of supplying Object[1] you can supply the first and only element instead
 func (t ipAddressTester) testAddressStringRangeP(address string, isIncompatibleAddress, isMaskedIncompatibleAddress bool, lowerAddress, upperAddress string, divs interface{}, prefixLength ipaddr.PrefixLen, isSequential *bool) {
+	_ = prefixLength
 	addrStr := t.createAddress(address)
 	// TODO LATER this code and the calling tests are all ready to go once I support toDivisionGrouping,
 	//just a little more Java to go translation in here is needed, but not much.  I left some of the Java types to help with clarity.
@@ -5429,7 +5433,7 @@ func makePrefixSubnet(directAddress *ipaddr.IPAddress) *ipaddr.IPAddress {
 	pref := directAddress.GetPrefixLen()
 	prefSeg := int(pref.Len() / directAddress.GetBitsPerSegment())
 	if prefSeg < len(segs) {
-		creator := ipaddr.IPAddressCreator{directAddress.GetIPVersion()}
+		creator := ipaddr.IPAddressCreator{IPVersion: directAddress.GetIPVersion()}
 		if directAddress.GetPrefixCount().Cmp(bigOneConst()) == 0 {
 			origSeg := segs[prefSeg]
 			mask := origSeg.GetSegmentNetworkMask(pref.Len() % directAddress.GetBitsPerSegment())

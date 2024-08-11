@@ -260,6 +260,7 @@ func (t testBase) testSegmentSeriesPrefixes(original ipaddr.ExtendedSegmentSerie
 	adjusted,
 	prefixSet,
 	_ ipaddr.ExtendedSegmentSeries) {
+	_, _, _, _ = prefix, adjusted, adjustment, prefixSet
 	for j := 0; j < 2; j++ {
 		var removed ipaddr.ExtendedSegmentSeries
 		var err error
