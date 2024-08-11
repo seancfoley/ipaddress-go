@@ -484,19 +484,19 @@ func (t trieTesterGeneric) testZeroValuedAddedTrees() {
 	t.checkString(addedTreeNode.TreeString(), "\n○ <nil>\n")
 
 	assocAddedTree := ipaddr.AssociativeAddedTree[*ipaddr.IPv4Address, int]{}
-	t.checkString(assocAddedTree.String(), "\n○ <nil> = 0\n")
-	t.checkString(assocAddedTree.GetRoot().String(), "○ <nil> = 0")
+	t.checkString(assocAddedTree.String(), "\n○ <nil>\n")
+	t.checkString(assocAddedTree.GetRoot().String(), "○ <nil>")
 	t.checkString(assocAddedTree.GetRoot().GetKey().String(), "<nil>")
 	t.checkString(fmt.Sprint(assocAddedTree.GetRoot().GetValue()), "0")
 	t.checkString(fmt.Sprint(assocAddedTree.GetRoot().GetSubNodes()), "[]")
-	t.checkString(assocAddedTree.GetRoot().TreeString(), "\n○ <nil> = 0\n")
+	t.checkString(assocAddedTree.GetRoot().TreeString(), "\n○ <nil>\n")
 
 	assocAddedTreeNode := ipaddr.AssociativeAddedTreeNode[*ipaddr.IPAddress, float64]{}
-	t.checkString(assocAddedTreeNode.String(), "○ <nil> = 0")
+	t.checkString(assocAddedTreeNode.String(), "○ <nil>")
 	t.checkString(assocAddedTreeNode.GetKey().String(), "<nil>")
 	t.checkString(fmt.Sprint(assocAddedTreeNode.GetValue()), "0")
 	t.checkString(fmt.Sprint(assocAddedTreeNode.GetSubNodes()), "[]")
-	t.checkString(assocAddedTreeNode.TreeString(), "\n○ <nil> = 0\n")
+	t.checkString(assocAddedTreeNode.TreeString(), "\n○ <nil>\n")
 
 	t.incrementTestCount()
 }
