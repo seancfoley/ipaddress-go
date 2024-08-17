@@ -20,7 +20,7 @@ package ipaddr
 type addrType byte
 
 const (
-	zeroType        addrType = 0 // no segments
+	zeroType        addrType = 0 // no segments, or non-version specific segments
 	ipv4Type        addrType = 1 // ipv4 segments
 	ipv6Type        addrType = 2 // ipv6 segments
 	ipv6v4MixedType addrType = 3 // ipv6-v4 mixed segments

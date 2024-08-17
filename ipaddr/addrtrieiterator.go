@@ -46,7 +46,7 @@ type CachingTrieIterator[T any] interface {
 	// be retrieved with GetCached when the lower sub-node is visited later.
 	//
 	// Returns false if it could not be cached, either because the node has since been removed with a call to Remove,
-	// because Next has not been called yet, or because there is no lower sub node for the node previously returned by  Next.
+	// because Next has not been called yet, or because there is no lower sub node for the node previously returned by Next.
 	//
 	// The caching and retrieval is done in constant time.
 	CacheWithLowerSubNode(Cached) bool

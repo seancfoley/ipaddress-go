@@ -827,6 +827,10 @@ func (node *TrieNode[T]) BlockSizeAllNodeIterator(lowerSubNodeFirst bool) Iterat
 
 // BlockSizeCachingAllNodeIterator returns an iterator that iterates all nodes, ordered by keys from largest prefix blocks to smallest and then to individual addresses,
 // in the sub-trie with this node as the root.
+//
+// The returned iterator of type CachingTrieIterator allows you to cache an object with the lower or upper sub-node of the currently visited node.
+// Each cached object can be retrieved later when iterating the sub-nodes. That allows you to provide iteration context from a parent to its sub-nodes when iterating.
+// If the caching functionality is not needed, use BlockSizeAllNodeIterator.
 func (node *TrieNode[T]) BlockSizeCachingAllNodeIterator() CachingTrieIterator[*TrieNode[T]] {
 	return cachingAddressTrieNodeIterator[T, emptyValue]{node.toBase().blockSizeCachingAllNodeIterator()}
 }
@@ -1350,6 +1354,10 @@ func (node *AssociativeTrieNode[T, V]) BlockSizeAllNodeIterator(lowerSubNodeFirs
 
 // BlockSizeCachingAllNodeIterator returns an iterator that iterates all nodes, ordered by keys from largest prefix blocks to smallest and then to individual addresses,
 // in the sub-trie with this node as the root.
+//
+// The returned iterator of type CachingTrieIterator allows you to cache an object with the lower or upper sub-node of the currently visited node.
+// Each cached object can be retrieved later when iterating the sub-nodes. That allows you to provide iteration context from a parent to its sub-nodes when iterating.
+// If the caching functionality is not needed, use BlockSizeAllNodeIterator.
 func (node *AssociativeTrieNode[T, V]) BlockSizeCachingAllNodeIterator() CachingTrieIterator[*AssociativeTrieNode[T, V]] {
 	return cachingAssociativeAddressTrieNodeIteratorX[T, V]{node.toBase().blockSizeCachingAllNodeIterator()}
 }

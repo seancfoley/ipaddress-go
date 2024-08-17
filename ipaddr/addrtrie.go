@@ -323,12 +323,16 @@ func (trie *trieBase[T, V]) toTrie() *tree.BinTrie[trieKey[T], V] {
 //
 // The unique and pre-defined structure for a trie means that different means of traversing the trie can be more meaningful.
 // This trie implementation provides 8 different ways of iterating through the trie:
-//   - 1, 2: the natural sorted trie order, forward and reverse (spliterating is also an option for these two orders).  Use the methods NodeIterator, Iterator or DescendingIterator.  Functions for incrementing and decrementing keys, or comparing keys, is also provided for this order.
-//   - 3, 4: pre-order tree traversal, in which parent node is visited before sub-nodes, with sub-nodes visited in forward or reverse order
-//   - 5, 6: post-order tree traversal, in which sub-nodes are visited before parent nodes, with sub-nodes visited in forward or reverse order
-//   - 7, 8: prefix-block order, in which larger prefix blocks are visited before smaller, and blocks of equal size are visited in forward or reverse sorted order
+//   - 1, 2: the natural sorted trie order, forward and reverse (spliterating is also an option for these two orders).  Use the methods Iterator, DescendingIterator, NodeIterator, or AllNodeIterator.  Functions for incrementing and decrementing keys, or comparing keys, are also provided for this ordering of addresses.
+//   - 3, 4: pre-order tree traversal, in which parent node is visited before sub-nodes, with sub-nodes visited in forward or reverse order.  Use the methods ContainingFirstIterator or ContainingFirstAllNodeIterator.
+//   - 5, 6: post-order tree traversal, in which sub-nodes are visited before parent nodes, with sub-nodes visited in forward or reverse order.  Use the methods ContainedFirstIterator or ContainedFirstAllNodeIterator.
+//   - 7, 8: prefix-block order, in which larger prefix blocks are visited before smaller, and blocks of equal size are visited in forward or reverse sorted order.  Use the methods BlockSizeNodeIterator, BlockSizeAllNodeIterator, or BlockSizeCachingAllNodeIterator.
 //
 // All of these orderings are useful in specific contexts.
+//
+// The pre-order tree traversal and prefix-block orders visit parent nodes before their respective sub-nodes,
+// and thus provide iterators that allow you to cache data with each sub-node when visiting the parent,
+// providing more efficient iteration when you need information about the path to the node when visiting each node.
 //
 // If you create an iterator, then that iterator can no longer be advanced following any further modification to the trie.
 // Any call to Next or Remove will panic if the trie was changed following creation of the iterator.
@@ -610,6 +614,9 @@ func (trie *Trie[T]) BlockSizeAllNodeIterator(lowerSubNodeFirst bool) IteratorWi
 }
 
 // BlockSizeCachingAllNodeIterator returns an iterator that iterates all nodes, ordered by keys from largest prefix blocks to smallest, and then to individual addresses.
+// The returned iterator of type CachingTrieIterator allows you to cache an object with the lower or upper sub-node of the currently visited node.
+// Each cached object can be retrieved later when iterating the sub-nodes. That allows you to provide iteration context from a parent to its sub-nodes when iterating.
+// If the caching functionality is not needed, use BlockSizeAllNodeIterator.
 func (trie *Trie[T]) BlockSizeCachingAllNodeIterator() CachingTrieIterator[*TrieNode[T]] {
 	return cachingAddressTrieNodeIterator[T, emptyValue]{trie.toBase().blockSizeCachingAllNodeIterator()}
 }
@@ -1033,6 +1040,9 @@ func (trie *AssociativeTrie[T, V]) BlockSizeAllNodeIterator(lowerSubNodeFirst bo
 }
 
 // BlockSizeCachingAllNodeIterator returns an iterator that iterates all nodes, ordered by keys from largest prefix blocks to smallest, and then to individual addresses.
+// The returned iterator of type CachingTrieIterator allows you to cache an object with the lower or upper sub-node of the currently visited node.
+// Each cached object can be retrieved later when iterating the sub-nodes. That allows you to provide iteration context from a parent to its sub-nodes when iterating.
+// If the caching functionality is not needed, use BlockSizeAllNodeIterator.
 func (trie *AssociativeTrie[T, V]) BlockSizeCachingAllNodeIterator() CachingTrieIterator[*AssociativeTrieNode[T, V]] {
 	return cachingAssociativeAddressTrieNodeIteratorX[T, V]{trie.toBase().blockSizeCachingAllNodeIterator()}
 }
