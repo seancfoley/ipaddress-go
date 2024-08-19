@@ -102,7 +102,7 @@ func ToIPSlice[T interface {
 	return cloneTo(orig, func(a T) IPType { return a.ToIP() })
 }
 
-// ToAddressBaseSlice converts a slice of subnets, addresses, or components thereof into IP-specific components.
+// ToAddressBaseSlice converts a slice of subnets or addresses into general addresses or subnets not specific to a version or address type.
 // The original slice element type can be one of *Address, *IPv4Address, *IPv6Address, *MACAddress, *IPAddress, or AddressType.
 // Each slice element will be converted if the element originated as an IPv6 component, otherwise the element will be converted to nil in the returned slice.
 func ToAddressBaseSlice[T interface {
