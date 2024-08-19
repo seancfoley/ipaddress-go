@@ -1968,7 +1968,7 @@ func (addr *IPAddress) MergeToPrefixBlocks(addrs ...*IPAddress) []*IPAddress {
 //
 // This function complements the MergeToPrefixBlock methods of each IP address type, whether IPv4Address, IPv6Address, or IPAddress.
 // Those methods ignore arguments that do not match the IP version of the method receiver, while this function does not.
-// This function will only ignore an argument if it is nil, or it is the zero-bit zero value of the type IPAddress.
+// This function will only ignore an argument if it is the zero-bit zero value of the type IPAddress.
 // All other arguments will have IP version IPv4 or IPv6, and will be merged into one of the two returned slices.
 //
 // Use ToIPv4Slice or ToIPv6Slice if you wish to convert the returned slices to the more specific types []*IPv4Address or []*IPv6Address.
