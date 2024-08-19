@@ -1964,6 +1964,59 @@ func (addr *IPAddress) MergeToPrefixBlocks(addrs ...*IPAddress) []*IPAddress {
 	return getMergedPrefixBlocks(filterSeries(addr, addrs))
 }
 
+// MergeToPrefixBlocks merges the given set of IP addresses and subnets into a minimal number of prefix blocks.
+// This function complements the MergeToPrefixBlock methods of each IP address type, whether IPv4Address, IPv6Address, or IPAddress.
+// Those methods ignore arguments that do not match the IP version of the method receiver, while this function does not.
+// This function will only ignore an argument if it is nil, or it is the zero-bit zero value of the type IPAddress.
+// All other arguments will have IP version IPv4 or IPv6, and will be merged into one of the two returned slices.
+// Use ToIPv4Slice or ToIPv6Slice if you wish to convert the returned slices to the more specific types []*IPv4Address or []*IPv6Address.
+func MergeToPrefixBlocks(addrs ...*IPAddress) (ipv4Blocks, ipv6Blocks []*IPAddress) {
+	return mergeToBlocks((*IPAddress).MergeToPrefixBlocks, addrs)
+}
+
+// MergeToPrefixBlocks merges the given set of IP addresses and subnets into a minimal number of prefix blocks.
+// This function complements the MergeToPrefixBlock methods of the IP address types, whether IPv4Address, IPv6Address, or IPAddress.
+// Those methods ignore arguments that do not match the IP version of the method receiver, while this function does not.
+// This function will only ignore an argument if it is the zero-bit zero value of the type IPAddress.
+// All other arguments will have IP version IPv4 or IPv6, and will be merged into one of the two returned slices.
+// Use ToIPv4Slice or ToIPv6Slice if you wish to convert the returned slices to the more specific types []*IPv4Address or []*IPv6Address.
+func MergeToSequentialBlocks(addrs ...*IPAddress) (ipv4Blocks, ipv6Blocks []*IPAddress) {
+	return mergeToBlocks((*IPAddress).MergeToSequentialBlocks, addrs)
+}
+
+func mergeToBlocks(
+	merge func(*IPAddress, ...*IPAddress) []*IPAddress,
+	addrs []*IPAddress) (
+	ipv4Blocks, ipv6Blocks []*IPAddress) {
+
+	var ipv4Addr, ipv6Addr *IPAddress
+	for _, addr := range addrs {
+		addrType := addr.getAddrType()
+		if addrType == ipv4Type {
+			if ipv4Addr == nil {
+				ipv4Addr = addr
+			}
+			if ipv6Addr != nil {
+				break
+			}
+		} else if addrType == ipv6Type {
+			if ipv6Addr == nil {
+				ipv6Addr = addr
+			}
+			if ipv4Addr != nil {
+				break
+			}
+		}
+	}
+	if ipv4Addr != nil {
+		ipv4Blocks = merge(ipv4Addr, addrs...)
+	}
+	if ipv6Addr != nil {
+		ipv6Blocks = merge(ipv6Addr, addrs...)
+	}
+	return
+}
+
 // SpanWithPrefixBlocks returns an array of prefix blocks that cover the same set of addresses as this subnet.
 //
 // Unlike SpanWithPrefixBlocksTo, the result only includes addresses that are a part of this subnet.
@@ -2043,12 +2096,6 @@ func (addr *IPAddress) SpanWithSequentialBlocksTo(other *IPAddress) []*IPAddress
 		return addr.SpanWithSequentialBlocks()
 	}
 	return getSpanningSequentialBlocks(addr, other)
-	// return cloneToIPAddrs(
-	// 	getSpanningSequentialBlocks(
-	// 		addr.Wrap(),
-	// 		other.Wrap(),
-	// 	),
-	// )
 }
 
 // ReverseBytes returns a new address with the bytes reversed.  Any prefix length is dropped.
@@ -2092,7 +2139,7 @@ func (addr *IPAddress) GetSegmentStrings() []string {
 //and https://standards.ieee.org/wp-content/uploads/import/documents/tutorials/macgrp.pdf and https://en.wikipedia.org/wiki/MAC_address
 //canonicalParams = new MACStringOptions.Builder().setSeparator(MACAddress.DASH_SEGMENT_SEPARATOR).setUppercase(true).setExpandedSegments(true).setWildcards(new Wildcards(MACAddress.DASHED_SEGMENT_RANGE_SEPARATOR_STR, Address.SEGMENT_WILDCARD_STR, null)).toOptions();
 // Search docs for: An example is "01-23-45-67-89-ab"
-// But ACTUALLY, in the ends I decided not to: https://www.mef.net/wp-content/uploads/MEF-89.pdf
+// But ACTUALLY, in the end I decided not to: https://www.mef.net/wp-content/uploads/MEF-89.pdf
 
 // ToCanonicalString produces a canonical string for the address.
 //
