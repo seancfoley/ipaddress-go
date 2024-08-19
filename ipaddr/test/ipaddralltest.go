@@ -17,6 +17,7 @@
 package test
 
 import (
+	"fmt"
 	"math"
 	"math/big"
 	"strconv"
@@ -29,6 +30,7 @@ type ipAddressAllTester struct {
 }
 
 func (t ipAddressAllTester) run() {
+	t.testSliceConversions()
 
 	t.testMatches(true, "-", "*.*")
 	t.testMatches(true, "-", "*.*.*.*")
@@ -577,4 +579,268 @@ func (t ipAddressAllTester) testStrings() {
 		"=r54lj&NUUO~Hi%c2ym0",
 		"0xffffffffffffffffffffffffffffffff",
 		"03777777777777777777777777777777777777777777")
+}
+
+func (t ipAddressAllTester) testSliceConversions() {
+	t.testIPAddrSliceConversion("1.2.3.4")
+	t.testIPAddrSliceConversion("aa:bb:cccc:dd:eeee:ffff:a:b")
+	t.testMACAddrSliceConversion("aa:bb:cc:dd:ee:ff")
+}
+
+func (t ipAddressAllTester) testIPAddrSliceConversion(addrString string) {
+	addr := t.createAddress(addrString).GetAddress()
+	// start with ip addresses.
+	ipAddrSlice := []*ipaddr.IPAddress{addr, addr, addr}
+	if addr.IsIPv4() {
+		ipv4AddrSlice := ipaddr.ToIPv4Slice[*ipaddr.IPAddress, *ipaddr.IPv4Address](ipAddrSlice)
+		if !ipaddr.AddrsMatchOrdered(ipAddrSlice, ipv4AddrSlice) {
+			t.addFailure(newIPAddrFailure(fmt.Sprintf("failed to match %v with %v", ipAddrSlice, ipv4AddrSlice), addr))
+		}
+		ipAddrSlice = ipaddr.ToIPSlice[*ipaddr.IPv4Address, *ipaddr.IPAddress](ipv4AddrSlice)
+	} else if addr.IsIPv6() {
+		ipv6AddrSlice := ipaddr.ToIPv6Slice[*ipaddr.IPAddress, *ipaddr.IPv6Address](ipAddrSlice)
+		if !ipaddr.AddrsMatchOrdered(ipAddrSlice, ipv6AddrSlice) {
+			t.addFailure(newIPAddrFailure(fmt.Sprintf("failed to match %v with %v", ipAddrSlice, ipv6AddrSlice), addr))
+		}
+		ipAddrSlice = ipaddr.ToIPSlice[*ipaddr.IPv6Address, *ipaddr.IPAddress](ipv6AddrSlice)
+	}
+	addrSlice := ipaddr.ToAddressBaseSlice[*ipaddr.IPAddress, *ipaddr.Address](ipAddrSlice)
+	if !ipaddr.AddrsMatchOrdered(ipAddrSlice, addrSlice) {
+		t.addFailure(newIPAddrFailure(fmt.Sprintf("failed to match %v with %v", addrSlice, ipAddrSlice), addr))
+	}
+	if addr.IsIPv4() {
+		ipv4AddrSlice := ipaddr.ToIPv4Slice[*ipaddr.Address, *ipaddr.IPv4Address](addrSlice)
+		if !ipaddr.AddrsMatchOrdered(addrSlice, ipv4AddrSlice) {
+			t.addFailure(newIPAddrFailure(fmt.Sprintf("failed to match %v with %v", ipAddrSlice, ipv4AddrSlice), addr))
+		}
+		addrSlice = ipaddr.ToAddressBaseSlice[*ipaddr.IPv4Address, *ipaddr.Address](ipv4AddrSlice)
+	} else if addr.IsIPv6() {
+		ipv6AddrSlice := ipaddr.ToIPv6Slice[*ipaddr.Address, *ipaddr.IPv6Address](addrSlice)
+		if !ipaddr.AddrsMatchOrdered(addrSlice, ipv6AddrSlice) {
+			t.addFailure(newIPAddrFailure(fmt.Sprintf("failed to match %v with %v", ipAddrSlice, ipv6AddrSlice), addr))
+		}
+		addrSlice = ipaddr.ToAddressBaseSlice[*ipaddr.IPv6Address, *ipaddr.Address](ipv6AddrSlice)
+	}
+	t.testSectionSliceConversion(addr.ToAddressBase().GetSection())
+	t.testSegmentSliceConversion(addr.ToAddressBase().GetSegment(0))
+
+	ipAddrTypeSlice := []ipaddr.IPAddressType{addr, addr, addr}
+	ipAddrSlice = ipaddr.ToIPSlice[ipaddr.IPAddressType, *ipaddr.IPAddress](ipAddrTypeSlice)
+	if !ipaddr.AddrsMatchOrdered(ipAddrTypeSlice, ipAddrSlice) {
+		t.addFailure(newIPAddrFailure(fmt.Sprintf("failed to match %v with %v", ipAddrTypeSlice, ipAddrSlice), addr))
+	}
+
+	addrTypeSlice := []ipaddr.AddressType{addr, addr, addr}
+	addrSlice = ipaddr.ToAddressBaseSlice[ipaddr.AddressType, *ipaddr.Address](addrTypeSlice)
+	if !ipaddr.AddrsMatchOrdered(addrTypeSlice, addrSlice) {
+		t.addFailure(newIPAddrFailure(fmt.Sprintf("failed to match %v with %v", addrTypeSlice, addrSlice), addr))
+	}
+	if !ipaddr.AddrsMatchUnordered(addrTypeSlice, addrSlice) {
+		t.addFailure(newIPAddrFailure(fmt.Sprintf("failed to match %v with %v", addrTypeSlice, addrSlice), addr))
+	}
+
+	//ranges
+	rng := addr.SpanWithRange(addr)
+	ipRangeSlice := []*ipaddr.IPAddressSeqRange{rng, rng, rng}
+	ipRangeSlice2 := ipRangeSlice
+	if addr.IsIPv4() {
+		ipv4AddrSlice := ipaddr.ToIPv4Slice[*ipaddr.IPAddressSeqRange, *ipaddr.IPv4AddressSeqRange](ipRangeSlice)
+		if !ipv4AddrSlice[0].Equal(ipRangeSlice[0]) {
+			t.addFailure(newAddressItemFailure(fmt.Sprintf("failed to match %v with %v", ipv4AddrSlice[0], ipRangeSlice[0]), ipRangeSlice[0]))
+		}
+		ipRangeSlice2 = ipaddr.ToIPSlice[*ipaddr.IPv4AddressSeqRange, *ipaddr.IPAddressSeqRange](ipv4AddrSlice)
+	} else if addr.IsIPv6() {
+		ipv6AddrSlice := ipaddr.ToIPv6Slice[*ipaddr.IPAddressSeqRange, *ipaddr.IPv6AddressSeqRange](ipRangeSlice)
+		if !ipv6AddrSlice[0].Equal(ipRangeSlice[0]) {
+			t.addFailure(newAddressItemFailure(fmt.Sprintf("failed to match %v with %v", ipv6AddrSlice[0], ipRangeSlice[0]), ipRangeSlice[0]))
+		}
+		ipRangeSlice2 = ipaddr.ToIPSlice[*ipaddr.IPv6AddressSeqRange, *ipaddr.IPAddressSeqRange](ipv6AddrSlice)
+	}
+	if !ipRangeSlice2[0].Equal(ipRangeSlice[0]) {
+		t.addFailure(newAddressItemFailure(fmt.Sprintf("failed to match %v with %v", ipRangeSlice2[0], ipRangeSlice[0]), ipRangeSlice[0]))
+	}
+	ipRangeTypeSlice := []ipaddr.IPAddressSeqRangeType{rng, rng, rng}
+	ipRangeSlice2 = ipaddr.ToIPSlice[ipaddr.IPAddressSeqRangeType, *ipaddr.IPAddressSeqRange](ipRangeTypeSlice)
+	if !ipRangeSlice2[0].Equal(ipRangeSlice[0]) {
+		t.addFailure(newAddressItemFailure(fmt.Sprintf("failed to match %v with %v", ipRangeSlice2[0], ipRangeSlice[0]), ipRangeSlice[0]))
+	}
+
+	// from there you can get ranges, wrapped addresses and wrapped sections.
+	// ExtendedIPSegmentSeries, WrappedIPAddress, WrappedIPAddressSection, ToIPv6 ToIPv4
+	// ExtendedSegmentSeries, WrappedAddress, or WrappedAddressSection ToIPv6 ToIPv4 ToIP ToMAC
+
+	ipWrappedSlice := []ipaddr.WrappedIPAddress{addr.Wrap(), addr.Wrap(), addr.Wrap()}
+	ipAddrSlice = ipaddr.ToIPSlice[ipaddr.WrappedIPAddress, *ipaddr.IPAddress](ipWrappedSlice)
+	if !ipaddr.AddrsMatchOrdered(ipAddrTypeSlice, ipAddrSlice) {
+		t.addFailure(newIPAddrFailure(fmt.Sprintf("failed to match %v with %v", ipAddrTypeSlice, ipAddrSlice), addr))
+	}
+	if addr.IsIPv4() {
+		ipWrappedExtSlice := []ipaddr.ExtendedIPSegmentSeries{addr.Wrap(), addr.Wrap(), addr.Wrap()}
+		ipv4SeriesSlice := ipaddr.ToIPv4Slice[ipaddr.ExtendedIPSegmentSeries, ipaddr.IPv4AddressSegmentSeries](ipWrappedExtSlice)
+		if ipv4SeriesSlice[0].Compare(addr) != 0 {
+			t.addFailure(newIPAddrFailure(fmt.Sprintf("failed to match %v with %v", ipv4SeriesSlice[0], addr), addr))
+		}
+
+		wrappedExtSlice := []ipaddr.ExtendedSegmentSeries{addr.ToAddressBase().Wrap(), addr.ToAddressBase().Wrap(), addr.ToAddressBase().Wrap()}
+		ipv4SerSlice := ipaddr.ToIPv4Slice[ipaddr.ExtendedSegmentSeries, ipaddr.IPv4AddressSegmentSeries](wrappedExtSlice)
+		if ipv4SerSlice[0].Compare(addr) != 0 {
+			t.addFailure(newIPAddrFailure(fmt.Sprintf("failed to match %v with %v", ipv4SerSlice[0], addr), addr))
+		}
+	} else if addr.IsIPv6() {
+		ipWrappedExtSlice := []ipaddr.ExtendedIPSegmentSeries{addr.Wrap(), addr.Wrap(), addr.Wrap()}
+		ipv6SeriesSlice := ipaddr.ToIPv6Slice[ipaddr.ExtendedIPSegmentSeries, ipaddr.IPv6AddressSegmentSeries](ipWrappedExtSlice)
+		if ipv6SeriesSlice[0].Compare(addr) != 0 {
+			t.addFailure(newIPAddrFailure(fmt.Sprintf("failed to match %v with %v", ipv6SeriesSlice[0], addr), addr))
+		}
+
+		wrappedExtSlice := []ipaddr.ExtendedSegmentSeries{addr.ToAddressBase().Wrap(), addr.ToAddressBase().Wrap(), addr.ToAddressBase().Wrap()}
+		ipv6SerSlice := ipaddr.ToIPv6Slice[ipaddr.ExtendedSegmentSeries, ipaddr.IPv6AddressSegmentSeries](wrappedExtSlice)
+		if ipv6SerSlice[0].Compare(addr) != 0 {
+			t.addFailure(newIPAddrFailure(fmt.Sprintf("failed to match %v with %v", ipv6SerSlice[0], addr), addr))
+		}
+	}
+}
+
+func (t ipAddressAllTester) testMACAddrSliceConversion(addrString string) {
+	addr := t.createMACAddress(addrString).GetAddress()
+	// start with ip addresses.
+	macAddrSlice := []*ipaddr.MACAddress{addr, addr, addr}
+	addrSlice := ipaddr.ToAddressBaseSlice[*ipaddr.MACAddress, *ipaddr.Address](macAddrSlice)
+	if !ipaddr.AddrsMatchOrdered(macAddrSlice, addrSlice) {
+		t.addFailure(newMACAddrFailure(fmt.Sprintf("failed to match %v with %v", addrSlice, macAddrSlice), addr))
+	}
+	macAddrSlice = ipaddr.ToMACSlice[*ipaddr.Address, *ipaddr.MACAddress](addrSlice)
+	if !ipaddr.AddrsMatchOrdered(macAddrSlice, addrSlice) {
+		t.addFailure(newMACAddrFailure(fmt.Sprintf("failed to match %v with %v", addrSlice, macAddrSlice), addr))
+	}
+	t.testSectionSliceConversion(addr.ToAddressBase().GetSection())
+	t.testSegmentSliceConversion(addr.ToAddressBase().GetSegment(0))
+
+	wrappedExtSlice := []ipaddr.ExtendedSegmentSeries{addr.ToAddressBase().Wrap(), addr.ToAddressBase().Wrap(), addr.ToAddressBase().Wrap()}
+	macSerSlice := ipaddr.ToMACSlice[ipaddr.ExtendedSegmentSeries, ipaddr.MACAddressSegmentSeries](wrappedExtSlice)
+	if macSerSlice[0].Compare(addr) != 0 {
+		t.addFailure(newMACAddrFailure(fmt.Sprintf("failed to match %v with %v", macSerSlice[0], addr), addr))
+	}
+}
+
+func (t ipAddressAllTester) testSegmentSliceConversion(seg *ipaddr.AddressSegment) {
+	segSlice := []*ipaddr.AddressSegment{seg, seg, seg}
+	if seg.IsIPv4() {
+		ipv4AddrSlice := ipaddr.ToIPv4Slice[*ipaddr.AddressSegment, *ipaddr.IPv4AddressSegment](segSlice)
+		if !ipv4AddrSlice[0].Equal(segSlice[0]) {
+			t.addFailure(newAddressItemFailure(fmt.Sprintf("failed to match %v with %v", ipv4AddrSlice[0], segSlice[0]), segSlice[0]))
+		}
+		ipSecSlice := ipaddr.ToIPSlice[*ipaddr.IPv4AddressSegment, *ipaddr.IPAddressSegment](ipv4AddrSlice)
+		if !ipv4AddrSlice[0].Equal(ipSecSlice[0]) {
+			t.addFailure(newAddressItemFailure(fmt.Sprintf("failed to match %v with %v", ipv4AddrSlice[0], ipSecSlice[0]), ipSecSlice[0]))
+		}
+	} else if seg.IsIPv6() {
+		ipv6AddrSlice := ipaddr.ToIPv6Slice[*ipaddr.AddressSegment, *ipaddr.IPv6AddressSegment](segSlice)
+		if !ipv6AddrSlice[0].Equal(segSlice[0]) {
+			t.addFailure(newAddressItemFailure(fmt.Sprintf("failed to match %v with %v", ipv6AddrSlice[0], segSlice[0]), segSlice[0]))
+		}
+		ipSecSlice := ipaddr.ToIPSlice[*ipaddr.IPv6AddressSegment, *ipaddr.IPAddressSegment](ipv6AddrSlice)
+		if !ipv6AddrSlice[0].Equal(ipSecSlice[0]) {
+			t.addFailure(newAddressItemFailure(fmt.Sprintf("failed to match %v with %v", ipv6AddrSlice[0], ipSecSlice[0]), ipSecSlice[0]))
+		}
+	} else if seg.IsMAC() {
+		macAddrSlice := ipaddr.ToMACSlice[*ipaddr.AddressSegment, *ipaddr.MACAddressSegment](segSlice)
+		if !macAddrSlice[0].Equal(segSlice[0]) {
+			t.addFailure(newAddressItemFailure(fmt.Sprintf("failed to match %v with %v", macAddrSlice[0], segSlice[0]), segSlice[0]))
+		}
+	}
+	div := seg.ToDiv()
+	divSlice := []*ipaddr.AddressDivision{div, div, div}
+	if seg.IsIPv4() {
+		ipv4AddrSlice := ipaddr.ToIPv4Slice[*ipaddr.AddressDivision, *ipaddr.IPv4AddressSegment](divSlice)
+		if !ipv4AddrSlice[0].Equal(divSlice[0].ToSegmentBase()) {
+			t.addFailure(newAddressItemFailure(fmt.Sprintf("failed to match %v with %v", ipv4AddrSlice[0], divSlice[0]), divSlice[0]))
+		}
+		ipdivSlice := ipaddr.ToIPSlice[*ipaddr.IPv4AddressSegment, *ipaddr.IPAddressSegment](ipv4AddrSlice)
+		if !ipv4AddrSlice[0].Equal(ipdivSlice[0].ToSegmentBase()) {
+			t.addFailure(newAddressItemFailure(fmt.Sprintf("failed to match %v with %v", ipv4AddrSlice[0], ipdivSlice[0]), ipdivSlice[0]))
+		}
+	} else if seg.IsIPv6() {
+		ipv6AddrSlice := ipaddr.ToIPv6Slice[*ipaddr.AddressDivision, *ipaddr.IPv6AddressSegment](divSlice)
+		if !ipv6AddrSlice[0].Equal(divSlice[0].ToSegmentBase()) {
+			t.addFailure(newAddressItemFailure(fmt.Sprintf("failed to match %v with %v", ipv6AddrSlice[0], divSlice[0]), divSlice[0]))
+		}
+		ipdivSlice := ipaddr.ToIPSlice[*ipaddr.IPv6AddressSegment, *ipaddr.IPAddressSegment](ipv6AddrSlice)
+		if !ipv6AddrSlice[0].Equal(ipdivSlice[0].ToSegmentBase()) {
+			t.addFailure(newAddressItemFailure(fmt.Sprintf("failed to match %v with %v", ipv6AddrSlice[0], ipdivSlice[0]), ipdivSlice[0]))
+		}
+	} else if seg.IsMAC() {
+		macAddrSlice := ipaddr.ToMACSlice[*ipaddr.AddressDivision, *ipaddr.MACAddressSegment](divSlice)
+		if !macAddrSlice[0].Equal(divSlice[0].ToSegmentBase()) {
+			t.addFailure(newAddressItemFailure(fmt.Sprintf("failed to match %v with %v", macAddrSlice[0], divSlice[0]), divSlice[0]))
+		}
+	}
+}
+
+func (t ipAddressAllTester) testSectionSliceConversion(section *ipaddr.AddressSection) {
+	secSlice := []*ipaddr.AddressSection{section, section, section}
+	if section.IsIPv4() {
+		ipv4AddrSlice := ipaddr.ToIPv4Slice[*ipaddr.AddressSection, *ipaddr.IPv4AddressSection](secSlice)
+		if !ipv4AddrSlice[0].Equal(secSlice[0]) {
+			t.addFailure(newAddressItemFailure(fmt.Sprintf("failed to match %v with %v", ipv4AddrSlice[0], secSlice[0]), secSlice[0]))
+		}
+		ipSecSlice := ipaddr.ToIPSlice[*ipaddr.IPv4AddressSection, *ipaddr.IPAddressSection](ipv4AddrSlice)
+		if !ipv4AddrSlice[0].Equal(ipSecSlice[0]) {
+			t.addFailure(newAddressItemFailure(fmt.Sprintf("failed to match %v with %v", ipv4AddrSlice[0], ipSecSlice[0]), ipSecSlice[0]))
+		}
+	} else if section.IsIPv6() {
+		ipv6AddrSlice := ipaddr.ToIPv6Slice[*ipaddr.AddressSection, *ipaddr.IPv6AddressSection](secSlice)
+		if !ipv6AddrSlice[0].Equal(secSlice[0]) {
+			t.addFailure(newAddressItemFailure(fmt.Sprintf("failed to match %v with %v", ipv6AddrSlice[0], secSlice[0]), secSlice[0]))
+		}
+		ipSecSlice := ipaddr.ToIPSlice[*ipaddr.IPv6AddressSection, *ipaddr.IPAddressSection](ipv6AddrSlice)
+		if !ipv6AddrSlice[0].Equal(ipSecSlice[0]) {
+			t.addFailure(newAddressItemFailure(fmt.Sprintf("failed to match %v with %v", ipv6AddrSlice[0], ipSecSlice[0]), ipSecSlice[0]))
+		}
+	} else if section.IsMAC() {
+		macAddrSlice := ipaddr.ToMACSlice[*ipaddr.AddressSection, *ipaddr.MACAddressSection](secSlice)
+		if !macAddrSlice[0].Equal(secSlice[0]) {
+			t.addFailure(newAddressItemFailure(fmt.Sprintf("failed to match %v with %v", macAddrSlice[0], secSlice[0]), secSlice[0]))
+		}
+	}
+	div := section.ToDivGrouping()
+	divSlice := []*ipaddr.AddressDivisionGrouping{div, div, div}
+	if section.IsIPv4() {
+		ipv4AddrSlice := ipaddr.ToIPv4Slice[*ipaddr.AddressDivisionGrouping, *ipaddr.IPv4AddressSection](divSlice)
+		if !ipv4AddrSlice[0].GetSegment(0).Equal(divSlice[0].GetDivision(0).ToSegmentBase()) {
+			t.addFailure(newAddressItemFailure(fmt.Sprintf("failed to match %v with %v", ipv4AddrSlice[0], divSlice[0]), divSlice[0]))
+		}
+		ipdivSlice := ipaddr.ToIPSlice[*ipaddr.IPv4AddressSection, *ipaddr.IPAddressSection](ipv4AddrSlice)
+		if !ipv4AddrSlice[0].GetSegment(0).Equal(ipdivSlice[0].GetSegment(0).ToSegmentBase()) {
+			t.addFailure(newAddressItemFailure(fmt.Sprintf("failed to match %v with %v", ipv4AddrSlice[0], ipdivSlice[0]), ipdivSlice[0]))
+		}
+	} else if section.IsIPv6() {
+		ipv6AddrSlice := ipaddr.ToIPv6Slice[*ipaddr.AddressDivisionGrouping, *ipaddr.IPv6AddressSection](divSlice)
+		if !ipv6AddrSlice[0].GetSegment(0).Equal(divSlice[0].GetDivision(0).ToSegmentBase()) {
+			t.addFailure(newAddressItemFailure(fmt.Sprintf("failed to match %v with %v", ipv6AddrSlice[0], divSlice[0]), divSlice[0]))
+		}
+		ipdivSlice := ipaddr.ToIPSlice[*ipaddr.IPv6AddressSection, *ipaddr.IPAddressSection](ipv6AddrSlice)
+		if !ipv6AddrSlice[0].GetSegment(0).Equal(ipdivSlice[0].GetSegment(0).ToSegmentBase()) {
+			t.addFailure(newAddressItemFailure(fmt.Sprintf("failed to match %v with %v", ipv6AddrSlice[0], ipdivSlice[0]), ipdivSlice[0]))
+		}
+	} else if section.IsMAC() {
+		macAddrSlice := ipaddr.ToMACSlice[*ipaddr.AddressDivisionGrouping, *ipaddr.MACAddressSection](divSlice)
+		if !macAddrSlice[0].GetSegment(0).Equal(divSlice[0].GetDivision(0).ToSegmentBase()) {
+			t.addFailure(newAddressItemFailure(fmt.Sprintf("failed to match %v with %v", macAddrSlice[0], divSlice[0]), divSlice[0]))
+		}
+	}
+	wrappedSlice := []ipaddr.WrappedAddressSection{section.Wrap(), section.Wrap(), section.Wrap()}
+	if section.IsIP() {
+		ipAddrSlice := ipaddr.ToIPSlice[ipaddr.WrappedAddressSection, ipaddr.IPAddressSegmentSeries](wrappedSlice)
+		_ = ipAddrSlice
+		if wrappedSlice[0].Compare(ipAddrSlice[0]) != 0 {
+			t.addFailure(newAddressItemFailure(fmt.Sprintf("failed to match %v with %v", wrappedSlice[0], ipAddrSlice[0]), section))
+		}
+	} else {
+		macAddrSlice := ipaddr.ToMACSlice[ipaddr.WrappedAddressSection, ipaddr.MACAddressSegmentSeries](wrappedSlice)
+		_ = macAddrSlice
+		if wrappedSlice[0].Compare(macAddrSlice[0]) != 0 {
+			t.addFailure(newAddressItemFailure(fmt.Sprintf("failed to match %v with %v", wrappedSlice[0], macAddrSlice[0]), section))
+		}
+	}
 }

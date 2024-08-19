@@ -2349,6 +2349,30 @@ func (t ipAddressRangeTester) run() {
 	t.testMerge("*:*", "::", "*:*")
 	t.testMerge("*:*", "*:*", "*:*")
 
+	t.testMergeMixed([]string{"1.2.2.0/25", "1.2.3.128/25", "192.168.0.0/28"}, []string{"1:2:3:4::/64"}, nil, nil, "192.168.0.0/29", "192.168.0.8/29", "1:2:3:4:8000::/65", "1.2.2.0/25", "1.2.3.128/25", "1.2.2.0/25", "1:2:3:4::/66", "1:2:3:4:4000::/66")
+	t.testMergeMixed([]string{"1.2.2.0/25", "1.2.3.128/25", "192.168.0.0/28"}, []string{"1:2:3:4::/64"}, nil, nil, "", "192.168.0.0/29", "", "192.168.0.8/29", "1:2:3:4:8000::/65", "1.2.2.0/25", "1.2.3.128/25", "1.2.2.0/25", "1:2:3:4::/66", "1:2:3:4:4000::/66")
+	t.testMergeMixed([]string{"1.2.2.0/25", "1.2.3.128/25", "192.168.0.0/28"}, []string{"1:2:3:4::/64"}, nil, nil, "", "", "192.168.0.0/29", "", "192.168.0.8/29", "1:2:3:4:8000::/65", "1.2.2.0/25", "1.2.3.128/25", "1.2.2.0/25", "1:2:3:4::/66", "1:2:3:4:4000::/66")
+	t.testMergeMixed([]string{"1.2.2.0/25", "1.2.3.128/25", "192.168.0.0/28"}, []string{"1:2:3:4::/64"}, nil, nil, "192.168.0.0/29", "", "192.168.0.8/29", "1:2:3:4:8000::/65", "1.2.2.0/25", "1.2.3.128/25", "1.2.2.0/25", "1:2:3:4::/66", "1:2:3:4:4000::/66")
+	t.testMergeMixed([]string{"1.2.2.0/25", "1.2.3.128/25", "192.168.0.0/28"}, []string{"1:2:3:4::/64"}, nil, nil, "192.168.0.0/29", "192.168.0.8/29", "", "1:2:3:4:8000::/65", "1.2.2.0/25", "1.2.3.128/25", "1.2.2.0/25", "1:2:3:4::/66", "1:2:3:4:4000::/66")
+	t.testMergeMixed([]string{"1.2.2.0/25", "1.2.3.128/25", "192.168.0.0/28"}, []string{"1:2:3:4::/64"}, nil, nil, "192.168.0.0/29", "192.168.0.8/29", "1:2:3:4:8000::/65", "1.2.2.0/25", "1.2.3.128/25", "", "1.2.2.0/25", "1:2:3:4::/66", "1:2:3:4:4000::/66")
+	t.testMergeMixed([]string{"1.2.2.0/25", "1.2.3.128/25", "192.168.0.0/28"}, []string{"1:2:3:4::/64"}, nil, nil, "192.168.0.0/29", "192.168.0.8/29", "1:2:3:4:8000::/65", "1.2.2.0/25", "1.2.3.128/25", "1.2.2.0/25", "1:2:3:4::/66", "1:2:3:4:4000::/66", "")
+	t.testMergeMixed([]string{"1.2.2.0/25", "1.2.3.128/25", "192.168.0.0/28"}, []string{"1:2:3:4::/64"}, nil, nil, "192.168.0.0/29", "192.168.0.8/29", "1:2:3:4:8000::/65", "1.2.2.0/25", "1.2.3.128/25", "1.2.2.0/25", "1:2:3:4::/66", "1:2:3:4:4000::/66", "", "")
+	t.testMergeMixed([]string{"1.2.2.0/25", "1.2.3.128/25", "192.168.0.0/28"}, []string{"1:2:3:4::/64"}, nil, nil, "", "192.168.0.0/29", "192.168.0.8/29", "1:2:3:4:8000::/65", "1.2.2.0/25", "1.2.3.128/25", "1.2.2.0/25", "1:2:3:4::/66", "1:2:3:4:4000::/66", "", "")
+
+	t.testMergeMixed([]string{"1.2.3.0/24", "1.2.4.0/23"}, []string{"1:0-ff:*"}, []string{"1.2.3-5.*"}, nil, "", "1.2.5.0/24", "1:1:*", "1:3-ff:*", "1:0:*", "1.2.4.0/24", "1:2:ffff:*", "1.2.3.0/24", "1:2:0-1:*", "1:2:1-fffe:*")
+	t.testMergeMixed([]string{"1.2.3.0/24", "1.2.4.0/23"}, []string{"1:0-ff:*"}, []string{"1.2.3-5.*"}, nil, "", "", "1.2.5.0/24", "1:1:*", "1:3-ff:*", "1:0:*", "1.2.4.0/24", "1:2:ffff:*", "1.2.3.0/24", "1:2:0-1:*", "1:2:1-fffe:*")
+	t.testMergeMixed([]string{"1.2.3.0/24", "1.2.4.0/23"}, []string{"1:0-ff:*"}, []string{"1.2.3-5.*"}, nil, "", "1.2.5.0/24", "1:1:*", "1:3-ff:*", "1:0:*", "", "1.2.4.0/24", "1:2:ffff:*", "1.2.3.0/24", "1:2:0-1:*", "1:2:1-fffe:*")
+	t.testMergeMixed([]string{"1.2.3.0/24", "1.2.4.0/23"}, []string{"1:0-ff:*"}, []string{"1.2.3-5.*"}, nil, "", "1.2.5.0/24", "1:1:*", "1:3-ff:*", "1:0:*", "1.2.4.0/24", "1:2:ffff:*", "1.2.3.0/24", "1:2:0-1:*", "1:2:1-fffe:*", "")
+	t.testMergeMixed([]string{"1.2.3.0/24", "1.2.4.0/23"}, []string{"1:0-ff:*"}, []string{"1.2.3-5.*"}, nil, "", "", "1.2.5.0/24", "1:1:*", "1:3-ff:*", "1:0:*", "1.2.4.0/24", "1:2:ffff:*", "1.2.3.0/24", "1:2:0-1:*", "1:2:1-fffe:*", "")
+	t.testMergeMixed([]string{"1.2.3.0/24", "1.2.4.0/23"}, []string{"1:0-ff:*"}, []string{"1.2.3-5.*"}, nil, "1.2.5.0/24", "1:1:*", "1:3-ff:*", "1:0:*", "", "", "1.2.4.0/24", "1:2:ffff:*", "1.2.3.0/24", "1:2:0-1:*", "1:2:1-fffe:*")
+	t.testMergeMixed([]string{"1.2.3.0/24", "1.2.4.0/23"}, []string{"1:0-ff:*"}, []string{"1.2.3-5.*"}, nil, "1.2.5.0/24", "1:1:*", "1:3-ff:*", "1:0:*", "1.2.4.0/24", "1:2:ffff:*", "1.2.3.0/24", "1:2:0-1:*", "1:2:1-fffe:*", "", "")
+
+	// sequential merge shorter for both ipv4 and ipv6 with this one
+	t.testMergeMixed(
+		[]string{"1.2.3.0/24", "1.2.4.0/23", "128.0.0.0"}, []string{"1:0-ff:*", "8::2:3:0/112", "8::2:4:0/111"},
+		[]string{"1.2.3-5.*", "128.0.0.0"}, []string{"1:0-ff:*", "8::2:3-5:*"},
+		"1.2.5.0/24", "1:1:*", "1:3-ff:*", "8::2:3-5:*", "1:0:*", "1.2.4.0/24", "128.0.0.0", "1:2:ffff:*", "1.2.3.0/24", "1:2:0-1:*", "1:2:1-fffe:*", "", "")
+
 	t.testMerge("*.*", "0.0.0.0/1", "128.0.0.0/1")
 	t.testMerge("*.*", "128.0.0.0/1", "0.0.0.0/1")
 	t.testMerge("128.0.0.0/1", "128.0.0.0/1", "128.0.0.0/1")
@@ -3227,6 +3251,89 @@ func joinAddrToAddresses(addresses []*ipaddr.IPAddress, another *ipaddr.IPAddres
 	copy(result, addresses)
 	result[len(addresses)] = another
 	return result
+}
+
+func (t ipAddressRangeTester) testMergeMixed(ipv4ResultPref, ipv6ResultPref, ipv4ResultSeq, ipv6ResultSeq []string, addresses ...string) {
+	var ipv4ResultsPref, ipv6ResultsPref, ipv4ResultsSeq, ipv6ResultsSeq, addrs1 []*ipaddr.IPAddress
+	for _, str := range ipv4ResultPref {
+		ipv4ResultsPref = append(ipv4ResultsPref, t.createAddress(str).GetAddress())
+	}
+	for _, str := range ipv6ResultPref {
+		ipv6ResultsPref = append(ipv6ResultsPref, t.createAddress(str).GetAddress())
+	}
+	if ipv4ResultSeq == nil {
+		ipv4ResultsSeq = ipv4ResultsPref
+	} else {
+		for _, str := range ipv4ResultSeq {
+			ipv4ResultsSeq = append(ipv4ResultsSeq, t.createAddress(str).GetAddress())
+		}
+	}
+	if ipv6ResultSeq == nil {
+		ipv6ResultsSeq = ipv6ResultsPref
+	} else {
+		for _, str := range ipv6ResultSeq {
+			ipv6ResultsSeq = append(ipv6ResultsSeq, t.createAddress(str).GetAddress())
+		}
+	}
+	for _, str := range addresses {
+		if str == "" {
+			var zeroVal ipaddr.IPAddress
+			addrs1 = append(addrs1, &zeroVal)
+		} else {
+			addr := t.createAddress(str).GetAddress()
+			addrs1 = append(addrs1, addr)
+		}
+	}
+	ipv4res, ipv6res := ipaddr.MergeToPrefixBlocks(addrs1...)
+	if len(ipv4res) != len(ipv4ResultsPref) {
+		t.addFailure(newIPAddrFailure("merged ipv4 addr len "+strconv.Itoa(len(ipv4res))+" does not match "+strconv.Itoa(len(ipv4ResultsPref)), nil))
+	} else {
+		for i, addr := range ipv4res {
+			expected := ipv4ResultsPref[i]
+			if !addr.Equal(expected) {
+				t.addFailure(newIPAddrFailure("merged addr "+addr.String()+" does not match "+expected.String(), expected))
+			}
+		}
+	}
+	if len(ipv6res) != len(ipv6ResultsPref) {
+		t.addFailure(newIPAddrFailure("merged ipv6 addr len "+strconv.Itoa(len(ipv6res))+" does not match "+strconv.Itoa(len(ipv6ResultsPref)), nil))
+		for _, addr := range ipv6res {
+			fmt.Println("got", addr)
+		}
+		for _, addr := range ipv6ResultsPref {
+			fmt.Println("expected", addr)
+		}
+	} else {
+		for i, addr := range ipv6res {
+			expected := ipv6ResultsPref[i]
+			if !addr.Equal(expected) {
+				t.addFailure(newIPAddrFailure("merged addr "+addr.String()+" does not match "+expected.String(), expected))
+			}
+		}
+	}
+
+	ipv4res, ipv6res = ipaddr.MergeToSequentialBlocks(addrs1...)
+	if len(ipv4res) != len(ipv4ResultsSeq) {
+		t.addFailure(newIPAddrFailure("merged ipv4 seq addr len "+strconv.Itoa(len(ipv4res))+" does not match "+strconv.Itoa(len(ipv4ResultsSeq)), nil))
+	} else {
+		for i, addr := range ipv4res {
+			expected := ipv4ResultsSeq[i]
+			if !addr.Equal(expected) {
+				t.addFailure(newIPAddrFailure("merged addr "+addr.String()+" does not match "+expected.String(), expected))
+			}
+		}
+	}
+	if len(ipv6res) != len(ipv6ResultsSeq) {
+		t.addFailure(newIPAddrFailure("merged ipv6 seq addr len "+strconv.Itoa(len(ipv6res))+" does not match "+strconv.Itoa(len(ipv6ResultsSeq)), nil))
+	} else {
+		for i, addr := range ipv6res {
+			expected := ipv6ResultsSeq[i]
+			if !addr.Equal(expected) {
+				t.addFailure(newIPAddrFailure("merged addr "+addr.String()+" does not match "+expected.String(), expected))
+			}
+		}
+	}
+	t.incrementTestCount()
 }
 
 func (t ipAddressRangeTester) testMergeImpl(result string, prefix bool, addresses ...string) {

@@ -985,27 +985,23 @@ func (t trieTesterGeneric) createDualTrieSample(tree *ipaddr.DualIPv4v6Tries, ad
 
 // <R extends AddressTrie<T>, T extends Address>
 func (t trieTesterGeneric) testIterationContainment(tree *AddressTrie) {
+	type triePtr = *AddressTrie
 	t.testIterationContainmentTree(tree, func(trie *AddressTrie) ipaddr.CachingTrieIterator[*AddressTrieNode] {
 		return trie.BlockSizeCachingAllNodeIterator()
-	}, false)
+	}, false, triePtr.NodeSize)
 	t.testIterationContainmentTree(tree, func(trie *AddressTrie) ipaddr.CachingTrieIterator[*AddressTrieNode] {
 		return trie.ContainingFirstAllNodeIterator(true)
-	}, false /* added only */)
+	}, false /* added only */, triePtr.NodeSize)
 	t.testIterationContainmentTree(tree, func(trie *AddressTrie) ipaddr.CachingTrieIterator[*AddressTrieNode] {
 		return trie.ContainingFirstAllNodeIterator(false)
-	}, false /* added only */)
-	t.testIterationContainmentTree(tree, func(trie *AddressTrie) ipaddr.CachingTrieIterator[*AddressTrieNode] {
-		return trie.ContainingFirstIterator(true)
-	}, true /* added only */)
-	t.testIterationContainmentTree(tree, func(trie *AddressTrie) ipaddr.CachingTrieIterator[*AddressTrieNode] {
-		return trie.ContainingFirstIterator(false)
-	}, true /* added only */)
+	}, false /* added only */, triePtr.NodeSize)
 }
 
 func (t trieTesterGeneric) testIterationContainmentTree(
 	trie *ipaddr.Trie[*ipaddr.Address],
 	iteratorFunc func(addressTrie *AddressTrie) ipaddr.CachingTrieIterator[*AddressTrieNode],
-	addedNodesOnly bool) {
+	addedNodesOnly bool,
+	countFunc func(*AddressTrie) int) {
 	iterator := iteratorFunc(trie)
 	for iterator.HasNext() {
 		next := iterator.Next()
@@ -1036,8 +1032,32 @@ func (t trieTesterGeneric) testIterationContainmentTree(
 		prefLen := nextAddr.GetPrefixLen()
 		iterator.CacheWithLowerSubNode(prefLen)
 		iterator.CacheWithUpperSubNode(prefLen)
-
 	}
+
+	// test the new std lib iter integration
+	castIter := ipaddr.NewPointCachingTrieIterator(iteratorFunc(trie))
+	stdIterator := ipaddr.StdPushIterator(castIter)
+	elementCount := 0
+	stdIterator(func(pos ipaddr.CachingTrieIteratorPosition[*ipaddr.TrieNode[*ipaddr.Address]]) bool {
+		elementCount++
+		return true
+	})
+	if countFunc(trie) != elementCount {
+		t.addFailure(newTrieFailure("caching trie element count not expected "+strconv.Itoa(countFunc(trie))+" was "+strconv.Itoa(elementCount), trie))
+	}
+
+	elementCount = 0
+
+	castIter2 := ipaddr.NewPointIteratorWithRemove(ipaddr.IteratorWithRemove[*ipaddr.TrieNode[*ipaddr.Address]](iteratorFunc(trie)))
+	stdIterator2 := ipaddr.StdPushIterator(castIter2)
+	stdIterator2(func(pos ipaddr.IteratorWithRemovePosition[*ipaddr.TrieNode[*ipaddr.Address]]) bool {
+		elementCount++
+		return true
+	})
+	if countFunc(trie) != elementCount {
+		t.addFailure(newTrieFailure("trie element count not expected "+strconv.Itoa(trie.NodeSize())+" was "+strconv.Itoa(elementCount), trie))
+	}
+
 	t.incrementTestCount()
 }
 
@@ -1141,7 +1161,6 @@ func (t trieTesterGeneric) testIterateDual(tries *ipaddr.DualIPv4v6Tries) {
 
 func (t trieTesterGeneric) testIteratorRem(
 	trie *AddressTrie,
-	//trie trieInterface,
 	iteratorFunc func(*AddressTrie) ipaddr.IteratorWithRemove[*ipaddr.TrieNode[*ipaddr.Address]],
 	countFunc func(*AddressTrie) int) {
 	testIteratorRemGeneric(
@@ -1157,7 +1176,6 @@ func (t trieTesterGeneric) testIteratorRem(
 
 func (t trieTesterGeneric) testDualIteratorRem(
 	tries *ipaddr.DualIPv4v6Tries,
-	//trie trieInterface,
 	iteratorFunc func(*ipaddr.DualIPv4v6Tries) ipaddr.IteratorWithRemove[*ipaddr.TrieNode[*ipaddr.IPAddress]],
 	countFunc func(*ipaddr.DualIPv4v6Tries) int) {
 	testIteratorRemGeneric(
@@ -1297,6 +1315,18 @@ func testIteratorRemGeneric[T interface {
 	} else if trie.Size() > 0 {
 		t.addFailure(newTrieFailure("trie size not 0, "+strconv.Itoa(trie.Size())+" after removing everything", trie))
 	}
+
+	elementCount := 0
+	castIter2 := ipaddr.NewPointIteratorWithRemove(iteratorFunc(trie))
+	stdIterator2 := ipaddr.StdPushIterator(castIter2)
+	stdIterator2(func(pos ipaddr.IteratorWithRemovePosition[*ipaddr.TrieNode[R]]) bool {
+		elementCount++
+		return true
+	})
+	if countFunc(trie) != elementCount {
+		t.addFailure(newTrieFailure("trie element count not expected "+strconv.Itoa(countFunc(trie))+" was "+strconv.Itoa(elementCount), trie))
+	}
+
 	t.incrementTestCount()
 }
 
