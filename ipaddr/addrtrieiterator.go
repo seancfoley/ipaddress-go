@@ -153,15 +153,15 @@ func (iter associativeAddressTrieNodeIterator[T, V]) Next() *AssociativeTrieNode
 
 //
 
-type cachingAssociativeAddressTrieNodeIteratorX[T TrieKeyConstraint[T], V any] struct {
+type cachingAssociativeAddressTrieNodeIterator[T TrieKeyConstraint[T], V any] struct {
 	tree.CachingTrieNodeIterator[trieKey[T], V]
 }
 
-func (iter cachingAssociativeAddressTrieNodeIteratorX[T, V]) Next() *AssociativeTrieNode[T, V] {
+func (iter cachingAssociativeAddressTrieNodeIterator[T, V]) Next() *AssociativeTrieNode[T, V] {
 	return toAssociativeTrieNode[T, V](iter.CachingTrieNodeIterator.Next())
 }
 
-func (iter cachingAssociativeAddressTrieNodeIteratorX[T, V]) Remove() *AssociativeTrieNode[T, V] {
+func (iter cachingAssociativeAddressTrieNodeIterator[T, V]) Remove() *AssociativeTrieNode[T, V] {
 	return toAssociativeTrieNode[T, V](iter.CachingTrieNodeIterator.Remove())
 }
 
