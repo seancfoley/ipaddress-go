@@ -799,7 +799,7 @@ func (t hostTester) hostTest(pass bool, x string) {
 	t.hostTestDouble(pass, addr, true)
 }
 
-var i uint64
+var iint uint64
 
 func (t hostTester) hostTestDouble(pass bool, addr *ipaddr.HostName, doubleTest bool) {
 	t.hostNameTest(pass, addr)
@@ -810,7 +810,7 @@ func (t hostTester) hostTestDouble(pass bool, addr *ipaddr.HostName, doubleTest 
 		//this is because getHost will use the labels but only if they exist already
 		two := t.createParamsHost(addr.String(), addr.GetValidationOptions())
 		var twoString, oneString string
-		myI := atomic.LoadUint64(&i)
+		myI := atomic.LoadUint64(&iint)
 		if myI%2 == 0 {
 			two.GetNormalizedLabels()
 			twoString = two.GetHost()
@@ -821,7 +821,7 @@ func (t hostTester) hostTestDouble(pass bool, addr *ipaddr.HostName, doubleTest 
 			twoString = two.GetHost()
 		}
 		myI++
-		atomic.StoreUint64(&i, myI)
+		atomic.StoreUint64(&iint, myI)
 		if oneString != twoString {
 			t.addFailure(newHostFailure(oneString+" "+twoString, addr))
 		}
