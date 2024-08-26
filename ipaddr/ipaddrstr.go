@@ -603,6 +603,9 @@ func (addrStr *IPAddressString) PrefixContains(other *IPAddressString) bool {
 
 // Contains returns whether the address or subnet identified by this address string contains the address or subnet identified by the given string.
 // If this address string or the given address string is invalid then Contains returns false.
+//
+// With standard subnet and address formats, using the strings alone are enough for this method to return the result.
+// Only with non-standard strings will address objects be constructed to determine the result.
 func (addrStr *IPAddressString) Contains(other *IPAddressString) bool {
 	addrStr = addrStr.init()
 	other = other.init()

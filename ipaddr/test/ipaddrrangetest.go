@@ -3297,12 +3297,6 @@ func (t ipAddressRangeTester) testMergeMixed(ipv4ResultPref, ipv6ResultPref, ipv
 	}
 	if len(ipv6res) != len(ipv6ResultsPref) {
 		t.addFailure(newIPAddrFailure("merged ipv6 addr len "+strconv.Itoa(len(ipv6res))+" does not match "+strconv.Itoa(len(ipv6ResultsPref)), nil))
-		for _, addr := range ipv6res {
-			fmt.Println("got", addr)
-		}
-		for _, addr := range ipv6ResultsPref {
-			fmt.Println("expected", addr)
-		}
 	} else {
 		for i, addr := range ipv6res {
 			expected := ipv6ResultsPref[i]
