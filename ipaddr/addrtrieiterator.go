@@ -26,6 +26,7 @@ type Cached = tree.C
 // That allows you to provide iteration context from a parent to its sub-nodes when iterating,
 // but can only be provided with iterators in which parent nodes are visited before their sub-nodes.
 // The caching and retrieval is done in constant-time.
+// Use NewPointCachingTrieIterator followed by StdPushIterator or StdPullIterator to convert a CachingTrieIterator to a standard library iterator.
 type CachingTrieIterator[T any] interface {
 	IteratorWithRemove[T]
 

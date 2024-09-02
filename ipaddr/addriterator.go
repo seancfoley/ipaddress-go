@@ -17,6 +17,7 @@
 package ipaddr
 
 // Iterator iterates collections, such as subnets and sequential address ranges.
+// Use StdPushIterator or StdPullIterator to convert an Iterator to a standard library iterator.
 type Iterator[T any] interface {
 	// HasNext returns true if there is another item to iterate, false otherwise.
 	HasNext() bool
@@ -26,6 +27,7 @@ type Iterator[T any] interface {
 }
 
 // IteratorWithRemove is an iterator that provides a removal operation.
+// Use NewPointIteratorWithRemove followed by StdPushIterator or StdPullIterator to convert an IteratorWithRemove to a standard library iterator.
 type IteratorWithRemove[T any] interface {
 	Iterator[T]
 
