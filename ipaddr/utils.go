@@ -190,38 +190,21 @@ func flagsFromState(state fmt.State, verb rune) string {
 	return string(vals)
 }
 
-// TODO later when moving up to Go 1.21 you can use generic type cmp.Ordered to make the min/max funcs generic
-// in fact, there are predeclared functions min and max starting with 1.21
+type Ordered interface {
+	~int | ~int8 | ~int16 | ~int32 | ~int64 |
+		~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr |
+		~float32 | ~float64 |
+		~string
+}
 
-func umin(a, b uint) uint {
+func min[T Ordered](a, b T) T {
 	if a < b {
 		return a
 	}
 	return b
 }
 
-func imin(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
-
-func minSegInt(a, b SegInt) SegInt {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-func maxSegInt(a, b SegInt) SegInt {
+func max[T Ordered](a, b T) T {
 	if a > b {
 		return a
 	}

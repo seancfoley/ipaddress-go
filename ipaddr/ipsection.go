@@ -753,8 +753,8 @@ func (section *ipAddressSectionInternal) intersect(other *IPAddressSection) (res
 		higher := seg.getUpperSegmentValue()
 		otherLower := otherSeg.GetSegmentValue()
 		otherHigher := otherSeg.getUpperSegmentValue()
-		lower = maxSegInt(lower, otherLower)
-		higher = minSegInt(higher, otherHigher)
+		lower = max(lower, otherLower)
+		higher = min(higher, otherHigher)
 		segs[i] = createAddressDivision(seg.deriveNewMultiSeg(lower, higher, segPref))
 	}
 	res = deriveIPAddressSectionPrefLen(section.toIPAddressSection(), segs, pref)

@@ -128,7 +128,7 @@ func (grouping *largeDivisionGroupingInternal) calcBytes() (bytes, upperBytes []
 		for totalDivBits := div.GetBitCount(); totalDivBits > 0; totalDivBits -= 64 {
 
 			// grab those 64 bits (from bigBytes and bigUpperBytes) and put them in val and upperVal
-			divBits := imin(totalDivBits, 64)
+			divBits := min(totalDivBits, 64)
 			var divBytes []byte
 			var val, upperVal uint64
 			if len(bigBytes) > 8 {

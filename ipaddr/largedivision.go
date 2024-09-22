@@ -502,7 +502,7 @@ func (div *IPAddressLargeDivision) GetMinPrefixLenForBlock() BitCount {
 			var upperNot big.Int
 			upperOnes := upperNot.Not(upper).TrailingZeroBits()
 			if upperOnes != 0 {
-				prefixedBitCount := BitCount(umin(lowerZeros, upperOnes))
+				prefixedBitCount := BitCount(min(lowerZeros, upperOnes))
 				result -= prefixedBitCount
 			}
 		}
