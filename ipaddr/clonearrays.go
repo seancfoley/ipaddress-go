@@ -95,7 +95,7 @@ func ToIPv6Slice[T interface {
 // The original slice element type can be one of *Address, *IPv4Address, *IPv6Address, *AddressDivisionGrouping,
 // *AddressSection, *IPv4AddressSection, *IPv6AddressSection, *AddressDivision, *AddressSegment, *IPv4AddressSegment, *IPv6AddressSegment, *IPAddressSegment,
 // *SequentialRange, ExtendedSegmentSeries, WrappedAddress, WrappedAddressSection, WrappedIPAddress, IPAddressType, *SequentialRange, or IPAddressSeqRangeType.
-// Each slice element will be converted if the element originated as an IPv6 component, otherwise the element will be converted to nil in the returned slice.
+// Each slice element will be converted if the element originated as an IP component, otherwise the element will be converted to nil in the returned slice.
 func ToIPSlice[T interface {
 	ToIP() IPType
 }, IPType any](orig []T) []IPType {
@@ -104,7 +104,7 @@ func ToIPSlice[T interface {
 
 // ToAddressBaseSlice converts a slice of subnets or addresses into general addresses or subnets not specific to a version or address type.
 // The original slice element type can be one of *Address, *IPv4Address, *IPv6Address, *MACAddress, *IPAddress, or AddressType.
-// Each slice element will be converted if the element originated as an IPv6 component, otherwise the element will be converted to nil in the returned slice.
+// Each slice element will be converted if the element originated as an address component, otherwise the element will be converted to nil in the returned slice.
 func ToAddressBaseSlice[T interface {
 	ToAddressBase() AddrType
 }, AddrType any](orig []T) []AddrType {
