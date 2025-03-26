@@ -1096,8 +1096,8 @@ func (section *ipAddressSectionInternal) getOredSegments(
 				segmentPrefixLength = getSegmentPrefixLength(bitsPerSegment, networkPrefixLength, i)
 				seg = segProducer(i)
 				maskValue = segmentMaskProducer(i)
-				value = seg.getSegmentValue()
-				upperValue = seg.getUpperSegmentValue()
+				origValue, origUpperValue = seg.getSegmentValue(), seg.getUpperSegmentValue()
+				value, upperValue = origValue, origUpperValue
 				if verifyMask {
 					mask64 := uint64(maskValue)
 					val64 := uint64(value)
@@ -1109,7 +1109,6 @@ func (section *ipAddressSectionInternal) getOredSegments(
 					}
 					value = SegInt(masker.GetOredLower(val64, mask64))
 					upperValue = SegInt(masker.GetOredUpper(upperVal64, mask64))
-
 				} else {
 					value |= maskValue
 					upperValue |= maskValue
