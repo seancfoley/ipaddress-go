@@ -190,21 +190,21 @@ func flagsFromState(state fmt.State, verb rune) string {
 	return string(vals)
 }
 
-type Ordered interface {
+type ordered interface {
 	~int | ~int8 | ~int16 | ~int32 | ~int64 |
 		~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr |
 		~float32 | ~float64 |
 		~string
 }
 
-func min[T Ordered](a, b T) T {
+func min[T ordered](a, b T) T {
 	if a < b {
 		return a
 	}
 	return b
 }
 
-func max[T Ordered](a, b T) T {
+func max[T ordered](a, b T) T {
 	if a > b {
 		return a
 	}
