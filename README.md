@@ -18,10 +18,10 @@ IP address and network manipulation, CIDR, address and subnet operations, iterat
 | ------- | ------------- |
 | [1.2.1](https://github.com/seancfoley/ipaddress-go/releases/tag/v1.2.1) | Requires Go 1.12 or higher |
 | [1.4.1](https://github.com/seancfoley/ipaddress-go/releases/tag/v1.4.1) | Requires Go 1.13 or higher |
-| [1.7.0](https://github.com/seancfoley/ipaddress-go/releases/tag/v1.7.0) | Requires Go 1.18 or higher |
+| [1.7.1](https://github.com/seancfoley/ipaddress-go/releases/tag/v1.7.1) | Requires Go 1.18 or higher |
 
 In your go.mod file:\
-require github.com/seancfoley/ipaddress-go v1.7.0
+require github.com/seancfoley/ipaddress-go v1.7.1
 
 In your source file:\
 import "github.com/seancfoley/ipaddress-go/ipaddr"
