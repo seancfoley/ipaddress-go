@@ -753,8 +753,8 @@ func (node *TrieNode[T]) LowerAddedNode(addr T) *TrieNode[T] {
 }
 
 // Lower returns the highest address strictly less than the given address in this sub-trie with this node as the root.
-func (trie *TrieNode[T]) Lower(addr T) T {
-	return trie.lower(addr)
+func (node *TrieNode[T]) Lower(addr T) T {
+	return node.lower(addr)
 }
 
 // FloorAddedNode returns the added node, in this sub-trie with this node as the root, whose address is the highest address less than or equal to the given address.
@@ -763,8 +763,8 @@ func (node *TrieNode[T]) FloorAddedNode(addr T) *TrieNode[T] {
 }
 
 // Floor returns the highest address less than or equal to the given address in this sub-trie with this node as the root.
-func (trie *TrieNode[T]) Floor(addr T) T {
-	return trie.floor(addr)
+func (node *TrieNode[T]) Floor(addr T) T {
+	return node.floor(addr)
 }
 
 // HigherAddedNode returns the added node, in this sub-trie with this node as the root, whose address is the lowest address strictly greater than the given address.
@@ -773,8 +773,8 @@ func (node *TrieNode[T]) HigherAddedNode(addr T) *TrieNode[T] {
 }
 
 // Higher returns the lowest address strictly greater than the given address in this sub-trie with this node as the root.
-func (trie *TrieNode[T]) Higher(addr T) T {
-	return trie.higher(addr)
+func (node *TrieNode[T]) Higher(addr T) T {
+	return node.higher(addr)
 }
 
 // CeilingAddedNode returns the added node, in this sub-trie with this node as the root, whose address is the lowest address greater than or equal to the given address.
@@ -783,8 +783,8 @@ func (node *TrieNode[T]) CeilingAddedNode(addr T) *TrieNode[T] {
 }
 
 // Ceiling returns the lowest address greater than or equal to the given address in this sub-trie with this node as the root.
-func (trie *TrieNode[T]) Ceiling(addr T) T {
-	return trie.ceiling(addr)
+func (node *TrieNode[T]) Ceiling(addr T) T {
+	return node.ceiling(addr)
 }
 
 // Iterator returns an iterator that iterates through the elements of the sub-trie with this node as the root.
@@ -1269,8 +1269,8 @@ func (node *AssociativeTrieNode[T, V]) LowerAddedNode(addr T) *AssociativeTrieNo
 }
 
 // Lower returns the highest address strictly less than the given address in this sub-trie with this node as the root.
-func (trie *AssociativeTrieNode[T, V]) Lower(addr T) T {
-	return trie.lower(addr)
+func (node *AssociativeTrieNode[T, V]) Lower(addr T) T {
+	return node.lower(addr)
 }
 
 // FloorAddedNode returns the added node, in this sub-trie with this node as the root, whose address is the highest address less than or equal to the given address.
@@ -1279,8 +1279,8 @@ func (node *AssociativeTrieNode[T, V]) FloorAddedNode(addr T) *AssociativeTrieNo
 }
 
 // Floor returns the highest address less than or equal to the given address in this sub-trie with this node as the root.
-func (trie *AssociativeTrieNode[T, V]) Floor(addr T) T {
-	return trie.floor(addr)
+func (node *AssociativeTrieNode[T, V]) Floor(addr T) T {
+	return node.floor(addr)
 }
 
 // HigherAddedNode returns the added node, in this sub-trie with this node as the root, whose address is the lowest address strictly greater than the given address.
@@ -1289,8 +1289,8 @@ func (node *AssociativeTrieNode[T, V]) HigherAddedNode(addr T) *AssociativeTrieN
 }
 
 // Higher returns the lowest address strictly greater than the given address in this sub-trie with this node as the root.
-func (trie *AssociativeTrieNode[T, V]) Higher(addr T) T {
-	return trie.higher(addr)
+func (node *AssociativeTrieNode[T, V]) Higher(addr T) T {
+	return node.higher(addr)
 }
 
 // CeilingAddedNode returns the added node, in this sub-trie with this node as the root, whose address is the lowest address greater than or equal to the given address.
@@ -1299,8 +1299,8 @@ func (node *AssociativeTrieNode[T, V]) CeilingAddedNode(addr T) *AssociativeTrie
 }
 
 // Ceiling returns the lowest address greater than or equal to the given address in this sub-trie with this node as the root.
-func (trie *AssociativeTrieNode[T, V]) Ceiling(addr T) T {
-	return trie.ceiling(addr)
+func (node *AssociativeTrieNode[T, V]) Ceiling(addr T) T {
+	return node.ceiling(addr)
 }
 
 // Iterator returns an iterator that iterates through the elements of the sub-trie with this node as the root.
