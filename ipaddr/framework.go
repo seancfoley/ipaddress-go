@@ -600,6 +600,8 @@ var _, _ MACAddressSegmentSeries = &MACAddress{}, &MACAddressSection{}
 // that can be converted to/from the base type AddressSection,
 // including [AddressSection], [IPAddressSection], [IPv4AddressSection], [IPv6AddressSection], and [MACAddressSection].
 type AddressSectionType interface {
+	AddressSegmentSeries
+
 	StandardDivGroupingType
 
 	// Equal returns whether the given address section is equal to this address section.
