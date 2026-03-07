@@ -861,7 +861,7 @@ func (section *addressSectionInternal) toBlock(segmentIndex int, lower, upper Se
 	}
 	maxSegVal := section.GetMaxSegmentValue()
 	for ; i < segCount; i++ {
-		seg := section.GetSegment(segmentIndex)
+		seg := section.GetSegment(i)
 		var lowerVal, upperVal SegInt
 		if i == segmentIndex {
 			lowerVal, upperVal = lower, upper
@@ -871,6 +871,13 @@ func (section *addressSectionInternal) toBlock(segmentIndex int, lower, upper Se
 		if !segsSame(nil, seg.getDivisionPrefixLength(), lowerVal, seg.GetSegmentValue(), upperVal, seg.GetUpperSegmentValue()) {
 			newSegs := createSegmentArray(segCount)
 			section.copySubDivisions(0, i, newSegs)
+			if section.isPrefixed() {
+				for j := 0; j < i; j++ {
+					if ipSeg := newSegs[i].ToIP(); ipSeg != nil {
+						newSegs[i] = ipSeg.withoutPrefixLen().toAddressDivision()
+					}
+				}
+			}
 			newSeg := createAddressDivision(seg.deriveNewMultiSeg(lowerVal, upperVal, nil))
 			newSegs[i] = newSeg
 			var allSeg *AddressDivision
@@ -888,6 +895,9 @@ func (section *addressSectionInternal) toBlock(segmentIndex int, lower, upper Se
 			return createSectionMultiple(newSegs, nil, section.getAddrType(),
 				segmentIndex < segCount-1 || lower != upper)
 		}
+	}
+	if section.isPrefixed() {
+		return section.withoutPrefixLen().toAddressSection()
 	}
 	return section.toAddressSection()
 }
