@@ -17,9 +17,10 @@
 package ipaddr
 
 import (
-	"github.com/seancfoley/ipaddress-go/ipaddr/addrstrparam"
 	"sync"
 	"unsafe"
+
+	"github.com/seancfoley/ipaddress-go/ipaddr/addrstrparam"
 
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
 )
@@ -116,7 +117,7 @@ func (parseData *parsedMACAddress) createSection() (*MACAddressSection, addrerr.
 	for i, normalizedSegmentIndex := 0, 0; i < actualInitialSegmentCount; i++ {
 		lower := addressParseData.getValue(i, keyLower)
 		upper := addressParseData.getValue(i, keyUpper)
-		if format == dotted { //aaa.bbb.ccc.ddd
+		if format == dotted { //aaaa.bbbb.cccc
 			//aabb is becoming aa.bb
 			segLower := SegInt(lower)
 			segUpper := SegInt(upper)

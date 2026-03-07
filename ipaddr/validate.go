@@ -947,7 +947,7 @@ func validateAddress(
 								}
 								rangeFlags |= keyInferredLowerBoundary
 								front = 0
-							} else if frontDigitCount > maxMacChars { // mac dotted segments aaa.bbb.ccc.ddd
+							} else if frontDigitCount > maxMacChars { // mac dotted segments aaaa.bbbb.cccc
 								return &addressStringIndexError{
 									addressStringError{addressError{str: str, key: "ipaddress.error.segment.too.long.at.index"}},
 									frontLeadingZeroStartIndex}

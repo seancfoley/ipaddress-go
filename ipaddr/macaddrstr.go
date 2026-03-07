@@ -77,7 +77,7 @@ var zeroMACAddressString = NewMACAddressString("")
 //   - 6 or 8 bytes in hex representation like "aa:bb:cc:dd:ee:ff"
 //   - The same but with a hyphen separator like "aa-bb-cc-dd-ee-ff" (the range separator in this case becomes '/')
 //   - The same but with space separator like "aa bb cc dd ee ff"
-//   - The dotted representation, 4 sets of 12 bits in hex representation like "aaa.bbb.ccc.ddd"
+//   - The dotted representation, 3 or 4 sets of 16 bits in hex representation like "aaaa.bbbb.cccc" or "aaaa.bbbb.cccc.dddd"
 //   - The 12 or 16 hex representation with no separators like "aabbccddeeff"
 //
 // All of the above range variations also work for each of these ways of representing MAC addresses.
