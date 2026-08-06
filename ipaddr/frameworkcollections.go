@@ -19,7 +19,7 @@ package ipaddr
 import "math/big"
 
 // AddressAggregation represents any type that can represent multiple individual addresses.
-// This includes all address types, since they can represent subnets by making using of ranges within each segment.
+// This includes all address types, since they can represent subnets by making use of ranges within each segment.
 // This includes sequential ranges of addresses.
 // This includes collections of addresses.
 // The interface is satisfied by all these types: *Address, *MACAddress, *IPAddress,
@@ -81,7 +81,7 @@ var _, _, _, _, _, _, _, _, _, _, _, _, _,
 	&IPv6Address{}, &IPv6AddressSeqRange{}, &IPv6AddressSeqRangeList{}, &IPv6AddressContainmentTrie{}
 
 // IPAddressAggregation represents any type that can represent multiple individual IP addresses.
-// This includes all IP address types, since they can represent IP address subnets by making using of ranges within each segment,
+// This includes all IP address types, since they can represent IP address subnets by making use of ranges within each segment,
 // which also includes the representation of CIDR prefix block subnets.
 // This includes sequential ranges of IP addresses.
 // This includes collections of IP addresses.
@@ -106,6 +106,10 @@ var _, _, _, _, _, _, _, _, _, _, _,
 // It is particularly useful to provide full functionality in methods using generic address types.
 // Use this type as a generic type constraint to retain full access to all IP address aggregation functionality in your generic function or method.
 // The type T can be any one of *IPAddress, *IPv4Address, or *IPv6Address
+// The interface is satisfied by all these types: *IPAddress,
+// *IPAddressSeqRange, *IPAddressSeqRangeList, *IPAddressContainmentTrie,
+// *IPv4Address, *IPv4AddressSeqRange, *IPv4AddressSeqRangeList, *IPv4AddressContainmentTrie,
+// *IPv6Address, *IPv6AddressSeqRange, *IPv6AddressSeqRangeList, *IPv6AddressContainmentTrie
 type IPAddressAggregationConstraint[T IPAddressTypeConstraint[T]] interface {
 	IPAddressAggregation
 
@@ -161,6 +165,9 @@ var (
 // or being representable by ranges within each segment, like the address types.
 // A collection may contain any arbitrary set of IP addresses.
 // The difference between collections is the underlying data structures used to accomplish that objective.
+// This interface is satisfied by these types: *IPAddressSeqRangeList, *IPAddressContainmentTrie,
+// *IPv4AddressSeqRangeList, *IPv4AddressContainmentTrie,
+// *IPv6AddressSeqRangeList, *IPv6AddressContainmentTrie
 type IPAddressCollection interface {
 	IPAddressAggregation
 
@@ -181,6 +188,9 @@ var _, _, _, _, _, _ IPAddressCollection = &IPAddressSeqRangeList{}, &IPAddressC
 // It is particularly useful to provide additioal functionality over IPAddressCollection and IPAddressAggregationConstraint in methods using generic address types.
 // Use this type as a generic type constraint to retain full access to all IP address collection functionality in your generic function or method.
 // The type T can be any one of *IPAddress, *IPv4Address, or *IPv6Address
+// This interface is satisfied by these types: *IPAddressSeqRangeList, *IPAddressContainmentTrie,
+// *IPv4AddressSeqRangeList, *IPv4AddressContainmentTrie,
+// *IPv6AddressSeqRangeList, *IPv6AddressContainmentTrie
 type IPAddressCollAddrConstraint[T IPAddressTypeConstraint[T]] interface {
 	IPAddressAggregationConstraint[T]
 
@@ -278,6 +288,9 @@ var (
 // Use this type as a generic type constraint to retain full access to all IP address collection functionality in your generic function or method.
 // The type T can be any one of *IPAddress, *IPv4Address, or *IPv6Address.
 // The type S can be either IPAddressSeqRangeList or IPAddressContainmentTrie.
+// This interface is satisfied by these types: *IPAddressSeqRangeList, *IPAddressContainmentTrie,
+// *IPv4AddressSeqRangeList, *IPv4AddressContainmentTrie,
+// *IPv6AddressSeqRangeList, *IPv6AddressContainmentTrie
 type IPAddressCollConstraint[S IPAddressCollAddrConstraint[T], T IPAddressTypeConstraint[T]] interface {
 	IPAddressCollAddrConstraint[T]
 
