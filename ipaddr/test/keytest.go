@@ -1,9 +1,26 @@
+//
+// Copyright 2022-2026 Sean C Foley
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
 package test
 
 import (
 	"fmt"
-	"github.com/seancfoley/ipaddress-go/ipaddr"
 	"sync/atomic"
+
+	"github.com/seancfoley/ipaddress-go/ipaddr"
 )
 
 type keyTester struct {
@@ -296,7 +313,7 @@ func (t keyTester) testKeys(cached []*ipaddr.Address) {
 
 			if !ip.IsMultiple() && !(ip.IsIPv6() && ip.ToIPv6().HasZone()) {
 				if !ip.IsMultiple() && !ip.IsMax() {
-					oneUp := ip.Increment(1)
+					oneUp := ip.IncrementSingle()
 					ipRange := ipaddr.NewSequentialRange(ip, oneUp)
 					ipRangeBack := ipRange.ToKey().ToSeqRange()
 					if !equals(t, ipRangeBack.GetUpper(), oneUp) {
@@ -323,7 +340,7 @@ func (t keyTester) testKeys(cached []*ipaddr.Address) {
 				equals(t, ipRangeBack.GetUpper(), addrv4)
 
 				if !addrv4.IsMax() {
-					oneUp := addrv4.Increment(1)
+					oneUp := addrv4.IncrementSingle()
 					ipRange := ipaddr.NewSequentialRange(addrv4, oneUp)
 					ipRangeBack := ipRange.ToKey().ToSeqRange()
 					if !equals(t, ipRangeBack.GetUpper(), oneUp) {
@@ -351,7 +368,7 @@ func (t keyTester) testKeys(cached []*ipaddr.Address) {
 				equals(t, ipRangeBack.GetUpper(), addrv6)
 
 				if !addrv6.IsMax() {
-					oneUp := addrv6.Increment(1)
+					oneUp := addrv6.IncrementSingle()
 					ipRange := ipaddr.NewSequentialRange(addrv6, oneUp)
 					ipRangeBack := ipRange.ToKey().ToSeqRange()
 					if !equals(t, ipRangeBack.GetUpper(), oneUp) {

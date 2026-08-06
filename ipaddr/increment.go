@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2024 Sean C Foley
+// Copyright 2020-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -111,18 +111,18 @@ func fastIncrement( // used by IPv6
 		countMinus1 := section.GetCount()
 		countMinus1.Sub(countMinus1, bigOneConst())
 		uincrement := uint64(inc)
-		var maxUint64 big.Int
-		maxUint64.SetUint64(math.MaxUint64)
-		if countMinus1.CmpAbs(&maxUint64) <= 0 {
+		if countMinus1.IsUint64() {
 			longCountMinus1 := countMinus1.Uint64()
 			if longCountMinus1 >= uincrement {
 				if longCountMinus1 == uincrement {
 					return upperProducer()
+				} else if inc == 0 {
+					return lowerProducer()
 				}
-				return incrementRange(section, inc, lowerProducer, prefixLength)
+				return incrementRange(section, inc, prefixLength)
 			}
 			upperValue := section.GetUpperValue()
-			if upperValue.CmpAbs(&maxUint64) <= 0 {
+			if upperValue.IsUint64() {
 				return increment(
 					section,
 					inc,
@@ -134,12 +134,21 @@ func fastIncrement( // used by IPv6
 					upperProducer,
 					prefixLength)
 			}
+		} else {
+			bigInc := big.NewInt(inc)
+			cmp := countMinus1.CmpAbs(bigInc)
+			if cmp >= 0 {
+				if cmp == 0 {
+					return upperProducer()
+				} else if inc == 0 {
+					return lowerProducer()
+				}
+				return incrementRange(section, inc, prefixLength)
+			}
 		}
 	} else {
-		var maxUint64 big.Int
-		maxUint64.SetUint64(math.MaxUint64)
 		value := section.GetValue()
-		if value.CmpAbs(&maxUint64) <= 0 {
+		if value.IsUint64() {
 			return add(lowerProducer(), value.Uint64(), inc, creator, prefixLength)
 		}
 	}
@@ -171,7 +180,10 @@ func increment( // used by IPv4 and MAC, but also IPv6 addresses with prefix ::/
 		if countMinus1 == uIncrement {
 			return upperProducer()
 		}
-		return incrementRange(section, increment, lowerProducer, prefixLength)
+		if increment == 0 {
+			return lowerProducer()
+		}
+		return incrementRange(section, increment, prefixLength)
 	}
 	upperVal := upperValue()
 	if uIncrement <= math.MaxUint64-upperVal {
@@ -205,7 +217,10 @@ func incrementBig( // used by MAC and IPv6
 		}
 		return addBig(upperProducer(), incrementPlus1.Sub(incrementPlus1, count), creator, prefixLength) //
 	}
-	return incrementRange(section, increment, lowerProducer, prefixLength)
+	if increment == 0 {
+		return lowerProducer()
+	}
+	return incrementRange(section, increment, prefixLength)
 }
 
 // this does not handle overflow, overflow should be checked before calling this
@@ -230,18 +245,17 @@ func incrementBigger( // used by MAC and IPv6
 		}
 		return addBig(upperProducer(), incrementPlus1.Sub(incrementPlus1, count), creator, prefixLength)
 	}
-	return incrementRangeBig(section, bigIncrement, lowerProducer, prefixLength)
+	if bigIsZero(bigIncrement) {
+		return lowerProducer()
+	}
+	return incrementRangeBig(section, bigIncrement, prefixLength)
 }
 
 // rangeIncrement the positive value of the number of increments through the range (0 means take lower or upper value in range)
 func incrementRange(
 	section *AddressSection,
 	increment int64,
-	lowerProducer func() *AddressSection,
 	prefixLength PrefixLen) *AddressSection {
-	if increment == 0 {
-		return lowerProducer()
-	}
 	segCount := section.GetSegmentCount()
 
 	var newSegments []*AddressDivision
@@ -302,11 +316,8 @@ func incrementRange(
 func incrementRangeBig(
 	section *AddressSection,
 	increment *big.Int,
-	lowerProducer func() *AddressSection,
 	prefixLength PrefixLen) *AddressSection {
-	if bigIsZero(increment) {
-		return lowerProducer()
-	}
+
 	segCount := section.GetSegmentCount()
 	newSegments := make([]*AddressDivision, segCount)
 	for i := segCount - 1; i >= 0; i-- {
@@ -332,6 +343,186 @@ func incrementRangeBig(
 		}
 	}
 	return createSection(newSegments, prefixLength, section.getAddrType())
+}
+
+func incrementBoundaryOne( // IncrementBoundary MAC
+	section *AddressSection,
+	creator addressSegmentCreator,
+	prefixLength PrefixLen) *AddressSection {
+	return incrementOneGen(section, creator, prefixLength, nil, true, false)
+}
+
+func decrementOne( // Decrement MAC
+	section *AddressSection,
+	creator addressSegmentCreator,
+	prefixLength PrefixLen) *AddressSection {
+	return incrementOneGen(section, creator, prefixLength, nil, false, false)
+}
+
+func incrementOne( // Increment MAC
+	section *AddressSection,
+	creator addressSegmentCreator,
+	prefixLength PrefixLen) *AddressSection {
+	return incrementOneGen(section, creator, prefixLength, nil, true, true)
+}
+
+func incrementBoundaryOneIP( // IncrementBoundary IPv4/IPv6
+	section *AddressSection,
+	creator addressSegmentCreator,
+	prefixLength PrefixLen) *AddressSection {
+	return incrementOneIPGen(section, creator, prefixLength, true, false)
+}
+
+func decrementOneIP( // Decrement IPv4/IPv6
+	section *AddressSection,
+	creator addressSegmentCreator,
+	prefixLength PrefixLen) *AddressSection {
+	return incrementOneIPGen(section, creator, prefixLength, false, false)
+}
+
+func incrementOneIP( // Increment IPv4/IPv6
+	section *AddressSection,
+	creator addressSegmentCreator,
+	prefixLength PrefixLen) *AddressSection {
+	return incrementOneIPGen(section, creator, prefixLength, true, true)
+}
+
+func incrementOneIPGen(
+	section *AddressSection,
+	creator addressSegmentCreator,
+	prefixLength PrefixLen,
+	increment,
+	withinRange bool) *AddressSection {
+	if prefixLength != nil {
+		// supply the prefix length provider to provide prefix for any new segments
+		return incrementOneGen(section, creator, prefixLength, (*AddressSegment).getDivisionPrefixLength, increment, withinRange)
+	}
+	return incrementOneGen(section, creator, nil, nil, increment, withinRange)
+}
+
+func incrementOneGen(
+	section *AddressSection,
+	creator addressSegmentCreator,
+	prefixLength PrefixLen,
+	segPrefixLengthProvider func(*AddressSegment) PrefixLen,
+	increment,
+	withinRange bool) *AddressSection {
+	segCount := section.GetSegmentCount()
+	if segCount > 0 {
+		i := segCount - 1
+		seg := section.GetSegment(i)
+		var limitValue, overValue SegInt
+		max := seg.GetMaxValue()
+		if increment {
+			limitValue = max
+		} else {
+			overValue = max
+		}
+		newSegments := make([]*AddressDivision, segCount)
+		exceededRange, useSegmentPrefixLen, dropSegmentPrefixLen := false, false, false
+		var segPref PrefixLen
+		if segPrefixLengthProvider != nil {
+			dropSegmentPrefixLen = prefixLength == nil
+			useSegmentPrefixLen = !dropSegmentPrefixLen
+		}
+		useUpper := increment && !withinRange
+		for {
+			var segValue SegInt
+			if useUpper {
+				segValue = seg.getUpperSegmentValue()
+			} else {
+				segValue = seg.getSegmentValue()
+			}
+			if segValue != limitValue {
+				if increment {
+					segValue++
+					if withinRange {
+						exceededRange = exceededRange || segValue > seg.getUpperSegmentValue()
+					}
+				} else {
+					segValue--
+				}
+				if useSegmentPrefixLen {
+					segPref = segPrefixLengthProvider(seg)
+				}
+				newSegment := creator.createPrefixSegment(segValue, segPref)
+				newSegments[i] = newSegment
+				for i--; i >= 0; i-- {
+					seg = section.GetSegment(i)
+					if seg.isMultiple() {
+						if exceededRange {
+							return incrementRange(section, 1, prefixLength)
+						}
+						if useUpper {
+							segValue = seg.getUpperSegmentValue()
+						} else {
+							segValue = seg.getSegmentValue()
+						}
+						if useSegmentPrefixLen {
+							segPref = segPrefixLengthProvider(seg)
+						}
+						newSegment = creator.createPrefixSegment(segValue, segPref)
+					} else if dropSegmentPrefixLen && segPrefixLengthProvider(seg) != nil {
+						// any existing segment prefix length must be removed
+						if useUpper {
+							segValue = seg.getUpperSegmentValue()
+						} else {
+							segValue = seg.getSegmentValue()
+						}
+						newSegment = creator.createPrefixSegment(segValue, nil)
+					} else {
+						newSegment = seg.toAddressDivision()
+					}
+					newSegments[i] = newSegment
+				}
+				return createSection(newSegments, prefixLength, section.getAddrType())
+			} else {
+				if useSegmentPrefixLen {
+					segPref = segPrefixLengthProvider(seg)
+				}
+				newSegments[i] = creator.createPrefixSegment(overValue, segPref)
+				exceededRange = withinRange
+			}
+			if i--; i < 0 {
+				break
+			}
+			seg = section.GetSegment(i)
+		}
+	}
+	return nil
+}
+
+// returns true if other's lowest value is one above this section's upper value
+func upperIsAdjacentTo(section, other *AddressSection) bool {
+	segCount := section.GetSegmentCount()
+	if segCount > 0 {
+		i := segCount - 1
+		seg := section.GetSegment(i)
+		limitValue := seg.GetMaxValue()
+		for {
+			segValue, otherValue := seg.getUpperSegmentValue(), other.GetSegment(i).getSegmentValue()
+			if segValue != limitValue {
+				if segValue+1 != otherValue {
+					return false
+				}
+				for i--; i >= 0; i-- {
+					segValue, otherValue = section.GetSegment(i).getUpperSegmentValue(),
+						other.GetSegment(i).getSegmentValue()
+					if segValue != otherValue {
+						return false
+					}
+				}
+				return true
+			} else if otherValue != 0 {
+				return false
+			}
+			if i--; i < 0 {
+				break
+			}
+			seg = section.GetSegment(i)
+		}
+	}
+	return false
 }
 
 // this does not handle overflow, overflow should be checked before calling this
@@ -406,10 +597,10 @@ func enumerateSmall(section, otherSection *AddressSection, low64, low64Upper fun
 func enumerateSmallImpl(section, otherSection *AddressSection, low64, low64Upper func(*AddressSection) uint64) (val int64, exists bool) {
 	if section.isMultiple() {
 		if !section.IsSequential() {
-			if compareSegmentValues(true, section, otherSection) < 0 {
+			if compareSegValues(true, section, otherSection) < 0 {
 				result := (int64(low64(otherSection)) - int64(low64Upper(section))) + int64(section.getCachedCount().Uint64()-1)
 				return result, true
-			} else if compareSegmentValues(false, section, otherSection) <= 0 {
+			} else if compareSegValues(false, section, otherSection) <= 0 {
 				var total uint64
 				var cumulativeSize uint64 = 1
 				for i := section.GetSegmentCount() - 1; ; i-- {
@@ -434,7 +625,7 @@ func enumerateSmallImpl(section, otherSection *AddressSection, low64, low64Upper
 func enumerateBig(section, otherSection *AddressSection, low64, low64Upper func(*AddressSection) uint64) *big.Int {
 	if otherSection.isMultiple() {
 		return nil
-	} else if otherSection == section { // both the same individual address
+	} else if otherSection == section { // both the same individual address section
 		return bigZero()
 	}
 	// If the initial segments beyond 64 bits match, which is probably the case for most subnets,

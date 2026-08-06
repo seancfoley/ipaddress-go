@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2024 Sean C Foley
+// Copyright 2020-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -920,7 +920,11 @@ func (div *addressDivisionInternal) IsFullRange() bool {
 }
 
 func (div *addressDivisionInternal) compareSize(other AddressItem) int {
-	return compareCount(div.toAddressDivision(), other)
+	return compareCounts(div.toAddressDivision(), other)
+}
+
+func (div *addressDivisionInternal) IsSequential() bool {
+	return true
 }
 
 //// end needed for godoc / pkgsite
@@ -1187,14 +1191,6 @@ func testRange(lowerValue, upperValue, finalUpperValue, networkMask, hostMask Di
 func divsSame(onePref, twoPref PrefixLen, oneVal, twoVal, oneUpperVal, twoUpperVal DivInt) bool {
 	return onePref.Equal(twoPref) &&
 		oneVal == twoVal && oneUpperVal == twoUpperVal
-}
-
-func divValsSame(oneVal, twoVal, oneUpperVal, twoUpperVal DivInt) bool {
-	return oneVal == twoVal && oneUpperVal == twoUpperVal
-}
-
-func divValSame(oneVal, twoVal DivInt) bool {
-	return oneVal == twoVal
 }
 
 func cacheStrPtr(cachedString **string, strPtr *string) {

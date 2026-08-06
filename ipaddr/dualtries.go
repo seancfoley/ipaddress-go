@@ -1,5 +1,5 @@
 //
-// Copyright 2024 Sean C Foley
+// Copyright 2024-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -126,6 +126,18 @@ func (tries *baseDualIPv4v6Tries[V]) ElementContains(addr *IPAddress) bool {
 	return addressFuncOp(addr, tries.ipv4Trie.elementContains, tries.ipv6Trie.elementContains)
 }
 
+// ElementOverlaps checks if a prefix block subnet or address in the dual tries overlaps the given subnet or address.
+// When it comes to prefix blocks, a prefix block overlapping another means one contains the other,
+// so this returns true if the given address or subnet either contains or is contained by an address or subnet in one of the dual tries.
+//
+// If the argument is not a single address nor prefix block, this method will panic.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+//
+// Returns true if the subnet or address overlaps a trie element, false otherwise.
+func (tries *baseDualIPv4v6Tries[V]) ElementOverlaps(addr *IPAddress) bool {
+	return addressFuncOp(addr, tries.ipv4Trie.elementOverlaps, tries.ipv6Trie.elementOverlaps)
+}
+
 func (tries *baseDualIPv4v6Tries[V]) elementsContaining(addr *IPAddress) *containmentPath[*IPAddress, V] {
 	return addressFuncOp(addr, tries.ipv4Trie.elementsContaining, tries.ipv6Trie.elementsContaining)
 }
@@ -136,6 +148,14 @@ func (tries *baseDualIPv4v6Tries[V]) elementsContainedBy(addr *IPAddress) *tree.
 
 func (tries *baseDualIPv4v6Tries[V]) removeElementsContainedBy(addr *IPAddress) *tree.BinTrieNode[trieKey[*IPAddress], V] {
 	return addressFuncOp(addr, tries.ipv4Trie.removeElementsContainedBy, tries.ipv6Trie.removeElementsContainedBy)
+}
+
+func (tries *baseDualIPv4v6Tries[V]) removeElementsIntersectedBy(addr *IPAddress) *tree.BinTrieNode[trieKey[*IPAddress], V] {
+	return addressFuncOp(addr, tries.ipv4Trie.removeElementsIntersectedBy, tries.ipv6Trie.removeElementsIntersectedBy)
+}
+
+func (tries *baseDualIPv4v6Tries[V]) elementsIntersectedBy(addr *IPAddress) *tree.BinTrieNode[trieKey[*IPAddress], V] {
+	return addressFuncOp(addr, tries.ipv4Trie.elementsIntersectedBy, tries.ipv6Trie.elementsIntersectedBy)
 }
 
 func (tries *baseDualIPv4v6Tries[V]) getAddedNode(addr *IPAddress) *tree.BinTrieNode[trieKey[*IPAddress], V] {
@@ -162,6 +182,10 @@ func (tries *baseDualIPv4v6Tries[V]) ShortestPrefixMatch(addr *IPAddress) *IPAdd
 
 func (tries *baseDualIPv4v6Tries[V]) addNode(addr *IPAddress) *tree.BinTrieNode[trieKey[*IPAddress], V] {
 	return addressFuncOp(addr, tries.ipv4Trie.addNode, tries.ipv6Trie.addNode)
+}
+
+func (tries *baseDualIPv4v6Tries[V]) addIfNoElementsContaining(addr *IPAddress) *tree.BinTrieNode[trieKey[*IPAddress], V] {
+	return addressFuncOp(addr, tries.ipv4Trie.addIfNoElementsContaining, tries.ipv6Trie.addIfNoElementsContaining)
 }
 
 func (tries *baseDualIPv4v6Tries[V]) addTrie(trie *trieNode[*IPAddress, V]) *tree.BinTrieNode[trieKey[*IPAddress], V] {
@@ -358,6 +382,28 @@ func (tries *DualIPv4v6Tries) RemoveElementsContainedBy(addr *IPAddress) *TrieNo
 	return toAddressTrieNode(tries.removeElementsContainedBy(addr))
 }
 
+// RemoveElementsIntersectedBy will remove any element of the dual tries trie whose address key intersects the given address, sharing individual addresses,
+// and all child elements of that trie node, whether those child elements intersect or not.
+//
+// If the argument is not a single address nor prefix block, this method will panic.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+//
+// Returns the root node of the subtrie that was removed from the trie, or nil if nothing was removed.
+
+func (tries *DualIPv4v6Tries) RemoveElementsIntersectedBy(addr *IPAddress) *TrieNode[*IPAddress] {
+	return toAddressTrieNode(tries.removeElementsIntersectedBy(addr))
+}
+
+// ElementsIntersectedBy will return the highest-level node in the dual tries whose address key intersects the given address, sharing individual addresses.
+//
+// If the argument is not a single address nor prefix block, this method will panic.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+//
+// Returns the root node of the subtrie that intersects, or nil if no address key intersects.
+func (tries *DualIPv4v6Tries) ElementsIntersectedBy(addr *IPAddress) *TrieNode[*IPAddress] {
+	return toAddressTrieNode(tries.elementsIntersectedBy(addr))
+}
+
 // GetAddedNode gets the trie node corresponding to the added address key.
 //
 // If the argument is not a single address nor prefix block, this method will panic.
@@ -386,6 +432,18 @@ func (tries *DualIPv4v6Tries) ShortestPrefixMatchNode(addr *IPAddress) *TrieNode
 // The new or existing node for the address is returned.
 func (tries *DualIPv4v6Tries) AddNode(addr *IPAddress) *TrieNode[*IPAddress] {
 	return toAddressTrieNode(tries.addNode(addr))
+}
+
+// AddIfNoElementsContaining adds the address or subnet to the dual trie if it is not contained by an existing element.
+//
+// The address must match the same type and version of any existing addresses already in the trie.
+//
+// If the argument is not a single address nor prefix block, this method will panic.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+//
+// The new or existing node for the address is returned.
+func (tries *DualIPv4v6Tries) AddIfNoElementsContaining(addr *IPAddress) *TrieNode[*IPAddress] {
+	return toAddressTrieNode(tries.addIfNoElementsContaining(addr))
 }
 
 // AddTrie adds nodes for the address keys from the trie with the argument trie root.
@@ -562,6 +620,28 @@ func (tries *DualIPv4v6AssociativeTries[V]) RemoveElementsContainedBy(addr *IPAd
 	return toAssociativeTrieNode(tries.removeElementsContainedBy(addr))
 }
 
+// RemoveElementsIntersectedBy will remove any element of the dual trie whose address key intersects the given address, sharing individual addresses,
+// and all child elements of that trie node, whether those child elements intersect or not.
+//
+// If the argument is not a single address nor prefix block, this method will panic.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+//
+// Returns the root node of the subtrie that was removed from the trie, or nil if nothing was removed.
+
+func (tries *DualIPv4v6AssociativeTries[V]) RemoveElementsIntersectedBy(addr *IPAddress) *AssociativeTrieNode[*IPAddress, V] {
+	return toAssociativeTrieNode(tries.removeElementsIntersectedBy(addr))
+}
+
+// ElementsIntersectedBy will return the highest-level node in the dual tries whose address key intersects the given address, sharing individual addresses.
+//
+// If the argument is not a single address nor prefix block, this method will panic.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+//
+// Returns the root node of the subtrie that intersects, or nil if no address key intersects.
+func (tries *DualIPv4v6AssociativeTries[V]) ElementsIntersectedBy(addr *IPAddress) *AssociativeTrieNode[*IPAddress, V] {
+	return toAssociativeTrieNode(tries.elementsIntersectedBy(addr))
+}
+
 // GetAddedNode gets the associative trie node corresponding to the added address key.
 //
 // If the argument is not a single address nor prefix block, this method will panic.
@@ -590,6 +670,18 @@ func (tries *DualIPv4v6AssociativeTries[V]) ShortestPrefixMatchNode(addr *IPAddr
 // The new or existing node for the address is returned.
 func (tries *DualIPv4v6AssociativeTries[V]) AddNode(addr *IPAddress) *AssociativeTrieNode[*IPAddress, V] {
 	return toAssociativeTrieNode(tries.addNode(addr))
+}
+
+// AddIfNoElementsContaining adds the address or subnet to the dual trie if it is not contained by an existing element.
+//
+// The address must match the same type and version of any existing addresses already in the trie.
+//
+// If the argument is not a single address nor prefix block, this method will panic.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+//
+// The new or existing node for the address is returned.
+func (tries *DualIPv4v6AssociativeTries[V]) AddIfNoElementsContaining(addr *IPAddress) *AssociativeTrieNode[*IPAddress, V] {
+	return toAssociativeTrieNode(tries.addIfNoElementsContaining(addr))
 }
 
 // AddTrie adds nodes for the address keys from the trie with the argument trie root.
@@ -727,8 +819,6 @@ func (tries *DualIPv4v6AssociativeTries[V]) Put(addr *IPAddress, value V) (V, bo
 // The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
 //
 // Returns the node for the added address, whether it was already in the trie or not.
-//
-// If you wish to know whether the node was already there when adding, use PutNew, or before adding you can use GetAddedNode.
 func (tries *DualIPv4v6AssociativeTries[V]) PutNode(addr *IPAddress, value V) *AssociativeTrieNode[*IPAddress, V] {
 	return toAssociativeTrieNode(addressFuncDoubArgOp(addr, value, tries.ipv4Trie.putNode, tries.ipv6Trie.putNode))
 }

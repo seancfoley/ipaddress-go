@@ -1,0 +1,323 @@
+//
+// Copyright 2026 Sean C Foley
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+package ipaddr
+
+import "math/big"
+
+// AddressAggregation represents any type that can represent multiple individual addresses.
+// This includes all address types, since they can represent subnets by making using of ranges within each segment.
+// This includes sequential ranges of addresses.
+// This includes collections of addresses.
+// The interface is satisfied by all these types: *Address, *MACAddress, *IPAddress,
+// *IPAddressSeqRange, *IPAddressSeqRangeList, *IPAddressContainmentTrie,
+// *IPv4Address, *IPv4AddressSeqRange, *IPv4AddressSeqRangeList, *IPv4AddressContainmentTrie,
+// *IPv6Address, *IPv6AddressSeqRange, *IPv6AddressSeqRangeList, *IPv6AddressContainmentTrie
+type AddressAggregation interface { // this is the type used by equality in containers (and maybe others) - cannot combine with AddressItemAggregation
+	AddressItemAggregation
+
+	addressAggr
+}
+
+// IsEmpty returns true if the aggregation has no elements.
+// Much like the len function, it handles nil, returning true for nil interfaces and nil pointer types.
+func IsEmpty(aggregation AddressAggregation) bool {
+	switch other := aggregation.(type) {
+	case nil:
+		return true
+	case *IPAddress:
+		return other == nil
+	case *IPv4Address:
+		return other == nil
+	case *IPv6Address:
+		return other == nil
+	case *MACAddress:
+		return other == nil
+	case *IPAddressSeqRange:
+		return other == nil
+	case *IPv4AddressSeqRange:
+		return other == nil
+	case *IPv6AddressSeqRange:
+		return other == nil
+	case *IPAddressContainmentTrie:
+		return other == nil || other.IsEmpty()
+	case *IPv4AddressContainmentTrie:
+		return other == nil || other.IsEmpty()
+	case *IPv6AddressContainmentTrie:
+		return other == nil || other.IsEmpty()
+	case *IPAddressSeqRangeList:
+		return other == nil || other.IsEmpty()
+	case *IPv4AddressSeqRangeList:
+		return other == nil || other.IsEmpty()
+	case *IPv6AddressSeqRangeList:
+		return other == nil || other.IsEmpty()
+	case AddressType, IPAddressSeqRangeType:
+		return false
+	case IPAddressCollection:
+		return other.IsEmpty()
+	default:
+		return other.GetCount().Sign() == 0
+	}
+}
+
+var _, _, _, _, _, _, _, _, _, _, _, _, _,
+	_ AddressAggregation = &Address{},
+	&MACAddress{},
+	&IPAddress{}, &IPAddressSeqRange{}, &IPAddressSeqRangeList{}, &IPAddressContainmentTrie{},
+	&IPv4Address{}, &IPv4AddressSeqRange{}, &IPv4AddressSeqRangeList{}, &IPv4AddressContainmentTrie{},
+	&IPv6Address{}, &IPv6AddressSeqRange{}, &IPv6AddressSeqRangeList{}, &IPv6AddressContainmentTrie{}
+
+// IPAddressAggregation represents any type that can represent multiple individual IP addresses.
+// This includes all IP address types, since they can represent IP address subnets by making using of ranges within each segment,
+// which also includes the representation of CIDR prefix block subnets.
+// This includes sequential ranges of IP addresses.
+// This includes collections of IP addresses.
+// The interface is satisfied by all these types: *IPAddress,
+// *IPAddressSeqRange, *IPAddressSeqRangeList, *IPAddressContainmentTrie,
+// *IPv4Address, *IPv4AddressSeqRange, *IPv4AddressSeqRangeList, *IPv4AddressContainmentTrie,
+// *IPv6Address, *IPv6AddressSeqRange, *IPv6AddressSeqRangeList, *IPv6AddressContainmentTrie
+type IPAddressAggregation interface {
+	AddressAggregation
+
+	rangeAggr
+}
+
+var _, _, _, _, _, _, _, _, _, _, _,
+	_ IPAddressAggregation = &IPAddress{}, &IPAddressSeqRange{}, &IPAddressSeqRangeList{}, &IPAddressContainmentTrie{},
+	&IPv4Address{}, &IPv4AddressSeqRange{}, &IPv4AddressSeqRangeList{}, &IPv4AddressContainmentTrie{},
+	&IPv6Address{}, &IPv6AddressSeqRange{}, &IPv6AddressSeqRangeList{}, &IPv6AddressContainmentTrie{}
+
+// IPAddressAggregationConstraint constrains IPAddressAggregation, restricting it to a single generic address type,
+// rather than representing any one of multiple IP address types.
+// At the same time, IPAddressAggregationConstraint expands the available methods beyond those offered by IPAddressAggregation.
+// It is particularly useful to provide full functionality in methods using generic address types.
+// Use this type as a generic type constraint to retain full access to all IP address aggregation functionality in your generic function or method.
+// The type T can be any one of *IPAddress, *IPv4Address, or *IPv6Address
+type IPAddressAggregationConstraint[T IPAddressTypeConstraint[T]] interface {
+	IPAddressAggregation
+
+	// Get returns the address at the given index into the sorted collection.
+	// The index of zero returns the first address.
+	//
+	// If the index is negative, or the index exceeds GetCount() - 1, Get will panic.  It is much like indexing a slice or array.
+	Get(int64) T
+
+	// GetBig returns the address at the given index into the sorted collection.
+	// The index of zero returns the first address.
+	//
+	// If the index is negative, or the index exceeds GetCount() - 1, Get will panic.  It is much like indexing a slice or array.
+	GetBig(*big.Int) T
+
+	// Iterator returns an iterator to iterate through the individual addressesin the collection in order.
+	//
+	// Use the function ipaddr.StdPushIterator to convert the returned iterator to a standard library iter.Seq
+	Iterator() Iterator[T]
+
+	// SpanningPrefixBlockIterator returns an iterator to iterate over the minimal set of prefix blocks that spans the aggregation of addresses, no less and no more, in order
+	SpanningPrefixBlockIterator() Iterator[T]
+
+	// GetLower returns the individual address with the lowest numeric value in the collection
+	GetLower() T
+
+	// GetLower returns the individual address with the highest numeric value in the collection
+	GetUpper() T
+
+	// GetLowerAndUpper returns the individual addresses with the lowest and highest numeric values in the collection
+	GetLowerAndUpper() (lower, upper T)
+
+	// CoverWithSequentialRange returns the unique sequential range of minimal size that includes all the addresses in this collection.
+	// If there are no addresses in this collection, then nil is returned.
+	//
+	// The result will represent the same set of addresses if and only if the set of addresses in this collection are sequential, in which case IsSequential returns true.
+	CoverWithSequentialRange() *SequentialRange[T]
+
+	// CoverWithPrefixBlock returns the unique CIDR prefix block subnet or individual address of minimal size that includes all the addresses in this collection.
+	// If there are no addresses in this collection, then nil is returned.
+	CoverWithPrefixBlock() T
+}
+
+var (
+	_, _, _, _ IPAddressAggregationConstraint[*IPAddress]   = &IPAddress{}, &IPAddressSeqRange{}, &IPAddressSeqRangeList{}, &IPAddressContainmentTrie{}
+	_, _, _, _ IPAddressAggregationConstraint[*IPv4Address] = &IPv4Address{}, &IPv4AddressSeqRange{}, &IPv4AddressSeqRangeList{}, &IPv4AddressContainmentTrie{}
+	_, _, _, _ IPAddressAggregationConstraint[*IPv6Address] = &IPv6Address{}, &IPv6AddressSeqRange{}, &IPv6AddressSeqRangeList{}, &IPv6AddressContainmentTrie{}
+)
+
+// IPAddressCollection represents an arbitrary collection of IP addresses.
+// Unlike IPAddressAggregation, the collection need not follow any pattern or limitation,
+// such as being sequential like IP address sequential ranges,
+// or being representable by ranges within each segment, like the address types.
+// A collection may contain any arbitrary set of IP addresses.
+// The difference between collections is the underlying data structures used to accomplish that objective.
+type IPAddressCollection interface {
+	IPAddressAggregation
+
+	// IsEmpty returns true if the collection is empty
+	IsEmpty() bool
+
+	// Clear empties the collection
+	Clear()
+}
+
+var _, _, _, _, _, _ IPAddressCollection = &IPAddressSeqRangeList{}, &IPAddressContainmentTrie{},
+	&IPv4AddressSeqRangeList{}, &IPv4AddressContainmentTrie{},
+	&IPv6AddressSeqRangeList{}, &IPv6AddressContainmentTrie{}
+
+// IPAddressCollAddrConstraint constrains IPAddressCollection, restricting it to a single generic IP address type,
+// rather than representing any one of multiple IP address types.
+// At the same time, IPAddressCollAddrConstraint expands the available methods beyond those offered by IPAddressCollection.
+// It is particularly useful to provide additioal functionality over IPAddressCollection and IPAddressAggregationConstraint in methods using generic address types.
+// Use this type as a generic type constraint to retain full access to all IP address collection functionality in your generic function or method.
+// The type T can be any one of *IPAddress, *IPv4Address, or *IPv6Address
+type IPAddressCollAddrConstraint[T IPAddressTypeConstraint[T]] interface {
+	IPAddressAggregationConstraint[T]
+
+	IPAddressCollection
+
+	// OverlapsAddress returns true if and only the given individual address or subnet contains at least one individual address that is also in the collection.
+	OverlapsAddress(T) bool
+
+	// OverlapsSeqRange returns true if and only if the given sequential range contains at least one address that is also in the collection.
+	OverlapsSeqRange(*SequentialRange[T]) bool
+
+	// EnumerateAddress returns the distance of the given address from the initial and lowest address in the collection.  It indicates where an address sits relative to the collection ordering.
+	//
+	//	If within or above the addresses in collection, it is the distance to the lower boundary of the collection.  If below the collection, it returns the number of addresses following the address to the initial address in the collection, as a negative number.
+	//
+	// You can call Contains or you can compare with GetCount to check for containment.
+	// An IP address is in the collection if 0 <= Enumerate(IP Address) < GetCount.
+	//
+	// If the address is above the lower boundary and below the upper boundary of the collection, but is not within a prefix block in the collection, then this method returns nil.
+	//
+	// Returns nil when the argument is a multi-valued subnet. The argument must be an individual address.
+	//
+	// Returns nil when the collection is empty.
+	//
+	// Returns nil when the address version of the given address does not match the addresses in this collection.
+	EnumerateAddress(T) *big.Int
+
+	// ContainsAddress returns true if and only if this collection contains all the individual addresses in the given address or subnet.
+	ContainsAddress(T) bool
+
+	// ContainsSeqRange returns true if and only if this collection contains all the individual addresses in the given sequential range.
+	ContainsSeqRange(*SequentialRange[T]) bool
+
+	// Add adds the address to the collection, if not already in the collection.
+	//
+	// If the address version does match existing addresses in the collection, the address is not added.
+	//
+	// Returns whether addresses were added, whether the collection was changed.
+	Add(T) bool
+
+	// Remove removes the given address from the collection.  It returns true if the collection was changed.
+	// It returns false if the address was not in the collection.
+	Remove(T) bool
+
+	// AddSeqRange sdds the addresses in the sequential range to the collection, if not already in the collection.
+	//
+	// If the address version of the addresses in the collection does match the version of addresses in the given range, this method panics.
+	//
+	// Returns whether at least one address in the given sequential range was added, whether the collection was changed.
+	AddSeqRange(*SequentialRange[T]) bool
+
+	// RemoveSeqRange removes all the addresses in the sequential range from the collection.
+	// Returns true if the collection was changed.
+	RemoveSeqRange(*SequentialRange[T]) bool
+
+	// RemoveAt removes the individual address at the given index into the lists of addresses.  Returns that address.
+	// Similar to Get but also removes the address found.
+	//
+	// If the index is negative or larger than GetCount() - 1, this method panics.
+	RemoveAt(int64) T
+
+	// RemoveAt removes the individual address at the given index into the lists of addresses.  Returns that address.
+	// Similar to GetBig but also removes the address found.
+	//
+	// If the index is negative or larger than GetCount() - 1, this method panics.
+	RemoveAtBig(*big.Int) T
+
+	// Lower returns the highest address in the collection strictly less than the lowest address in the given address or subnet.
+	Lower(T) T
+
+	// Floor returns the highest address in the collection less than or equal to the lowest address in the given address or subnet.
+	Floor(T) T
+
+	// Higher returns the lowest address in the collection strictly greater than the highest address in the given address or subnet.
+	Higher(T) T
+
+	// Ceiling returns the lowest address in the collection greater than or equal to the highest address in the given address or subnet.
+	Ceiling(T) T
+}
+
+var (
+	_, _ IPAddressCollAddrConstraint[*IPAddress]   = &IPAddressSeqRangeList{}, &IPAddressContainmentTrie{}
+	_, _ IPAddressCollAddrConstraint[*IPv4Address] = &IPv4AddressSeqRangeList{}, &IPv4AddressContainmentTrie{}
+	_, _ IPAddressCollAddrConstraint[*IPv6Address] = &IPv6AddressSeqRangeList{}, &IPv6AddressContainmentTrie{}
+)
+
+//TODO LATER consider possibly adding ContainsCollection and OverlapsCollection, much like you have EqualAggregation which works with all aggregation types.
+// I think ContainsAggregation and OverlapsAggregation is likely going too far, you don't want to search for collections inside seq ranges or subnets
+// But allowing for the checking of seq range list inside containment trie or vice versa, perhaps that is worthwhile
+
+// IPAddressCollConstraint further constrains IPAddressCollAddrConstraint.
+// It has a constraint for itself, as well as for the IP address type.
+// It expands the available methods beyond those offered by IPAddressCollAddrConstraint and IPAddressCollection.
+// It is particularly useful to provide full functionality in methods using generic address types.
+// Use this type as a generic type constraint to retain full access to all IP address collection functionality in your generic function or method.
+// The type T can be any one of *IPAddress, *IPv4Address, or *IPv6Address.
+// The type S can be either IPAddressSeqRangeList or IPAddressContainmentTrie.
+type IPAddressCollConstraint[S IPAddressCollAddrConstraint[T], T IPAddressTypeConstraint[T]] interface {
+	IPAddressCollAddrConstraint[T]
+
+	// Clone makes a copy of the collection
+	Clone() S
+
+	// NewEmpty creates a new ContainmentTrieBase using the same element type T
+	NewEmpty() S
+
+	// Equal returns true if and only if this collection has the same set of individual addresses as the given collectioj
+	Equal(S) bool
+
+	// ComplementIntoNew returns a new collection comprising all the addresses not contained in this collection.
+	//
+	// If this list is empty and is not restricted to a single IP version of IPv4 or IPv6,
+	// then the IP version is ambiguous, so the complement is indeterminate, in which case nil is returned.
+	ComplementIntoNew() S
+
+	// JoinIntoNew creates a new containment trie that has all addresses in this containment trie and the provided containment trie.
+	JoinIntoNew(S) S
+
+	// RemoveIntoNew produces a new containment trie that has the addresses in this collection that are not in the given collection.
+	RemoveIntoNew(S) S
+
+	// IntersectIntoNew produces a new containment tries that is the intersection of this collection with the given collection.
+	IntersectIntoNew(S) S
+
+	// ContainsOther returns whether this collection contains all addresses in the given collection
+	ContainsOther(S) bool
+
+	// OverlapsOther returns whether there is any overlap of this collection with the given collection
+	OverlapsOther(S) bool
+}
+
+var (
+	_ IPAddressCollConstraint[*IPAddressSeqRangeList, *IPAddress]     = &IPAddressSeqRangeList{}
+	_ IPAddressCollConstraint[*IPv4AddressSeqRangeList, *IPv4Address] = &IPv4AddressSeqRangeList{}
+	_ IPAddressCollConstraint[*IPv6AddressSeqRangeList, *IPv6Address] = &IPv6AddressSeqRangeList{}
+
+	_ IPAddressCollConstraint[*IPAddressContainmentTrie, *IPAddress]     = &IPAddressContainmentTrie{}
+	_ IPAddressCollConstraint[*IPv4AddressContainmentTrie, *IPv4Address] = &IPv4AddressContainmentTrie{}
+	_ IPAddressCollConstraint[*IPv6AddressContainmentTrie, *IPv6Address] = &IPv6AddressContainmentTrie{}
+)

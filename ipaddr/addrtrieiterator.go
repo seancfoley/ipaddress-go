@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2024 Sean C Foley
+// Copyright 2020-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -164,6 +164,43 @@ func (iter cachingAssociativeAddressTrieNodeIterator[T, V]) Next() *AssociativeT
 
 func (iter cachingAssociativeAddressTrieNodeIterator[T, V]) Remove() *AssociativeTrieNode[T, V] {
 	return toAssociativeTrieNode[T, V](iter.CachingTrieNodeIterator.Remove())
+}
+
+// addressKeyIterator implements the address iterator for containment tries
+type containmentTrieIterator[T ipAddressTypeConstraint[T]] struct {
+	trie          *Trie[T]
+	changeTracker *tree.ChangeTracker
+	currentChange tree.Change
+
+	trieIterator,
+	blockIterator Iterator[T]
+}
+
+func (iter *containmentTrieIterator[T]) HasNext() bool {
+	return (iter.blockIterator != nil && iter.blockIterator.HasNext()) || iter.trieIterator.HasNext()
+}
+
+func (iter *containmentTrieIterator[T]) Next() T {
+	blockIterator := iter.blockIterator
+	if blockIterator != nil && blockIterator.HasNext() {
+		currentTracker := iter.trie.changeTracker()
+		originalTracker := iter.changeTracker
+		// if the current change tracker is no longer the same, that means the root of the trie has changed
+		if currentTracker != originalTracker {
+			originalTracker.ChangePanic()
+		}
+		// now we check if there has been a non-root change, any other change
+		originalTracker.ChangedSince(iter.currentChange)
+		return blockIterator.Next()
+	}
+	block := iter.trieIterator.Next()
+	if block.IsMultiple() {
+		blockIterator = block.WithoutPrefixLen().Iterator()
+		iter.blockIterator = blockIterator
+		return blockIterator.Next()
+	}
+	iter.blockIterator = nil
+	return block
 }
 
 //

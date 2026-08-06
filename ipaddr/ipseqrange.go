@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2024 Sean C Foley
+// Copyright 2020-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,52 +32,10 @@ const DefaultSeqRangeSeparator = " -> "
 
 type rangeCache struct {
 	cachedCount *big.Int
+	isMultiple  bool
 }
 
-// SequentialRangeConstraint is the generic type constraint for an IP address sequential range.
-type SequentialRangeConstraint[T any] interface {
-	AddressType // cannot use IPAddressType here because ToAddressString() results in a circular dependency, SequentialRangeConstraint -> IPAddressType -> IPAddressString -> SequentialRange -> SequentialRangeConstraint
-
-	IPAddressRange
-
-	comparable
-
-	ToIP() *IPAddress
-
-	PrefixedConstraint[T]
-
-	Increment(int64) T
-	GetLower() T
-	GetUpper() T
-
-	CoverWithPrefixBlockTo(T) T
-	SpanWithPrefixBlocksTo(T) []T
-	SpanWithSequentialBlocksTo(T) []T
-	SpanWithPrefixBlocks() []T
-
-	IncludesZeroHostLen(BitCount) bool
-	IncludesMaxHostLen(BitCount) bool
-
-	Format(state fmt.State, verb rune)
-
-	rangeIterator(upper T,
-		valsAreMultiple bool,
-		prefixLen PrefixLen,
-		segProducer func(addr *IPAddress, index int) *IPAddressSegment,
-		segmentIteratorProducer func(seg *IPAddressSegment, index int) Iterator[*IPAddressSegment],
-		segValueComparator func(seg1, seg2 *IPAddress, index int) bool,
-		networkSegmentIndex,
-		hostSegmentIndex int,
-		prefixedSegIteratorProducer func(seg *IPAddressSegment, index int) Iterator[*IPAddressSegment],
-	) Iterator[T]
-
-	// returns whether two addresses, already known to be the same version and address type, are equal
-	equalsSameVersion(AddressType) bool
-
-	getLowestHighestAddrs() (lower, upper T)
-
-	getAddrType() addrType
-}
+type SequentialRangeConstraint[T any] ipAddressTypeConstraint[T]
 
 var (
 	_ SequentialRange[*IPAddress]
@@ -106,27 +64,27 @@ var (
 type SequentialRange[T SequentialRangeConstraint[T]] struct {
 	lower,
 	upper T
-	isMultiple bool // set on construction, even for zero values
-	cache      *rangeCache
+	cache *rangeCache
 }
 
-func nilConvert[T SequentialRangeConstraint[T]]() (t T) {
+func nilConvert[T SequentialRangeConstraint[T]](t T) (result T, isNil bool) {
 	anyt := any(t)
-	if _, ok := anyt.(*IPv6Address); ok {
-		t = any(zeroIPv6).(T)
-	} else if _, ok := anyt.(*IPv4Address); ok {
-		t = any(zeroIPv4).(T)
-	} else if _, ok := anyt.(*IPAddress); ok {
-		t = any(zeroIPAddr).(T)
+	if val, ok := anyt.(*IPv6Address); ok && val == nil {
+		isNil = true
+		result = any(zeroIPv6).(T)
+	} else if val, ok := anyt.(*IPv4Address); ok && val == nil {
+		isNil = true
+		result = any(zeroIPv4).(T)
+	} else if val, ok := anyt.(*IPAddress); ok && val == nil {
+		isNil = true
+		result = any(zeroIPAddr).(T)
 	}
 	return
 }
 
 func (rng *SequentialRange[T]) init() *SequentialRange[T] {
-	var t T
-	if rng.lower == t { // nil for pointers
-		t = nilConvert[T]()
-		zeroSeqRange := newSequRange(t, t)
+	if newVal, isNil := nilConvert(rng.lower); isNil {
+		zeroSeqRange := newSequRange(newVal, newVal)
 		return zeroSeqRange
 	}
 	return rng
@@ -212,11 +170,9 @@ func (rng *SequentialRange[T]) IsSequential() bool {
 //
 // Use GetMinPrefixLenForBlock to determine whether there is a prefix length for which this method returns true.
 func (rng *SequentialRange[T]) ContainsPrefixBlock(prefixLen BitCount) bool {
+	rng = rng.init()
 	lower := rng.lower
 	upper := rng.upper
-	if lower == upper { // also handles zero-value case nil lower and upper
-		return true
-	}
 	prefixLen = checkSubnet(lower, prefixLen)
 	divCount := lower.GetDivisionCount()
 	bitsPerSegment := lower.GetBitsPerSegment()
@@ -246,11 +202,9 @@ func (rng *SequentialRange[T]) ContainsPrefixBlock(prefixLen BitCount) bool {
 //
 // Use GetPrefixLenForSingleBlock to determine whether there is a prefix length for which this method returns true.
 func (rng *SequentialRange[T]) ContainsSinglePrefixBlock(prefixLen BitCount) bool {
+	rng = rng.init()
 	lower := rng.lower
 	upper := rng.upper
-	if lower == upper { // also handles zero-value case nil lower and upper
-		return true
-	}
 	prefixLen = checkSubnet(lower, prefixLen)
 	var prevBitCount BitCount
 	divCount := lower.GetDivisionCount()
@@ -393,7 +347,7 @@ func (rng *SequentialRange[T]) GetCount() *big.Int {
 
 // IsMultiple returns whether this range represents a range of multiple addresses.
 func (rng *SequentialRange[T]) IsMultiple() bool {
-	return rng != nil && rng.isMultiple
+	return rng != nil && rng.cache != nil && rng.cache.isMultiple
 }
 
 // String implements the [fmt.Stringer] interface,
@@ -463,6 +417,32 @@ func (rng *SequentialRange[T]) GetLower() T {
 // GetUpper returns the highest address in the range, the one with the highest numeric value.
 func (rng *SequentialRange[T]) GetUpper() T {
 	return rng.init().upper
+}
+
+// GetLowerAndUpper returns the lowest and highest addresses in the range, the ones with the lowest and highest numeric values.
+func (rng *SequentialRange[T]) GetLowerAndUpper() (lower, upper T) {
+	rng = rng.init()
+	return rng.lower, rng.upper
+}
+
+func (rng *SequentialRange[T]) GetBig(index *big.Int) T {
+	if index.Sign() < 0 || index.Cmp(rng.getCachedCount(false)) >= 0 {
+		outOfBounds()
+	}
+	return rng.GetLower().IncrementBig(index)
+}
+
+func (rng *SequentialRange[T]) Get(index int64) T {
+	if index < 0 || uint64(index) >= rng.getIPv4Count() {
+		outOfBounds()
+	}
+	return rng.GetLower().Increment(index)
+}
+
+// getIPv4Count is equivalent to GetCount but returns a uint64
+func (rng *SequentialRange[T]) getIPv4Count() uint64 {
+	lower, upper := rng.GetLowerAndUpper()
+	return uint64(upper.ToIP().ToIPv4().Uint32Value()-lower.ToIP().ToIPv4().Uint32Value()) + 1
 }
 
 // GetBitCount returns the number of bits in each address in the range.
@@ -538,43 +518,43 @@ func (rng *SequentialRange[T]) CopyUpperBytes(bytes []byte) []byte {
 }
 
 // Contains returns whether this range contains all addresses in the given address or subnet.
-func (rng *SequentialRange[T]) Contains(other IPAddressType) bool {
-	if rng == nil {
-		return other == nil || other.ToAddressBase() == nil
-	} else if other == nil {
-		return true
+func (rng *SequentialRange[T]) Contains(other AddressType) bool {
+	if rng == nil || other == nil {
+		return false
 	}
-	otherAddr := other.ToIP()
-	if otherAddr == nil {
-		return true
+	otherAddr := other.ToAddressBase().ToIP()
+	if otherAddr == nil { // not an IP address
+		// three cases:
+		// address is not an IP type - above N/A, here false
+		// address is not the right IP type but is a nil ptr - above true (incorrectly), here true (incorrectly)
+		// address is the right IP type, but is a nil ptr - above true, here true
+		return false
 	}
 	rng = rng.init()
-
 	lower := rng.lower
 	if lower.getAddrType() != otherAddr.getAddrType() {
 		return false
 	}
-	return compareLowIPAddressValues(otherAddr.GetLower(), rng.lower) >= 0 &&
-		compareLowIPAddressValues(otherAddr.GetUpper(), rng.upper) <= 0
+	return compareLowerValuesDifferentTypes(otherAddr, rng.lower) >= 0 &&
+		compareUpperValuesDifferentTypes(otherAddr, rng.upper) <= 0
 }
 
 // ContainsRange returns whether all the addresses in the given sequential range are also contained in this sequential range.
 func (rng *SequentialRange[T]) ContainsRange(other IPAddressSeqRangeType) bool {
-	if rng == nil {
-		return other == nil || other.ToIP() == nil
-	} else if other == nil {
-		return true
+	if rng == nil || other == nil {
+		return false
 	}
 	otherRange := other.ToIP()
 	if otherRange == nil {
-		return true
+		return false
 	}
 	rng = rng.init()
 	if rng.lower.getAddrType() != otherRange.lower.getAddrType() {
 		return false
 	}
-	return compareLowIPAddressValues(otherRange.GetLower(), rng.lower) >= 0 &&
-		compareLowIPAddressValues(otherRange.GetUpper(), rng.upper) <= 0
+	otherLower, otherUpper := otherRange.GetLowerAndUpper()
+	return compareLowerValuesDifferentTypes(otherLower, rng.lower) >= 0 &&
+		compareLowerValuesDifferentTypes(otherUpper, rng.upper) <= 0
 }
 
 // Enumerate indicates where an address sits relative to the range ordering.
@@ -592,12 +572,19 @@ func (rng *SequentialRange[T]) ContainsRange(other IPAddressSeqRangeType) bool {
 //   - rng.Increment(rng.Enumerate(newAddr)) = newAddr
 //
 // If the given address is not the same version as this range, then nil is returned.
-func (rng *SequentialRange[T]) Enumerate(other IPAddressType) *big.Int {
+func (rng *SequentialRange[T]) Enumerate(address AddressType) *big.Int {
+	addr, isNil, ok := ConvertAddressTypeCheckNil[T](address)
+	if !ok || isNil || rng == nil {
+		return nil
+	}
+	return rng.enumerate(addr)
+}
+
+func (rng *SequentialRange[T]) enumerate(other T) *big.Int {
 	lower := rng.GetLower()
-	otherIpAddr := other.ToIP()
-	if otherIpAddr == lower.ToIP() {
+	if lower.Equal(other) {
 		return bigZero()
-	} else if other == rng.GetUpper().ToIP() {
+	} else if rng.GetUpper().Equal(other) {
 		count := rng.GetCount()
 		return count.Sub(count, bigOneConst())
 	}
@@ -608,16 +595,79 @@ func (rng *SequentialRange[T]) Enumerate(other IPAddressType) *big.Int {
 // Two sequential address ranges are equal if their lower and upper range boundaries are equal.
 func (rng *SequentialRange[T]) Equal(other IPAddressSeqRangeType) bool {
 	if rng == nil {
-		return other == nil || other.ToIP() == nil
+		return other == nil || other.ToIP() == nil // nil contains
 	} else if other == nil {
-		return false
+		return false //  nil contains
 	}
 	rng = rng.init()
 	otherRange := other.ToIP()
 	if otherRange == nil {
 		return false
 	}
-	return rng.lower.Equal(otherRange.GetLower()) && rng.upper.Equal(otherRange.GetUpper())
+	if rng.IsMultiple() {
+		if !otherRange.IsMultiple() {
+			return false
+		}
+		otherLower, otherUpper := otherRange.GetLowerAndUpper()
+		lower, upper := rng.GetLowerAndUpper()
+		if lower.getAddrType() != otherLower.getAddrType() {
+			return false
+		}
+		return compareLowerValuesDifferentTypes(otherLower, lower) == 0 &&
+			compareLowerValuesDifferentTypes(otherUpper, upper) == 0
+	}
+	return !otherRange.IsMultiple() && rng.lower.Equal(otherRange.GetLower())
+}
+
+// EqualAggregation returns true if and only if this sequential range of addresses has the same set of individual addresses as the given aggregation of addresses
+func (rng *SequentialRange[T]) EqualAggregation(otherAggregation AddressAggregation) bool {
+	if rng == nil {
+		return IsEmpty(otherAggregation)
+	}
+	switch other := otherAggregation.(type) {
+	case nil:
+		return IsEmpty(rng)
+	case IPAddressType:
+		return rng.equalAddr(other)
+	case IPAddressSeqRangeType:
+		return rng.Equal(other)
+	case *IPAddressContainmentTrie:
+		return other.equalRange(rng)
+	case *IPv4AddressContainmentTrie:
+		return other.equalRange(rng)
+	case *IPv6AddressContainmentTrie:
+		return other.equalRange(rng)
+	case *IPAddressSeqRangeList:
+		return other.equalRange(rng)
+	case *IPv4AddressSeqRangeList:
+		return other.equalRange(rng)
+	case *IPv6AddressSeqRangeList:
+		return other.equalRange(rng)
+	default:
+		return equalAggregation(rng, otherAggregation)
+	}
+}
+
+func (rng *SequentialRange[T]) equalAddr(other IPAddressType) bool {
+	if rng == nil {
+		return isEmptyAddr(other)
+	} else if other == nil {
+		return false
+	}
+	otherAddr := other.ToAddressBase()
+	if otherAddr == nil {
+		return false
+	}
+	if otherAddr.IsSequential() {
+		if otherAddr.IsMultiple() {
+			return rng.IsMultiple() &&
+				compareLowerValuesDifferentTypes(otherAddr, rng.lower) == 0 &&
+				compareUpperValuesDifferentTypes(otherAddr, rng.upper) == 0
+		}
+		return !rng.IsMultiple() &&
+			compareLowerValuesDifferentTypes(otherAddr, rng.lower) == 0
+	}
+	return false
 }
 
 // Compare returns a negative integer, zero, or a positive integer if this sequential address range is less than, equal, or greater than the given item.
@@ -642,7 +692,7 @@ func (rng *SequentialRange[T]) CompareSize(other AddressItem) int {
 		// we have size 0, other has size >= 1
 		return -1
 	}
-	return compareCount(rng, other)
+	return compareCounts(rng, other)
 }
 
 // GetValue returns the lowest address in the range, the one with the lowest numeric value, as an integer.
@@ -655,6 +705,136 @@ func (rng *SequentialRange[T]) GetUpperValue() *big.Int {
 	return rng.GetUpper().GetValue()
 }
 
+func rangeIterator(
+	lower, upper *IPAddress,
+	valsAreMultiple bool,
+	prefixLen PrefixLen,
+	segProducer func(addr *IPAddress, index int) *IPAddressSegment,
+	segmentIteratorProducer func(seg *IPAddressSegment, index int) Iterator[*IPAddressSegment],
+	segValueComparator func(seg1, seg2 *IPAddress, index int) bool,
+	networkSegmentIndex,
+	hostSegmentIndex int,
+	prefixedSegIteratorProducer func(seg *IPAddressSegment, index int) Iterator[*IPAddressSegment],
+) Iterator[*Address] {
+	divCount := lower.GetSegmentCount()
+
+	// at any given point in time, this list provides an iterator for the segment at each index
+	segIteratorProducerList := make([]func() Iterator[*IPAddressSegment], divCount)
+
+	// at any given point in time, finalValue[i] is true if and only if we have reached the very last value for segment i - 1
+	// when that happens, the next iterator for the segment at index i will be the last
+	finalValue := make([]bool, divCount+1)
+
+	// here is how the segment iterators will work:
+	// the low and high values of the range at each segment are low, high
+	// the maximum possible values for any segment are min, max
+	// we first find the first k >= 0 such that low != high for the segment at index k
+
+	//	the initial set of iterators at each index are as follows:
+	//    for i < k finalValue[i] is set to true right away.
+	//		we create an iterator from seg = new Seg(low)
+	//    for i == k we create a wrapped iterator from Seg(low, high), wrapper will set finalValue[i] once we reach the final value of the iterator
+	//    for i > k we create an iterator from Seg(low, max)
+	//
+	// after the initial iterator has been supplied, any further iterator supplied for the same segment is as follows:
+	//    for i <= k, there was only one iterator, there will be no further iterator
+	//    for i > k,
+	//	  	if i == 0 or of if flagged[i - 1] is true, we create a wrapped iterator from Seg(low, high), wrapper will set finalValue[i] once we reach the final value of the iterator
+	//      otherwise we create an iterator from Seg(min, max)
+	//
+	// By following these rules, we iterate through all possible addresses
+
+	notDiffering := true
+	finalValue[0] = true
+	var allSegShared *IPAddressSegment
+	for i := 0; i < divCount; i++ {
+		var segIteratorProducer func(seg *IPAddressSegment, index int) Iterator[*IPAddressSegment]
+		if prefixedSegIteratorProducer != nil && i >= networkSegmentIndex {
+			segIteratorProducer = prefixedSegIteratorProducer
+		} else {
+			segIteratorProducer = segmentIteratorProducer
+		}
+		lowerSeg := segProducer(lower, i)
+		indexi := i
+		if notDiffering {
+			notDiffering = segValueComparator(lower, upper, i)
+			if notDiffering {
+				// there is only one iterator and it produces only one value
+				finalValue[i+1] = true
+				iterator := segIteratorProducer(lowerSeg, i)
+				segIteratorProducerList[i] = func() Iterator[*IPAddressSegment] { return iterator }
+			} else {
+				// in the first differing segment the only iterator will go from segment value of lower address to segment value of upper address
+				iterator := segIteratorProducer(
+					createAddressDivision(lowerSeg.deriveNewMultiSeg(lowerSeg.getSegmentValue(), upper.GetGenericSegment(i).GetSegmentValue(), nil)).ToIP(),
+					i)
+				wrappedFinalIterator := &wrappedIterator{
+					iterator:   iterator,
+					finalValue: finalValue,
+					indexi:     indexi,
+				}
+				segIteratorProducerList[i] = func() Iterator[*IPAddressSegment] { return wrappedFinalIterator }
+			}
+		} else {
+			// in the second and all following differing segments, rather than go from segment value of lower address to segment value of upper address
+			// we go from segment value of lower address to the max seg value the first time through
+			// then we go from the min value of the seg to the max seg value each time until the final time,
+			// the final time we go from the min value to the segment value of upper address
+			// we know it is the final time through when the previous iterator has reached its final value, which we track
+
+			// the first iterator goes from the segment value of lower address to the max value of the segment
+			firstIterator := segIteratorProducer(
+				createAddressDivision(lowerSeg.deriveNewMultiSeg(lowerSeg.getSegmentValue(), lower.GetMaxSegmentValue(), nil)).ToIP(),
+				i)
+
+			// the final iterator goes from 0 to the segment value of our upper address
+			finalIterator := segIteratorProducer(
+				createAddressDivision(lowerSeg.deriveNewMultiSeg(0, upper.GetGenericSegment(i).GetSegmentValue(), nil)).ToIP(),
+				i)
+
+			// the wrapper iterator detects when the final iterator has reached its final value
+			wrappedFinalIterator := &wrappedIterator{
+				iterator:   finalIterator,
+				finalValue: finalValue,
+				indexi:     indexi,
+			}
+			if allSegShared == nil {
+				allSegShared = createAddressDivision(lowerSeg.deriveNewMultiSeg(0, lower.GetMaxSegmentValue(), nil)).ToIP()
+			}
+			// all iterators after the first iterator and before the final iterator go from 0 the max segment value,
+			// and there will be many such iterators
+			finalIteratorProducer := func() Iterator[*IPAddressSegment] {
+				if finalValue[indexi] {
+					return wrappedFinalIterator
+				}
+				return segIteratorProducer(allSegShared, indexi)
+			}
+			segIteratorProducerList[i] = func() Iterator[*IPAddressSegment] {
+				//the first time through, we replace the iterator producer so the first iterator used only once (ie we remove this function from the list)
+				segIteratorProducerList[indexi] = finalIteratorProducer
+				return firstIterator
+			}
+		}
+	}
+	iteratorProducer := func(iteratorIndex int) Iterator[*AddressSegment] {
+		iter := segIteratorProducerList[iteratorIndex]()
+		return wrappedSegmentIterator[*IPAddressSegment]{iter}
+	}
+	return rangeAddrIterator(
+		false,
+		lower.ToAddressBase(),
+		prefixLen,
+		valsAreMultiple,
+		rangeSegmentsIterator(
+			divCount,
+			iteratorProducer,
+			networkSegmentIndex,
+			hostSegmentIndex,
+			iteratorProducer,
+		),
+	)
+}
+
 // Iterator provides an iterator to iterate through the individual addresses of this address range.
 //
 // Call GetCount for the count.
@@ -664,12 +844,13 @@ func (rng *SequentialRange[T]) Iterator() Iterator[T] {
 	}
 	rng = rng.init()
 	lower := rng.lower
-	if !rng.isMultiple {
+	if !rng.IsMultiple() {
 		return &singleIterator[T]{original: lower}
 	}
 	divCount := lower.GetSegmentCount()
-	return lower.rangeIterator(
-		rng.upper,
+	return lower.iteratorWrapper(rangeIterator(
+		lower.ToIP(),
+		rng.upper.ToIP(),
 		false,
 		nil,
 		(*IPAddress).GetSegment,
@@ -681,7 +862,12 @@ func (rng *SequentialRange[T]) Iterator() Iterator[T] {
 		},
 		divCount-1,
 		divCount,
-		nil)
+		nil))
+}
+
+// AddressIterator is the same as Iterator while satisying the AddressAggregation interface
+func (rng *SequentialRange[T]) AddressIterator() Iterator[AddressType] {
+	return addrTypeIterator[T]{rng.Iterator()}
 }
 
 type segPrefData struct {
@@ -694,7 +880,7 @@ type segPrefData struct {
 func (rng *SequentialRange[T]) PrefixBlockIterator(prefLength BitCount) Iterator[T] {
 	rng = rng.init()
 	lower := rng.lower
-	if !rng.isMultiple {
+	if !rng.IsMultiple() {
 		return &singleIterator[T]{original: lower.ToPrefixBlockLen(prefLength)}
 	}
 	prefLength = checkSubnet(lower, prefLength)
@@ -708,34 +894,36 @@ func (rng *SequentialRange[T]) PrefixBlockIterator(prefLength BitCount) Iterator
 		segPrefs[i] = segPrefData{segPrefLength, bitsPerSegment - segPrefLength.bitCount()}
 	}
 	hostSegIndex := getHostSegmentIndex(prefLength, bytesPerSegment, bitsPerSegment)
-	return lower.rangeIterator(
-		rng.upper,
-		true,
-		cacheBitCount(prefLength),
-		(*IPAddress).GetSegment,
-		func(seg *IPAddressSegment, index int) Iterator[*IPAddressSegment] {
-			return seg.Iterator()
-		},
-		func(addr1, addr2 *IPAddress, index int) bool {
-			segPref := segPrefs[index]
-			if segPref.prefLen == nil {
-				return addr1.GetSegment(index).GetSegmentValue() == addr2.GetSegment(index).GetSegmentValue()
-			}
-			shift := segPref.shift
-			return addr1.GetSegment(index).GetSegmentValue()>>uint(shift) == addr2.GetSegment(index).GetSegmentValue()>>uint(shift)
-
-		},
-		networkSegIndex,
-		hostSegIndex,
-		func(seg *IPAddressSegment, index int) Iterator[*IPAddressSegment] {
-			segPref := segPrefs[index]
-			segPrefLen := segPref.prefLen
-			if segPrefLen == nil {
+	return lower.iteratorWrapper(
+		rangeIterator(
+			lower.ToIP(),
+			rng.upper.ToIP(),
+			true,
+			cacheBitCount(prefLength),
+			(*IPAddress).GetSegment,
+			func(seg *IPAddressSegment, index int) Iterator[*IPAddressSegment] {
 				return seg.Iterator()
-			}
-			return seg.PrefixedBlockIterator(segPrefLen.bitCount())
-		},
-	)
+			},
+			func(addr1, addr2 *IPAddress, index int) bool {
+				segPref := segPrefs[index]
+				if segPref.prefLen == nil {
+					return addr1.GetSegment(index).GetSegmentValue() == addr2.GetSegment(index).GetSegmentValue()
+				}
+				shift := segPref.shift
+				return addr1.GetSegment(index).GetSegmentValue()>>uint(shift) == addr2.GetSegment(index).GetSegmentValue()>>uint(shift)
+
+			},
+			networkSegIndex,
+			hostSegIndex,
+			func(seg *IPAddressSegment, index int) Iterator[*IPAddressSegment] {
+				segPref := segPrefs[index]
+				segPrefLen := segPref.prefLen
+				if segPrefLen == nil {
+					return seg.Iterator()
+				}
+				return seg.PrefixedBlockIterator(segPrefLen.bitCount())
+			},
+		))
 }
 
 // PrefixIterator provides an iterator to iterate through the individual prefixes of the given prefix length in this address range,
@@ -754,7 +942,7 @@ func (rng *SequentialRange[T]) PrefixBlockIterator(prefLength BitCount) Iterator
 func (rng *SequentialRange[T]) PrefixIterator(prefLength BitCount) Iterator[*SequentialRange[T]] {
 	rng = rng.init()
 	lower := rng.lower
-	if !rng.isMultiple {
+	if !rng.IsMultiple() {
 		return &singleIterator[*SequentialRange[T]]{original: rng}
 	}
 	prefLength = checkSubnet(lower, prefLength)
@@ -769,8 +957,8 @@ func (rng *SequentialRange[T]) PrefixIterator(prefLength BitCount) Iterator[*Seq
 // isContainedBy indicates if the range is contained by the address
 func isContainedBy(rng IPAddressSeqRangeType, other *IPAddress) bool {
 	if rng == nil {
-		return true
-	} else if other == nil {
+		return false
+	} else if other == nil || other.ToIP() == nil {
 		return false
 	}
 	lower := rng.GetLowerIPAddress()
@@ -803,17 +991,26 @@ func isContainedBy(rng IPAddressSeqRangeType, other *IPAddress) bool {
 	return true
 }
 
-// OverlapsAddress indicates whether this range is the same type and version as the given address and whether it overlaps with the given address, containing at least one individual address common to both.
+// OverlapsAddr returns true if and only the given individual address or subnet contains at least one individual address that is also in this sequential range of addresses.
+// Implements the IPAddressAggregation interface.
+func (rng *SequentialRange[T]) OverlapsAddr(other AddressType) bool {
+	if a, ok := any(other).(IPAddressType); ok {
+		return rng.OverlapsAddress(a)
+	}
+	return false
+}
+
+// OverlapsAddress returns true if and only the given individual address or subnet contains at least one individual address that is also in this sequential range of addresses.
+// Implements the IPAddressCollAddrConstraint interface.
 func (rng *SequentialRange[T]) OverlapsAddress(other IPAddressType) bool {
-	if rng == nil {
-		return true
-	} else if other == nil {
-		return true
+	if rng == nil || other == nil {
+		return false
 	}
 	otherAddr := other.ToIP()
-	if otherAddr == nil {
-		return true
+	if otherAddr == nil { // not an IP address
+		return false
 	}
+
 	rng = rng.init()
 	lower := rng.lower.ToIP()
 	if lower.getAddrType() != otherAddr.getAddrType() {
@@ -872,13 +1069,26 @@ func (rng *SequentialRange[T]) OverlapsAddress(other IPAddressType) bool {
 
 // Overlaps returns true if this sequential range overlaps with the given sequential range.
 func (rng *SequentialRange[T]) Overlaps(other *SequentialRange[T]) bool {
-	rng = rng.init()
-	other = other.init()
-	if rng.lower.getAddrType() != other.lower.getAddrType() {
+	return rng != nil && other != nil && rng.overlaps(other)
+}
+
+func (rng *SequentialRange[T]) overlaps(other *SequentialRange[T]) bool {
+	lower, upper := rng.GetLowerAndUpper()
+	otherLower, otherUpper := other.GetLowerAndUpper()
+	if lower.getAddrType() != otherLower.getAddrType() {
 		return false
 	}
-	return compareLowIPAddressValues(other.GetLower(), rng.upper) <= 0 &&
-		compareLowIPAddressValues(other.GetUpper(), rng.lower) >= 0
+	return overlapsCheck(lower, upper, otherLower, otherUpper)
+}
+
+func overlapsCheck[T SequentialRangeConstraint[T]](lower, upper, otherLower, otherUpper T) bool {
+	return compareLowerValues(otherLower, upper) <= 0 && compareLowerValues(otherUpper, lower) >= 0
+}
+
+// OverlapsRange returns true if this sequential range overlaps with the given sequential range.
+func (rng *SequentialRange[T]) OverlapsRange(other IPAddressSeqRangeType) bool {
+	r, isNil, ok := ConvertRangeTypeCheckNil[T](other)
+	return ok && !isNil && rng != nil && rng.overlaps(r)
 }
 
 // Intersect returns the intersection of this range with the given range, a range which includes those addresses found in both.
@@ -891,23 +1101,28 @@ func (rng *SequentialRange[T]) Intersect(other *SequentialRange[T]) *SequentialR
 	}
 	otherLower, otherUpper := other.GetLower(), other.GetUpper()
 	lower, upper := rng.lower, rng.upper
-	if compareLowIPAddressValues(lower, otherLower) <= 0 {
-		if compareLowIPAddressValues(upper, otherUpper) >= 0 { // l, ol, ou, u
+	if compareLowerValues(lower, otherLower) <= 0 {
+		if compareLowerValues(upper, otherUpper) >= 0 { // l, ol, ou, u
 			return other
 		}
-		comp := compareLowIPAddressValues(upper, otherLower)
+		comp := compareLowerValues(upper, otherLower)
 		if comp < 0 { // l, u, ol, ou
 			return nil
 		}
 		return newSequRangeUnchecked(otherLower, upper, comp != 0) // l, ol, u,  ou
-	} else if compareLowIPAddressValues(otherUpper, upper) >= 0 {
+	} else if compareLowerValues(otherUpper, upper) >= 0 {
 		return rng
 	}
-	comp := compareLowIPAddressValues(otherUpper, lower)
+	comp := compareLowerValues(otherUpper, lower)
 	if comp < 0 {
 		return nil
 	}
 	return newSequRangeUnchecked(lower, otherUpper, comp != 0)
+}
+
+// CoverWithSequentialRange implements the IPAddressAggregationConstraint interface
+func (rng *SequentialRange[T]) CoverWithSequentialRange() *SequentialRange[T] {
+	return rng
 }
 
 // CoverWithPrefixBlock returns the minimal-size prefix block that covers all the addresses in this range.
@@ -923,6 +1138,11 @@ func (rng *SequentialRange[T]) SpanWithPrefixBlocks() []T {
 	return rng.lower.SpanWithPrefixBlocksTo(rng.upper)
 }
 
+// SpanningPrefixBlockIterator returns the result of SpanWithPrefixBlocks as an iterator.
+func (rng *SequentialRange[T]) SpanningPrefixBlockIterator() Iterator[T] {
+	return &sliceIterator[T]{rng.SpanWithPrefixBlocks()}
+}
+
 // SpanWithSequentialBlocks produces the smallest slice of sequential blocks that cover the same set of addresses as this range.
 // This slice can be shorter than that produced by SpanWithPrefixBlocks and is never longer.
 func (rng *SequentialRange[T]) SpanWithSequentialBlocks() []T {
@@ -930,12 +1150,17 @@ func (rng *SequentialRange[T]) SpanWithSequentialBlocks() []T {
 	return rng.lower.SpanWithSequentialBlocksTo(rng.upper)
 }
 
+// SpanningSeqBlockIterator returns the result of SpanWithSequentialBlocks as an iterator.
+func (rng *SequentialRange[T]) SpanningSeqBlockIterator() Iterator[T] {
+	return &sliceIterator[T]{rng.SpanWithPrefixBlocks()}
+}
+
 // Join joins the receiver with the given ranges into the fewest number of ranges.
 // The returned array will be sorted by ascending lowest range value.
 // Nil ranges are tolerated, and ignored.
 func (rng *SequentialRange[T]) Join(ranges ...*SequentialRange[T]) []*SequentialRange[T] {
 	ranges = append(append(make([]*SequentialRange[T], 0, len(ranges)+1), ranges...), rng)
-	return joinRanges(ranges)
+	return joinRanges(ranges, true, true)
 }
 
 // JoinTo joins this range to the other if they are contiguous.  If this range overlaps with the given range,
@@ -943,42 +1168,126 @@ func (rng *SequentialRange[T]) Join(ranges ...*SequentialRange[T]) []*Sequential
 // then the two are joined into a new larger range that is returned.
 // Otherwise, nil is returned.
 func (rng *SequentialRange[T]) JoinTo(other *SequentialRange[T]) *SequentialRange[T] {
-	rng = rng.init()
-	other = other.init()
-	if rng.lower.getAddrType() != other.lower.getAddrType() {
+	lower, upper := rng.GetLowerAndUpper()
+	otherLower, otherUpper := other.GetLowerAndUpper()
+	if lower.getAddrType() != otherLower.getAddrType() {
 		return nil
 	}
-	otherLower, otherUpper := other.GetLower(), other.GetUpper()
-	lower, upper := rng.lower, rng.upper
-	lowerComp := compareLowIPAddressValues(lower, otherLower)
-	if !rng.Overlaps(other) {
+	lowerComp := compareLowerValues(lower, otherLower)
+	singleJoin := rng.joinOverlapping(lowerComp, lower, upper, otherLower, otherUpper)
+	if singleJoin != nil {
+		return singleJoin
+	}
+	if lowerComp > 0 {
+		if otherUpper.upperIsAdjacentTo(lower) {
+			return newSequRangeUnchecked[T](otherLower, upper, true)
+		}
+	} else {
+		if upper.upperIsAdjacentTo(otherLower) {
+			return newSequRangeUnchecked[T](lower, otherUpper, true)
+		}
+	}
+	return nil
+}
+
+func (rng *SequentialRange[T]) joinOverlapping(lowerComp int, lower, upper, otherLower, otherUpper T) *SequentialRange[T] {
+	if overlapsCheck(lower, upper, otherLower, otherUpper) {
+		upperComp := compareLowerValues(upper, otherUpper)
+		var lowestLower, highestUpper T
 		if lowerComp >= 0 {
-			if otherUpper.Increment(1).Equal(lower) {
-				return newSequRangeUnchecked[T](otherLower, upper, true)
+			if lowerComp == 0 && upperComp == 0 {
+				return rng
 			}
+			lowestLower = otherLower
 		} else {
-			if upper.Increment(1).Equal(otherLower) {
-				return newSequRangeUnchecked[T](lower, otherUpper, true)
-			}
+			lowestLower = lower
 		}
+		if upperComp >= 0 {
+			highestUpper = upper
+		} else {
+			highestUpper = otherUpper
+		}
+		//highestUpper = upperComp >= 0 ? upper : otherUpper;
+		return newSequRangeUnchecked(lowestLower, highestUpper, true)
+	}
+	return nil
+}
+
+// JoinIntoList creates the minimal number of range lists from the receiver combined with the given ranges.
+// Nil ranges are tolerated, and ignored.
+// If the input ranges comprise multiple versions of IP addresses, then multiple lists will be returned, the IPv4 followed by the IPv6 list.
+// If there are no non-nil input ranges, then nil is returned.
+func (rng *SequentialRange[T]) JoinIntoList(ranges ...*SequentialRange[T]) []*SequentialRangeList[T] {
+	res := joinRanges(ranges, false, false)
+	resLen := len(res)
+	if resLen == 0 {
 		return nil
 	}
-	upperComp := compareLowIPAddressValues(upper, otherUpper)
-	var lowestLower, highestUpper T
-	if lowerComp >= 0 {
-		if lowerComp == 0 && upperComp == 0 {
-			return rng
+	capacity := resLen << 1
+	var (
+		hasPrevious     bool
+		previousAddress T
+		multipleLists   []*SequentialRangeList[T]
+		previousList    *SequentialRangeList[T]
+		list            *SequentialRangeList[T] = NewSequentialRangeList[T](capacity)
+	)
+	for _, r := range res {
+		if r == nil {
+			continue
 		}
-		lowestLower = otherLower
-	} else {
-		lowestLower = lower
+		next := r.GetLower()
+		if hasPrevious && !versionsMatch(previousAddress, next) {
+			if previousList != nil {
+				// second time we switch versions, which is not possible if just IPv4/v6, we may have the zero-valued IP range as well
+				multipleLists = append(multipleLists, previousList, list)
+				previousList = nil
+			} else if multipleLists != nil {
+				// third time we switch versions
+				multipleLists = append(multipleLists, list)
+			} else {
+				// first time we switch versions
+				previousList = list
+			}
+			list = NewSequentialRangeList[T](capacity)
+		}
+		previousAddress = next
+		hasPrevious = true
+		list.ranges = append(list.ranges, *r)
 	}
-	if upperComp >= 0 {
-		highestUpper = upper
-	} else {
-		highestUpper = otherUpper
+	if multipleLists != nil {
+		return append(multipleLists, list)
+	} else if previousList != nil {
+		return []*SequentialRangeList[T]{previousList, list}
 	}
-	return newSequRangeUnchecked(lowestLower, highestUpper, true)
+	return []*SequentialRangeList[T]{list}
+}
+
+// JoinToIntoList joins this range to the other.
+//
+// Similar to JoinTo, but instead the result includes all the addresses in both ranges, regardless of whether they are contiguous,
+// unless the two ranges have different versions, in which case nil is returned.
+func (rng *SequentialRange[T]) JoinToIntoList(other *SequentialRange[T]) *SequentialRangeList[T] {
+	lower, upper := rng.GetLowerAndUpper()
+	otherLower, otherUpper := other.GetLowerAndUpper()
+	if !versionsMatch(lower, otherLower) {
+		return nil
+	}
+	lowerComp := compareLowerValues(lower, otherLower)
+	singleJoin := rng.joinOverlapping(lowerComp, lower, upper, otherLower, otherUpper)
+	if singleJoin == nil {
+		if lowerComp > 0 {
+			if otherUpper.upperIsAdjacentTo(lower) {
+				return createSingleRangeList(newSequRangeUnchecked(otherLower, upper, true))
+			}
+			return createDoubleRangeList(other, rng)
+		}
+		fmt.Println("hello")
+		if upper.upperIsAdjacentTo(otherLower) {
+			return createSingleRangeList(newSequRangeUnchecked(lower, otherUpper, true))
+		}
+		return createDoubleRangeList(rng, other)
+	}
+	return createSingleRangeList(singleJoin)
 }
 
 // Extend extends this sequential range to include all address in the given range.
@@ -987,13 +1296,13 @@ func (rng *SequentialRange[T]) JoinTo(other *SequentialRange[T]) *SequentialRang
 func (rng *SequentialRange[T]) Extend(other *SequentialRange[T]) *SequentialRange[T] {
 	rng = rng.init()
 	other = other.init()
-	if rng.lower.getAddrType() != other.lower.getAddrType() {
+	lower, upper := rng.GetLowerAndUpper()
+	otherLower, otherUpper := other.GetLowerAndUpper()
+	if lower.getAddrType() != otherLower.getAddrType() {
 		return nil
 	}
-	otherLower, otherUpper := other.GetLower(), other.GetUpper()
-	lower, upper := rng.lower, rng.upper
-	lowerComp := compareLowIPAddressValues(lower, otherLower)
-	upperComp := compareLowIPAddressValues(upper, otherUpper)
+	lowerComp := compareLowerValues(lower, otherLower)
+	upperComp := compareLowerValues(upper, otherUpper)
 	if lowerComp > 0 { //
 		if upperComp <= 0 { // ol l u ou
 			return other
@@ -1011,39 +1320,179 @@ func (rng *SequentialRange[T]) Extend(other *SequentialRange[T]) *SequentialRang
 // Subtract subtracts the given range from the receiver range, to produce either zero, one, or two address ranges that contain the addresses in the receiver range and not in the given range.
 // If the result has length 2, the two ranges are ordered by ascending lowest range value.
 func (rng *SequentialRange[T]) Subtract(other *SequentialRange[T]) []*SequentialRange[T] {
+	return subtract(rng, other, createEmptyRanges[T], createSingleRange[T], createDoubleRange[T])
+}
+
+func (rng *SequentialRange[T]) SubtractIntoList(other *SequentialRange[T]) *SequentialRangeList[T] {
+	return subtract(rng, other, createEmptyRangeList[T], createSingleRangeList[T], createDoubleRangeList[T])
+}
+
+func subtract[T SequentialRangeConstraint[T], U any](rng, other *SequentialRange[T],
+	createEmpty func() U,
+	createSingle func(*SequentialRange[T]) U,
+	createDouble func(one, two *SequentialRange[T]) U) U {
 	rng = rng.init()
 	other = other.init()
 	if rng.lower.getAddrType() != other.lower.getAddrType() {
-		return []*SequentialRange[T]{rng}
+		return createSingle(rng)
 	}
-	otherLower, otherUpper := other.GetLower(), other.GetUpper()
+	otherLower, otherUpper := other.GetLowerAndUpper()
 	lower, upper := rng.lower, rng.upper
-	if compareLowIPAddressValues(lower, otherLower) < 0 {
-		if compareLowIPAddressValues(upper, otherUpper) > 0 { // l ol ou u
-			return []*SequentialRange[T]{
-				newSequRangeCheckSize(lower, otherLower.Increment(-1)),
-				newSequRangeCheckSize(otherUpper.Increment(1), upper),
-			}
+	if compareLowerValues(lower, otherLower) < 0 {
+		if compareLowerValues(upper, otherUpper) > 0 { // l ol ou u
+			return createDouble(
+				newSequRangeCheckSize(lower, otherLower.DecrementSingle()),
+				newSequRangeCheckSize(otherUpper.IncrementSingle(), upper))
 		} else {
-			comp := compareLowIPAddressValues(upper, otherLower)
+			comp := compareLowerValues(upper, otherLower)
 			if comp < 0 { // l u ol ou
-				return []*SequentialRange[T]{rng}
+				return createSingle(rng)
 			} else if comp == 0 { // l u == ol ou
-				return []*SequentialRange[T]{newSequRangeCheckSize(lower, upper.Increment(-1))}
+				return createSingle(newSequRangeCheckSize(lower, upper.DecrementSingle()))
 			}
-			return []*SequentialRange[T]{newSequRangeCheckSize(lower, otherLower.Increment(-1))} // l ol u ou
+			return createSingle(newSequRangeCheckSize(lower, otherLower.DecrementSingle())) // l ol u ou
 		}
-	} else if compareLowIPAddressValues(otherUpper, upper) >= 0 { // ol l u ou
-		return make([]*SequentialRange[T], 0, 0)
+	} else if compareLowerValues(otherUpper, upper) >= 0 { // ol l u ou
+		return createEmpty()
 	} else {
-		comp := compareLowIPAddressValues(otherUpper, lower)
+		comp := compareLowerValues(otherUpper, lower)
 		if comp < 0 {
-			return []*SequentialRange[T]{rng} // ol ou l u
+			return createSingle(rng) // ol ou l u
 		} else if comp == 0 {
-			return []*SequentialRange[T]{newSequRangeCheckSize(lower.Increment(1), upper)} // ol ou == l u
+			return createSingle(newSequRangeCheckSize(lower.IncrementSingle(), upper)) // ol ou == l u
 		}
-		return []*SequentialRange[T]{newSequRangeCheckSize(otherUpper.Increment(1), upper)} // ol l ou u
+		return createSingle(newSequRangeCheckSize(otherUpper.IncrementSingle(), upper)) // ol l ou u
 	}
+}
+
+func (rng *SequentialRange[T]) Complement() []*SequentialRange[T] {
+	return complement(rng, createEmptyRanges[T], createSingleRange[T], createDoubleRange[T])
+}
+
+func (rng *SequentialRange[T]) ComplementIntoList() *SequentialRangeList[T] {
+	return complement(rng, createEmptyRangeList[T], createSingleRangeList[T], createDoubleRangeList[T])
+}
+
+func complement[T SequentialRangeConstraint[T], U any](
+	rng *SequentialRange[T],
+	createEmpty func() U,
+	createSingle func(*SequentialRange[T]) U,
+	createDouble func(one, two *SequentialRange[T]) U) U {
+	lower, upper := rng.GetLowerAndUpper()
+	if lower.IncludesZero() {
+		if upper.IncludesMax() {
+			return createEmpty()
+		}
+		network := lower.GetIPNetwork()
+		_, max := network.GetBoundaryAddresses()
+		newRng := newSequRangeCheckSize(upper.IncrementSingle(), max)
+		return createSingle(newRng)
+	}
+	network := lower.GetIPNetwork()
+	zero, max := network.GetBoundaryAddresses()
+	if upper.IncludesMax() {
+		newRng := newSequRangeCheckSize(zero, lower.DecrementSingle())
+		return createSingle(newRng)
+	}
+	first := newSequRangeCheckSize(zero, lower.DecrementSingle())
+	second := newSequRangeCheckSize(upper.IncrementSingle(), max)
+	return createDouble(first, second)
+}
+
+// Split splits this range at the given address into two ranges, one lower and one upper.
+// The second range starts with the lower address of the given address or subnet.
+// The first range consists of all preceding addresses.
+//
+// This is similar to subtract, but without removing the given address or subnet from the result.
+//
+// In some cases, one or both of the two returned ranges is nil.
+//
+// If the given address or subnet includes the first address in this range,
+// or all addresses of the given address or subnet are below the lower value of this range,
+// then the first range is nil, and the second range is the same range as this range.
+//
+// If all addresses of the given address or subnet are above the upper value of this range,
+// then the first range is is the same range as this range, and the second range is nil.
+//
+// If the given address has a different version than this, then both returned ranges are nil.
+func (rng *SequentialRange[T]) Split(other T) (lowerFromSplit, upperFromSplit *SequentialRange[T]) {
+	lower := rng.GetLower()
+	if lower.getAddrType() != other.getAddrType() {
+		return
+	}
+	if compareLowerValues(lower, other) < 0 {
+		upper := rng.GetUpper()
+		if compareLowerValues(upper, other) >= 0 { // l ol u
+			otherLower := other.WithoutPrefixLen().GetLower()
+			lowerFromSplit = newSequRangeCheckSize(lower, otherLower.DecrementSingle())
+			upperFromSplit = newSequRangeCheckSize(otherLower, upper)
+			return
+		}
+		// l u ol
+		lowerFromSplit = rng
+		return
+	}
+	// ol l u
+	upperFromSplit = rng
+	return
+}
+
+// LowerFromSplit is the same as split, but returns only the lower range.
+func (rng *SequentialRange[T]) LowerFromSplit(other T) (lowerFromSplit *SequentialRange[T]) {
+	lower := rng.GetLower()
+	if lower.getAddrType() != other.getAddrType() {
+		return
+	}
+	if compareLowerValues(lower, other) < 0 {
+		upper := rng.GetUpper()
+		if compareLowerValues(upper, other) >= 0 { // l ol u
+			return newSequRangeCheckSize(lower, other.WithoutPrefixLen().DecrementSingle())
+		}
+		// l u ol
+		return rng
+	}
+	// ol l u
+	return
+}
+
+func (rng *SequentialRange[T]) lowerSplit(other T) (lowerFromSplit *SequentialRange[T]) {
+	return newSequRangeCheckSize(rng.GetLower(), other.WithoutPrefixLen().DecrementSingle())
+}
+
+// UpperFromSplit is the same as split, but returns only the upper range.
+func (rng *SequentialRange[T]) UpperFromSplit(other T) (upperFromSplit *SequentialRange[T]) {
+	lower := rng.GetLower()
+	if !versionsMatch(lower, other) {
+		return
+	}
+	if compareLowerValues(lower, other) < 0 {
+		upper := rng.GetUpper()
+		if compareLowerValues(upper, other) >= 0 { // l ol u
+			return newSequRangeCheckSize(other.WithoutPrefixLen().GetLower(), rng.GetUpper())
+		}
+		// l u ol
+		return
+	}
+	// ol l u
+	return rng
+}
+
+func (rng *SequentialRange[T]) upperSplit(other T) (upperFromSplit *SequentialRange[T]) {
+	return newSequRangeCheckSize(other.WithoutPrefixLen().GetLower(), rng.GetUpper())
+}
+
+// IntoSequentialRangeList creates a new sequential range list collection containing all the individual addresses in this sequential range list.
+func (rng *SequentialRange[T]) IntoSequentialRangeList() *SequentialRangeList[T] {
+	return &SequentialRangeList[T]{
+		ranges: []SequentialRange[T]{*rng.init()},
+	}
+}
+
+// IntoContainmentTrie creates a new containement trie collection containing all the individual addresses in this sequential range list.
+func (rng *SequentialRange[T]) IntoContainmentTrie() *ContainmentTrieBase[T] {
+	trie := &ContainmentTrieBase[T]{}
+	trie.AddSeqRange(rng)
+	return trie
 }
 
 // ToKey creates the associated address range key.
@@ -1092,7 +1541,7 @@ func (rng *SequentialRange[T]) ToIPv4() *SequentialRange[*IPv4Address] {
 			t := any(rng.GetLower())
 			if addr, ok := t.(*IPAddress); ok && addr.IsIPv4() {
 				t = any(rng.GetUpper())
-				return newSequRangeUnchecked(addr.ToIPv4(), t.(*IPAddress).ToIPv4(), rng.isMultiple)
+				return newSequRangeUnchecked(addr.ToIPv4(), t.(*IPAddress).ToIPv4(), rng.IsMultiple())
 			}
 		}
 	}
@@ -1111,7 +1560,7 @@ func (rng *SequentialRange[T]) ToIPv6() *SequentialRange[*IPv6Address] {
 			t := any(rng.GetLower())
 			if addr, ok := t.(*IPAddress); ok && addr.IsIPv6() {
 				t = any(rng.GetUpper())
-				return newSequRangeUnchecked(addr.ToIPv6(), t.(*IPAddress).ToIPv6(), rng.isMultiple)
+				return newSequRangeUnchecked(addr.ToIPv6(), t.(*IPAddress).ToIPv6(), rng.IsMultiple())
 			}
 		}
 	}
@@ -1127,22 +1576,21 @@ func (rng *SequentialRange[T]) ToIP() *SequentialRange[*IPAddress] {
 			return ip
 		}
 		rng = rng.init()
-		return newSequRangeUnchecked(rng.lower.ToIP(), rng.upper.ToIP(), rng.isMultiple)
+		return newSequRangeUnchecked(rng.lower.ToIP(), rng.upper.ToIP(), rng.IsMultiple())
 	}
 	return nil
 }
 
 func newSequRangeUnchecked[T SequentialRangeConstraint[T]](lower, upper T, isMult bool) *SequentialRange[T] {
 	return &SequentialRange[T]{
-		lower:      lower,
-		upper:      upper,
-		isMultiple: isMult,
-		cache:      &rangeCache{},
+		lower: lower,
+		upper: upper,
+		cache: &rangeCache{isMultiple: isMult},
 	}
 }
 
 func newSequRangeCheckSize[T SequentialRangeConstraint[T]](lower, upper T) *SequentialRange[T] {
-	return newSequRangeUnchecked(lower, upper, !lower.equalsSameVersion(upper))
+	return newSequRangeUnchecked(lower, upper, !lower.equalsSingleSameVersion(upper))
 }
 
 func newSequRange[T SequentialRangeConstraint[T]](first, other T) *SequentialRange[T] {
@@ -1163,25 +1611,23 @@ func newSequRange[T SequentialRangeConstraint[T]](first, other T) *SequentialRan
 		}
 	} else {
 		// We find the lowest and the highest from both supplied addresses
-		firstLower := first.GetLower()
-		otherLower := other.GetLower()
-		firstUpper := first.GetUpper()
-		otherUpper := other.GetUpper()
-		if comp := compareLowIPAddressValues(firstLower, otherLower); comp > 0 {
+		firstLower, firstUpper := first.GetLowerAndUpper()
+		otherLower, otherUpper := other.GetLowerAndUpper()
+		if comp := compareLowerValues(firstLower, otherLower); comp > 0 {
 			isMult = true
 			lower = otherLower
 		} else {
 			isMult = comp < 0
 			lower = firstLower
 		}
-		if comp := compareLowIPAddressValues(firstUpper, otherUpper); comp < 0 {
+		if comp := compareLowerValues(firstUpper, otherUpper); comp < 0 {
 			isMult = true
 			upper = otherUpper
 		} else {
 			isMult = isMult || comp > 0
 			upper = firstUpper
 		}
-		if isMult = isMult || compareLowIPAddressValues(lower, upper) != 0; isMult {
+		if isMult = isMult || compareLowerValues(lower, upper) != 0; isMult {
 			lower = lower.WithoutPrefixLen()
 			upper = upper.WithoutPrefixLen()
 		} else {
@@ -1202,15 +1648,29 @@ func newSequRange[T SequentialRangeConstraint[T]](first, other T) *SequentialRan
 	return newSequRangeUnchecked(lower, upper, isMult)
 }
 
+func newSequRangeOrdered[T SequentialRangeConstraint[T]](lower, upper T) *SequentialRange[T] {
+	lower, upper = lower.WithoutPrefixLen(), upper.WithoutPrefixLen()
+	comp := compareLowerValues(lower, upper)
+	return newSequRangeUnchecked(lower, upper, comp != 0)
+}
+
 // NewSequentialRange creates a sequential range from the given addresses.
 // A nil value argument is equivalent to the zero value of the type of T, which then needs to be inferred by the other argument or the function call.
 // If the type of T is *IPAddress and the versions of lower and upper do not match (one is IPv4, one IPv6), then nil is returned.
 // Otherwise, the range is returned.
 func NewSequentialRange[T SequentialRangeConstraint[T]](lower, upper T) *SequentialRange[T] {
-	var t T
-	if lower == t && upper == t { // nil for pointers
-		lower = nilConvert[T]()
-	} else if lower != t && upper != t {
+	newVal, lowerIsNil := nilConvert(lower)
+	_, upperIsNil := nilConvert(upper)
+	if lowerIsNil { // nil for pointers
+		if upperIsNil {
+			lower = newVal
+			upper = newVal
+		} else {
+			lower = upper
+		}
+	} else if upperIsNil {
+		upper = lower
+	} else {
 		// this check only matters when T is *IPAddress
 		// Using getAddrType is NOT safe here because T may be *IPv4Address or *IPv6Address, and so we need to ensure init() is called before calling getAddrType
 		//if lower.getAddrType() != upper.getAddrType() {
@@ -1229,9 +1689,16 @@ func NewSequentialRange[T SequentialRangeConstraint[T]](lower, upper T) *Sequent
 // If the type of T is *IPAddress and the versions of lower and upper do not match (one is IPv4, one IPv6), then nil is returned.
 // Otherwise, the range is returned.
 func NewIPSeqRange(lower, upper *IPAddress) *SequentialRange[*IPAddress] { // for backwards compatibility
-	if lower == nil && upper == nil {
-		lower = zeroIPAddr
-	} else if lower != nil && upper != nil {
+	if lower == nil {
+		if upper == nil {
+			lower = zeroIPAddr
+			upper = zeroIPAddr
+		} else {
+			lower = upper
+		}
+	} else if upper == nil {
+		upper = lower
+	} else {
 		// Using getAddrType is safe here because we use IPAddress so if it is zeroType that is accurate
 		if lower.getAddrType() != upper.getAddrType() {
 			// when both are zero-type, we do not go in here
@@ -1246,8 +1713,15 @@ func NewIPSeqRange(lower, upper *IPAddress) *SequentialRange[*IPAddress] { // fo
 // NewIPv4SeqRange creates an IPv4 sequential range from the given addresses.
 // It is here for backwards compatibility. NewSequentialRange is recommended instead.
 func NewIPv4SeqRange(lower, upper *IPv4Address) *SequentialRange[*IPv4Address] { // for backwards compatibility
-	if lower == nil && upper == nil {
-		lower = zeroIPv4
+	if lower == nil {
+		if upper == nil {
+			lower = zeroIPv4
+			upper = zeroIPv4
+		} else {
+			lower = upper
+		}
+	} else if upper == nil {
+		upper = lower
 	}
 	return newSequRange(lower, upper)
 }
@@ -1255,13 +1729,23 @@ func NewIPv4SeqRange(lower, upper *IPv4Address) *SequentialRange[*IPv4Address] {
 // NewIPv6SeqRange creates an IPv6 sequential range from the given addresses.
 // It is here for backwards compatibility. NewSequentialRange is recommended instead.
 func NewIPv6SeqRange(lower, upper *IPv6Address) *SequentialRange[*IPv6Address] { // for backwards compatibility
-	if lower == nil && upper == nil {
-		lower = zeroIPv6
+	if lower == nil {
+		if upper == nil {
+			lower = zeroIPv6
+			upper = zeroIPv6
+		} else {
+			lower = upper
+		}
+	} else if upper == nil {
+		upper = lower
 	}
 	return newSequRange(lower, upper)
 }
 
-func joinRanges[T SequentialRangeConstraint[T]](ranges []*SequentialRange[T]) []*SequentialRange[T] {
+func joinRanges[T SequentialRangeConstraint[T]](ranges []*SequentialRange[T], canAlterInitial, isFinal bool) (ret []*SequentialRange[T]) {
+	if !canAlterInitial {
+		ranges = append(make([]*SequentialRange[T], 0, len(ranges)), ranges...)
+	}
 	// nil entries are automatic joins
 	joinedCount := 0
 	rangesLen := len(ranges)
@@ -1287,7 +1771,7 @@ func joinRanges[T SequentialRangeConstraint[T]](ranges []*SequentialRange[T]) []
 	})
 	for i := 0; i < rangesLen; {
 		rng := ranges[i]
-		currentLower, currentUpper := rng.GetLower(), rng.GetUpper()
+		currentLower, currentUpper := rng.GetLowerAndUpper()
 		var isMultiJoin, didJoin bool
 		j := i + 1
 		for ; j < rangesLen; j++ {
@@ -1296,20 +1780,20 @@ func joinRanges[T SequentialRangeConstraint[T]](ranges []*SequentialRange[T]) []
 			if nextLower.getAddrType() != currentUpper.getAddrType() {
 				break
 			}
-			doJoin := compareLowIPAddressValues(currentUpper, nextLower) >= 0
+			doJoin := compareLowerValues(currentUpper, nextLower) >= 0
 			if !doJoin {
-				doJoin = currentUpper.Increment(1).Equal(nextLower)
+				doJoin = currentUpper.upperIsAdjacentTo(nextLower)
 				isMultiJoin = true
 			}
 			if doJoin {
 				//Join them
 				joinedCount++
 				nextUpper := rng2.GetUpper()
-				if compareLowIPAddressValues(currentUpper, nextUpper) < 0 {
+				if compareLowerValues(currentUpper, nextUpper) < 0 {
 					currentUpper = nextUpper
 				}
 				ranges[j] = nil
-				isMultiJoin = isMultiJoin || rng.isMultiple || rng2.isMultiple
+				isMultiJoin = isMultiJoin || rng.IsMultiple() || rng2.IsMultiple()
 				didJoin = true
 			} else {
 				break
@@ -1320,26 +1804,26 @@ func joinRanges[T SequentialRangeConstraint[T]](ranges []*SequentialRange[T]) []
 		}
 		i = j
 	}
-	finalLen := rangesLen - joinedCount
-	if finalLen > 0 {
-		for i, j := 0, 0; ; i++ {
-			rng := ranges[i]
-			if rng == nil {
-				continue
-			}
-			ranges[j] = rng
-			j++
-			if j >= finalLen {
-				break
+	if isFinal {
+		finalLen := rangesLen - joinedCount
+		if finalLen > 0 {
+			for i, j := 0, 0; ; i++ {
+				rng := ranges[i]
+				if rng == nil {
+					continue
+				}
+				ranges[j] = rng
+				j++
+				if j >= finalLen {
+					break
+				}
 			}
 		}
+		ret = ranges[:finalLen]
+	} else {
+		ret = ranges
 	}
-	ret := ranges[:finalLen]
-	return ret
-}
-
-func compareLowIPAddressValues(one, two AddressType) int {
-	return compareAddressLowerValues(one, two)
+	return
 }
 
 // getMinPrefixLenForBlock returns the smallest prefix length such that the upper and lower values span the block of values for that prefix length.
@@ -1397,6 +1881,34 @@ func getPrefixLenForSingleBlock(lower, upper DivInt, bitCount BitCount) PrefixLe
 		}
 	}
 	return nil
+}
+
+func createEmptyRanges[T SequentialRangeConstraint[T]]() []*SequentialRange[T] {
+	return make([]*SequentialRange[T], 0, 0)
+}
+
+func createSingleRange[T SequentialRangeConstraint[T]](rng *SequentialRange[T]) []*SequentialRange[T] {
+	return []*SequentialRange[T]{rng}
+}
+
+func createDoubleRange[T SequentialRangeConstraint[T]](rng1, rng2 *SequentialRange[T]) []*SequentialRange[T] {
+	return []*SequentialRange[T]{rng1, rng2}
+}
+
+func createEmptyRangeList[T SequentialRangeConstraint[T]]() *SequentialRangeList[T] {
+	return &SequentialRangeList[T]{}
+}
+
+func createSingleRangeList[T SequentialRangeConstraint[T]](rng *SequentialRange[T]) *SequentialRangeList[T] {
+	return &SequentialRangeList[T]{
+		ranges: []SequentialRange[T]{*rng},
+	}
+}
+
+func createDoubleRangeList[T SequentialRangeConstraint[T]](rng1, rng2 *SequentialRange[T]) *SequentialRangeList[T] {
+	return &SequentialRangeList[T]{
+		ranges: []SequentialRange[T]{*rng1, *rng2},
+	}
 }
 
 type (

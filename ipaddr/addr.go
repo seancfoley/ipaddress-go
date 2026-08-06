@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2024 Sean C Foley
+// Copyright 2020-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -45,9 +45,6 @@ const (
 	SegmentSqlWildcardStr       = "%"
 	SegmentSqlSingleWildcard    = '_'
 	SegmentSqlSingleWildcardStr = "_"
-
-	//ExtendedDigitsRangeSeparator    = '\u00bb'
-	//AlternativeSegmentWildcard  = '¿'
 )
 
 var segmentWildcardStr = SegmentWildcardStr
@@ -618,6 +615,28 @@ func (addr *addressInternal) IsFullRange() bool {
 	return section.IsFullRange()
 }
 
+// IncludesZeroBits returns true if the bits in the lower value of this series between the indicated indices are all zero.
+// Index 0 is the most significant bit.  The bits are checked from fromBPrefixBitIndex inclusive to toPrefixBitIndex exclusive.
+func (addr *addressInternal) IncludesZeroBits(fromBPrefixBitIndex, toPrefixBitIndex int) bool {
+	section := addr.section
+	if section == nil {
+		// when no bits, the condition is true
+		return true
+	}
+	return section.IncludesZeroBits(fromBPrefixBitIndex, toPrefixBitIndex)
+}
+
+// IncludesMaxBits returns true if the bits in the upper value of this series between the indicated indices are all one.
+// Index 0 is the most significant bit.  The bits are checked from fromBPrefixBitIndex inclusive to toPrefixBitIndex exclusive.
+func (addr *addressInternal) IncludesMaxBits(fromBPrefixBitIndex, toPrefixBitIndex int) bool {
+	section := addr.section
+	if section == nil {
+		// when no bits, the condition is true
+		return true
+	}
+	return section.IncludesMaxBits(fromBPrefixBitIndex, toPrefixBitIndex)
+}
+
 func (addr *addressInternal) toAddress() *Address {
 	return (*Address)(unsafe.Pointer(addr))
 }
@@ -725,10 +744,13 @@ func (addr *addressInternal) prefixContains(other AddressType) bool {
 
 func (addr *addressInternal) contains(other AddressType) bool {
 	if other == nil {
-		return true
+		return false
 	}
 	otherAddr := other.ToAddressBase()
-	if addr.toAddress() == otherAddr || otherAddr == nil {
+	if otherAddr == nil {
+		return false
+	}
+	if addr.toAddress() == otherAddr {
 		return true
 	}
 	otherSection := otherAddr.GetSection()
@@ -740,10 +762,12 @@ func (addr *addressInternal) contains(other AddressType) bool {
 // Returns whether this is same type and version of the given address and whether it overlaps with the values in the given address or subnet
 func (addr *addressInternal) overlaps(other AddressType) bool {
 	if other == nil {
-		return true
+		return false
 	}
 	otherAddr := other.ToAddressBase()
-	if addr.toAddress() == otherAddr || otherAddr == nil {
+	if otherAddr == nil {
+		return false
+	} else if addr.toAddress() == otherAddr {
 		return true
 	}
 	otherSection := otherAddr.GetSection()
@@ -760,10 +784,10 @@ func (addr *addressInternal) equals(other AddressType) bool {
 		return false
 	}
 	otherAddr := other.ToAddressBase()
-	if addr.toAddress() == otherAddr {
-		return true
-	} else if otherAddr == nil {
+	if otherAddr == nil {
 		return false
+	} else if addr.toAddress() == otherAddr {
+		return true
 	}
 	otherSection := otherAddr.GetSection()
 	if addr.section == nil {
@@ -774,8 +798,8 @@ func (addr *addressInternal) equals(other AddressType) bool {
 		addr.isSameZone(otherAddr)
 }
 
-// returns whether two addresses, already known to be the same version and address type, are equal
-func (addr *addressInternal) equalsSameVersion(other AddressType) bool {
+// returns whether two addresses, already known to be single addresses with the same version and address type, and no zone, are equal
+func (addr *addressInternal) equalsSingleSameVersion(other AddressType) bool {
 	otherAddr := other.ToAddressBase()
 	if addr.toAddress() == otherAddr {
 		return true
@@ -783,9 +807,37 @@ func (addr *addressInternal) equalsSameVersion(other AddressType) bool {
 		return false
 	}
 	otherSection := otherAddr.GetSection()
-	return addr.section.sameCountTypeEquals(otherSection) &&
-		// if it it is IPv6 and has a zone, then it does not equal addresses from other zones
-		addr.isSameZone(otherAddr)
+	return addr.section.singleSameTypeEquals(otherSection)
+}
+
+func (addr *addressInternal) equalAggregation(otherAggregation AddressAggregation) bool {
+	switch other := otherAggregation.(type) {
+	case nil:
+		return false
+	case AddressType:
+		return addr.equals(other)
+	case IPAddressSeqRangeType:
+		ipaddr := addr.toAddress().ToIP()
+		if ipaddr == nil {
+			// not an IP address
+			return isEmptyRange(other)
+		}
+		return other.ToIP().equalAddr(ipaddr)
+	case *IPAddressContainmentTrie:
+		return other.equalAddr(addr.toAddress())
+	case *IPv4AddressContainmentTrie:
+		return other.equalAddr(addr.toAddress())
+	case *IPv6AddressContainmentTrie:
+		return other.equalAddr(addr.toAddress())
+	case *IPAddressSeqRangeList:
+		return other.equalAddr(addr.toAddress())
+	case *IPv4AddressSeqRangeList:
+		return other.equalAddr(addr.toAddress())
+	case *IPv6AddressSeqRangeList:
+		return other.equalAddr(addr.toAddress())
+	default:
+		return equalAggregation(addr.toAddress(), otherAggregation)
+	}
 }
 
 // withoutPrefixLen returns the same address but with no associated prefix length.
@@ -1015,12 +1067,36 @@ func (addr *addressInternal) hasZone() bool {
 	return addr.zone != NoZone
 }
 
+func (addr *addressInternal) get(index int64) *Address {
+	return addr.checkIdentity(addr.section.get(index))
+}
+
+func (addr *addressInternal) getBig(index *big.Int) *Address {
+	return addr.checkIdentity(addr.section.getBig(index))
+}
+
 func (addr *addressInternal) increment(increment int64) *Address {
 	return addr.checkIdentity(addr.section.increment(increment))
 }
 
+func (addr *addressInternal) incrementSingle() *Address {
+	return addr.checkIdentity(addr.section.incrementSingle())
+}
+
+func (addr *addressInternal) decrementSingle() *Address {
+	return addr.checkIdentity(addr.section.decrementSingle())
+}
+
+func (addr *addressInternal) incrementBig(increment *big.Int) *Address {
+	return addr.checkIdentity(addr.section.incrementBig(increment))
+}
+
 func (addr *addressInternal) incrementBoundary(increment int64) *Address {
 	return addr.checkIdentity(addr.section.incrementBoundary(increment))
+}
+
+func (addr *addressInternal) incrementBoundarySingle() *Address {
+	return addr.checkIdentity(addr.section.incrementBoundarySingle())
 }
 
 func (addr *addressInternal) enumerate(other AddressType) *big.Int {
@@ -1244,15 +1320,21 @@ func (addr *Address) containsSame(other *Address) bool {
 // Contains returns whether this is the same type and version as the given address or subnet and whether it contains all addresses in the given address or subnet.
 func (addr *Address) Contains(other AddressType) bool {
 	if addr == nil {
-		return other == nil || other.ToAddressBase() == nil
+		return false
 	}
 	return addr.init().contains(other)
+}
+
+// OverlapsAddr returns true if and only the given individual address or subnet contains at least one individual address that is also in this address or subnet.
+// Implements the IPAddressAggregation interface.
+func (addr *Address) OverlapsAddr(other AddressType) bool {
+	return addr.Overlaps(other)
 }
 
 // Overlaps returns true if this address overlaps the given address or subnet
 func (addr *Address) Overlaps(other AddressType) bool {
 	if addr == nil {
-		return true
+		return false
 	}
 	return addr.init().overlaps(other)
 }
@@ -1268,10 +1350,16 @@ func (addr *Address) Compare(item AddressItem) int {
 func (addr *Address) Equal(other AddressType) bool {
 	if addr == nil {
 		return other == nil || other.ToAddressBase() == nil
-	} else if other.ToAddressBase() == nil {
-		return false
 	}
 	return addr.init().equals(other)
+}
+
+// EqualAggregation returns whether this address or subnet contains the same set of individual addresses as the given aggregation of addresses.
+func (addr *Address) EqualAggregation(otherAggregation AddressAggregation) bool {
+	if addr == nil {
+		return IsEmpty(otherAggregation)
+	}
+	return addr.init().equalAggregation(otherAggregation)
 }
 
 // CompareSize compares the counts of two subnets or addresses or other address items, the number of individual items within.
@@ -1445,6 +1533,13 @@ func (addr *Address) GetUpper() *Address {
 	return addr.init().getUpper()
 }
 
+// GetLowerAndUpper returns the addresses in the subnet or address collection with the lowest and highest numeric value.
+// Both will be the receiver if it represents a single address.
+// For example, for the subnet "1.2-3.4.5-6", the addresses "1.2.4.5" and "1.3.4.6" are returned.
+func (addr *Address) GetLowerAndUpper() (lower, upper *Address) {
+	return addr.init().getLowestHighestAddrs()
+}
+
 // GetValue returns the lowest address in this subnet or address collection as an integer value.
 func (addr *Address) GetValue() *big.Int {
 	return addr.init().section.GetValue()
@@ -1491,17 +1586,17 @@ func (addr *Address) IncludesMax() bool {
 	return addr.init().section.IncludesMax()
 }
 
-// ToPrefixBlock returns the address collection associated with the prefix of this address or address collection,
-// the address whose prefix matches the prefix of this address, and the remaining bits span all values.
+// ToPrefixBlock returns the single block of addresses associated with the prefix of this address.
+// This is the address whose prefix matches the prefix of this address, and the remaining bits span all values.
 // If this address has no prefix length, this address is returned.
 //
-// The returned address collection will include all addresses with the same prefix as this one, the prefix "block".
+// The returned address will include all addresses with the same prefix as this one, the prefix "block".
 func (addr *Address) ToPrefixBlock() *Address {
 	return addr.init().toPrefixBlock()
 }
 
 // ToPrefixBlockLen returns the address associated with the prefix length provided,
-// the address collection whose prefix of that length matches the prefix of this address, and the remaining bits span all values.
+// the block of addresses whose prefix of that length matches the prefix of this address, and the remaining bits span all values.
 //
 // The returned address will include all addresses with the same prefix as this one, the prefix "block".
 func (addr *Address) ToPrefixBlockLen(prefLen BitCount) *Address {
@@ -1530,7 +1625,7 @@ func (addr *Address) SetPrefixLen(prefixLen BitCount) *Address {
 	return addr.init().setPrefixLen(prefixLen)
 }
 
-// SetPrefixLenZeroed sets the prefix length.
+// SetPrefixLenZeroed sets the prefix length while zeroing out bits moved in and out of the prefix.
 //
 // A prefix length will not be set to a value lower than zero or beyond the bit length of the address.
 // The provided prefix length will be adjusted to these boundaries if necessary.
@@ -1645,12 +1740,17 @@ func (addr *Address) GetMaxSegmentValue() SegInt {
 //
 // When iterating, the prefix length is preserved.  Remove it using WithoutPrefixLen prior to iterating if you wish to drop it from all individual addresses.
 //
-// Call IsMultiple to determine if this instance represents multiple addresses, or GetCount for the count.
+// Call IsMultiple to determine if this instance represents multiple addresses, or GetCount for the individual address count.
 func (addr *Address) Iterator() Iterator[*Address] {
 	if addr == nil {
 		return nilAddrIterator()
 	}
 	return addr.addrIterator(nil)
+}
+
+// AddressIterator is the same as Iterator while satisying the AddressAggregation interface
+func (addr *Address) AddressIterator() Iterator[AddressType] {
+	return addrTypeIterator[*Address]{addr.Iterator()}
 }
 
 // PrefixIterator provides an iterator to iterate through the individual prefixes of this subnet,
@@ -1719,6 +1819,11 @@ func (addr *Address) IncrementBoundary(increment int64) *Address {
 	return addr.init().IncrementBoundary(increment)
 }
 
+// IncrementBoundarySingle increments the boundary of the address or subnet by 1 to produce a new address.  Equivalent to IncrementBoundary(1).
+func (addr *Address) IncrementBoundarySingle() *Address {
+	return addr.init().incrementBoundarySingle()
+}
+
 // Increment returns the address from the subnet that is the given increment upwards into the subnet range,
 // with the increment of 0 returning the first address in the range.
 //
@@ -1741,6 +1846,39 @@ func (addr *Address) Increment(increment int64) *Address {
 	return addr.init().increment(increment)
 }
 
+// IncrementSingle increments the address or subnet by 1 to produce a new address.  Equivalent to Increment(1).
+func (addr *Address) IncrementSingle() *Address {
+	return addr.init().incrementSingle()
+}
+
+// DecrementSingle decrements the address or subnet by 1 to produce a new address.  Equivalent to Increment(-1).
+func (addr *Address) DecrementSingle() *Address {
+	return addr.init().decrementSingle()
+}
+
+// IncrementBig returns the address from the subnet that is the given increment upwards into the subnet range.
+//
+// Equivalent to Increment, but taking a big integer as the increment argument.
+func (addr *Address) IncrementBig(increment *big.Int) *Address {
+	return addr.init().incrementBig(increment)
+}
+
+// UpperIsAdjacentTo indicates if the given address's lower value is the next individual address following this address's upper value.
+// This means they are adjacent, having no intervening address.
+//
+// UpperIsAdjacentTo returns true given the address produced by IncrementBoundarySingle.
+func (addr *Address) UpperIsAdjacentTo(other AddressType) bool {
+	return addr.GetSection().upperIsAdjacentTo(other.ToAddressBase().GetSection())
+}
+
+// upperIsAdjacentTo indicates if the given address's lower value is the next individual address following this address's upper value.
+// This means they are adjacent, having no intervening address.
+//
+// UpperIsAdjacentTo returns true given the address produced by IncrementBoundarySingle.
+func (addr *Address) upperIsAdjacentTo(other *Address) bool {
+	return addr.GetSection().upperIsAdjacentTo(other.GetSection())
+}
+
 // Enumerate indicates where an address sits relative to the subnet ordering.
 //
 // Determines how many address elements of the subnet precede the given address element, if the address is in the subnet.
@@ -1759,6 +1897,9 @@ func (addr *Address) Increment(increment int64) *Address {
 //
 // If the given address does not have the same version or type, then nil is returned.
 func (addr *Address) Enumerate(other AddressType) *big.Int {
+	if addr == nil {
+		return nil
+	}
 	return addr.init().enumerate(other)
 }
 
@@ -1784,7 +1925,7 @@ func (addr *Address) ReverseBits(perByte bool) (*Address, addrerr.IncompatibleAd
 	return addr.init().reverseBits(perByte)
 }
 
-// ReverseSegments returns a new address with the segments reversed.
+// ReverseSegments returns a new address with the segments reversed.  Any prefix length is dropped.
 func (addr *Address) ReverseSegments() *Address {
 	return addr.init().reverseSegments()
 }

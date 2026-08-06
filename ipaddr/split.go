@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2024 Sean C Foley
+// Copyright 2020-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package ipaddr
 import (
 	"container/list"
 	"math/bits"
+	"net"
 
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
 )
@@ -31,12 +32,17 @@ type spannableType[S any, T any] interface {
 	containsSame(T) bool
 
 	WithoutPrefixLen() T
+
 	GetLower() T
 	GetUpper() T
+	GetLowerAndUpper() (lower, upper T)
+
 	AssignPrefixForSingleBlock() T
 	ToPrefixBlockLen(BitCount) T
 	ToBlock(segmentIndex int, lower, upper SegInt) T
-	Increment(int64) T
+
+	DecrementSingle() T
+	IncrementSingle() T
 
 	IncludesZeroHostLen(BitCount) bool
 	IncludesMaxHostLen(BitCount) bool
@@ -59,6 +65,17 @@ func getSpanningPrefixBlocks[S any, T spannableType[S, T]](first, other T) []T {
 		other,
 		true,
 		splitIntoPrefixBlocks[S, T])
+}
+
+func convertPrefixBlocksToIPNets[T ipAddressTypeConstraint[T]](blocks []T) (result []*net.IPNet) {
+	result = make([]*net.IPNet, len(blocks))
+	for i, block := range blocks {
+		result[i] = &net.IPNet{
+			IP:   block.WithoutPrefixLen().GetNetIP(),
+			Mask: block.GetNetworkMask().Bytes(),
+		}
+	}
+	return
 }
 
 func getSpanningSequentialBlocks[S any, T spannableType[S, T]](first, other T) []T {
@@ -173,7 +190,7 @@ func splitIntoSequentialBlocks[S any, T spannableType[S, T]](lower, upper T) (bl
 					blocks = append(blocks, series)
 				} else {
 					topLower, _ := upper.ToZeroHostLen(previousSegmentBits)
-					middleUpper := topLower.Increment(-1)
+					middleUpper := topLower.DecrementSingle()
 					series := lower.ToBlock(segSegment, lowerValue, middleUpper.GetGenericSegment(segSegment).GetSegmentValue())
 					blocks = append(blocks, series)
 					lower = topLower
@@ -181,7 +198,7 @@ func splitIntoSequentialBlocks[S any, T spannableType[S, T]](lower, upper T) (bl
 				}
 			} else if higherIsHighest {
 				bottomUpper, _ := lower.ToMaxHostLen(previousSegmentBits)
-				topLower := bottomUpper.Increment(1)
+				topLower := bottomUpper.IncrementSingle()
 				series := topLower.ToBlock(segSegment, topLower.GetGenericSegment(segSegment).GetSegmentValue(), upperValue)
 				toAdd.PushFront(series)
 				upper = bottomUpper
@@ -189,9 +206,9 @@ func splitIntoSequentialBlocks[S any, T spannableType[S, T]](lower, upper T) (bl
 			} else {
 				//from top to bottom we have: top - topLower - middleUpper - middleLower - bottomUpper - lower
 				topLower, _ := upper.ToZeroHostLen(previousSegmentBits)
-				middleUpper := topLower.Increment(-1)
+				middleUpper := topLower.DecrementSingle()
 				bottomUpper, _ := lower.ToMaxHostLen(previousSegmentBits)
-				middleLower := bottomUpper.Increment(1)
+				middleLower := bottomUpper.IncrementSingle()
 				if LowValueComparator.CompareSeries(middleLower, middleUpper) <= 0 {
 					series := middleLower.ToBlock(
 						segSegment,
@@ -272,7 +289,7 @@ func splitIntoPrefixBlocks[S any, T spannableType[S, T]](
 					//upper bottom becomes 01111111...
 					//so in each new range, the differing bit is at least one further to the right (or more)
 					lowerTop, _ := upper.ToZeroHostLen(differingBitPrefixLen + 1)
-					upperBottom := lowerTop.Increment(-1)
+					upperBottom := lowerTop.DecrementSingle()
 					if differingIsLowestBit {
 						previousSegmentBits += bitsPerSegment
 						currentSegment++
@@ -307,13 +324,10 @@ func applyOperatorToLowerUpper[S any, T spannableType[S, T]](
 		} else {
 			lower = first
 		}
-		upper = lower.GetUpper()
-		lower = lower.GetLower()
+		lower, upper = lower.GetLowerAndUpper()
 	} else {
-		firstLower := first.GetLower()
-		otherLower := other.GetLower()
-		firstUpper := first.GetUpper()
-		otherUpper := other.GetUpper()
+		firstLower, firstUpper := first.GetLowerAndUpper()
+		otherLower, otherUpper := other.GetLowerAndUpper()
 		if LowValueComparator.CompareSeries(firstLower, otherLower) > 0 {
 			lower = otherLower
 		} else {

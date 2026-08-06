@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2022 Sean C Foley
+// Copyright 2020-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -4830,6 +4830,17 @@ func (t ipAddressTester) testIsPrefixBlock(
 	} else if isSinglePrefixBlock != original.IsSinglePrefixBlock() {
 		t.addFailure(newIPAddrFailure("is single prefix block: "+strconv.FormatBool(original.IsSinglePrefixBlock())+" expected: "+strconv.FormatBool(isSinglePrefixBlock), original))
 	}
+	if isSinglePrefixBlock {
+		ipNet := original.ToIPNet()
+		backAgain, err := ipaddr.NewIPAddressFromNetIPNet(ipNet)
+		if err != nil {
+			t.addFailure(newIPAddrFailure("ip net fail: "+err.Error(), original))
+		} else if !original.Equal(backAgain) {
+			t.addFailure(newIPAddrFailure("ip net equal fail original: "+original.String()+" back again: "+backAgain.String(), original))
+		} else if !original.EqualAggregation(backAgain) {
+			t.addFailure(newIPAddrFailure("ip net equal aggregation fail original: "+original.String()+" back again: "+backAgain.String(), original))
+		}
+	}
 	t.incrementTestCount()
 }
 
@@ -5250,7 +5261,7 @@ func (t ipAddressTester) testAddressStringRangeP(address string, isIncompatibleA
 	}
 	rangeString := t.createAddress(address)
 	// go directly to getting the range which should never throw IncompatibleAddressException even for incompatible addresses
-	range1 := rangeString.GetSequentialRange()
+	range1 := rangeString.GetCoveringSequentialRange()
 	low := t.createAddress(lowerAddress).GetAddress().GetLower() // getLower() needed for auto subnets
 	up := t.createAddress(upperAddress).GetAddress().GetUpper()  // getUpper() needed for auto subnets
 	if !range1.GetLower().Equal(low) {
@@ -5266,7 +5277,7 @@ func (t ipAddressTester) testAddressStringRangeP(address string, isIncompatibleA
 		if !isIncompatibleAddress {
 			t.addFailure(newFailure("address "+addrStr.String()+" identified as an incompatible address", addrStr))
 		}
-		addrRange, err := addrStr.ToSequentialRange()
+		addrRange, err := addrStr.CoverWithSequentialRange()
 		if err != nil {
 			t.addFailure(newFailure("unexpected error getting range from "+addrStr.String(), addrStr))
 			return
@@ -5304,7 +5315,7 @@ func (t ipAddressTester) testAddressStringRangeP(address string, isIncompatibleA
 		// now get the range from a string after you get the address first, which should get it a different way, from the address
 		oneMore := t.createAddress(address)
 		oneMore.GetAddress()
-		rangeAfterAddr := oneMore.GetSequentialRange()
+		rangeAfterAddr := oneMore.GetCoveringSequentialRange()
 		if !range1.Equal(rangeAfterAddr) || !rangeAfterAddr.Equal(range1) {
 			t.addFailure(newIPAddrFailure("address range from "+rangeString.String()+" after address ("+rangeAfterAddr.GetLower().String()+","+rangeAfterAddr.GetUpper().String()+")"+
 				" does not match range from address string "+rangeString.String()+" before address ("+range1.GetLower().String()+","+range1.GetUpper().String()+")", addr))

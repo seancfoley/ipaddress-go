@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2024 Sean C Foley
+// Copyright 2020-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -209,7 +209,7 @@ func (grouping *addressDivisionGroupingInternal) isAddressSection() bool {
 }
 
 func (grouping *addressDivisionGroupingInternal) compareSize(other AddressItem) int { // the getCount() is optimized which is why we do not defer to the method in addressDivisionGroupingBase
-	return compareCount(grouping.toAddressDivisionGrouping(), other)
+	return compareCounts(grouping.toAddressDivisionGrouping(), other)
 }
 
 func (grouping *addressDivisionGroupingInternal) getCount() *big.Int {

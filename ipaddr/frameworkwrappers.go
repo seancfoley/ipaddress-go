@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2024 Sean C Foley
+// Copyright 2020-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -146,6 +146,40 @@ type ExtendedSegmentSeries interface {
 	// On overflow or underflow, IncrementBoundary returns nil.
 	IncrementBoundary(int64) ExtendedSegmentSeries
 
+	// IncrementSingle increments the series by 1 to produce a new series.  Equivalent to Increment(1).
+	IncrementSingle() ExtendedSegmentSeries
+
+	// DecrementSingle decrements the series by 1 to produce a new series.  Equivalent to Increment(-1).
+	DecrementSingle() ExtendedSegmentSeries
+
+	// IncrementBoundarySingle increments the boundary of the series by 1 to produce a new series.  Equivalent to IncrementBoundary(1).
+	IncrementBoundarySingle() ExtendedSegmentSeries
+
+	// IncrementBig increments the series.  It is the same as Increment but allows for a larger increment value.
+	IncrementBig(*big.Int) ExtendedSegmentSeries
+
+	// Overlaps returns whether this series overlaps with the given series, meaning there is at least one individual series common to both.
+	Overlaps(ExtendedSegmentSeries) bool
+
+	// PrefixEqual determines if the given series matches this series up to the prefix length of this series.
+	// If this series has no prefix length, the entire series is compared.
+	//
+	// It returns whether the two series share the same range of prefix values.
+	PrefixEqual(ExtendedSegmentSeries) bool
+
+	// PrefixContains returns whether the prefix values in the given series
+	// are prefix values in this series, using the prefix length of this series.
+	// If this series has no prefix length, the entire series is compared.
+	//
+	// It returns whether the prefix of this series contains all values of the same prefix length in the given series.
+	PrefixContains(ExtendedSegmentSeries) bool
+
+	// UpperIsAdjacentTo indicates if the given series' lower value is the next individual series following this series' upper value.
+	// This means they are adjacent, having no intervening series.
+	//
+	// UpperIsAdjacentTo returns true given the series produced by IncrementBoundarySingle.
+	UpperIsAdjacentTo(ExtendedSegmentSeries) bool
+
 	// Enumerate indicates where an address series sits relative to the range ordering.
 	//
 	// Determines how many address series elements of a range precede the given address series element, if the address series is in the range.
@@ -168,6 +202,11 @@ type ExtendedSegmentSeries interface {
 	// GetUpper returns the series in the range with the highest numeric value,
 	// which will be the same series if it represents a single value.
 	GetUpper() ExtendedSegmentSeries
+
+	// GetLowerAndUpper returns the addresses in the subnet with the lowest and highest numeric value.
+	// Both will be the receiver if it represents a single address.
+	// For example, for the subnet "1.2-3.4.5-6", the addresses "1.2.4.5" and "1.3.4.6" are returned.
+	GetLowerAndUpper() (lower, upper ExtendedSegmentSeries)
 
 	// AssignPrefixForSingleBlock returns the equivalent prefix block that matches exactly the range of values in this series.
 	// The returned block will have an assigned prefix length indicating the prefix length for the block.
@@ -395,6 +434,60 @@ func (addr WrappedAddress) IncrementBoundary(i int64) ExtendedSegmentSeries {
 	return convAddrToIntf(addr.Address.IncrementBoundary(i))
 }
 
+// IncrementSingle increments the series by 1 to produce a new series.  Equivalent to Increment(1).
+func (addr WrappedAddress) IncrementSingle() ExtendedSegmentSeries {
+	return convAddrToIntf(addr.Address.IncrementSingle())
+}
+
+// DecrementSingle decrements the series by 1 to produce a new series.  Equivalent to Increment(-1).
+func (addr WrappedAddress) DecrementSingle() ExtendedSegmentSeries {
+	return convAddrToIntf(addr.Address.DecrementSingle())
+}
+
+// IncrementBoundarySingle increments the boundary of the series by 1 to produce a new series.  Equivalent to IncrementBoundary(1).
+func (addr WrappedAddress) IncrementBoundarySingle() ExtendedSegmentSeries {
+	return convAddrToIntf(addr.Address.IncrementBoundarySingle())
+}
+
+// IncrementBig increments the series.  It is the same as Increment but allows for a larger increment value.
+func (addr WrappedAddress) IncrementBig(i *big.Int) ExtendedSegmentSeries {
+	return convAddrToIntf(addr.Address.IncrementBig(i))
+}
+
+// Overlaps returns whether this series overlaps with the given series, meaning there is at least one individual series common to both.
+func (addr WrappedAddress) Overlaps(other ExtendedSegmentSeries) bool {
+	a, ok := other.Unwrap().(AddressType)
+	return ok && addr.Address.Overlaps(a)
+}
+
+// PrefixEqual determines if the given series matches this series up to the prefix length of this series.
+// If this series has no prefix length, the entire series is compared.
+//
+// It returns whether the two series share the same range of prefix values.
+func (addr WrappedAddress) PrefixEqual(other ExtendedSegmentSeries) bool {
+	a, ok := other.Unwrap().(AddressType)
+	return ok && addr.Address.PrefixEqual(a)
+}
+
+// PrefixContains returns whether the prefix values in the given series
+// are prefix values in this series, using the prefix length of this series.
+// If this series has no prefix length, the entire series is compared.
+//
+// It returns whether the prefix of this series contains all values of the same prefix length in the given series.
+func (addr WrappedAddress) PrefixContains(other ExtendedSegmentSeries) bool {
+	a, ok := other.Unwrap().(AddressType)
+	return ok && addr.Address.PrefixContains(a)
+}
+
+// UpperIsAdjacentTo indicates if the given series' lower value is the next individual series following this series' upper value.
+// This means they are adjacent, having no intervening series.
+//
+// UpperIsAdjacentTo returns true given the series produced by IncrementBoundarySingle.
+func (addr WrappedAddress) UpperIsAdjacentTo(other ExtendedSegmentSeries) bool {
+	a, ok := other.Unwrap().(AddressType)
+	return ok && addr.Address.UpperIsAdjacentTo(a)
+}
+
 // Enumerate indicates where an address sits relative to the subnet ordering.
 //
 // Determines how many address elements of the subnet precede the given address element, if the address is in the subnet.
@@ -419,6 +512,22 @@ func (addr WrappedAddress) Enumerate(other ExtendedSegmentSeries) *big.Int {
 	return nil
 }
 
+// Contains returns whether this is same type and version as the given address series and whether it contains all values in the given series.
+//
+// Series must also have the same number of segments to be comparable, otherwise false is returned.
+func (addr WrappedAddress) Contains(other ExtendedSegmentSeries) bool {
+	a, ok := other.Unwrap().(AddressType)
+	return ok && addr.Address.Contains(a)
+}
+
+// Equal returns whether the given address series is equal to this address series.
+// Two address series are equal if they represent the same set of series.
+// Both must be equal addresses.
+func (addr WrappedAddress) Equal(other ExtendedSegmentSeries) bool {
+	a, ok := other.Unwrap().(AddressType)
+	return ok && addr.Address.Equal(a)
+}
+
 // GetLower returns the series in the range with the lowest numeric value,
 // which will be the same series if it represents a single value.
 func (addr WrappedAddress) GetLower() ExtendedSegmentSeries {
@@ -429,6 +538,13 @@ func (addr WrappedAddress) GetLower() ExtendedSegmentSeries {
 // which will be the same series if it represents a single value.
 func (addr WrappedAddress) GetUpper() ExtendedSegmentSeries {
 	return wrapAddress(addr.Address.GetUpper())
+}
+
+// GetLowerAndUpper returns the addresses in the subnet with the lowest and highest numeric value.
+// Both will be the receiver if it represents a single address.
+// For example, for the subnet "1.2-3.4.5-6", the addresses "1.2.4.5" and "1.3.4.6" are returned.
+func (addr WrappedAddress) GetLowerAndUpper() (lower, upper ExtendedSegmentSeries) {
+	return wrapAddressPair(addr.Address.GetLowerAndUpper())
 }
 
 // GetSection returns the backing section for this series, comprising all segments.
@@ -456,22 +572,6 @@ func (addr WrappedAddress) AssignMinPrefixForBlock() ExtendedSegmentSeries {
 // WithoutPrefixLen provides the same address series but with no prefix length.  The values remain unchanged.
 func (addr WrappedAddress) WithoutPrefixLen() ExtendedSegmentSeries {
 	return wrapAddress(addr.Address.WithoutPrefixLen())
-}
-
-// Contains returns whether this is same type and version as the given address series and whether it contains all values in the given series.
-//
-// Series must also have the same number of segments to be comparable, otherwise false is returned.
-func (addr WrappedAddress) Contains(other ExtendedSegmentSeries) bool {
-	a, ok := other.Unwrap().(AddressType)
-	return ok && addr.Address.Contains(a)
-}
-
-// Equal returns whether the given address series is equal to this address series.
-// Two address series are equal if they represent the same set of series.
-// Both must be equal addresses.
-func (addr WrappedAddress) Equal(other ExtendedSegmentSeries) bool {
-	a, ok := other.Unwrap().(AddressType)
-	return ok && addr.Address.Equal(a)
 }
 
 // SetPrefixLen sets the prefix length.
@@ -678,6 +778,61 @@ func (section WrappedAddressSection) IncrementBoundary(i int64) ExtendedSegmentS
 	return convSectToIntf(section.AddressSection.IncrementBoundary(i))
 }
 
+// IncrementSingle increments the series by 1 to produce a new series.  Equivalent to Increment(1).
+func (section WrappedAddressSection) IncrementSingle() ExtendedSegmentSeries {
+	return convSectToIntf(section.AddressSection.IncrementSingle())
+}
+
+// DecrementSingle decrements the series by 1 to produce a new series.  Equivalent to Increment(-1).
+func (section WrappedAddressSection) DecrementSingle() ExtendedSegmentSeries {
+	return convSectToIntf(section.AddressSection.DecrementSingle())
+}
+
+// IncrementBoundarySingle increments the boundary of the series by 1 to produce a new series.  Equivalent to IncrementBoundary(1).
+func (section WrappedAddressSection) IncrementBoundarySingle() ExtendedSegmentSeries {
+	return convSectToIntf(section.AddressSection.IncrementBoundarySingle())
+}
+
+// IncrementBig increments the series.  It is the same as Increment but allows for a larger increment value.
+func (section WrappedAddressSection) IncrementBig(i *big.Int) ExtendedSegmentSeries {
+	return convSectToIntf(section.AddressSection.IncrementBig(i))
+}
+
+// Overlaps returns whether this series overlaps with the given series, meaning there is at least one individual series common to both.
+func (section WrappedAddressSection) Overlaps(other ExtendedSegmentSeries) bool {
+	s, ok := other.Unwrap().(AddressSectionType)
+	return ok && section.AddressSection.Overlaps(s)
+}
+
+// PrefixEqual determines if the given series matches this series up to the prefix length of this series.
+// If this series has no prefix length, the entire series is compared.
+//
+// It returns whether the two series share the same range of prefix values.
+func (section WrappedAddressSection) PrefixEqual(other ExtendedSegmentSeries) bool {
+	s, ok := other.Unwrap().(AddressSectionType)
+	return ok && section.AddressSection.PrefixEqual(s)
+}
+
+// PrefixContains returns whether the prefix values in the given series
+// are prefix values in this series, using the prefix length of this series.
+// If this series has no prefix length, the entire series is compared.
+//
+// It returns whether the prefix of this series contains all values of the same prefix length in the given series.
+func (section WrappedAddressSection) PrefixContains(other ExtendedSegmentSeries) bool {
+	s, ok := other.Unwrap().(AddressSectionType)
+	return ok && section.AddressSection.PrefixContains(s)
+}
+
+// UpperIsAdjacentTo indicates if the given section's lower value is the next individual address following this section's upper value.
+// This means they are adjacent, having no intervening section.
+// Prefix lengths are ignored in this determination, just like with equality and containment.
+//
+// UpperIsAdjacentTo returns true given the section produced by IncrementBoundarySingle.
+func (section WrappedAddressSection) UpperIsAdjacentTo(other ExtendedSegmentSeries) bool {
+	s, ok := other.Unwrap().(AddressSectionType)
+	return ok && section.AddressSection.UpperIsAdjacentTo(s)
+}
+
 // Enumerate indicates where an individual address section sits relative to the address section range ordering.
 //
 // Determines how many address section elements of a range precede the given address section element, if the address section is in the range.
@@ -702,6 +857,22 @@ func (section WrappedAddressSection) Enumerate(other ExtendedSegmentSeries) *big
 	return nil
 }
 
+// Contains returns whether this is same type and version as the given address series and whether it contains all values in the given series.
+//
+// Series must also have the same number of segments to be comparable, otherwise false is returned.
+func (section WrappedAddressSection) Contains(other ExtendedSegmentSeries) bool {
+	s, ok := other.Unwrap().(AddressSectionType)
+	return ok && section.AddressSection.Contains(s)
+}
+
+// Equal returns whether the given address series is equal to this address series.
+// Two address series are equal if they represent the same set of series.
+// Both must be equal sections.
+func (section WrappedAddressSection) Equal(other ExtendedSegmentSeries) bool {
+	s, ok := other.Unwrap().(AddressSectionType)
+	return ok && section.AddressSection.Equal(s)
+}
+
 // GetLower returns the series in the range with the lowest numeric value,
 // which will be the same series if it represents a single value.
 func (section WrappedAddressSection) GetLower() ExtendedSegmentSeries {
@@ -712,6 +883,12 @@ func (section WrappedAddressSection) GetLower() ExtendedSegmentSeries {
 // which will be the same series if it represents a single value.
 func (section WrappedAddressSection) GetUpper() ExtendedSegmentSeries {
 	return wrapSection(section.AddressSection.GetUpper())
+}
+
+// GetLowerAndUpper returns the addresses in the subnet with the lowest and highest numeric value.
+// Both will be the receiver if it represents a single address.
+func (section WrappedAddressSection) GetLowerAndUpper() (lower, upper ExtendedSegmentSeries) {
+	return wrapSectionPair(section.AddressSection.GetLowerAndUpper())
 }
 
 // GetSection returns the backing section for this series, comprising all segments.
@@ -739,22 +916,6 @@ func (section WrappedAddressSection) AssignMinPrefixForBlock() ExtendedSegmentSe
 // WithoutPrefixLen provides the same address series but with no prefix length.  The values remain unchanged.
 func (section WrappedAddressSection) WithoutPrefixLen() ExtendedSegmentSeries {
 	return wrapSection(section.AddressSection.WithoutPrefixLen())
-}
-
-// Contains returns whether this is same type and version as the given address series and whether it contains all values in the given series.
-//
-// Series must also have the same number of segments to be comparable, otherwise false is returned.
-func (section WrappedAddressSection) Contains(other ExtendedSegmentSeries) bool {
-	s, ok := other.Unwrap().(AddressSectionType)
-	return ok && section.AddressSection.Contains(s)
-}
-
-// Equal returns whether the given address series is equal to this address series.
-// Two address series are equal if they represent the same set of series.
-// Both must be equal sections.
-func (section WrappedAddressSection) Equal(other ExtendedSegmentSeries) bool {
-	s, ok := other.Unwrap().(AddressSectionType)
-	return ok && section.AddressSection.Equal(s)
 }
 
 // SetPrefixLen sets the prefix length.
@@ -866,6 +1027,14 @@ func wrapAddress(addr *Address) WrappedAddress {
 	return WrappedAddress{addr}
 }
 
+func wrapAddressPair(addr1, addr2 *Address) (WrappedAddress, WrappedAddress) {
+	return WrappedAddress{addr1}, WrappedAddress{addr2}
+}
+
 func wrapSection(section *AddressSection) WrappedAddressSection {
 	return WrappedAddressSection{section}
+}
+
+func wrapSectionPair(section1, section2 *AddressSection) (WrappedAddressSection, WrappedAddressSection) {
+	return WrappedAddressSection{section1}, WrappedAddressSection{section2}
 }

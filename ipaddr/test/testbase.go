@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2024 Sean C Foley
+// Copyright 2020-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -115,6 +115,9 @@ func testAll(addresses addresses, rangedAddresses rangedAddresses, allAddresses 
 	keyTester := keyTester{testBase{testResults: &acc, testAddresses: &allAddresses, fullTest: fullTest}}
 	keyTester.run()
 
+	collectionTester := collectionTester{testBase: testBase{testResults: &acc, testAddresses: &allAddresses, fullTest: fullTest}}
+	collectionTester.run()
+
 	return acc
 }
 
@@ -125,10 +128,12 @@ type testResults interface {
 
 	// store test counts
 	incrementTestCount()
+
+	incrementTestCountNum(uint64)
 }
 
 type testAccumulator struct {
-	counter  int64
+	counter  uint64
 	failures []failure
 	lock     *sync.Mutex
 }
@@ -147,6 +152,10 @@ func (t *testAccumulator) addFailure(f failure) {
 
 func (t *testAccumulator) incrementTestCount() {
 	t.counter++
+}
+
+func (t *testAccumulator) incrementTestCountNum(num uint64) {
+	t.counter += num
 }
 
 type testBase struct {
@@ -1412,46 +1421,6 @@ func (t testBase) testCountImpl(w ipaddr.ExtendedIdentifierString, number uint64
 				t.addFailure(newSegmentSeriesFailure("unexpected zero count ", val))
 			}
 		}
-
-		//if(!excludeZeroHosts){
-		//
-		//	//				Function<Address, Spliterator<? extends AddressItem>> spliteratorFunc = excludeZeroHosts ?
-		//	//						addr -> ((IPAddress)addr).nonZeroHostSpliterator() : Address::spliterator;
-		//	Function<Address, AddressComponentRangeSpliterator<?,? extends AddressItem>> spliteratorFunc = Address::spliterator;
-		//
-		//	testSpliterate(t, val, 0, number, spliteratorFunc);
-		//	testSpliterate(t, val, 1, number, spliteratorFunc);
-		//	testSpliterate(t, val, 8, number, spliteratorFunc);
-		//	testSpliterate(t, val, -1, number, spliteratorFunc);
-		//
-		//	testStream(t, val, set, Address::stream);
-		//
-		//	AddressSection section = val.getSection();
-		//
-		//	//				Function<AddressSection, Spliterator<? extends AddressItem>> sectionFunc = excludeZeroHosts ?
-		//	//						addr -> ((IPAddressSection)section).nonZeroHostSpliterator() : AddressSection::spliterator;
-		//	Function<AddressSection, AddressComponentRangeSpliterator<?,? extends AddressItem>> sectionFunc = AddressSection::spliterator;
-		//
-		//	testSpliterate(t, section, 0, number, sectionFunc);
-		//	testSpliterate(t, section, 1, number, sectionFunc);
-		//	testSpliterate(t, section, 2, number, sectionFunc);
-		//	set = testSpliterate(t, section, 7, number, sectionFunc);
-		//	testSpliterate(t, section, -1, number, sectionFunc);
-		//
-		//	testStream(t, section, set, AddressSection::stream);
-		//
-		//	Set<AddressItem> createdSet = null;
-		//	if(section instanceof IPv6AddressSection) {
-		//		createdSet = ((IPv6AddressSection) section).segmentsStream().map(IPv6AddressSection::new).collect(Collectors.toSet());
-		//	} else if(section instanceof IPv4AddressSection) {
-		//		createdSet = ((IPv4AddressSection) section).segmentsStream().map(IPv4AddressSection::new).collect(Collectors.toSet());
-		//	} else if(section instanceof MACAddressSection) {
-		//		createdSet = ((MACAddressSection) section).segmentsStream().map(MACAddressSection::new).collect(Collectors.toSet());
-		//	}
-		//
-		//	testStream(t, section, createdSet, AddressSection::stream);
-		//
-		//}
 	}
 	t.incrementTestCount()
 }
@@ -1675,6 +1644,8 @@ type failure struct {
 	trieNew          *ipaddr.Trie[*ipaddr.Address]
 	dualTrieNew      *ipaddr.DualIPv4v6Tries
 	dualTrieAssocNew *ipaddr.DualIPv4v6AssociativeTries[string]
+
+	aggr ipaddr.AddressAggregation
 }
 
 func (f failure) String() string {
@@ -1793,6 +1764,13 @@ func newMACFailure(str string, addrStr *ipaddr.MACAddressString) failure {
 
 func newFailure(str string, addrStr *ipaddr.IPAddressString) failure {
 	return newHostIdFailure(str, addrStr)
+}
+
+func newCollectionFailure(str string, coll ipaddr.AddressAggregation) failure {
+	return failure{
+		str:  str,
+		aggr: coll,
+	}
 }
 
 func cacheTestBits(i ipaddr.BitCount) ipaddr.PrefixLen {

@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2024 Sean C Foley
+// Copyright 2020-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -390,6 +390,16 @@ func (addr *ipAddressInternal) GetBlockMaskPrefixLen(network bool) PrefixLen {
 	return section.ToIP().GetBlockMaskPrefixLen(network)
 }
 
+func (addr *ipAddressInternal) toIPNet() *net.IPNet {
+	if addr.IsSinglePrefixBlock() {
+		return &net.IPNet{
+			IP:   addr.withoutPrefixLen().Bytes(),
+			Mask: addr.getNetworkMask(addr.getNetwork()).Bytes(),
+		}
+	}
+	return nil
+}
+
 func (addr *ipAddressInternal) spanWithPrefixBlocks() []ExtendedIPSegmentSeries {
 	if addr.IsSequential() {
 		if addr.IsSinglePrefixBlock() {
@@ -414,9 +424,10 @@ func (addr *ipAddressInternal) coverSeriesWithPrefixBlock() ExtendedIPSegmentSer
 	if addr.IsSinglePrefixBlock() {
 		return addr.toIPAddress().Wrap()
 	}
+	lower, upper := addr.getLowestHighestAddrs()
 	return coverWithPrefixBlock(
-		addr.getLower().ToIP(),
-		addr.getUpper().ToIP(),
+		lower.ToIP(),
+		upper.ToIP(),
 	).Wrap()
 }
 
@@ -425,7 +436,8 @@ func (addr *ipAddressInternal) coverWithPrefixBlock() *IPAddress {
 	if addr.IsSinglePrefixBlock() {
 		return addr.toIPAddress()
 	}
-	return coverWithPrefixBlock(addr.getLower().ToIP(), addr.getUpper().ToIP())
+	lower, upper := addr.getLowestHighestAddrs()
+	return coverWithPrefixBlock(lower.ToIP(), upper.ToIP())
 }
 
 func (addr *ipAddressInternal) coverWithPrefixBlockTo(other *IPAddress) *IPAddress {
@@ -560,6 +572,9 @@ func (addr *ipAddressInternal) toCompressedWildcardString() string {
 }
 
 func (addr *ipAddressInternal) getNetwork() IPAddressNetwork {
+	if addr.section == nil {
+		return nil
+	}
 	return addr.getSection().getNetwork()
 }
 
@@ -613,6 +628,9 @@ func (addr *ipAddressInternal) GetPrefixLen() PrefixLen {
 // It is similar to IsPrefixBlock but returns false when there are multiple prefixes.
 //
 // For instance, "1.*.*.* /16" returns false from this method and returns true from IsPrefixBlock.
+//
+// 1.2.0.0/16 or 1:2:3:4::/64 are examples of single prefic blocks.
+// They can also be written as 1.2.*.*/16 or 1:2:3:4:*:*:*:*/64
 func (addr *ipAddressInternal) IsSinglePrefixBlock() bool {
 	return addr.addressInternal.IsSinglePrefixBlock()
 }
@@ -680,138 +698,11 @@ func (addr *ipAddressInternal) GetPrefixLenForSingleBlock() PrefixLen {
 	return addr.addressInternal.GetPrefixLenForSingleBlock()
 }
 
-func (addr *ipAddressInternal) rangeIterator(
-	//creator parsedAddressCreator, /* nil for zero sections */
-	upper *IPAddress,
-	valsAreMultiple bool,
-	prefixLen PrefixLen,
-	segProducer func(addr *IPAddress, index int) *IPAddressSegment,
-	segmentIteratorProducer func(seg *IPAddressSegment, index int) Iterator[*IPAddressSegment],
-	segValueComparator func(seg1, seg2 *IPAddress, index int) bool,
-	networkSegmentIndex,
-	hostSegmentIndex int,
-	prefixedSegIteratorProducer func(seg *IPAddressSegment, index int) Iterator[*IPAddressSegment],
-) Iterator[*Address] {
-	//lower := rng.lower
-	//upper := rng.upper
-	lower := addr.toIPAddress()
-	divCount := lower.GetSegmentCount()
-
-	// at any given point in time, this list provides an iterator for the segment at each index
-	segIteratorProducerList := make([]func() Iterator[*IPAddressSegment], divCount)
-
-	// at any given point in time, finalValue[i] is true if and only if we have reached the very last value for segment i - 1
-	// when that happens, the next iterator for the segment at index i will be the last
-	finalValue := make([]bool, divCount+1)
-
-	// here is how the segment iterators will work:
-	// the low and high values of the range at each segment are low, high
-	// the maximum possible values for any segment are min, max
-	// we first find the first k >= 0 such that low != high for the segment at index k
-
-	//	the initial set of iterators at each index are as follows:
-	//    for i < k finalValue[i] is set to true right away.
-	//		we create an iterator from seg = new Seg(low)
-	//    for i == k we create a wrapped iterator from Seg(low, high), wrapper will set finalValue[i] once we reach the final value of the iterator
-	//    for i > k we create an iterator from Seg(low, max)
-	//
-	// after the initial iterator has been supplied, any further iterator supplied for the same segment is as follows:
-	//    for i <= k, there was only one iterator, there will be no further iterator
-	//    for i > k,
-	//	  	if i == 0 or of if flagged[i - 1] is true, we create a wrapped iterator from Seg(low, high), wrapper will set finalValue[i] once we reach the final value of the iterator
-	//      otherwise we create an iterator from Seg(min, max)
-	//
-	// By following these rules, we iterate through all possible addresses
-
-	notDiffering := true
-	finalValue[0] = true
-	var allSegShared *IPAddressSegment
-	for i := 0; i < divCount; i++ {
-		var segIteratorProducer func(seg *IPAddressSegment, index int) Iterator[*IPAddressSegment]
-		if prefixedSegIteratorProducer != nil && i >= networkSegmentIndex {
-			segIteratorProducer = prefixedSegIteratorProducer
-		} else {
-			segIteratorProducer = segmentIteratorProducer
-		}
-		lowerSeg := segProducer(lower, i)
-		indexi := i
-		if notDiffering {
-			notDiffering = segValueComparator(lower, upper, i)
-			if notDiffering {
-				// there is only one iterator and it produces only one value
-				finalValue[i+1] = true
-				iterator := segIteratorProducer(lowerSeg, i)
-				segIteratorProducerList[i] = func() Iterator[*IPAddressSegment] { return iterator }
-			} else {
-				// in the first differing segment the only iterator will go from segment value of lower address to segment value of upper address
-				iterator := segIteratorProducer(
-					createAddressDivision(lowerSeg.deriveNewMultiSeg(lowerSeg.getSegmentValue(), upper.GetGenericSegment(i).GetSegmentValue(), nil)).ToIP(),
-					i)
-				wrappedFinalIterator := &wrappedIterator{
-					iterator:   iterator,
-					finalValue: finalValue,
-					indexi:     indexi,
-				}
-				segIteratorProducerList[i] = func() Iterator[*IPAddressSegment] { return wrappedFinalIterator }
-			}
-		} else {
-			// in the second and all following differing segments, rather than go from segment value of lower address to segment value of upper address
-			// we go from segment value of lower address to the max seg value the first time through
-			// then we go from the min value of the seg to the max seg value each time until the final time,
-			// the final time we go from the min value to the segment value of upper address
-			// we know it is the final time through when the previous iterator has reached its final value, which we track
-
-			// the first iterator goes from the segment value of lower address to the max value of the segment
-			firstIterator := segIteratorProducer(
-				createAddressDivision(lowerSeg.deriveNewMultiSeg(lowerSeg.getSegmentValue(), lower.GetMaxSegmentValue(), nil)).ToIP(),
-				i)
-
-			// the final iterator goes from 0 to the segment value of our upper address
-			finalIterator := segIteratorProducer(
-				createAddressDivision(lowerSeg.deriveNewMultiSeg(0, upper.GetGenericSegment(i).GetSegmentValue(), nil)).ToIP(),
-				i)
-
-			// the wrapper iterator detects when the final iterator has reached its final value
-			wrappedFinalIterator := &wrappedIterator{
-				iterator:   finalIterator,
-				finalValue: finalValue,
-				indexi:     indexi,
-			}
-			if allSegShared == nil {
-				allSegShared = createAddressDivision(lowerSeg.deriveNewMultiSeg(0, lower.GetMaxSegmentValue(), nil)).ToIP()
-			}
-			// all iterators after the first iterator and before the final iterator go from 0 the max segment value,
-			// and there will be many such iterators
-			finalIteratorProducer := func() Iterator[*IPAddressSegment] {
-				if finalValue[indexi] {
-					return wrappedFinalIterator
-				}
-				return segIteratorProducer(allSegShared, indexi)
-			}
-			segIteratorProducerList[i] = func() Iterator[*IPAddressSegment] {
-				//the first time through, we replace the iterator producer so the first iterator used only once (ie we remove this function from the list)
-				segIteratorProducerList[indexi] = finalIteratorProducer
-				return firstIterator
-			}
-		}
+func (addr *ipAddressInternal) removeBitCountPrefixLen() *IPAddress {
+	if addr.isPrefixed() && addr.getPrefixLen().Matches(addr.GetBitCount()) {
+		return addr.withoutPrefixLen().ToIP()
 	}
-	iteratorProducer := func(iteratorIndex int) Iterator[*AddressSegment] {
-		iter := segIteratorProducerList[iteratorIndex]()
-		return wrappedSegmentIterator[*IPAddressSegment]{iter}
-	}
-	return rangeAddrIterator(
-		false,
-		lower.ToAddressBase(),
-		prefixLen,
-		valsAreMultiple,
-		rangeSegmentsIterator(
-			divCount,
-			iteratorProducer,
-			networkSegmentIndex,
-			hostSegmentIndex,
-			iteratorProducer,
-		),
-	)
+	return addr.toIPAddress()
 }
 
 //// end needed for godoc / pkgsite
@@ -1055,6 +946,13 @@ func (addr *IPAddress) GetLower() *IPAddress {
 // For example, for "1.2-3.4.5-6", the series "1.3.4.6" is returned.
 func (addr *IPAddress) GetUpper() *IPAddress {
 	return addr.init().getUpper().ToIP()
+}
+
+// GetLowerAndUpper returns the addresses in the subnet with the lowest and highest numeric value.
+// Both will be the receiver if it represents a single address.
+// For example, for the subnet "1.2-3.4.5-6", the addresses "1.2.4.5" and "1.3.4.6" are returned.
+func (addr *IPAddress) GetLowerAndUpper() (lower, upper *IPAddress) {
+	return addr.init().getLowestHighestAddrs()
 }
 
 // IsZeroHostLen returns whether the host section is always zero for all individual addresses in this subnet,
@@ -1430,20 +1328,29 @@ func (addr *IPAddress) containsSame(other *IPAddress) bool {
 // Contains returns whether this is the same type and version as the given address or subnet and whether it contains all addresses in the given address or subnet.
 func (addr *IPAddress) Contains(other AddressType) bool {
 	if addr == nil {
-		return other == nil || other.ToAddressBase() == nil
+		return false
 	}
 	return addr.init().contains(other)
 }
 
 // ContainsRange returns true if this address contains the given sequential range
 func (addr *IPAddress) ContainsRange(other IPAddressSeqRangeType) bool {
-	return isContainedBy(other, addr.init())
+	if addr != nil {
+		addr = addr.init()
+	}
+	return isContainedBy(other, addr)
+}
+
+// OverlapsAddr returns true if and only the given individual address or subnet contains at least one individual address that is also in this address or subnet.
+// Implements the IPAddressAggregation interface.
+func (addr *IPAddress) OverlapsAddr(other AddressType) bool {
+	return addr.Overlaps(other)
 }
 
 // Overlaps returns true if this address overlaps the given address or subnet
 func (addr *IPAddress) Overlaps(other AddressType) bool {
 	if addr == nil {
-		return true
+		return false
 	}
 	return addr.init().overlaps(other)
 }
@@ -1451,7 +1358,7 @@ func (addr *IPAddress) Overlaps(other AddressType) bool {
 // Overlaps returns true if this address overlaps the given sequential range
 func (addr *IPAddress) OverlapsRange(other IPAddressSeqRangeType) bool {
 	if other == nil {
-		return true
+		return false
 	}
 	return other.OverlapsAddress(addr)
 }
@@ -1469,6 +1376,14 @@ func (addr *IPAddress) Equal(other AddressType) bool {
 		return other == nil || other.ToAddressBase() == nil
 	}
 	return addr.init().equals(other)
+}
+
+// EqualAggregation returns whether this subnet contains the same set of individual addresses as the given aggregation of addresses.
+func (addr *IPAddress) EqualAggregation(otherAggregation AddressAggregation) bool {
+	if addr == nil {
+		return IsEmpty(otherAggregation)
+	}
+	return addr.init().equalAggregation(otherAggregation)
 }
 
 // CompareSize compares the counts of two subnets or addresses or other items, the number of individual items within.
@@ -1533,7 +1448,7 @@ func (addr *IPAddress) TrieDecrement() *IPAddress {
 
 // MatchesWithMask applies the mask to this address and then compares the result with the given address,
 // returning true if they match, false otherwise.
-func (addr *IPAddress) MatchesWithMask(other *IPAddress, mask *IPAddress) bool {
+func (addr *IPAddress) MatchesWithMask(other, mask *IPAddress) bool {
 	if thisAddr := addr.ToIPv4(); thisAddr != nil {
 		if oth := other.ToIPv4(); oth != nil {
 			if msk := mask.ToIPv4(); mask != nil {
@@ -1642,6 +1557,11 @@ func (addr *IPAddress) Iterator() Iterator[*IPAddress] {
 	return ipAddrIterator{addr.init().addrIterator(nil)}
 }
 
+// AddressIterator is the same as Iterator while satisying the AddressAggregation interface
+func (addr *IPAddress) AddressIterator() Iterator[AddressType] {
+	return addrTypeIterator[*IPAddress]{addr.Iterator()}
+}
+
 // PrefixIterator provides an iterator to iterate through the individual prefixes of this subnet,
 // each iterated element spanning the range of values for its prefix.
 //
@@ -1695,36 +1615,34 @@ func (addr *IPAddress) GetSequentialBlockCount() *big.Int {
 	return addr.getSequentialBlockCount()
 }
 
-func (addr *IPAddress) rangeIterator(
-	upper *IPAddress,
-	valsAreMultiple bool,
-	prefixLen PrefixLen,
-	segProducer func(addr *IPAddress, index int) *IPAddressSegment,
-	segmentIteratorProducer func(seg *IPAddressSegment, index int) Iterator[*IPAddressSegment],
-	segValueComparator func(seg1, seg2 *IPAddress, index int) bool,
-	networkSegmentIndex,
-	hostSegmentIndex int,
-	prefixedSegIteratorProducer func(seg *IPAddressSegment, index int) Iterator[*IPAddressSegment],
-) Iterator[*IPAddress] {
-	return ipAddrIterator{addr.ipAddressInternal.rangeIterator(upper.ToIP(), valsAreMultiple, prefixLen, segProducer, segmentIteratorProducer, segValueComparator, networkSegmentIndex, hostSegmentIndex, prefixedSegIteratorProducer)}
+func (addr *IPAddress) iteratorWrapper(iter Iterator[*Address]) Iterator[*IPAddress] {
+	return ipAddrIterator{iter}
 }
 
-// ToSequentialRange creates a sequential range instance from the lowest and highest addresses in this subnet.
+// CoverWithSequentialRange creates a sequential range instance from the lowest and highest addresses in this subnet.
 //
 // The two will represent the same set of individual addresses if and only if IsSequential is true.
 // To get a series of ranges that represent the same set of individual addresses use the SequentialBlockIterator (or PrefixIterator),
 // and apply this method to each iterated subnet.
 //
 // If this represents just a single address then the returned instance covers just that single address as well.
-func (addr *IPAddress) ToSequentialRange() *SequentialRange[*IPAddress] {
+func (addr *IPAddress) CoverWithSequentialRange() *SequentialRange[*IPAddress] {
 	if addr != nil {
 		addr = addr.init().WithoutPrefixLen()
+		lower, upper := addr.getLowestHighestAddrs()
 		return newSequRangeUnchecked(
-			addr.GetLower(),
-			addr.GetUpper(),
+			lower,
+			upper,
 			addr.isMultiple())
 	}
 	return nil
+}
+
+// ToSequentialRange creates a sequential range instance from the lowest and highest addresses in this subnet.
+//
+// Deprecated: Use CoverWithSequentialRange instead.
+func (addr *IPAddress) ToSequentialRange() *SequentialRange[*IPAddress] {
+	return addr.CoverWithSequentialRange()
 }
 
 func (addr *IPAddress) getLowestHighestAddrs() (lower, upper *IPAddress) {
@@ -1743,6 +1661,11 @@ func (addr *IPAddress) getLowestHighestAddrs() (lower, upper *IPAddress) {
 // On address overflow or underflow, IncrementBoundary returns nil.
 func (addr *IPAddress) IncrementBoundary(increment int64) *IPAddress {
 	return addr.init().incrementBoundary(increment).ToIP()
+}
+
+// IncrementBoundarySingle increments the boundary of the address or subnet by 1 to produce a new address.  Equivalent to IncrementBoundary(1).
+func (addr *IPAddress) IncrementBoundarySingle() *IPAddress {
+	return addr.init().incrementBoundarySingle().ToIP()
 }
 
 // Increment returns the address from the subnet that is the given increment upwards into the subnet range,
@@ -1767,6 +1690,67 @@ func (addr *IPAddress) Increment(increment int64) *IPAddress {
 	return addr.init().increment(increment).ToIP()
 }
 
+// IncrementSingle increments the address or subnet by 1 to produce a new address.  Equivalent to Increment(1).
+func (addr *IPAddress) IncrementSingle() *IPAddress {
+	return addr.init().incrementSingle().ToIP()
+}
+
+// DecrementSingle decrements the address or subnet by 1 to produce a new address.  Equivalent to Increment(-1).
+func (addr *IPAddress) DecrementSingle() *IPAddress {
+	return addr.init().decrementSingle().ToIP()
+}
+
+// IncrementBig returns the address from the subnet that is the given increment upwards into the subnet range.
+//
+// Equivalent to Increment, but taking a big integer as the increment argument.
+func (addr *IPAddress) IncrementBig(increment *big.Int) *IPAddress {
+	return addr.init().incrementBig(increment).ToIP()
+}
+
+// UpperIsAdjacentTo indicates if the given address or subnet's lower value is the next individual address following this address or subnet's upper value.
+// This means they are adjacent, having no intervening address.
+// Prefix lengths are ignored in this determination, just like with equality and containment.
+//
+// UpperIsAdjacentTo returns true given the address produced by IncrementBoundarySingle.
+func (addr *IPAddress) UpperIsAdjacentTo(other AddressType) bool {
+	return addr.init().section.upperIsAdjacentTo(other.ToAddressBase().GetSection())
+}
+
+// UpperIsAdjacentTo indicates if the given address or subnet's lower value is the next individual address following this address or subnet's upper value.
+// This means they are adjacent, having no intervening address.
+// Prefix lengths are ignored in this determination, just like with equality and containment.
+//
+// UpperIsAdjacentTo returns true given the address produced by IncrementBoundarySingle.
+func (addr *IPAddress) upperIsAdjacentTo(other *IPAddress) bool {
+	return addr.GetSection().upperIsAdjacentTo(other.GetSection())
+}
+
+// Get returns the individual address that is at the given index in this subnet,
+// with the increment of 0 returning the first in the range.
+//
+// If the index is negative or exceeds GetCount() - 1, this panics.
+//
+// If this address is the zero IP address, the adaptive-zero address, this panics, since there is no individual IP address in the range.
+func (addr *IPAddress) Get(index int64) *IPAddress {
+	if addr.section == nil {
+		outOfBounds()
+	}
+	return addr.get(index).ToIP()
+}
+
+// GetBig returns the individual address that is at the given index in this subnet,
+// with the increment of 0 returning the first in the range.
+//
+// If the index is negative or exceeds GetCount() - 1, this panics.
+//
+// If this address is the zero IP address, the adaptive-zero address, this panics, since there is no individual IP address in the range.
+func (addr *IPAddress) GetBig(index *big.Int) *IPAddress {
+	if addr.section == nil {
+		outOfBounds()
+	}
+	return addr.getBig(index).ToIP()
+}
+
 // Enumerate indicates where an address sits relative to the subnet ordering.
 //
 // Determines how many address elements of the subnet precede the given address element, if the address is in the subnet.
@@ -1785,11 +1769,14 @@ func (addr *IPAddress) Increment(increment int64) *IPAddress {
 //
 // If the given address does not have the same version or type, then nil is returned.
 func (addr *IPAddress) Enumerate(other AddressType) *big.Int {
+	if addr == nil {
+		return nil
+	}
 	return addr.init().enumerate(other)
 }
 
 // SpanWithRange returns an IPAddressSeqRange instance that spans this subnet to the given subnet.
-// If the other address is a different version than this, then the other is ignored, and the result is equivalent to calling ToSequentialRange.
+// If the other address is a different version than the receiver, then the returned range is nil.
 func (addr *IPAddress) SpanWithRange(other *IPAddress) *SequentialRange[*IPAddress] {
 	return NewSequentialRange(addr.init(), other)
 }
@@ -1859,6 +1846,29 @@ func (addr *IPAddress) Intersect(other *IPAddress) *IPAddress {
 	} else if thisAddr := addr.ToIPv6(); thisAddr != nil {
 		if oth := other.ToIPv6(); oth != nil {
 			return thisAddr.Intersect(oth).ToIP()
+		}
+	}
+	return nil
+}
+
+// Complement returns the complement of the individual address or subnet within the address space.
+//
+// If an individual address, returns all other addresses in the address space.  If a subnet, returns all addresses not contained within the subnet.
+//
+// This method returns the complement as minimal array of sequential block subnets.  To get the complement as a list of sequential ranges,
+// convert this address to a sequential range list using IntoSequentialRangeList and call ComplementIntoList on the list.
+//
+// The zero-value of IPAddress, which is an address with no segment, has no complement and returns nil from this method.
+// The zero-value of IPv4Address is the zero address 0.0.0.0, so the complement is the set including every address except 0.0.0.0.
+// The zero-value of IPv6Address is the zero address ::, so the complement is the set including every address except ::.
+func (addr *IPAddress) Complement() []*IPAddress {
+	if thisAddr := addr.ToIPv4(); thisAddr != nil {
+		if res := thisAddr.Complement(); res != nil {
+			return cloneTo(res, (*IPv4Address).ToIP)
+		}
+	} else if thisAddr := addr.ToIPv6(); thisAddr != nil {
+		if res := thisAddr.Complement(); res != nil {
+			return cloneTo(res, (*IPv6Address).ToIP)
 		}
 	}
 	return nil
@@ -1944,8 +1954,10 @@ func (addr *IPAddress) IsMulticast() bool {
 	return false
 }
 
-func versionsMatch(one, two *IPAddress) bool {
-	return one.getAddrType() == two.getAddrType()
+func versionsMatch[T interface {
+	GetIPVersion() IPVersion
+}](one, two T) bool {
+	return one.GetIPVersion() == two.GetIPVersion()
 }
 
 // MergeToSequentialBlocks merges this with the list of addresses to produce the smallest array of sequential blocks.
@@ -2035,6 +2047,11 @@ func (addr *IPAddress) SpanWithPrefixBlocks() []*IPAddress {
 	return spanWithPrefixBlocks(addr)
 }
 
+// SpanningPrefixBlockIterator returns the result of SpanWithPrefixBlocks as an iterator.
+func (addr *IPAddress) SpanningPrefixBlockIterator() Iterator[*IPAddress] {
+	return &sliceIterator[*IPAddress]{addr.SpanWithPrefixBlocks()}
+}
+
 // SpanWithPrefixBlocksTo returns the smallest slice of prefix block subnets that span from this subnet to the given subnet.
 //
 // If the given address is a different version than this, then the given address is ignored, and the result is equivalent to calling SpanWithPrefixBlocks.
@@ -2081,6 +2098,11 @@ func (addr *IPAddress) SpanWithSequentialBlocks() []*IPAddress {
 		return []*IPAddress{addr}
 	}
 	return spanWithSequentialBlocks(addr)
+}
+
+// SpanningSeqBlockIterator returns the result of SpanWithSequentialBlocks as an iterator.
+func (addr *IPAddress) SpanningSeqBlockIterator() Iterator[*IPAddress] {
+	return &sliceIterator[*IPAddress]{addr.SpanWithSequentialBlocks()}
 }
 
 // SpanWithSequentialBlocksTo produces the smallest slice of sequential block subnets that span all values from this subnet to the given subnet.
@@ -2440,8 +2462,35 @@ func (addr *IPAddress) GetTrailingBitCount(ones bool) BitCount {
 }
 
 // GetNetwork returns the singleton network instance for the IP version of this address or subnet.
+//
+// GetIPNetwork returns a constraint, which allows for more exact generic code that works with a single IP address type.
+// GetNetwork returns an interface implementation satisiable by all IP address types,
+// allowing for generic code that works on them all.
+//
+// If this address is a nil pointer, or is the zero-valued IPAddress, then nil is returned.
 func (addr *IPAddress) GetNetwork() IPAddressNetwork {
+	if addr == nil {
+		return nil
+	}
 	return addr.getNetwork()
+}
+
+// GetIPNetwork returns the singleton network instance for the IP version of this address or subnet.
+//
+// GetIPNetwork returns a constraint, which allows for more exact generic code that works with a single IP address type.
+// GetNetwork returns an interface implementation satisiable by all IP address types,
+// allowing for generic code that works on them all.
+//
+// If this address is a nil pointer, or is the zero-valued IPAddress, then nil is returned.
+func (addr *IPAddress) GetIPNetwork() IPAddressNetworkConstraint[*IPAddress] {
+	if addr != nil {
+		if addr.isIPv4() {
+			return ipv4Network
+		} else if addr.isIPv6() {
+			return ipv6Network
+		}
+	}
+	return nil
 }
 
 func (addr *IPAddress) toMaxLower() *IPAddress {
@@ -2485,6 +2534,79 @@ func (addr *IPAddress) fromKey(scheme addressScheme, key *keyContents) *IPAddres
 	// scheme == adaptiveZeroScheme
 	zeroAddr := IPAddress{}
 	return zeroAddr.init()
+}
+
+// ToIPNet returns the equivalent net.IPNet when this subnet represesents a single CIDR subnet.  Otherwise it returns nil.
+//
+// See net.ParseCIDR for more info on net.IPNet.
+//
+// To represent a CIDR subnet, it must have a prefix length indicating the length of the prefix,
+// the bits withing that prefix length must be constant (it has just a single prefix of that length),
+// and the bits outside the prefix length must cover all possible bit combinations (it contains all the addresses for that prefix).
+//
+// Examples of addresses that will return an IPNet include:
+// - 1.2.0.0/16 (which can also be written as 1.2.*.*/16)
+// - 1:2:3:4::/64 (which can also be writte as 1:2:3:4:*:*:*:*/64)
+// The following will return nil:
+// - 1.2.0.0 (no prefix length)
+// - 1.2.*.* (no prefix length)
+// - 1.2.0.1/16 (does not include all address for prefix length 16)
+//
+// If you have an address that does not satisfy the conditions, you can do the following.
+//
+// In cases where it has the correct addresses but has no prefix length or has an incorrect prefix length,
+// - use SetPrefixLen if you know the prefix length to use
+// - use GetPrefixLenForSingleBlock to determine what prefix length to use
+// - use AssignPrefixForSingleBlock to do both at the same time
+// - you can also call SpanWithIPNets, if it can be converted to a single prefix block then SpanWithIPNets will return a slice of length 1.
+//
+// In cases where it does not represent the entire block of addresses:
+// - it has the correct prefix length use ToPrefixBlock
+// - if it does not have the correct prefix length, you can use SetPrefixLen first, or just use ToPrefixBlockLen
+//
+// In cases where the is more than one prefix value for the desired prefix length:
+// - use GetLower or possibly Mask to obtain the correct prefix
+//
+// For example, to transform 1.2-3.4.5 into the IP net for 1.2.0.0/16, you can do:
+// ipaddr.NewIPAddressString("1.2-3.4.5").GetAddress().GetLower().ToPrefixBlockLen(16).ToIPNet()
+//
+// Another example, to transform 1.2.*.* into the same IPNet, you use the same calls, or you can do:
+// ipaddr.NewIPAddressString("1.2.*.*").GetAddress().AssignPrefixForSingleBlock().ToIPNet()
+func (addr *IPAddress) ToIPNet() *net.IPNet {
+	return addr.init().toIPNet()
+}
+
+// SpanWithIPNets transforms this address or subnet into the minimal number of CIDR prefix block subnets representing the same set of individual addresses.
+func (addr *IPAddress) SpanWithIPNets() []*net.IPNet {
+	return convertPrefixBlocksToIPNets(addr.SpanWithPrefixBlocks())
+}
+
+// SpanWithIPNetsTo returns the smallest slice of CIDR IPNet subnets that span from this subnet to the given subnet.
+//
+// If the given address is a different version than this, then the given address is ignored, and the result is equivalent to calling SpanWithIPNets.
+//
+// The resulting slice is sorted from lowest address value to highest, regardless of the size of each prefix block.
+func (addr *IPAddress) SpanWithIPNetsTo(other *IPAddress) []*net.IPNet {
+	return convertPrefixBlocksToIPNets(addr.SpanWithPrefixBlocksTo(other))
+}
+
+// RemoveBitCountPrefixLen removes the prefix length from addresses with a prefix length extending to the end of the address.
+func (addr *IPAddress) RemoveBitCountPrefixLen() *IPAddress {
+	return addr.removeBitCountPrefixLen()
+}
+
+// IntoSequentialRangeList creates a new sequential range list collection containing all the individual addresses in this address or subnet.
+func (addr *IPAddress) IntoSequentialRangeList() *IPAddressSeqRangeList {
+	list := &IPAddressSeqRangeList{}
+	list.Add(addr)
+	return list
+}
+
+// IntoContainmentTrie creates a containment trie collection containing all the individual addresses in this address or subnet.
+func (addr *IPAddress) IntoContainmentTrie() *IPAddressContainmentTrie {
+	trie := &IPAddressContainmentTrie{}
+	trie.Add(addr)
+	return trie
 }
 
 // IPAddressValueProvider supplies all the values that incorporate an IPAddress instance.
@@ -2792,6 +2914,7 @@ func NewIPAddressFromNetIPNet(ipnet *net.IPNet) (*IPAddress, addrerr.AddressErro
 	return addr.ToPrefixBlockLen(prefLen.bitCount()), nil
 }
 
+// NewIPAddressFromNetIPNet constructs a subnet from a netip.Addr.
 func NewIPAddressFromNetNetIPAddr(addr netip.Addr) *IPAddress {
 	if res := addr.AsSlice(); res != nil {
 		if addr.Is6() {
@@ -2807,6 +2930,8 @@ func NewIPAddressFromNetNetIPAddr(addr netip.Addr) *IPAddress {
 	return &IPAddress{}
 }
 
+// NewIPAddressFromNetNetIPPrefix constructs a subnet from a netip.Prefix.
+// The potential errors can be addrerr.IncompatibleAddressError when the input address has an invalid number of bytes or an invalid prefix.
 func NewIPAddressFromNetNetIPPrefix(prefixedAddr netip.Prefix) (*IPAddress, addrerr.AddressError) {
 	prefixLen := prefixedAddr.Bits()
 	if prefixLen < 0 {

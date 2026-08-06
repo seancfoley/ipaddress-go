@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2022 Sean C Foley
+// Copyright 2020-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -52,8 +52,8 @@ func (it *sequRangeIterator[T]) Next() (res *SequentialRange[T]) {
 				return it.creator(next.GetLower(), upper)
 			}
 		}
-		lower, upper := next.getLowestHighestAddrs()
-		return newSequRangeUnchecked(lower, upper, lower != upper)
+		lower, upper := next.GetLowerAndUpper()
+		return newSequRangeCheckSize(lower, upper)
 	}
 	return
 }

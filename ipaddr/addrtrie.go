@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2024 Sean C Foley
+// Copyright 2020-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package ipaddr
 
 import (
 	"fmt"
+	"math/big"
 	"unsafe"
 
 	"github.com/seancfoley/bintree/tree"
@@ -37,6 +38,10 @@ func (trie *trieBase[T, V]) clear() {
 	trie.trie.Clear()
 }
 
+func (trie *trieBase[T, V]) isEmpty() bool {
+	return trie.trie.IsEmpty()
+}
+
 // getRoot returns the root node of this trie, which can be nil for an implicitly zero-valued uninitialized trie, but not for any other trie.
 func (trie *trieBase[T, V]) getRoot() *tree.BinTrieNode[trieKey[T], V] {
 	return trie.trie.GetRoot()
@@ -47,9 +52,30 @@ func (trie *trieBase[T, V]) add(addr T) bool {
 	return trie.trie.Add(createKey(addr))
 }
 
+func (trie *trieBase[T, V]) addNoCheck(addr T) bool {
+	return trie.trie.Add(createKey(addr))
+}
+
 func (trie *trieBase[T, V]) addNode(addr T) *tree.BinTrieNode[trieKey[T], V] {
 	addr = mustBeBlockOrAddress(addr)
 	return trie.trie.AddNode(createKey(addr))
+}
+
+func (trie *trieBase[T, V]) getElementAddressBig(index *big.Int) (*tree.BinTrieNode[trieKey[T], V], *big.Int) {
+	return trie.trie.GetKeyElementBig(index)
+}
+
+func (trie *trieBase[T, V]) getElementAddress(index int64) (*tree.BinTrieNode[trieKey[T], V], int64) {
+	return trie.trie.GetKeyElement(index)
+}
+
+func (trie *trieBase[T, V]) addIfNoElementsContainingNoCheck(addr T) *tree.BinTrieNode[trieKey[T], V] {
+	return trie.trie.AddIfNoElementsContaining(createKey(addr))
+}
+
+func (trie *trieBase[T, V]) addIfNoElementsContaining(addr T) *tree.BinTrieNode[trieKey[T], V] {
+	addr = mustBeBlockOrAddress(addr)
+	return trie.trie.AddIfNoElementsContaining(createKey(addr))
 }
 
 // constructAddedNodesTree constructs an associative trie in which the root and each added node are mapped to a list of their respective direct added sub-nodes.
@@ -77,6 +103,20 @@ func (trie *trieBase[T, V]) remove(addr T) bool {
 func (trie *trieBase[T, V]) removeElementsContainedBy(addr T) *tree.BinTrieNode[trieKey[T], V] {
 	addr = mustBeBlockOrAddress(addr)
 	return trie.trie.RemoveElementsContainedBy(createKey(addr))
+}
+
+func (trie *trieBase[T, V]) removeElementsIntersectedBy(addr T) *tree.BinTrieNode[trieKey[T], V] {
+	addr = mustBeBlockOrAddress(addr)
+	return trie.trie.RemoveElementsIntersectedBy(createKey(addr))
+}
+
+func (trie *trieBase[T, V]) elementsIntersectedBy(addr T) *tree.BinTrieNode[trieKey[T], V] {
+	addr = mustBeBlockOrAddress(addr)
+	return trie.trie.ElementsIntersectedBy(createKey(addr))
+}
+
+func (trie *trieBase[T, V]) elementsIntersectedByNoCheck(addr T) *tree.BinTrieNode[trieKey[T], V] {
+	return trie.trie.ElementsIntersectedBy(createKey(addr))
 }
 
 func (trie *trieBase[T, V]) elementsContainedBy(addr T) *tree.BinTrieNode[trieKey[T], V] {
@@ -111,9 +151,31 @@ func (trie *trieBase[T, V]) shortestPrefixMatchNode(addr T) *tree.BinTrieNode[tr
 	return trie.trie.ShortestPrefixMatchNode(createKey(addr))
 }
 
+func (trie *trieBase[T, V]) enumerateNoCheck(addr T) (*tree.BinTrieNode[trieKey[T], V], *big.Int) {
+	return trie.trie.Enumerate(createKey(addr))
+}
+
+func (trie *trieBase[T, V]) enumerate(addr T) (*tree.BinTrieNode[trieKey[T], V], *big.Int) {
+	addr = mustBeBlockOrAddress(addr)
+	return trie.trie.Enumerate(createKey(addr))
+}
+
 func (trie *trieBase[T, V]) elementContains(addr T) bool {
 	addr = mustBeBlockOrAddress(addr)
 	return trie.trie.ElementContains(createKey(addr))
+}
+
+func (trie *trieBase[T, V]) elementContainsNoCheck(addr T) bool {
+	return trie.trie.ElementContains(createKey(addr))
+}
+
+func (trie *trieBase[T, V]) elementOverlaps(addr T) bool {
+	addr = mustBeBlockOrAddress(addr)
+	return trie.trie.ElementOverlaps(createKey(addr))
+}
+
+func (trie *trieBase[T, V]) elementOverlapsNoCheck(addr T) bool {
+	return trie.trie.ElementOverlaps(createKey(addr))
 }
 
 func (trie *trieBase[T, V]) getNode(addr T) *tree.BinTrieNode[trieKey[T], V] {
@@ -189,6 +251,15 @@ func (trie *trieBase[T, V]) lowerAddedNode(addr T) *tree.BinTrieNode[trieKey[T],
 	return trie.trie.LowerAddedNode(createKey(addr))
 }
 
+func (trie *trieBase[T, V]) containingLowerAddedNode(addr T) *tree.BinTrieNode[trieKey[T], V] {
+	addr = mustBeBlockOrAddress(addr)
+	return trie.trie.ContainingLowerAddedNode(createKey(addr))
+}
+
+func (trie *trieBase[T, V]) containingLowerAddedNodeNoCheck(addr T) *tree.BinTrieNode[trieKey[T], V] {
+	return trie.trie.ContainingLowerAddedNode(createKey(addr))
+}
+
 func (trie *trieBase[T, V]) lower(addr T) T {
 	return trie.lowerAddedNode(addr).GetKey().address
 }
@@ -196,6 +267,15 @@ func (trie *trieBase[T, V]) lower(addr T) T {
 func (trie *trieBase[T, V]) floorAddedNode(addr T) *tree.BinTrieNode[trieKey[T], V] {
 	addr = mustBeBlockOrAddress(addr)
 	return trie.trie.FloorAddedNode(createKey(addr))
+}
+
+func (trie *trieBase[T, V]) containingFloorAddedNode(addr T) *tree.BinTrieNode[trieKey[T], V] {
+	addr = mustBeBlockOrAddress(addr)
+	return trie.trie.ContainingFloorAddedNode(createKey(addr))
+}
+
+func (trie *trieBase[T, V]) containingFloorAddedNodeNoCheck(addr T) *tree.BinTrieNode[trieKey[T], V] {
+	return trie.trie.ContainingFloorAddedNode(createKey(addr))
 }
 
 func (trie *trieBase[T, V]) floor(addr T) T {
@@ -207,6 +287,15 @@ func (trie *trieBase[T, V]) higherAddedNode(addr T) *tree.BinTrieNode[trieKey[T]
 	return trie.trie.HigherAddedNode(createKey(addr))
 }
 
+func (trie *trieBase[T, V]) containingHigherAddedNode(addr T) *tree.BinTrieNode[trieKey[T], V] {
+	addr = mustBeBlockOrAddress(addr)
+	return trie.trie.ContainingHigherAddedNode(createKey(addr))
+}
+
+func (trie *trieBase[T, V]) containingHigherAddedNodeNoCheck(addr T) *tree.BinTrieNode[trieKey[T], V] {
+	return trie.trie.ContainingHigherAddedNode(createKey(addr))
+}
+
 func (trie *trieBase[T, V]) higher(addr T) T {
 	return trie.higherAddedNode(addr).GetKey().address
 }
@@ -216,12 +305,25 @@ func (trie *trieBase[T, V]) ceilingAddedNode(addr T) *tree.BinTrieNode[trieKey[T
 	return trie.trie.CeilingAddedNode(createKey(addr))
 }
 
+func (trie *trieBase[T, V]) containingCeilingAddedNode(addr T) *tree.BinTrieNode[trieKey[T], V] {
+	addr = mustBeBlockOrAddress(addr)
+	return trie.trie.ContainingCeilingAddedNode(createKey(addr))
+}
+
+func (trie *trieBase[T, V]) containingCeilingAddedNodeNoCheck(addr T) *tree.BinTrieNode[trieKey[T], V] {
+	return trie.trie.ContainingCeilingAddedNode(createKey(addr))
+}
+
 func (trie *trieBase[T, V]) ceiling(addr T) T {
 	return trie.ceilingAddedNode(addr).GetKey().address
 }
 
 func (trie *trieBase[T, V]) clone() *tree.BinTrie[trieKey[T], V] {
 	return trie.toTrie().Clone()
+}
+
+func (trie *trieBase[T, V]) changeTracker() *tree.ChangeTracker {
+	return trie.toTrie().ChangeTracker()
 }
 
 func (trie *trieBase[T, V]) size() int {
@@ -359,6 +461,11 @@ func (trie *trieBase[T, V]) toTrie() *tree.BinTrie[trieKey[T], V] {
 // You can use the method ToString for a String that represents multiple tries as a single tree.
 //
 // Tries are concurrency-safe when not being modified (elements added or removed), but are not concurrency-safe when any goroutine is modifying the trie.
+//
+// The trie is also used as the backing structure for ContainmentTrieBase.
+// With the containment trie, blocks are not considered to be the elements of the trie, instead the contained individual addresses are the elements.
+// An individual address can appear in only one added block in a containment trie.
+// Direct access to the trie inside a containment trie is not allowed to ensure these structural invariants are not invalidated.
 type Trie[T TrieKeyConstraint[T]] struct {
 	trieBase[T, emptyValue]
 }
@@ -385,6 +492,43 @@ func (trie *Trie[T]) NodeSize() int {
 	return trie.toTrie().NodeSize()
 }
 
+// GetMatchingAddressCount returns the total number of individual addresses covered by prefix block subnets and addresses added to the trie.
+func (trie *Trie[T]) GetMatchingAddressCount() *big.Int {
+	return trie.toTrie().GetMatchingKeyCount()
+}
+
+// GetElementAddressBig returns the added node containing the given index into the keys of the trie, with the index of zero returning the first added node.
+// It also returns the remaining index into the key of the returned node.
+//
+// If the increment is negative, or the increment exceeds GetMatchingAddressCount() - 1, this panics.
+func (trie *Trie[T]) GetElementAddressBig(index *big.Int) (*TrieNode[T], *big.Int) {
+	node, i := trie.getElementAddressBig(index)
+	return toAddressTrieNode(node), i
+}
+
+// GetElementAddress returns the added node containing the given index into the keys of the trie, with the index of zero returning the first added node.
+// It also returns the remaining index into the key of the returned node.
+//
+// If the increment is negative, or the increment exceeds GetMatchingAddressCount() - 1, this panics.
+func (trie *Trie[T]) GetElementAddress(index int64) (*TrieNode[T], int64) {
+	node, i := trie.getElementAddress(index)
+	return toAddressTrieNode(node), i
+}
+
+// ContainingMaxElements returns true if and only if the total number of individial addresses contained by prefix block keys of
+// added nodes in the trie is the maximum possible.
+//
+// For example, for the root node with key 1.2.0.0/30,
+//   - then if is is an added node, this method returns true, because that added node contains all 4 individual address 1.2.0.0, 1.2.0.1, 1.2.0.2, and 1.2.0.3.
+//   - or if is not added node, but has the two sub-nodes for 1.2.0.0/31 and 1.2.0.2/31 and both those sub-nodes are added, then it returns true.
+//   - or if it has those two sub-nodes but only the latter is added, but the former has thw two added sub-nodes for 1.2.0.0 and 1.2.0.1, then it returns true.
+//   - of if the trie has four added sub-nodes for 1.2.0.0, 1.2.0.1, 1.2.0.2, and 1.2.0.3, then it returns true,
+//   - but if the trie has nodes for 1.2.0.0/30, 1.2.0.0/31, 1.2.0.2/31,  1.2.0.0, 1.2.0.1, and 1.2.0.2 but not 1.2.0.3, and the only added sub-nodes are 1.2.0.0, 1.2.0.1 and 1.2.0.2, then this returns false,
+//     because there is no added node in the trie that contains the address 1.2.0.3.
+func (trie *Trie[T]) ContainingMaxElements() bool {
+	return trie.toTrie().ContainingMaxElements()
+}
+
 // Clear removes all added nodes from the trie, after which IsEmpty will return true.
 func (trie *Trie[T]) Clear() {
 	trie.clear()
@@ -392,12 +536,17 @@ func (trie *Trie[T]) Clear() {
 
 // IsEmpty returns true if there are not any added nodes within this trie.
 func (trie *Trie[T]) IsEmpty() bool {
-	return trie.Size() == 0
+	return trie.isEmpty()
 }
 
 // TreeString returns a visual representation of the trie with one node per line, with or without the non-added keys.
 func (trie *Trie[T]) TreeString(withNonAddedKeys bool) string {
 	return trie.toTrie().TreeString(withNonAddedKeys)
+}
+
+// TreeString returns a visual representation of the tree with one node per line, with or without the non-added keys.
+func (trie *Trie[T]) TreeStringWithCounts(withNonAddedKeys, withSizes, withMatchingAddressCounts bool) string {
+	return trie.toTrie().TreeStringWithCounts(withNonAddedKeys, withSizes, withMatchingAddressCounts)
 }
 
 // String returns a visual representation of the trie with one node per line.
@@ -432,6 +581,18 @@ func (trie *Trie[T]) Add(addr T) bool {
 // The new or existing node for the address is returned.
 func (trie *Trie[T]) AddNode(addr T) *TrieNode[T] {
 	return toAddressTrieNode(trie.addNode(addr))
+}
+
+// AddIfNoElementsContaining adds the address or subnet to the trie if it is not contained by an existing element in the trie.
+//
+// The address must match the same type and version of any existing addresses already in the trie.
+//
+// If the argument is not a single address nor prefix block, this method will panic.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+//
+// The new or existing node for the address is returned.
+func (trie *Trie[T]) AddIfNoElementsContaining(addr T) *TrieNode[T] {
+	return toAddressTrieNode(trie.addIfNoElementsContaining(addr))
 }
 
 // AddTrie adds nodes for the keys from the trie with the argument trie root.
@@ -499,6 +660,31 @@ func (trie *Trie[T]) RemoveElementsContainedBy(addr T) *TrieNode[T] {
 	return toAddressTrieNode[T](trie.removeElementsContainedBy(addr))
 }
 
+// RemoveElementsIntersectedBy will remove any element of the trie whose address key intersects the given address, sharing individual addresses,
+// and all child elements of that trie node, whether those child elements intersect or not.
+//
+// If the argument is not a single address nor prefix block, this method will panic.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+//
+// Returns the root node of the subtrie that was removed from the trie, or nil if nothing was removed.
+func (trie *Trie[T]) RemoveElementsIntersectedBy(addr T) *TrieNode[T] {
+	return toAddressTrieNode[T](trie.removeElementsIntersectedBy(addr))
+}
+
+// ElementsIntersectedBy will return the highest-level node whose address key intersects the given address, sharing individual addresses.
+//
+// If the argument is not a single address nor prefix block, this method will panic.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+//
+// Returns the root node of the subtrie that intersects, or nil if no address key intersects.
+func (trie *Trie[T]) ElementsIntersectedBy(addr T) *TrieNode[T] {
+	return toAddressTrieNode[T](trie.elementsIntersectedBy(addr))
+}
+
+func (trie *Trie[T]) elementsIntersectedByNoCheck(addr T) *TrieNode[T] {
+	return toAddressTrieNode[T](trie.trieBase.elementsIntersectedByNoCheck(addr))
+}
+
 // ElementsContainedBy checks if a part of this trie is contained by the given prefix block subnet or individual address.
 //
 // If the argument is not a single address nor prefix block, this method will panic.
@@ -542,6 +728,19 @@ func (trie *Trie[T]) ShortestPrefixMatchNode(addr T) *TrieNode[T] {
 	return toAddressTrieNode[T](trie.shortestPrefixMatchNode(addr))
 }
 
+// Enumerate finds the shortest prefix match node.
+// It calculates the index of that node.  It totals the matching address count of all nodes with keys of lower value.
+// If there is no shortest prefix match node, it returns nil for both return values.
+func (trie *Trie[T]) Enumerate(addr T) (*TrieNode[T], *big.Int) {
+	node, index := trie.enumerate(addr)
+	return toAddressTrieNode[T](node), index
+}
+
+func (trie *Trie[T]) enumerateNoCheck(addr T) (*TrieNode[T], *big.Int) {
+	node, index := trie.trieBase.enumerateNoCheck(addr)
+	return toAddressTrieNode(node), index
+}
+
 // ElementContains checks if a prefix block subnet or address in the trie contains the given subnet or address.
 //
 // If the argument is not a single address nor prefix block, this method will panic.
@@ -551,6 +750,18 @@ func (trie *Trie[T]) ShortestPrefixMatchNode(addr T) *TrieNode[T] {
 //
 // To get all the containing addresses, use ElementsContaining.
 func (trie *Trie[T]) ElementContains(addr T) bool {
+	return trie.elementContains(addr)
+}
+
+// ElementOverlaps checks if a prefix block subnet or address in the trie overlaps the given subnet or address.
+// When it comes to prefix blocks, a prefix block overlapping another means one contains the other,
+// so this returns true if the given address or subnet either contains or is contained by an address or subnet in the trie.
+//
+// If the argument is not a single address nor prefix block, this method will panic.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+//
+// Returns true if the subnet or address overlaps a trie element, false otherwise.
+func (trie *Trie[T]) ElementOverlaps(addr T) bool {
 	return trie.elementContains(addr)
 }
 
@@ -681,6 +892,26 @@ func (trie *Trie[T]) LowerAddedNode(addr T) *TrieNode[T] {
 	return toAddressTrieNode[T](trie.lowerAddedNode(addr))
 }
 
+// ContainingLowerAddedNode finds the added node with address key containing the highest individual address strictly less than the lowest individual address in the given address
+func (trie *Trie[T]) ContainingLowerAddedNode(addr T) *TrieNode[T] {
+	return toAddressTrieNode[T](trie.containingLowerAddedNode(addr))
+}
+
+// ContainingHigherAddedNode finds the added node with address key containing the lowest individual address strictly greater than the highest individual address in the given address
+func (trie *Trie[T]) ContainingHigherAddedNode(addr T) *TrieNode[T] {
+	return toAddressTrieNode[T](trie.containingHigherAddedNode(addr))
+}
+
+// ContainingFloorAddedNode finds the added node with address key containing the highest individual address less than or equal to the lowest individual address in the given address
+func (trie *Trie[T]) ContainingFloorAddedNode(addr T) *TrieNode[T] {
+	return toAddressTrieNode[T](trie.containingFloorAddedNode(addr))
+}
+
+// ContainingCeilingAddedNode finds the added node with address key containing the lowest individual address greater than or equal to the highest individual address in the given address
+func (trie *Trie[T]) ContainingCeilingAddedNode(addr T) *TrieNode[T] {
+	return toAddressTrieNode[T](trie.containingCeilingAddedNode(addr))
+}
+
 // Lower returns the highest address strictly less than the given address.
 func (trie *Trie[T]) Lower(addr T) T {
 	return trie.lower(addr)
@@ -799,6 +1030,43 @@ func (trie *AssociativeTrie[T, V]) NodeSize() int {
 	return trie.toTrie().NodeSize()
 }
 
+// GetMatchingAddressCount returns the total number of individual addresses covered by prefix block subnets and addresses added to the trie.
+func (trie *AssociativeTrie[T, V]) GetMatchingAddressCount() *big.Int {
+	return trie.toTrie().GetMatchingKeyCount()
+}
+
+// GetElementAddressBig returns the individual address at the given index into the added prefix block subnet keys of the trie,
+// with the index of zero returning the first address of the first subnet key.
+//
+// If the increment is negative, or the increment exceeds GetMatchingAddressCount() - 1, this panics.
+func (trie *AssociativeTrie[T, V]) GetElementAddressBig(index *big.Int) (*AssociativeTrieNode[T, V], *big.Int) {
+	node, i := trie.getElementAddressBig(index)
+	return toAssociativeTrieNode(node), i
+}
+
+// GetElementAddress returns the individual address at the given index into the added prefix block subnet keys of the trie,
+// with the index of zero returning the first address of the first subnet key.
+//
+// If the increment is negative, or the increment exceeds GetMatchingAddressCount() - 1, this panics.
+func (trie *AssociativeTrie[T, V]) GetElementAddress(index int64) (*AssociativeTrieNode[T, V], int64) {
+	node, i := trie.getElementAddress(index)
+	return toAssociativeTrieNode(node), i
+}
+
+// ContainingMaxElements returns true if and only if the total number of individial addresses contained by prefix block keys of
+// added nodes in the trie is the maximum possible.
+//
+// For example, for the root node with key 1.2.0.0/30,
+//   - then if is is an added node, this method returns true, because that added node contains all 4 individual address 1.2.0.0, 1.2.0.1, 1.2.0.2, and 1.2.0.3.
+//   - or if is not added node, but has the two sub-nodes for 1.2.0.0/31 and 1.2.0.2/31 and both those sub-nodes are added, then it returns true.
+//   - or if it has those two sub-nodes but only the latter is added, but the former has thw two added sub-nodes for 1.2.0.0 and 1.2.0.1, then it returns true.
+//   - of if the trie has four added sub-nodes for 1.2.0.0, 1.2.0.1, 1.2.0.2, and 1.2.0.3, then it returns true,
+//   - but if the trie has nodes for 1.2.0.0/30, 1.2.0.0/31, 1.2.0.2/31,  1.2.0.0, 1.2.0.1, and 1.2.0.2 but not 1.2.0.3, and the only added sub-nodes are 1.2.0.0, 1.2.0.1 and 1.2.0.2, then this returns false,
+//     because there is no added node in the trie that contains the address 1.2.0.3.
+func (trie *AssociativeTrie[T, V]) ContainingMaxElements() bool {
+	return trie.toTrie().ContainingMaxElements()
+}
+
 // Clear removes all added nodes from the trie, after which IsEmpty will return true.
 func (trie *AssociativeTrie[T, V]) Clear() {
 	trie.clear()
@@ -806,12 +1074,17 @@ func (trie *AssociativeTrie[T, V]) Clear() {
 
 // IsEmpty returns true if there are not any added nodes within this tree.
 func (trie *AssociativeTrie[T, V]) IsEmpty() bool {
-	return trie.Size() == 0
+	return trie.isEmpty()
 }
 
 // TreeString returns a visual representation of the tree with one node per line, with or without the non-added keys.
 func (trie *AssociativeTrie[T, V]) TreeString(withNonAddedKeys bool) string {
 	return trie.toTrie().TreeString(withNonAddedKeys)
+}
+
+// TreeString returns a visual representation of the tree with one node per line, with or without the non-added keys.
+func (trie *AssociativeTrie[E, V]) TreeStringWithCounts(withNonAddedKeys, withSizes, withMatchingAddressCounts bool) string {
+	return trie.toTrie().TreeStringWithCounts(withNonAddedKeys, withSizes, withMatchingAddressCounts)
 }
 
 // String returns a visual representation of the tree with one node per line.
@@ -845,6 +1118,18 @@ func (trie *AssociativeTrie[T, V]) Add(addr T) bool {
 // The new or existing node for the address is returned.
 func (trie *AssociativeTrie[T, V]) AddNode(addr T) *AssociativeTrieNode[T, V] {
 	return toAssociativeTrieNode[T, V](trie.addNode(addr))
+}
+
+// AddIfNoElementsContaining adds the address or subnet to the trie if it is not contained by an existing element in the trie.
+//
+// The address must match the same type and version of any existing addresses already in the trie.
+//
+// If the argument is not a single address nor prefix block, this method will panic.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+//
+// The new or existing node for the address is returned.
+func (trie *AssociativeTrie[T, V]) AddIfNoElementsContaining(addr T) *AssociativeTrieNode[T, V] {
+	return toAssociativeTrieNode[T, V](trie.addIfNoElementsContaining(addr))
 }
 
 // AddTrie adds nodes for the keys from the trie with the argument trie root.  To add both keys and values, use PutTrie.
@@ -912,6 +1197,20 @@ func (trie *AssociativeTrie[T, V]) RemoveElementsContainedBy(addr T) *Associativ
 	return toAssociativeTrieNode[T, V](trie.removeElementsContainedBy(addr))
 }
 
+func (trie *AssociativeTrie[T, V]) RemoveElementsIntersectedBy(addr T) *AssociativeTrieNode[T, V] {
+	return toAssociativeTrieNode[T, V](trie.removeElementsIntersectedBy(addr))
+}
+
+// ElementsIntersectedBy will return the highest-level node whose address key intersects the given address, sharing individual addresses.
+//
+// If the argument is not a single address nor prefix block, this method will panic.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+//
+// Returns the root node of the subtrie that intersects, or nil if no address key intersects.
+func (trie *AssociativeTrie[T, V]) ElementsIntersectedBy(addr T) *AssociativeTrieNode[T, V] {
+	return toAssociativeTrieNode[T, V](trie.elementsIntersectedBy(addr))
+}
+
 // ElementsContainedBy checks if a part of this trie is contained by the given prefix block subnet or individual address.
 //
 // If the argument is not a single address nor prefix block, this method will panic.
@@ -957,6 +1256,14 @@ func (trie *AssociativeTrie[T, V]) ShortestPrefixMatchNode(addr T) *AssociativeT
 	return toAssociativeTrieNode[T, V](trie.shortestPrefixMatchNode(addr))
 }
 
+// Enumerate finds the shortest prefix match node.
+// It calculates the index of that node.  It totals the matching address count of all nodes with keys of lower value.
+// If there is no shortest prefix match node, it returns nil for both return values.
+func (trie *AssociativeTrie[T, V]) Enumerate(addr T) (*AssociativeTrieNode[T, V], *big.Int) {
+	node, index := trie.enumerate(addr)
+	return toAssociativeTrieNode[T, V](node), index
+}
+
 // ElementContains checks if a prefix block subnet or address in the trie contains the given subnet or address.
 //
 // If the argument is not a single address nor prefix block, this method will panic.
@@ -967,6 +1274,18 @@ func (trie *AssociativeTrie[T, V]) ShortestPrefixMatchNode(addr T) *AssociativeT
 // To get all the containing addresses, use ElementsContaining.
 func (trie *AssociativeTrie[T, V]) ElementContains(addr T) bool {
 	return trie.elementContains(addr)
+}
+
+// ElementOverlaps checks if a prefix block subnet or address in the trie overlaps the given subnet or address.
+// When it comes to prefix blocks, a prefix block overlapping another means one contains the other,
+// so this returns true if the given address or subnet either contains or is contained by an address or subnet in the trie.
+//
+// If the argument is not a single address nor prefix block, this method will panic.
+// The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
+//
+// Returns true if the subnet or address overlaps a trie element, false otherwise.
+func (trie *AssociativeTrie[T, V]) ElementOverlaps(addr T) bool {
+	return trie.elementOverlaps(addr)
 }
 
 // GetNode gets the node in the trie corresponding to the given address,
@@ -1097,6 +1416,26 @@ func (trie *AssociativeTrie[T, V]) LowerAddedNode(addr T) *AssociativeTrieNode[T
 	return toAssociativeTrieNode[T, V](trie.lowerAddedNode(addr))
 }
 
+// ContainingLowerAddedNode finds the added node with address key containing the highest individual address strictly less than the lowest individual address in the given address
+func (trie *AssociativeTrie[T, V]) ContainingLowerAddedNode(addr T) *AssociativeTrieNode[T, V] {
+	return toAssociativeTrieNode[T, V](trie.containingLowerAddedNode(addr))
+}
+
+// ContainingHigherAddedNode finds the added node with address key containing the lowest individual address strictly greater than the highest individual address in the given address
+func (trie *AssociativeTrie[T, V]) ContainingHigherAddedNode(addr T) *AssociativeTrieNode[T, V] {
+	return toAssociativeTrieNode[T](trie.containingHigherAddedNode(addr))
+}
+
+// ContainingFloorAddedNode finds the added node with address key containing the highest individual address less than or equal to the lowest individual address in the given address
+func (trie *AssociativeTrie[T, V]) ContainingFloorAddedNode(addr T) *AssociativeTrieNode[T, V] {
+	return toAssociativeTrieNode[T](trie.containingFloorAddedNode(addr))
+}
+
+// ContainingCeilingAddedNode finds the added node with address key containing the lowest individual address greater than or equal to the highest individual address in the given address
+func (trie *AssociativeTrie[T, V]) ContainingCeilingAddedNode(addr T) *AssociativeTrieNode[T, V] {
+	return toAssociativeTrieNode[T](trie.containingCeilingAddedNode(addr))
+}
+
 // Lower returns the highest address strictly less than the given address.
 func (trie *AssociativeTrie[T, V]) Lower(addr T) T {
 	return trie.lower(addr)
@@ -1185,8 +1524,6 @@ func (trie *AssociativeTrie[T, V]) PutTrie(added *AssociativeTrieNode[T, V]) *As
 // The [Partition] type can be used to convert the argument to single addresses and prefix blocks before calling this method.
 //
 // Returns the node for the added address, whether it was already in the trie or not.
-//
-// If you wish to know whether the node was already there when adding, use PutNew, or before adding you can use GetAddedNode.
 func (trie *AssociativeTrie[T, V]) PutNode(addr T, value V) *AssociativeTrieNode[T, V] {
 	return toAssociativeTrieNode(trie.putNode(addr, value))
 }
@@ -1302,6 +1639,8 @@ func NewAssociativeTrie[T TrieKeyConstraint[T], V any]() *AssociativeTrie[T, V] 
 type (
 	AssociativeAddressTrie     = AssociativeTrie[*Address, any]
 	AddressTrie                = Trie[*Address]
+	IPAddressAssociativeTrie   = AssociativeTrie[*IPAddress, any]
+	IPAddressTrie              = Trie[*IPAddress]
 	IPv4AddressAssociativeTrie = AssociativeTrie[*IPv4Address, any]
 	IPv4AddressTrie            = Trie[*IPv4Address]
 	IPv6AddressAssociativeTrie = AssociativeTrie[*IPv6Address, any]

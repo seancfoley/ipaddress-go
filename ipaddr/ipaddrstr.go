@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2024 Sean C Foley
+// Copyright 2020-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -86,7 +86,7 @@ var defaultIPAddrParameters = new(addrstrparam.IPAddressStringParamsBuilder).ToP
 //   - IPv6 mixed addresses are supported, which are addresses for which the last two IPv6 segments are represented as IPv4, like "ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255"
 //   - IPv6 compressed addresses like "::1"
 //   - A single value of 32 hex digits like "00aa00bb00cc00dd00ee00ff00aa00bb" with or without a preceding hex delimiter "0x"
-//   - A base 85 address comprising 20 base 85 digits like "4)+k&amp;C#VzJ4br&gt;0wv%Yp" as in RFC 1924 https://tools.ietf.org/html/rfc1924
+//   - A base 85 address comprising 20 base 85 digits like "4)+k&amp;C#VzJ4br>0wv%Yp" as in RFC 1924 https://tools.ietf.org/html/rfc1924
 //   - Binary, preceded by "0b", either with binary segments that comprise all 16 bits like "::0b0000111100001111" or a single segment address of "0b" followed by 128 binary bits.
 //
 // All of the above subnet variations work for IPv6, whether network prefix lengths, masks, ranges or wildcards.
@@ -426,7 +426,7 @@ func (addrStr *IPAddressString) ToHostAddress() (*IPAddress, addrerr.AddressErro
 //// Otherwise, the range includes addresses not specified by the address string.
 ////
 
-// GetSequentialRange returns the range of sequential addresses from the lowest address specified in this address string to the highest.
+// GetCoveringSequentialRange returns the range of sequential addresses from the lowest address specified in this address string to the highest.
 //
 // Since not all IPAddressString instances describe a sequential series of addresses,
 // this does not necessarily match the exact set of addresses specified by the string.
@@ -434,23 +434,37 @@ func (addrStr *IPAddressString) ToHostAddress() (*IPAddress, addrerr.AddressErro
 //
 // This method can also produce a range for a string for which no IPAddress instance can be created,
 // those cases where IsValid returns true but ToAddress returns addrerr.IncompatibleAddressError and GetAddress returns nil.
-// The range cannot be produced for the other cases where GetAddress returns nil
+// The range cannot be produced for the other cases where GetAddress returns nil.
 //
-// This is similar to ToSequentialRange except that ToSequentialRange provides a descriptive error when nil is returned.
-func (addrStr *IPAddressString) GetSequentialRange() (res *IPAddressSeqRange) {
-	res, _ = addrStr.ToSequentialRange()
+// This is similar to CoverWithSequentialRange except that CoverWithSequentialRange provides a descriptive error when nil is returned.
+func (addrStr *IPAddressString) GetCoveringSequentialRange() (res *IPAddressSeqRange) {
+	res, _ = addrStr.CoverWithSequentialRange()
 	return
 }
 
-// ToSequentialRange returns the range of sequential addresses from the lowest address specified in this address string to the highest.
+// GetSequentialRange returns the range of sequential addresses from the lowest address specified in this address string to the highest.
 //
-// This is similar to GetSequentialRange except that this method provides a descriptive error when nil is returned. See GetSequentialRange for more details.
-func (addrStr *IPAddressString) ToSequentialRange() (*IPAddressSeqRange, addrerr.AddressStringError) {
+// Deprecated: Use GetCoveringSequentialRange instead
+func (addrStr *IPAddressString) GetSequentialRange() (res *IPAddressSeqRange) {
+	return addrStr.GetCoveringSequentialRange()
+}
+
+// CoverWithSequentialRange returns the range of sequential addresses from the lowest address specified in this address string to the highest.
+//
+// This is similar to GetCoveringSequentialRange except that this method provides a descriptive error when nil is returned. See GetCoveringSequentialRange for more details.
+func (addrStr *IPAddressString) CoverWithSequentialRange() (*IPAddressSeqRange, addrerr.AddressStringError) {
 	provider, err := addrStr.getAddressProvider()
 	if err != nil {
 		return nil, err
 	}
 	return provider.getProviderSeqRange(), nil
+}
+
+// CoverWithSequentialRange returns the range of sequential addresses from the lowest address specified in this address string to the highest.
+//
+// Deprecated: Use CoverWithSequentialRange instead.
+func (addrStr *IPAddressString) ToSequentialRange() (*IPAddressSeqRange, addrerr.AddressStringError) {
+	return addrStr.CoverWithSequentialRange()
 }
 
 // ValidateIPv4 validates that this string is a valid IPv4 address, returning nil, and if not, returns an error with a descriptive message indicating why it is not.

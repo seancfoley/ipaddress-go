@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2024 Sean C Foley
+// Copyright 2020-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -529,7 +529,7 @@ func (div *IPAddressLargeDivision) CompareSize(other AddressItem) int {
 		// we have size 0, other has size >= 1
 		return -1
 	}
-	return compareCount(div, other)
+	return compareCounts(div, other)
 }
 
 // String produces a string that is useful when a division string is provided with no context.
@@ -932,6 +932,10 @@ func (div *IPAddressLargeDivision) GetPrefixLen() PrefixLen {
 
 func (div *IPAddressLargeDivision) isNil() bool {
 	return div == nil
+}
+
+func (div *IPAddressLargeDivision) IsSequential() bool {
+	return true
 }
 
 func setVal(valueBytes []byte, bitCount BitCount) (assignedValue *BigDivInt, assignedBitCount BitCount, maxVal *BigDivInt) {

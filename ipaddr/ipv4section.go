@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2024 Sean C Foley
+// Copyright 2020-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -226,7 +226,7 @@ func (addr *IPv4AddressSection) containsSame(other *IPv4AddressSection) bool {
 // Sections must also have the same number of segments to be comparable, otherwise false is returned.
 func (section *IPv4AddressSection) Contains(other AddressSectionType) bool {
 	if section == nil {
-		return other == nil || other.ToSectionBase() == nil
+		return false
 	}
 	return section.contains(other)
 }
@@ -236,7 +236,7 @@ func (section *IPv4AddressSection) Contains(other AddressSectionType) bool {
 // Sections must also have the same number of segments to be comparable, otherwise false is returned.
 func (section *IPv4AddressSection) Overlaps(other AddressSectionType) bool {
 	if section == nil {
-		return other == nil || other.ToSectionBase() == nil
+		return false
 	}
 	return section.overlaps(other)
 }
@@ -569,7 +569,7 @@ func (section *IPv4AddressSection) bitwiseOrPrefixed(other *IPv4AddressSection, 
 
 // MatchesWithMask applies the mask to this address section and then compares the result with the given address section,
 // returning true if they match, false otherwise.  To match, both the given section and mask must have the same number of segments as this section.
-func (section *IPv4AddressSection) MatchesWithMask(other *IPv4AddressSection, mask *IPv4AddressSection) bool {
+func (section *IPv4AddressSection) MatchesWithMask(other, mask *IPv4AddressSection) bool {
 	return section.matchesWithMask(other.ToIP(), mask.ToIP())
 }
 
@@ -612,6 +612,14 @@ func (section *IPv4AddressSection) GetLower() *IPv4AddressSection {
 // For example, for "1.2-3.4.5-6", the section "1.3.4.6" is returned.
 func (section *IPv4AddressSection) GetUpper() *IPv4AddressSection {
 	return section.getUpper().ToIPv4()
+}
+
+// GetLowerAndUpper returns the sections in the range with the lowest and highest numeric value,
+// which will be the same section if it represents a single value.
+// For example, for "1.2-3.4.5-6", the sections "1.2.4.5" and "1.3.4.6" are returned.
+func (section *IPv4AddressSection) GetLowerAndUpper() (lower, upper *IPv4AddressSection) {
+	l, u := section.getLowestHighestSections()
+	return l.ToIPv4(), u.ToIPv4()
 }
 
 // Uint32Value returns the lowest address in the address section range as a uint32.
@@ -894,7 +902,20 @@ func (section *IPv4AddressSection) ToIP() *IPAddressSection {
 //
 // On overflow or underflow, IncrementBoundary returns nil.
 func (section *IPv4AddressSection) IncrementBoundary(increment int64) *IPv4AddressSection {
-	return section.incrementBoundary(increment).ToIPv4()
+	if increment <= 0 {
+		if increment == 0 {
+			return section
+		}
+		return section.GetLower().Increment(increment)
+	} else if increment == 1 {
+		return section.IncrementBoundarySingle()
+	}
+	return section.GetUpper().Increment(increment)
+}
+
+// IncrementBoundarySingle increments the boundary of the address or subnet section by 1 to produce a new address section.  Equivalent to IncrementBoundary(1).
+func (section *IPv4AddressSection) IncrementBoundarySingle() *IPv4AddressSection {
+	return incrementBoundaryOneIP(section.toAddressSection(), ipv4Network.getIPAddressCreator(), section.getPrefixLen()).ToIPv4()
 }
 
 func getIPv4MaxValueLong(segmentCount int) uint64 {
@@ -920,8 +941,16 @@ func getIPv4MaxValueLong(segmentCount int) uint64 {
 //
 // On overflow or underflow, Increment returns nil.
 func (section *IPv4AddressSection) Increment(inc int64) *IPv4AddressSection {
-	if inc == 0 && !section.isMultiple() {
-		return section
+	if inc <= 1 {
+		if inc == 0 {
+			if !section.isMultiple() {
+				return section
+			}
+		} else if inc == 1 {
+			return section.IncrementSingle()
+		} else if inc == -1 {
+			return section.DecrementSingle()
+		}
 	}
 	lowerValueFunc := func() uint64 {
 		return uint64(section.Uint32Value())
@@ -932,7 +961,6 @@ func (section *IPv4AddressSection) Increment(inc int64) *IPv4AddressSection {
 	if isOverflow := checkOverflow(inc, lowerValueFunc, upperValueFunc, section.GetIPv4Count, func() uint64 { return getIPv4MaxValueLong(section.GetSegmentCount()) }, section.IsSequential); isOverflow {
 		return nil
 	}
-
 	return increment(
 		section.ToSectionBase(),
 		inc,
@@ -943,6 +971,77 @@ func (section *IPv4AddressSection) Increment(inc int64) *IPv4AddressSection {
 		section.getLower,
 		section.getUpper,
 		section.getPrefixLen()).ToIPv4()
+}
+
+// IncrementSingle increments the address or subnet section by 1 to produce a new address section.  Equivalent to Increment(1).
+func (section *IPv4AddressSection) IncrementSingle() *IPv4AddressSection {
+	return incrementOneIP(section.toAddressSection(), ipv4Network.getIPAddressCreator(), section.getPrefixLen()).ToIPv4()
+}
+
+// DecrementSingle decrements the address or subnet section by 1 to produce a new address section.  Equivalent to Increment(-1).
+func (section *IPv4AddressSection) DecrementSingle() *IPv4AddressSection {
+	return decrementOneIP(section.toAddressSection(), ipv4Network.getIPAddressCreator(), section.getPrefixLen()).ToIPv4()
+}
+
+// IncrementBig returns the address from the subnet section that is the given increment upwards into the subnet section range.
+//
+// Equivalent to Increment, but taking a big integer as the increment argument.
+func (section *IPv4AddressSection) IncrementBig(bigIncrement *big.Int) *IPv4AddressSection {
+	if bigIncrement.IsInt64() {
+		return section.Increment(bigIncrement.Int64())
+	}
+	return nil
+}
+
+// UpperIsAdjacentTo indicates if the given section's lower value is the next individual address following this section's upper value.
+// This means they are adjacent, having no intervening section.
+// Prefix lengths are ignored in this determination, just like with equality and containment.
+//
+// UpperIsAdjacentTo returns true given the section produced by IncrementBoundarySingle.
+func (section *IPv4AddressSection) UpperIsAdjacentTo(other AddressSectionType) bool {
+	return upperIsAdjacentTo(section.ToSectionBase(), other.ToSectionBase())
+}
+
+// UpperIsAdjacentTo indicates if the given section's lower value is the next individual address following this section's upper value.
+// This means they are adjacent, having no intervening section.
+// Prefix lengths are ignored in this determination, just like with equality and containment.
+//
+// UpperIsAdjacentTo returns true given the section produced by IncrementBoundarySingle.
+func (section *IPv4AddressSection) upperIsAdjacentTo(other *IPv4AddressSection) bool {
+	return upperIsAdjacentTo(section.ToSectionBase(), other.ToSectionBase())
+}
+
+// Get returns the individual address section that is at the given index in this collection of address sections,
+// with the increment of 0 returning the first in the range.
+//
+// If the index is negative or exceeds GetCount() - 1, this panics.
+func (section *IPv4AddressSection) Get(index int64) *IPv4AddressSection {
+	if index <= 0 {
+		if index == 0 {
+			return section.GetLower() // panics for section nil ptr which is correct, for section with no segments, count is 1 so no panic necessary
+		}
+		outOfBounds()
+	}
+	countMinus1 := int64(section.getIPv4Count() - 1)
+	if index >= countMinus1 {
+		if index == countMinus1 {
+			return section.GetUpper()
+		}
+		outOfBounds()
+	}
+	return incrementRange(section.toAddressSection(), index, section.getPrefixLen()).ToIPv4()
+}
+
+// GetBig returns the individual address section that is at the given index in this collection of address sections,
+// with the increment of 0 returning the first in the range.
+//
+// If the index is negative or exceeds GetCount() - 1, this panics.
+func (section *IPv4AddressSection) GetBig(index *big.Int) *IPv4AddressSection {
+	if index.IsInt64() {
+		return section.Increment(index.Int64())
+	}
+	outOfBounds()
+	return nil // unreachable since outOfBounds panics, but my IDE cannot see that
 }
 
 func low64IPv4(section *AddressSection) uint64 {
@@ -980,7 +1079,7 @@ func (section *IPv4AddressSection) enumerateAddrIPv4(other AddressSectionType) (
 func (section *IPv4AddressSection) EnumerateIPv4(other AddressSectionType) (val int64, ok bool) {
 	if other != nil {
 		if otherSection := other.ToSectionBase(); otherSection != nil && otherSection.IsIPv4() {
-			if matches, count := section.matchesTypeAndCount(otherSection); matches && count <= 8 {
+			if matches, count := section.matchesTypeAndSegCount(otherSection); matches && count <= 8 {
 				return enumerateSmall(section.ToSectionBase(), otherSection, low64IPv4, low64UpperIPv4)
 			}
 		}
@@ -1015,7 +1114,7 @@ func (section *IPv4AddressSection) enumerateAddr(other AddressSectionType) *big.
 func (section *IPv4AddressSection) Enumerate(other AddressSectionType) *big.Int {
 	if other != nil {
 		if otherSection := other.ToSectionBase(); otherSection != nil {
-			if matches, count := section.matchesTypeAndCount(otherSection); matches {
+			if matches, count := section.matchesTypeAndSegCount(otherSection); matches {
 				if count <= 8 {
 					if val, ok := enumerateSmall(section.ToSectionBase(), otherSection, low64IPv4, low64UpperIPv4); ok {
 						return big.NewInt(val)

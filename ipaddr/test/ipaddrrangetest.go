@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2022 Sean C Foley
+// Copyright 2020-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -101,7 +101,7 @@ func (t ipAddressRangeTester) run() {
 	t.testStrings()
 
 	t.testReverse("1:2:*:4:5:6:a:b", false, false)
-	t.testReverse("1:1:1:1-fffe:2:3:3:3", false, false)                                   // 0x1-0xfffe reverseBitsPerByte throws
+	t.testReverse("1:1:1:1-fffe:2:3:3:3", false, false)                                   // 0x1-0xfffe reverseBitsPerByte
 	t.testReverse("1-fffe:0-ffff:0-ffff:0-fffe:1-ffff:1-ffff:1-fffe:1-ffff", false, true) // all reversible
 	t.testReverse("1-fffe:0-ffff:1-ffff:0-fffe:0-fffe:1-ffff:0-ffff:1-fffe", true, true)  // all reversible
 	t.testReverse("1:1:1:0-fffe:1-fffe:*:1:1", false, false)                              // 100-feff or aa01-aafe are byte reversible becoming 100-feff and xx01-xxfe where x is reverse of a
@@ -3109,6 +3109,44 @@ func (t ipAddressRangeTester) testSpanAndMerge(address1, address2 string, count 
 		t.addFailure(newIPAddrFailure("joined range "+asRangeSliceString(joined)+" did not match "+addr1.String()+" and "+addr2.String(), addr1))
 	}
 	t.incrementTestCount()
+
+	ipNets := addr1.SpanWithIPNetsTo(addr2)
+	var resultNets []*ipaddr.IPAddress
+	for _, s := range ipNets {
+		ipNetAddr, err := ipaddr.NewIPAddressFromNetIPNet(s)
+		if err != nil {
+			t.addFailure(newIPAddrFailure("ip net fail: "+err.Error(), addr1))
+		}
+		resultNets = append(resultNets, ipNetAddr)
+	}
+
+	var expectedNets []*ipaddr.IPAddress
+	for _, s := range expected {
+		addr := t.createAddress(s).GetAddress()
+		if !addr.IsPrefixed() && !addr.IsMultiple() {
+			addr = addr.SetPrefixLen(addr.GetBitCount())
+		}
+		ipNet := addr.ToIPNet()
+		ipNetAddr, err := ipaddr.NewIPAddressFromNetIPNet(ipNet)
+		if err != nil {
+			t.addFailure(newIPAddrFailure("ip net fail: "+err.Error(), addr1))
+		}
+		expectedNets = append(expectedNets, ipNetAddr)
+	}
+
+	if !ipaddr.AddrsMatchOrdered(resultNets, expectedNets) {
+		t.addFailure(newIPAddrFailure("merge mismatch merging "+addr1.String()+" and "+addr2.String()+" into "+asSliceString(resultNets)+" expected "+asSliceString(expectedNets), addr1))
+	}
+
+	var expectedNets2 []*ipaddr.IPAddress
+	for _, s := range expected {
+		ipNet := t.createAddress(s).GetAddress()
+		expectedNets2 = append(expectedNets2, ipNet)
+	}
+
+	if !ipaddr.AddrsMatchOrdered(resultNets, expectedNets2) {
+		t.addFailure(newIPAddrFailure("merge mismatch merging "+addr1.String()+" and "+addr2.String()+" into "+asSliceString(resultNets)+" expected "+asSliceString(expectedNets), addr1))
+	}
 }
 
 func (t ipAddressRangeTester) testMergeSingles(addrStr string) {

@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2024 Sean C Foley
+// Copyright 2020-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -81,10 +81,13 @@ func (seg *addressSegmentInternal) sameTypeContains(otherSeg *AddressSegment) bo
 
 func (seg *addressSegmentInternal) contains(other AddressSegmentType) bool {
 	if other == nil {
-		return true
+		return false
 	}
 	otherSeg := other.ToSegmentBase()
-	if seg.toAddressSegment() == otherSeg || otherSeg == nil {
+	if other.ToSegmentBase() == nil {
+		return false
+	}
+	if seg.toAddressSegment() == otherSeg {
 		return true
 	} else if matchesStructure, _ := seg.matchesStructure(other); matchesStructure {
 		return seg.sameTypeContains(otherSeg)
@@ -99,11 +102,19 @@ func (seg *addressSegmentInternal) sameTypeOverlaps(otherSeg *AddressSegment) bo
 
 func (seg *addressSegmentInternal) overlaps(other AddressSegmentType) bool {
 	if other == nil {
-		return true
+		return false
 	}
 	otherSeg := other.ToSegmentBase()
-	if seg.toAddressSegment() == otherSeg || otherSeg == nil {
-		return true
+	if other.ToSegmentBase() == nil {
+		return false
+	}
+	// if other == nil {
+	// 	return true // nil contains
+	// }
+	// otherSeg := other.ToSegmentBase()
+	if seg.toAddressSegment() == otherSeg {
+		//if seg.toAddressSegment() == otherSeg || otherSeg == nil {
+		return true // nil contains
 	} else if matchesStructure, _ := seg.matchesStructure(other); matchesStructure {
 		return seg.sameTypeOverlaps(otherSeg)
 	}
@@ -142,6 +153,10 @@ func (seg *addressSegmentInternal) sameTypeEquals(other *AddressSegment) bool {
 			seg.getUpperSegmentValue(), other.getUpperSegmentValue())
 	}
 	return !other.isMultiple() && seg.getSegmentValue() == other.getSegmentValue()
+}
+
+func (seg *addressSegmentInternal) singleSameTypeEquals(other *AddressSegment) bool {
+	return seg.getSegmentValue() == other.getSegmentValue()
 }
 
 // PrefixContains returns whether the prefix values in the prefix of the given segment are also prefix values in this segment.
@@ -787,16 +802,16 @@ type AddressSegment struct {
 
 // Contains returns whether this is same type and version as the given segment and whether it contains all values in the given segment.
 func (seg *AddressSegment) Contains(other AddressSegmentType) bool {
-	if seg == nil {
-		return other == nil || other.ToSegmentBase() == nil
+	if seg == nil || other == nil || other.ToSegmentBase() == nil {
+		return false
 	}
 	return seg.contains(other)
 }
 
 // Overlaps returns whether this is same type and version as the given segment and whether it overlaps with the values in the given segment.
 func (seg *AddressSegment) Overlaps(other AddressSegmentType) bool {
-	if seg == nil {
-		return other == nil || other.ToSegmentBase() == nil
+	if seg == nil || other == nil || other.ToSegmentBase() == nil {
+		return false
 	}
 	return seg.overlaps(other)
 }

@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2023 Sean C Foley
+// Copyright 2020-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -58,7 +58,8 @@ Both share many of the same operations, such as spanning with prefix blocks, mer
 
 # Code Examples
 
-For common use-cases, you may wish to go straight to the [wiki code examples] which cover a wide breadth of common use-cases.
+For common use-cases, you may wish to go straight to the [wiki code examples] which cover a wide breadth of common use-cases.  In fact, it is recommended that you do so, before perusing the API.
+The API is wide and deep, and may be overwhelming at first, providing such a wide array of operations, manipulations and transformations with address, address ranges, and address collections.
 
 # Further Documentation
 

@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2024 Sean C Foley
+// Copyright 2020-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -179,16 +179,16 @@ func (seg *MACAddressSegment) init() *MACAddressSegment {
 
 // Contains returns whether this is same type and version as the given segment and whether it contains all values in the given segment.
 func (seg *MACAddressSegment) Contains(other AddressSegmentType) bool {
-	if seg == nil {
-		return other == nil || other.ToSegmentBase() == nil
+	if seg == nil || other == nil || other.ToSegmentBase() == nil {
+		return false
 	}
 	return seg.init().contains(other)
 }
 
 // Overlaps returns whether this is same type and version as the given segment and whether it overlaps with the values in the given segment.
 func (seg *MACAddressSegment) Overlaps(other AddressSegmentType) bool {
-	if seg == nil {
-		return other == nil || other.ToSegmentBase() == nil
+	if seg == nil || other == nil || other.ToSegmentBase() == nil {
+		return false
 	}
 	return seg.init().overlaps(other)
 }
@@ -201,7 +201,7 @@ func (seg *MACAddressSegment) Overlaps(other AddressSegmentType) bool {
 // Prefix lengths are ignored.
 func (seg *MACAddressSegment) Equal(other AddressSegmentType) bool {
 	if seg == nil {
-		return other == nil || other.ToDiv() == nil
+		return other == nil || other.ToDiv() == nil // nil contains
 		//return seg.getAddrType() == macType && other.(StandardDivisionType).ToDiv() == nil
 	}
 	return seg.init().equal(other)

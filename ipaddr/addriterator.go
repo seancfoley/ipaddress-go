@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2022 Sean C Foley
+// Copyright 2020-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -53,6 +53,10 @@ func (it *singleIterator[T]) Next() (res T) {
 	return
 }
 
+func (it *singleIterator[T]) Remove() (res T) { // only exposed with nil iterators where nothing is iterated
+	return
+}
+
 type multiAddrIterator struct {
 	Iterator[*AddressSection]
 	zone Zone
@@ -67,11 +71,15 @@ func (it multiAddrIterator) Next() (res *Address) {
 }
 
 func nilAddrIterator() Iterator[*Address] {
-	return &singleIterator[*Address]{}
+	return &singleIterator[*Address]{empty: true}
 }
 
 func nilIterator[T any]() Iterator[T] {
-	return &singleIterator[T]{}
+	return &singleIterator[T]{empty: true}
+}
+
+func nilIteratorWithRemove[T any]() IteratorWithRemove[T] {
+	return &singleIterator[T]{empty: true}
 }
 
 func addrIterator(
@@ -174,6 +182,18 @@ func (iter macAddressIterator) Next() *MACAddress {
 	return iter.Iterator.Next().ToMAC()
 }
 
+type addrTypeIterator[T AddressType] struct {
+	Iterator[T]
+}
+
+func (it addrTypeIterator[T]) Next() AddressType {
+	next := it.Iterator.Next()
+	if isNilPtr(next) {
+		return nil
+	}
+	return next
+}
+
 type addressSeriesIterator struct {
 	Iterator[*Address]
 }
@@ -225,13 +245,13 @@ func (iter ipSectionSeriesIterator) Next() ExtendedIPSegmentSeries {
 // This function does not return iter.Seq directly, instead it returns a func(yield func(V) bool) assignable to a variable of type iter.Seq[V].
 // This avoids adding a dependency of this libary on Go version 1.23 while still integrating with the iter package introduced with Go 1.23.
 //
-// To convert an instance of IteratorWithRemove, wrap it by calling NewPointIteratorWithRemove first, then pass the returned iterator this function.
-// To convert an instance of CachingTrieIterator, wrap it by calling NewPointCachingTrieIterator first, then pass the returned iterator this function.
+// To convert an instance of IteratorWithRemove, wrap it by calling NewPointIteratorWithRemove first, then pass the returned iterator to this function.
+// To convert an instance of CachingTrieIterator, wrap it by calling NewPointCachingTrieIterator first, then pass the returned iterator to this function.
 //
 // You should avoid doing a double conversion on an iterator from this library,
 // first to a "push" iterator with StdPushIterator and then to a "pull" iterator using iter.Pull in the standard libary.
 // The result is an iterator less efficient than the original that also requires a call to the "stop" function to release resources.
-// Instead, use StdPullIterator to get a pull iterator with an API similar to that provided by iter.Pull.
+// Instead, call StdPullIterator to get a pull iterator with an API similar to that provided by iter.Pull.
 func StdPushIterator[V any](iterator Iterator[V]) func(yield func(V) bool) {
 	return func(yield func(V) bool) {
 		for iterator.HasNext() && yield(iterator.Next()) {

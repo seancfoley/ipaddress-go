@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2024 Sean C Foley
+// Copyright 2020-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,10 +34,39 @@ type BitItem interface {
 	GetBitCount() BitCount
 }
 
+type AddressItemAggregation interface {
+	// GetCount provides the number of address items represented by this AddressItem, for example the subnet size for IP addresses, or the number of elements in an address collection.
+	GetCount() *big.Int
+
+	// IsMultiple returns whether this item represents multiple values (the count is larger than 1)
+	IsMultiple() bool
+
+	// IncludesZero returns whether this item includes the value of zero within its range.
+	IncludesZero() bool
+
+	// IncludesMax returns whether this item includes the max value, the value whose bits are all ones, within its range.
+	IncludesMax() bool
+
+	// IsSequential returns whether the address item represents a range of addresses that are sequential.
+	//
+	// IP Address sequential ranges are sequential by definition.
+	//
+	// Generally, for a subnet this means that any segment covering a range of values must be followed by segments that are full range, covering all values.
+	//
+	// Individual addresses are sequential and CIDR prefix blocks are sequential.
+	// The subnet "1.2.3-4.5" is not sequential, since the two addresses it represents, "1.2.3.5" and "1.2.4.5", are not ("1.2.3.6" is in-between the two but not in the subnet).
+	IsSequential() bool
+
+	fmt.Stringer
+	fmt.Formatter
+}
+
 // AddressItem represents all addresses, division groupings, divisions, and sequential ranges.
 // Any address item can be compared to any other.
 type AddressItem interface {
 	BitItem
+
+	AddressItemAggregation
 
 	// GetValue returns the lowest individual address item in the address item range as an integer value.
 	GetValue() *big.Int
@@ -63,22 +92,10 @@ type AddressItem interface {
 	// UpperBytes returns the highest individual address item in the address item range as a byte slice.
 	UpperBytes() []byte
 
-	// GetCount provides the number of address items represented by this AddressItem, for example the subnet size for IP addresses
-	GetCount() *big.Int
-
-	// IsMultiple returns whether this item represents multiple values (the count is larger than 1)
-	IsMultiple() bool
-
 	// IsFullRange returns whether this address item represents all possible values attainable by an address item of this type.
 	//
 	// This is true if and only if both IncludesZero and IncludesMax return true.
 	IsFullRange() bool
-
-	// IncludesZero returns whether this item includes the value of zero within its range.
-	IncludesZero() bool
-
-	// IncludesMax returns whether this item includes the max value, the value whose bits are all ones, within its range.
-	IncludesMax() bool
 
 	// IsZero returns whether this address item matches exactly the value of zero.
 	IsZero() bool
@@ -134,7 +151,9 @@ type AddressItem interface {
 	fmt.Formatter
 }
 
+// Prefixed represents types that have an associated prefix length
 type Prefixed interface {
+
 	// IsPrefixed returns whether this item has an associated prefix length.
 	IsPrefixed() bool
 
@@ -206,11 +225,6 @@ type AddressDivisionSeries interface {
 
 	// GetSequentialBlockCount provides the count of elements from the sequential block iterator, the minimal number of sequential address division series that comprise this address division series.
 	GetSequentialBlockCount() *big.Int
-
-	// IsSequential returns  whether the series represents a range of values that are sequential.
-	//
-	// Generally, this means that any division covering a range of values must be followed by divisions that are full range, covering all values.
-	IsSequential() bool
 
 	Prefixed
 
@@ -333,6 +347,14 @@ type AddressSegmentSeries interface { // Address and above, AddressSection and a
 	// The first segment is at index 0.
 	// GetGenericSegment will panic given a negative index or an index matching or larger than the segment count.
 	GetGenericSegment(index int) AddressSegmentType
+
+	// IncludesZeroBits returns true if the bits in the lower value of this series between the indicated indices are all zero.
+	// Index 0 is the most significant bit.  The bits are checked from fromBPrefixBitIndex inclusive to toPrefixBitIndex exclusive.
+	IncludesZeroBits(fromBPrefixBitIndex, toPrefixBitIndex int) bool
+
+	// IncludesMaxBits returns true if the bits in the upper value of this series between the indicated indices are all one.
+	// Index 0 is the most significant bit.  The bits are checked from fromBPrefixBitIndex inclusive to toPrefixBitIndex exclusive.
+	IncludesMaxBits(fromBPrefixBitIndex, toPrefixBitIndex int) bool
 }
 
 var _, _ AddressSegmentSeries = &Address{}, &AddressSection{}
@@ -674,6 +696,61 @@ var _, _, _, _, _ AddressSectionType = &AddressSection{},
 	&IPv6AddressSection{},
 	&MACAddressSection{}
 
+// The following methods in the address types use exact args, the same type as the receiver:
+// Intersect, Subtract, Mask, BitwiseOr,
+// COverWithPrefixBlockTo, MergeToPrefixBLocks, MergeToSeqBLocks,
+// SpanWithPrefixBlocksTo, SpanWithSequentialBlocksTo, TrieCompare
+//
+// The following use AddressType or other similar interfaces:
+// Compare, CompareSize, Contains, ContainsRange, Enumerate, Equal,
+// EqualAggregation, Overlaps, OverlapsRange, UpperIsAdjacentTo, PrefixEqual, PrefixContains
+//
+// The comparison operations use the interfaces,  while the operations that operate on the instances and produce new instances do not.
+// The one exception is TrieCompare, a specialty comparison operation.
+//
+// The comparison operations using interfaces highlights that we are comparing addresses and ranges regardless of the types representing them.
+// This is not necessary for the operations that modify addresses and ranges,
+// they require that you use a single type for such modifications and manipulations,
+// there is no need to extend those operations to allow mixed types.
+
+type addressAggr interface {
+	AddressIterator() Iterator[AddressType]
+
+	// Contains returns whether this aggregation contains all individual addresses in the given address or subnet.
+	Contains(AddressType) bool
+
+	// Enumerate indicates where an address sits relative to the address ordering.
+	//
+	// It determines how many individual address elements precede the given address element, if the address is in the aggregation.
+	// If above all addresses in the aggregation, it is the distance to the upper boundary added to the aggregation count less one, and if below the aggregation, the distance to the lower boundary.
+	//
+	// In other words, if the given address is not in the aggregation but above it, returns the number of addresses preceding the address from the upper aggregation boundary,
+	// added to one less than the total number of aggregation addresses.  If the given address is not in the aggregation but below it, returns the number of addresses following the address to the lower aggregation boundary.
+	//
+	// If the argument is not in the aggregation, but neither above nor below it, then nil is returned.
+	//
+	// Enumerate returns nil when the argument is multi-valued. The argument must be an individual address.
+	//
+	// When this aggregation happens to be an individual address, the returned value is the distance (difference) between the two addresses.
+	//
+	// If the given address does not have the same version or type as the addresses in this aggregation, then nil is returned.
+	Enumerate(AddressType) *big.Int
+
+	// OverlapsAddr returns whether this aggregation contains any individual addresses in the given address or subnet.
+	OverlapsAddr(AddressType) bool
+
+	// EqualAggregation returns true if and only if this aggregation of addresses are the same as the=ose in the given aggregation.
+	EqualAggregation(AddressAggregation) bool
+}
+
+type rangeAggr interface {
+	// ContainsRange returns whether all the addresses in the given sequential range are also contained in this aggregation of addresses.
+	ContainsRange(IPAddressSeqRangeType) bool
+
+	// OverlapsRange returns whether this aggregation includes any of the addresses in the given sequential range, if there is at least one individual address common to both.
+	OverlapsRange(IPAddressSeqRangeType) bool
+}
+
 // AddressType represents any address, all of which can be represented by the base type [Address].
 // This includes [IPAddress], [IPv4Address], [IPv6Address], and [MACAddress].
 // You must use the pointer types *Address, *IPAddress, *IPv4Address, *IPv6Address, and *MACAddress when implementing AddressType.
@@ -681,32 +758,14 @@ var _, _, _, _, _ AddressSectionType = &AddressSection{},
 type AddressType interface {
 	AddressSegmentSeries
 
+	addressAggr
+
 	// Equal returns whether the given address or subnet is equal to this address or subnet.
 	// Two address instances are equal if they represent the same set of addresses.
 	Equal(AddressType) bool
 
-	// Contains returns whether this is the same type and version as the given address or subnet and whether it contains all addresses in the given address or subnet.
-	Contains(AddressType) bool
-
 	// Overlaps returns whether this is the same type and version as the given address and whether it overlaps with the other, containing at least one individual address common to both.
 	Overlaps(AddressType) bool
-
-	// Enumerate indicates where an address sits relative to the subnet ordering.
-	//
-	// Determines how many address elements of the subnet precede the given address element, if the address is in the subnet.
-	// If above the subnet range, it is the distance to the upper boundary added to the subnet count less one, and if below the subnet range, the distance to the lower boundary.
-	//
-	// In other words, if the given address is not in the subnet but above it, returns the number of addresses preceding the address from the upper range boundary,
-	// added to one less than the total number of subnet addresses.  If the given address is not in the subnet but below it, returns the number of addresses following the address to the lower subnet boundary.
-	//
-	// If the argument is not in the subnet, but neither above nor below the range, then nil is returned.
-	//
-	// Enumerate returns nil when the argument is multi-valued. The argument must be an individual address.
-	//
-	// When this is also an individual address, the returned value is the distance (difference) between the two addresses.
-	//
-	// If the given address does not have the same version or type, then nil is returned.
-	Enumerate(AddressType) *big.Int
 
 	// PrefixEqual determines if the given address matches this address up to the prefix length of this address.
 	// If this address has no prefix length, the entire address is compared.
@@ -721,16 +780,297 @@ type AddressType interface {
 	// It returns whether the prefix of this address contains all values of the same prefix length in the given address.
 	PrefixContains(AddressType) bool
 
-	// ToAddressBase converts to an Address, a polymorphic type usable with all addresses and subnets.
+	// UpperIsAdjacentTo indicates if the given address or subnet's lower value is the next individual address following the upper value of this address or subnet.
+	// This means they are adjacent, having no intervening address.
+	//
+	// UpperIsAdjacentTo returns true given the address produced by IncrementBoundarySingle.
+	UpperIsAdjacentTo(AddressType) bool
+
+	// ToAddressBase converts to an Address instance, a polymorphic type usable with all addresses and subnets.
 	//
 	// ToAddressBase implementations can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 	ToAddressBase() *Address
 }
 
+// IsEmpty returns true if the address has no elements.
+// Much like the len function, it handles nil, returning true for nil interfaces and nil pointer types.
+func isEmptyAddr(addr AddressType) bool {
+	switch other := addr.(type) {
+	case nil:
+		return true
+	case *IPAddress:
+		return other == nil
+	case *IPv4Address:
+		return other == nil
+	case *IPv6Address:
+		return other == nil
+	case *MACAddress:
+		return other == nil
+	default:
+		return false
+	}
+}
+
 var _, _ AddressType = &Address{}, &MACAddress{}
+
+type addressTypeConstraint[T any] interface {
+	AddressType
+
+	KeyConstraint[T]
+
+	// GetLower returns the address in the subnet or address collection with the lowest numeric value,
+	// which will be the receiver if it represents a single address.
+	// For example, for "1.2-3.4.5-6", the series "1.2.4.5" is returned.
+	GetLower() T
+
+	// GetUpper returns the address in the subnet or address collection with the highest numeric value,
+	// which will be the receiver if it represents a single address.
+	// For example, for the subnet "1.2-3.4.5-6", the address "1.3.4.6" is returned.
+	GetUpper() T
+
+	// GetLowerAndUpper returns both addresses that would be returned from both GetLower and GetUpper.
+	// Both will be the receiver if it represents an individual address and not a subnet of multiple addresses.
+	GetLowerAndUpper() (lower, upper T)
+
+	// AdjustPrefixLen increases or decreases the prefix length by the given increment.
+	//
+	// A prefix length will not be adjusted lower than zero or beyond the bit length of the address.
+	//
+	// If this address has no prefix length, then the prefix length will be set to the adjustment if positive,
+	// or it will be set to the adjustment added to the bit count if negative.
+	AdjustPrefixLen(prefixLen BitCount) T
+
+	// AdjustPrefixLenZeroed increases or decreases the prefix length by the given increment while zeroing out the bits that have moved into or outside the prefix.
+	//
+	// A prefix length will not be adjusted lower than zero or beyond the bit length of the address.
+	//
+	// If this address has no prefix length, then the prefix length will be set to the adjustment if positive,
+	// or it will be set to the adjustment added to the bit count if negative.
+	//
+	// When prefix length is increased, the bits moved within the prefix become zero.
+	// When a prefix length is decreased, the bits moved outside the prefix become zero.
+	//
+	// For example, "1.2.0.0/16" adjusted by -8 becomes "1.0.0.0/8".
+	// "1.2.0.0/16" adjusted by 8 becomes "1.2.0.0/24".
+	//
+	// If the result cannot be zeroed because zeroing out bits results in a non-contiguous segment, an error is returned.
+	AdjustPrefixLenZeroed(prefixLen BitCount) (T, addrerr.IncompatibleAddressError)
+
+	// SetPrefixLen sets the prefix length.
+	//
+	// A prefix length will not be set to a value lower than zero or beyond the bit length of the address.
+	// The provided prefix length will be adjusted to these boundaries if necessary.
+	SetPrefixLen(prefixLen BitCount) T
+
+	// SetPrefixLenZeroed sets the prefix length while zeroing out bits moved in and out of the prefix.
+	//
+	// A prefix length will not be set to a value lower than zero or beyond the bit length of the address.
+	// The provided prefix length will be adjusted to these boundaries if necessary.
+	//
+	// If this address has a prefix length, and the prefix length is increased when setting the new prefix length, the bits moved within the prefix become zero.
+	// If this address has a prefix length, and the prefix length is decreased when setting the new prefix length, the bits moved outside the prefix become zero.
+	//
+	// In other words, bits that move from one side of the prefix length to the other (bits moved into the prefix or outside the prefix) are zeroed.
+	//
+	// If the result cannot be zeroed because zeroing out bits results in a non-contiguous segment, an error is returned.
+	SetPrefixLenZeroed(prefixLen BitCount) (T, addrerr.IncompatibleAddressError)
+
+	// WithoutPrefixLen provides the same address but with no prefix length.  The values remain unchanged.
+	WithoutPrefixLen() T
+
+	// AssignMinPrefixForBlock returns an equivalent subnet, assigned the smallest prefix length possible,
+	// such that the prefix block for that prefix length is in this subnet.
+	//
+	// In other words, this method assigns a prefix length to this subnet matching the largest prefix block in this subnet.
+	//
+	// Examples:
+	//   - 1.2.3.4 returns 1.2.3.4/32
+	//   - 1.2.*.* returns 1.2.0.0/16
+	//   - 1.2.*.0/24 returns 1.2.0.0/16
+	//   - 1.2.*.4 returns 1.2.*.4/32
+	//   - 1.2.0-1.* returns 1.2.0.0/23
+	//   - 1.2.1-2.* returns 1.2.1-2.0/24
+	//   - 1.2.252-255.* returns 1.2.252.0/22
+	//   - 1.2.3.4/16 returns 1.2.3.4/32
+	AssignMinPrefixForBlock() T
+
+	// AssignPrefixForSingleBlock returns the equivalent prefix block that matches exactly the range of values in this address.
+	// The returned block will have an assigned prefix length indicating the prefix length for the block.
+	//
+	// There may be no such address - it is required that the range of values match the range of a prefix block.
+	// If there is no such address, then nil is returned.
+	//
+	// Examples:
+	//   - 1.2.3.4 returns 1.2.3.4/32
+	//   - 1.2.*.* returns 1.2.0.0/16
+	//   - 1.2.*.0/24 returns 1.2.0.0/16
+	//   - 1.2.*.4 returns nil
+	//   - 1.2.0-1.* returns 1.2.0.0/23
+	//   - 1.2.1-2.* returns nil
+	//   - 1.2.252-255.* returns 1.2.252.0/22
+	//   - 1.2.3.4/16 returns 1.2.3.4/32
+	AssignPrefixForSingleBlock() T
+
+	// Increment returns the address from the subnet that is the given increment upwards into the subnet range,
+	// with the increment of 0 returning the first address in the range.
+	//
+	// If the increment i matches or exceeds the subnet size count c, then i - c + 1
+	// is added to the upper address of the range.
+	// An increment matching the subnet count gives you the address just above the highest address in the subnet.
+	//
+	// If the increment is negative, it is added to the lower address of the range.
+	// To get the address just below the lowest address of the subnet, use the increment -1.
+	//
+	// If this is just a single address value, the address is simply incremented by the given increment, positive or negative.
+	//
+	// If this is a subnet with multiple values, a positive increment i is equivalent i + 1 values from the subnet iterator and beyond.
+	// For instance, a increment of 0 is the first value from the iterator, an increment of 1 is the second value from the iterator, and so on.
+	// An increment of a negative value added to the subnet count is equivalent to the same number of iterator values preceding the upper bound of the iterator.
+	// For instance, an increment of count - 1 is the last value from the iterator, an increment of count - 2 is the second last value, and so on.
+	//
+	// On address overflow or underflow, Increment returns nil.
+	Increment(increment int64) T
+
+	// IncrementSingle increments the address or subnet by 1 to produce a new address.  Equivalent to Increment(1).
+	IncrementSingle() T
+
+	// DecrementSingle decrements the address or subnet by 1 to produce a new address.  Equivalent to Increment(-1).
+	DecrementSingle() T
+
+	// IncrementBig returns the address from the subnet that is the given increment upwards into the subnet range.
+	//
+	// Equivalent to Increment, but taking a big integer as the increment argument.
+	IncrementBig(increment *big.Int) T
+
+	// IncrementBoundary returns the address that is the given increment from the range boundaries of this subnet or address collection.
+	//
+	// If the given increment is positive, adds the value to the upper address (GetUpper) in the range to produce a new address.
+	// If the given increment is negative, adds the value to the lower address (GetLower) in the range to produce a new address.
+	// If the increment is zero, returns this address.
+	//
+	// If this is a single address value, that address is simply incremented by the given increment value, positive or negative.
+	//
+	// On address overflow or underflow, IncrementBoundary returns nil.
+	IncrementBoundary(increment int64) T
+
+	// IncrementBoundarySingle increments the boundary of the address or subnet by 1 to produce a new address.  Equivalent to IncrementBoundary(1).
+	IncrementBoundarySingle() T
+
+	// Iterator provides an iterator to iterate through the individual addresses of this address or subnet.
+	//
+	// When iterating, the prefix length is preserved.  Remove it using WithoutPrefixLen prior to iterating if you wish to drop it from all individual addresses.
+	//
+	// Call IsMultiple to determine if this instance represents multiple addresses, or call GetCount for the individual address count.
+	Iterator() Iterator[T]
+
+	// PrefixBlockIterator provides an iterator to iterate through the individual prefix blocks, one for each prefix of this address or subnet.
+	// Each iterated address or subnet will be a prefix block with the same prefix length as this address or subnet.
+	//
+	// If this address has no prefix length, then this is equivalent to Iterator.
+	PrefixBlockIterator() Iterator[T]
+
+	// PrefixIterator provides an iterator to iterate through the individual prefixes of this subnet,
+	// each iterated element spanning the range of values for its prefix.
+	//
+	// It is similar to the prefix block iterator, except for possibly the first and last iterated elements, which might not be prefix blocks,
+	// instead constraining themselves to values from this subnet.
+	//
+	// If the subnet has no prefix length, then this is equivalent to Iterator.
+	PrefixIterator() Iterator[T]
+
+	// BlockIterator iterates through the addresses that can be obtained by iterating through all the upper segments up to the given segment count.
+	// The segments following remain the same in all iterated addresses.
+	//
+	// For instance, given the IPv4 subnet "1-2.3-4.5-6.7" and the count argument 2,
+	// BlockIterator will iterate through "1.3.5-6.7", "1.4.5-6.7", "2.3.5-6.7" and "2.4.5-6.7".
+	BlockIterator(segmentCount int) Iterator[T]
+
+	// SequentialBlockIterator iterates through the sequential subnets or addresses that make up this address or subnet.
+	//
+	// Practically, this means finding the count of segments for which the segments that follow are not full range, and then using BlockIterator with that segment count.
+	//
+	// For instance, given the IPv4 subnet "1-2.3-4.5-6.7-8", it will iterate through "1.3.5.7-8", "1.3.6.7-8", "1.4.5.7-8", "1.4.6.7-8", "2.3.5.7-8", "2.3.6.7-8", "2.4.6.7-8" and "2.4.6.7-8".
+	//
+	// Use GetSequentialBlockCount to get the number of iterated elements.
+	SequentialBlockIterator() Iterator[T]
+
+	// ReverseBits returns a new address with the bits reversed.  Any prefix length is dropped.
+	//
+	// If the bits within a single segment cannot be reversed because the segment represents a range,
+	// and reversing the segment values results in a range that is not contiguous, this returns an error.
+	//
+	// In practice this means that to be reversible, a segment range must include all values except possibly the largest and/or smallest, which reverse to themselves.
+	//
+	// If perByte is true, the bits are reversed within each byte, otherwise all the bits are reversed.
+	ReverseBits(perByte bool) (T, addrerr.IncompatibleAddressError)
+
+	// ReverseSegments returns a new address with the segments reversed.  Any prefix length is dropped.
+	ReverseSegments() T
+
+	// ToPrefixBlock returns the single block of addresses associated with the prefix of this address.
+	// This is the address whose prefix matches the prefix of this address, and the remaining bits span all values.
+	// If this address has no prefix length, this address is returned.
+	//
+	// The returned address will include all addresses with the same prefix as this one, the prefix "block".
+	ToPrefixBlock() T
+
+	// ToPrefixBlockLen returns the address associated with the prefix length provided,
+	// the block of addresses whose prefix of that length matches the prefix of this address, and the remaining bits span all values.
+	//
+	// The returned address will include all addresses with the same prefix as this one, the prefix "block".
+	ToPrefixBlockLen(prefLen BitCount) T
+
+	// ToSinglePrefixBlockOrAddress converts to a single prefix block or address.
+	// If the given address is a single prefix block, it is returned.
+	// If it can be converted to a single prefix block by assigning a prefix length, the converted block is returned.
+	// If it is a single address, any prefix length is removed and the address is returned.
+	// Otherwise, nil is returned.
+	// This method provides the address formats used by tries.
+	// ToSinglePrefixBlockOrAddress is quite similar to AssignPrefixForSingleBlock, which always returns prefixed addresses, while this does not.
+	ToSinglePrefixBlockOrAddress() T
+
+	// ToBlock creates a new block of addresses by changing the segment at the given index to have the given lower and upper value,
+	// and changing the following segments to be full-range.
+	ToBlock(segmentIndex int, lower, upper SegInt) T
+
+	// TrieIncrement returns the next address or block according to address trie ordering.
+	//
+	// If an address is neither an individual address nor a prefix block, it is treated like one:
+	//
+	//   - ranges that occur inside the prefix length are ignored, only the lower value is used.
+	//   - ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
+	TrieIncrement() T
+
+	// TrieDecrement returns the previous or block address according to address trie ordering.
+	//
+	// If an address is neither an individual address nor a prefix block, it is treated like one:
+	//
+	//   - ranges that occur inside the prefix length are ignored, only the lower value is used.
+	//   - ranges beyond the prefix length are assumed to be the full range across all hosts for that prefix length.
+	TrieDecrement() T
+}
+
+// AddressTypeConstraint constrains AddressType, restricting it to a single generic address type, rather than representing any one of multiple IP address types.
+// At the same time, AddressTypeConstraint expands the available methods beyond those offered by AddressType.
+// It is particularly useful to provide full functionality in methods using generic address types.
+// Use this type as a generic type constraint to retain full access to all address functionality in your generic function or method.
+// The type T can be any one of *IPAddress, *IPv4Address, *IPv6Address, *MACAddress, or *Address.
+type AddressTypeConstraint[T KeyConstraint[T]] interface {
+	addressTypeConstraint[T]
+
+	// ToGenericKey produces a generic Key[T] that can be used with generic code working with [Address], [IPAddress], [IPv4Address], [IPv6Address] and [MACAddress].
+	ToGenericKey() Key[T]
+}
+
+var (
+	_ AddressTypeConstraint[*Address]    = &Address{}
+	_ AddressTypeConstraint[*MACAddress] = &MACAddress{}
+)
 
 // IPAddressRange represents all IPAddress instances and all IPAddress sequential range instances.
 type IPAddressRange interface {
+	AddressItem
+
 	// GetIPVersion returns the IP version of this IP address range
 	GetIPVersion() IPVersion
 
@@ -767,16 +1107,6 @@ type IPAddressRange interface {
 
 	// GetUpperNetNetIPAddr returns the highest address in this subnet or address range as a netip.Addr.
 	GetUpperNetNetIPAddr() netip.Addr
-
-	// IsSequential returns whether the address item represents a range of addresses that are sequential.
-	//
-	// IP Address sequential ranges are sequential by definition.
-	//
-	// Generally, for a subnet this means that any segment covering a range of values must be followed by segments that are full range, covering all values.
-	//
-	// Individual addresses are sequential and CIDR prefix blocks are sequential.
-	// The subnet "1.2.3-4.5" is not sequential, since the two addresses it represents, "1.2.3.5" and "1.2.4.5", are not ("1.2.3.6" is in-between the two but not in the subnet).
-	IsSequential() bool
 }
 
 var _, _, _, _, _, _ IPAddressRange = &IPAddress{},
@@ -789,16 +1119,14 @@ var _, _, _, _, _, _ IPAddressRange = &IPAddress{},
 // IPAddressType represents any IP address, all of which can be represented by the base type [IPAddress].
 // This includes [IPv4Address] and [IPv6Address].
 // You must use the pointer types *IPAddress, *IPv4Address, and *IPv6Address when implementing IPAddressType.
-type IPAddressType interface {
+type ipAddressType interface {
 	AddressType
+
+	IPAddressSegmentSeries
 
 	IPAddressRange
 
-	// ContainsRange returns whether all the addresses in the given sequential range are also contained in this sequential range.
-	ContainsRange(IPAddressSeqRangeType) bool
-
-	// Overlaps returns whether this IP address is the same version as the given range and whether it overlaps with the given range, containing at least one individual address common to both.
-	OverlapsRange(IPAddressSeqRangeType) bool
+	rangeAggr
 
 	// Wrap wraps this IP address, returning a WrappedIPAddress, an implementation of ExtendedIPSegmentSeries,
 	// which can be used to write code that works with both IP addresses and IP address sections.
@@ -808,6 +1136,25 @@ type IPAddressType interface {
 	//
 	// ToIP can be called with a nil receiver, enabling you to chain this method with methods that might return a nil pointer.
 	ToIP() *IPAddress
+
+	// ToAddressString retrieves or generates an IPAddressString instance for this IP address.
+	// This may be the IPAddressString this instance was generated from, if it was generated from an IPAddressString.
+
+	// In general, users are intended to create IP address instances from IPAddressString instances,
+	// while the reverse direction, calling this method, is generally not encouraged and not useful, except under specific circumstances.
+
+	// Those specific circumstances may include when maintaining a collection of HostIdentifierString or IPAddressString instances.
+	ToAddressString() *IPAddressString
+
+	// GetNetwork returns the network object for this address
+	GetNetwork() IPAddressNetwork
+}
+
+// IPAddressType represents any IP address, all of which can be represented by the base type [IPAddress].
+// This includes [IPv4Address] and [IPv6Address].
+// You must use the pointer types *IPAddress, *IPv4Address, and *IPv6Address when implementing IPAddressType.
+type IPAddressType interface {
+	ipAddressType
 
 	// ToAddressString retrieves or generates an IPAddressString instance for this IP address.
 	// This may be the IPAddressString this instance was generated from, if it was generated from an IPAddressString.
@@ -823,34 +1170,233 @@ var _, _, _ IPAddressType = &IPAddress{},
 	&IPv4Address{},
 	&IPv6Address{}
 
+type ipAddressTypeConstraint[T any] interface {
+	ipAddressType
+
+	addressTypeConstraint[T]
+
+	// GetIPNetwork returns the singleton network instance for the IP version of the address or subnet.
+	//
+	// GetIPNetwork returns a constraint, which allows for more exact generic code that works with a single IP address type.
+	// Meanwhile, GetNetwork returns an interface implementation satisiable by all IP address types,
+	// allowing for generic code that works on them all.
+	//
+	// If the receiver is a nil pointer, or is the zero-valued IPAddress, then nil is returned.
+	GetIPNetwork() IPAddressNetworkConstraint[T]
+
+	// GetNetworkMask returns the network mask associated with the CIDR network prefix length of this address or subnet.
+	// If this address or subnet has no prefix length, then the all-ones mask is returned.
+	GetNetworkMask() T
+
+	// GetHostMask returns the host mask associated with the CIDR network prefix length of this address or subnet.
+	// If this address or subnet has no prefix length, then the all-ones mask is returned.
+	GetHostMask() T
+
+	// Mask applies the given mask to all addresses represented by this address.
+	// The mask is applied to all individual addresses.
+	//
+	// If the mask is a different version, then an error is returned.
+	//
+	// If this represents multiple addresses, and applying the mask to all addresses creates a set of addresses
+	// that cannot be represented as a sequential range within each segment, then an error is returned.
+	Mask(T) (T, addrerr.IncompatibleAddressError)
+
+	// BitwiseOr does the bitwise disjunction with this address or subnet, useful when subnetting.
+	// It is similar to Mask which does the bitwise conjunction.
+	//
+	// The operation is applied to all individual addresses and the result is returned.
+	//
+	// If the given address is a different version than this, then an error is returned.
+	//
+	// If this is a subnet representing multiple addresses, and applying the operations to all addresses creates a set of addresses
+	// that cannot be represented as a sequential range within each segment, then an error is returned.
+	BitwiseOr(other T) (T, addrerr.IncompatibleAddressError)
+
+	// MatchesWithMask applies the mask to this subnet or address and then compares the result with the given address,
+	// returning true if they match, false otherwise.
+	MatchesWithMask(other, mask T) bool
+
+	// MergeToPrefixBlocks merges this subnet with the list of subnets to produce the smallest array of prefix blocks.
+	//
+	// The resulting slice is sorted from lowest address value to highest, regardless of the size of each prefix block.
+	// Arguments that are not the same IP version are ignored.
+	MergeToPrefixBlocks(...T) []T
+
+	// MergeToSequentialBlocks merges this with the list of addresses to produce the smallest array of sequential blocks.
+	//
+	// The resulting slice is sorted from lowest address value to highest, regardless of the size of each prefix block.
+	// Arguments that are not the same IP version are ignored.
+	MergeToSequentialBlocks(...T) []T
+
+	// RemoveBitCountPrefixLen removes the prefix length from addresses with a prefix length extending to the end of the address.
+	RemoveBitCountPrefixLen() T
+
+	// CoverWithPrefixBlock returns the unique CIDR prefix block subnet or individual address of minimal size that includes all the individual addresses in this address.
+	CoverWithPrefixBlock() T
+
+	// SpanWithPrefixBlocks returns an array of prefix blocks that cover the same set of addresses as this subnet.
+	//
+	// Unlike SpanWithPrefixBlocksTo, the result only includes addresses that are a part of this subnet.
+	SpanWithPrefixBlocks() []T
+
+	// SpanningPrefixBlockIterator returns the result of SpanWithPrefixBlocks as an iterator.
+	SpanningPrefixBlockIterator() Iterator[T]
+
+	// SpanWithSequentialBlocks produces the smallest slice of sequential blocks that cover the same set of addresses as this subnet.
+	//
+	// This slice can be shorter than that produced by SpanWithPrefixBlocks and is never longer.
+	//
+	// Unlike SpanWithSequentialBlocksTo, this method only includes addresses that are a part of this subnet.
+	SpanWithSequentialBlocks() []T
+
+	// SpanningSeqBlockIterator returns the result of SpanWithSequentialBlocks as an iterator.
+	SpanningSeqBlockIterator() Iterator[T]
+
+	// CoverWithPrefixBlockTo returns the minimal-size prefix block that covers all the addresses spanning from this subnet to the given subnet.
+	//
+	// If the argument is not the same IP version as the receiver, the argument is ignored, and the result is the same as CoverWithPrefixBlock.
+	CoverWithPrefixBlockTo(other T) T
+
+	// SpanWithPrefixBlocks returns an array of prefix blocks that cover the same set of addresses as this subnet.
+	//
+	// Unlike SpanWithPrefixBlocksTo, the result only includes addresses that are a part of this subnet.
+	SpanWithPrefixBlocksTo(T) []T
+
+	// SpanWithSequentialBlocksTo produces the smallest slice of sequential block subnets that span all values from this subnet to the given subnet.
+	// The span will cover all addresses in both subnets and everything in between.
+	//
+	// Individual block subnets come in the form "1-3.1-4.5.6-8", however that particular subnet is not sequential since address "1.1.5.8" is in the subnet,
+	// the next sequential address "1.1.5.9" is not in the subnet, and a higher address "1.2.5.6" is in the subnet.
+	// Blocks are sequential when the first segment with a range of values is followed by segments that span all values.
+	//
+	// If the other address is a different version than this, then it is ignored, and this is equivalent to calling SpanWithSequentialBlocks on this subnet.
+	//
+	// The resulting slice is sorted from lowest address value to highest, regardless of the size of each prefix block.
+	SpanWithSequentialBlocksTo(T) []T
+
+	// Complement returns the complement of the individual address or subnet within the address space.
+	//
+	// If an individual address, returns all other addresses in the address space.  If a subnet, returns all addresses not contained within the subnet.
+	//
+	// This method returns the complement as minimal array of sequential block subnets.  To get the complement as a list of sequential ranges,
+	// convert this address to a sequential range list using IntoSequentialRangeList and call ComplementIntoList on the list.
+	//
+	// The zero-value of IPAddress, which is an address with no segment, has no complement and returns nil from this method.
+	// The zero-value of IPv4Address is the zero address 0.0.0.0, so the complement is the set including every address except 0.0.0.0.
+	// The zero-value of IPv6Address is the zero address ::, so the complement is the set including every address except ::.
+	Complement() []T
+
+	// Subtract subtracts the given subnet from this subnet, returning an array of subnets for the result (the subnets will not be contiguous so an array is required).
+	// Subtract computes the subnet difference, the set of addresses in this address subnet but not in the provided subnet.
+	// This is also known as the relative complement of the given argument in this subnet.
+	// This is set subtraction, not subtraction of address values (use Increment for the latter).  We have a subnet of addresses and we are removing those addresses found in the argument subnet.
+	// If there are no remaining addresses, nil is returned.
+	Subtract(T) []T
+
+	// ToMaxHost converts the address or subnet to one in which all individual addresses have a host of all one-bits, the max value,
+	// the host being the bits following the prefix length.
+	// If the address or subnet has no prefix length, then it returns an all-ones address, the max address.
+	//
+	// The returned address or subnet will have the same prefix and prefix length.
+	//
+	// For instance, the max host of "1.2.3.4/16" gives the broadcast address "1.2.255.255/16".
+	//
+	// This returns an error if the subnet is a range of addresses which cannot be converted to a range in which all addresses have max hosts,
+	// because the conversion results in a subnet segment that is not a sequential range of values.
+	ToMaxHost() (T, addrerr.IncompatibleAddressError)
+
+	// ToMaxHostLen converts the address or subnet to one in which all individual addresses have a host of all one-bits, the max host,
+	// the host being the bits following the given prefix length.
+	// If this address or subnet has the same prefix length, then the resulting one will too, otherwise the resulting address or subnet will have no prefix length.
+	//
+	// For instance, the zero host of "1.2.3.4" for the prefix length of 16 is the address "1.2.255.255".
+	//
+	// This returns an error if the subnet is a range of addresses which cannot be converted to a range in which all addresses have max hosts,
+	// because the conversion results in a subnet segment that is not a sequential range of values.
+	ToMaxHostLen(prefixLength BitCount) (T, addrerr.IncompatibleAddressError)
+
+	// ToZeroNetwork converts the address or subnet to one in which all individual addresses have a network of zero,
+	// the network being the bits within the prefix length.
+	// If the address or subnet has no prefix length, then it returns an all-zero address.
+	//
+	// The returned address or subnet will have the same prefix length.
+	ToZeroNetwork() T
+
+	// ToZeroHost converts the address or subnet to one in which all individual addresses have a host of zero,
+	// the host being the bits following the prefix length.
+	// If the address or subnet has no prefix length, then it returns an all-zero address.
+	//
+	// The returned address or subnet will have the same prefix and prefix length.
+	//
+	// For instance, the zero host of "1.2.3.4/16" is the individual address "1.2.0.0/16".
+	//
+	// This returns an error if the subnet is a range of addresses which cannot be converted to a range in which all addresses have zero hosts,
+	// because the conversion results in a subnet segment that is not a sequential range of values.
+	ToZeroHost() (T, addrerr.IncompatibleAddressError)
+
+	// ToZeroHostLen converts the address or subnet to one in which all individual addresses have a host of zero,
+	// the host being the bits following the given prefix length.
+	// If this address or subnet has the same prefix length, then the returned one will too, otherwise the returned series will have no prefix length.
+	//
+	// For instance, the zero host of "1.2.3.4" for the prefix length of 16 is the address "1.2.0.0".
+	//
+	// This returns an error if the subnet is a range of addresses which cannot be converted to a range in which all addresses have zero hosts,
+	// because the conversion results in a subnet segment that is not a sequential range of values.
+	ToZeroHostLen(prefixLength BitCount) (T, addrerr.IncompatibleAddressError)
+
+	upperIsAdjacentTo(T) bool
+
+	iteratorWrapper(Iterator[*Address]) Iterator[T]
+
+	// equalsSingleSameVersion returns whether two addresses, already known to be the same version and address type, are equal
+	equalsSingleSameVersion(AddressType) bool
+
+	getAddrType() addrType
+
+	trieKeyConstraintExtras[T]
+}
+
+// IPAddressTypeConstraint constrains IPAddressType, restricting it to a single IP address type, rather than representing any one of multiple IP address types
+// At the same time, IPAddressTypeConstraint expands the available methods beyond those offered by IPAddressType.
+// It is particularly useful to provide full functionality in methods using generic IP address types.
+// Use this type as a generic type constraint to retain full access to all address functionality in your generic function or method.
+// The type T can be any one of *IPAddress, *IPv4Address, or *IPv6Address
+type IPAddressTypeConstraint[T ipAddressTypeConstraint[T]] interface {
+	ipAddressTypeConstraint[T]
+
+	// IntoSequentialRangeList creates a new sequential range list collection containing all the individual addresses in this address or subnet.
+	IntoSequentialRangeList() *SequentialRangeList[T]
+
+	// IntoContainmentTrie creates a containment trie collection containing all the individual addresses in this address or subnet.
+	IntoContainmentTrie() *ContainmentTrieBase[T]
+
+	// CoverWithSequentialRange returns the unique sequential range of minimal size that includes all the individual addresses in this subnet od address.
+	// The result will represent the same set of addresses if and only if this address is sequential, in which case IsSequential returns true.
+	CoverWithSequentialRange() *SequentialRange[T]
+
+	// SpanWithRange returns an IPAddressSeqRange instance that spans from this address or subnet to the given address or subnet.
+	// The range will include all addresses in both, and all in-between.
+	// If the other address is a different version than the receiver, then the returned range is nil.
+	SpanWithRange(T) *SequentialRange[T]
+}
+
+var (
+	_ IPAddressTypeConstraint[*IPAddress]   = &IPAddress{}
+	_ IPAddressTypeConstraint[*IPv4Address] = &IPv4Address{}
+	_ IPAddressTypeConstraint[*IPv6Address] = &IPv6Address{}
+)
+
 // IPAddressSeqRangeType represents any IP address sequential range, all of which can be represented by the base type IPAddressSeqRange.
 // This includes IPv4AddressSeqRange and IPv6AddressSeqRange.
 type IPAddressSeqRangeType interface {
-	AddressItem
+	addressAggr
 
 	IPAddressRange
 
-	// ContainsRange returns whether all the addresses in the given sequential range are also contained in this sequential range.
-	ContainsRange(IPAddressSeqRangeType) bool
+	rangeAggr
 
-	// Contains returns whether this range contains all IP addresses in the given address or subnet.
-	Contains(IPAddressType) bool // this is not in IPAddressRange because addresses use Contains(AddressType)
-
-	// OverlapsAddress indicates whether this range is the same type and version as the given address and whether it overlaps with the given address, containing at least one individual address common to both.
+	// OverlapsAddress indicates whether this range is the same type and version as the given IP address and whether it overlaps with the given address, containing at least one individual address common to both.
 	OverlapsAddress(IPAddressType) bool
-
-	// Enumerate indicates where an address sits relative to the range ordering.
-	//
-	// Determines how many address elements of a range precede the given address element, if the address is in the range.
-	// If above the range, it is the distance to the upper boundary added to the range count less one, and if below the range, the distance to the lower boundary.
-	//
-	// In other words, if the given address is not in the range but above it, returns the number of addresses preceding the address from the upper range boundary,
-	// added to one less than the total number of range addresses.  If the given address is not in the subnet but below it, returns the number of addresses following the address to the lower subnet boundary.
-	//
-	// Returns nil when the argument is multi-valued. The argument must be an individual address.
-	//
-	// If the given address is not the same version, then nil is returned.
-	Enumerate(IPAddressType) *big.Int // this is not in IPAddressRange because addresses use Enumerate(AddressType)
 
 	// Equal returns whether the given sequential address range is equal to this sequential address range.
 	// Two sequential address ranges are equal if their lower and upper range boundaries are equal.
@@ -874,6 +1420,23 @@ var _, _, _ IPAddressSeqRangeType = &SequentialRange[*IPAddress]{},
 	&SequentialRange[*IPv4Address]{},
 	&SequentialRange[*IPv6Address]{}
 
+// isEmptyRange returns true if the range has no elements.
+// Much like the len function, it handles nil, returning true for nil interfaces and nil pointer types.
+func isEmptyRange(rng IPAddressSeqRangeType) bool {
+	switch other := rng.(type) {
+	case nil:
+		return true
+	case *SequentialRange[*IPAddress]:
+		return other == nil
+	case *SequentialRange[*IPv4Address]:
+		return other == nil
+	case *SequentialRange[*IPv6Address]:
+		return other == nil
+	default:
+		return false
+	}
+}
+
 // HostIdentifierString represents a string that is used to identify a host.
 type HostIdentifierString interface {
 
@@ -891,3 +1454,191 @@ type HostIdentifierString interface {
 }
 
 var _, _, _ HostIdentifierString = &IPAddressString{}, &MACAddressString{}, &HostName{}
+
+// See https://go.dev/play/p/WnVjfRFXA5o to know how this works
+// In the end, I decided that "ok" here just indicates if the address was convertible, and nil addresses are convertible.
+// Nil interface are convertible, they become nil pointers of the desired type.  Go's type assertions and type switches work that way.
+// We just want to convert to the different address type if possible.
+
+// ConvertAddressTypeCheckNil converts an address type to the desired type, if the conversion is possible.
+// The ok return value is true if the conversion is possible.
+// The conversion is possible if the address was originally constructed as a compatible type.
+// Addresses are constructed as either an IPv4Address, IPv6Address, or MACAddress.
+// An address orginally constructed as IPv4Address can be converted to IPAddress or Address and back again, but not to IPv6Address or MACAddress.
+//
+// The conversion is also possible if the argument is a nil interface or nil pointer value, in which case ok is true, isNil is true, and out is nil.
+// The isNil return value indicates if the returned value is the nil value of type T.
+// Therefore, is T is an interface type, it will be false if the interface is not nil but the dynamic value is nil.
+//
+// ConvertAddressTypeCheckNil is useful for interfacing with code using a generic address type.
+func ConvertAddressTypeCheckNil[T AddressType](in AddressType) (out T, isNil, ok bool) {
+	switch inValue := in.(type) {
+	case nil:
+		isNil, ok = true, true
+	case T:
+		out = inValue
+		ok = true
+		var zero T
+		isNil = any(inValue) == any(zero) /* if T is a pointer checks for nil pointer, if T is and interface this checks for nil interface */ ||
+			in.ToAddressBase() == nil /* if T is an interface and we passed in a pointer, this checks if the pointer is nil */
+	default:
+		addr := in.ToAddressBase()
+		if addr == nil {
+			// we need to distinguish between
+			// - starting with nil, in which conversion always works, whether it's from IPv6 to IP or from MAC to IPv6
+			// - starting with non-nil and getting nil, in which conversion has failed
+			// so we need to check the original for nil for the first case, the second is the else
+			isNil, ok = true, true
+		} else {
+			switch any(out).(type) { // switch based on the target type
+			case *Address:
+				out = any(addr).(T)
+				ok = true
+			case *IPAddress:
+				outAddr := addr.ToIP()
+				out = any(outAddr).(T) // this is a no-op, outAddr is *IPAddress and the type switch indicates out is *IPAddress, but compiler does not allow direct assignment
+				ok = outAddr != nil
+			case *IPv4Address:
+				outAddr := addr.ToIPv4()
+				out = any(outAddr).(T) // this is a no-op
+				ok = outAddr != nil
+			case *IPv6Address:
+				outAddr := addr.ToIPv6()
+				out = any(outAddr).(T) // this is a no-op
+				ok = outAddr != nil
+			case *MACAddress:
+				outAddr := addr.ToMAC()
+				out = any(outAddr).(T) // this is a no-op
+				ok = outAddr != nil
+			case nil:
+			default:
+			}
+		}
+	}
+	return
+}
+
+// ConvertAddressType converts in to out, if possible, using conversion methods ToAddressBase, ToIP, ToIPv4, or ToIPv6 if the types do not match.
+// If in is nil, or is not a nil interface but the interface value is nil, then out is nil.
+// See ConvertAddressTypeCheckNil for more details.
+func ConvertAddressType[T any](in AddressType) (out T, ok bool) {
+	if out, ok = any(in).(T); !ok {
+		if ok = in == nil; !ok {
+			inAddr := in.ToAddressBase()
+			if ok = inAddr == nil; ok {
+				// the original is nil
+				// we need to distinguish between starting with nil, in which conversion always works, whether it's from IPv6 to IP or from MAC to IPv6
+				// to starting with non-nil and getting nil, in which conversion has failed
+				// so we need to check the original
+			} else {
+				switch any(out).(type) { // switch based on the target type
+				case *Address:
+					out = any(inAddr).(T)
+					ok = true
+				case *IPAddress:
+					outAddr := inAddr.ToIP()
+					out = any(outAddr).(T) // this is a no-op, outAddr is *IPAddress and the type switch indicates out is *IPAddress, but compiler does not allow direct assignment
+					ok = outAddr != nil
+				case *IPv4Address:
+					outAddr := inAddr.ToIPv4()
+					out = any(outAddr).(T) // this is a no-op
+					ok = outAddr != nil
+				case *IPv6Address:
+					outAddr := inAddr.ToIPv6()
+					out = any(outAddr).(T) // this is a no-op
+					ok = outAddr != nil
+				case *MACAddress:
+					outAddr := inAddr.ToMAC()
+					out = any(outAddr).(T) // this is a no-op
+					ok = outAddr != nil
+				case nil: // T is an interface type, an interface incompatible with AddressType
+				default:
+				}
+			}
+		}
+	}
+	return
+}
+
+// ConvertRangeTypeCheckNil converts a sequential range to the desired type, if the conversion is possible.
+// The ok return value is true if the conversion is possible.
+// The conversion is possible if the range was originally constructed as a compatible type, or if it is nil.
+// Ranges are always initially constructed as either an IPv4SequentialRange or IPv6SequentialRange.
+// A range orginally constructed as IPv4SequentialRange can be converted to IPSequentialRange and back again, but not to IPv6SequentialRange.
+// The conversion is possible if the argument is a nil interface, or if the argument is not nil but refences any type with a nil pointer value, in which case ok is true, isNil is true, and out is nil.
+// In other words, a nil interface or nil pointer of any sequential range type is convertible to any other range type.
+//
+// ConvertRangeTypeCheckNil is useful for interfacing with code using a generic sequential range type.
+func ConvertRangeTypeCheckNil[T SequentialRangeConstraint[T]](in IPAddressSeqRangeType) (out *SequentialRange[T], isNil, ok bool) {
+	switch inValue := in.(type) {
+	case nil:
+		isNil, ok = true, true
+	case *SequentialRange[T]:
+		out = inValue
+		ok = true
+		isNil = inValue == nil
+	default:
+		inRng := in.ToIP()
+		if inRng == nil {
+			// the original is nil
+			// we need to distinguish between starting with nil, in which conversion always works, whether it's from IPv6 to IP or from IPv4 to IPv6
+			// to starting with non-nil and getting nil, in which conversion has failed
+			// so we need to check the original
+			isNil, ok = true, true
+		} else {
+			switch any(out).(type) { // switch based on the target type
+			case *SequentialRange[*IPAddress]:
+				outRng := inRng.ToIP()
+				out = any(outRng).(*SequentialRange[T]) // this is a no-op, outRng is *SequentialRange[*IPAddress] and the type switch indicates out is *IPAddress, but compiler does not allow direct assignment
+				ok = true
+			case *SequentialRange[*IPv4Address]:
+				outRng := inRng.ToIPv4()
+				out = any(outRng).(*SequentialRange[T]) // this is a no-ip
+				ok = outRng != nil
+			case *SequentialRange[*IPv6Address]:
+				outRng := inRng.ToIPv6()
+				out = any(outRng).(*SequentialRange[T]) // this is a no-op
+				ok = outRng != nil
+			case IPAddressSeqRangeType:
+				isNil = true
+				ok = true
+			default:
+			}
+		}
+	}
+	return
+}
+
+// ConvertRangeType converts in to out, if possible, using conversion methods ToIP, ToIPv4, or ToIPv6 if the types do not match.
+// If in is nil, or is not a nil interface but the interface dynamic value is nil, then out is nil.
+// See ConvertRangeTypeCheckNil for more details.
+func ConvertRangeType[T SequentialRangeConstraint[T]](in IPAddressSeqRangeType) (out *SequentialRange[T], ok bool) {
+	if out, ok = any(in).(*SequentialRange[T]); !ok {
+		if ok = in == nil; !ok {
+			rng := in.ToIP()
+			if rng == nil {
+				// the original is nil
+				// we need to distinguish between starting with nil, in which conversion always works, whether it's from IPv6 to IP or from MAC to IPv6
+				// to starting with non-nil and getting nil, in which conversion has failed
+				// so we need to check the original
+				ok = true
+			} else {
+				switch any(out).(type) {
+				case *SequentialRange[*IPAddress]:
+					out = any(rng).(*SequentialRange[T]) // this is a no-op, but makes the compiler happy, out = rng does not work
+					ok = true
+				case *SequentialRange[*IPv4Address]:
+					outAddr := rng.ToIPv4()
+					out = any(outAddr).(*SequentialRange[T]) // this is a no-op, but makes the compiler happy, out = rng does not work
+					ok = outAddr != nil
+				case *SequentialRange[*IPv6Address]:
+					outAddr := rng.ToIPv6()
+					out = any(outAddr).(*SequentialRange[T]) // this is a no-op, but makes the compiler happy, out = rng does not work
+					ok = outAddr != nil
+				default:
+				}
+			}
+		}
+	}
+	return
+}

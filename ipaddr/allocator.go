@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2024 Sean C Foley
+// Copyright 2020-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,10 +26,16 @@ import (
 
 // PrefixBlockConstraint is the generic type constraint used for a prefix block allocator.
 type PrefixBlockConstraint[T any] interface {
-	SequentialRangeConstraint[T]
+	IPAddressType
+
+	PrefixedConstraint[T]
+
+	GetLower() T
+	GetUpper() T
 
 	MergeToPrefixBlocks(...T) []T
 	PrefixBlockIterator() Iterator[T]
+	SpanWithPrefixBlocksTo(T) []T
 }
 
 var (
@@ -236,7 +242,7 @@ func (alloc *PrefixBlockAllocator[T]) AllocateBitLen(bitLength BitCount) T {
 	result := blockIterator.Next()
 
 	// now we add the remaining from the block iterator back into the list
-	alloc.insertBlocks(newSequRangeUnchecked(blockIterator.Next().GetLower(), block.GetUpper(), true).SpanWithPrefixBlocks())
+	alloc.insertBlocks(blockIterator.Next().GetLower().SpanWithPrefixBlocksTo(block.GetUpper()))
 
 	return result
 }

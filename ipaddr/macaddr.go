@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2024 Sean C Foley
+// Copyright 2020-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -228,6 +228,18 @@ func (addr *MACAddress) IsFullRange() bool {
 	return addr.GetSection().IsFullRange()
 }
 
+// IncludesZeroBits returns true if the bits in the lower value of this address between the indicated indices are all zero.
+// Index 0 is the most significant bit.  The bits are checked from fromBPrefixBitIndex inclusive to toPrefixBitIndex exclusive.
+func (addr *MACAddress) IncludesZeroBits(fromBPrefixBitIndex, toPrefixBitIndex int) bool {
+	return addr.GetSection().IncludesZeroBits(fromBPrefixBitIndex, toPrefixBitIndex)
+}
+
+// IncludesMaxBits returns true if the bits in the upper value of this address between the indicated indices are all one.
+// Index 0 is the most significant bit.  The bits are checked from fromBPrefixBitIndex inclusive to toPrefixBitIndex exclusive.
+func (addr *MACAddress) IncludesMaxBits(fromBPrefixBitIndex, toPrefixBitIndex int) bool {
+	return addr.GetSection().IncludesMaxBits(fromBPrefixBitIndex, toPrefixBitIndex)
+}
+
 // GetBitCount returns the number of bits comprising this address,
 // or each address in the range.
 func (addr *MACAddress) GetBitCount() BitCount {
@@ -261,6 +273,13 @@ func (addr *MACAddress) checkIdentity(section *MACAddressSection) *MACAddress {
 	return newMACAddress(section)
 }
 
+func (addr *MACAddress) checkNil(section *MACAddressSection) *MACAddress {
+	if section == nil {
+		return nil
+	}
+	return newMACAddress(section)
+}
+
 // GetValue returns the lowest address in this subnet or address as an integer value.
 func (addr *MACAddress) GetValue() *big.Int {
 	return addr.init().section.GetValue()
@@ -283,6 +302,18 @@ func (addr *MACAddress) GetLower() *MACAddress {
 // For example, for "1:1:1:2-3:4:5-6", the series "1:1:1:3:4:6" is returned.
 func (addr *MACAddress) GetUpper() *MACAddress {
 	return addr.init().getUpper().ToMAC()
+}
+
+// GetLowerAndUpper returns the addresses in the collection with the lowest and highest numeric value.
+// Both will be the receiver if it represents a single address.
+// For example, for "1:1:1:2-3:4:5-6", the series "1:1:1:2:4:5" and "1:1:1:3:4:6" are returned.
+func (addr *MACAddress) GetLowerAndUpper() (lower, upper *MACAddress) {
+	return addr.init().getLowestHighestAddrs()
+}
+
+func (addr *MACAddress) getLowestHighestAddrs() (lower, upper *MACAddress) {
+	l, u := addr.addressInternal.getLowestHighestAddrs()
+	return l.ToMAC(), u.ToMAC()
 }
 
 // Uint64Value returns the lowest address in the address collection as a uint64.
@@ -630,16 +661,23 @@ func (addr *MACAddress) containsSame(other *MACAddress) bool {
 // Contains returns whether this is the same type and version as the given address or subnet and whether it contains all addresses in the given address or subnet.
 func (addr *MACAddress) Contains(other AddressType) bool {
 	if addr == nil {
-		return other == nil || other.ToAddressBase() == nil
+		return false
+		//return other == nil || other.ToAddressBase() == nil // nil contains
 	}
 	// note: we don't use the same optimization as in IPv4/6 because we do need to check segment count with MAC
 	return addr.init().contains(other)
 }
 
+// OverlapsAddr returns true if and only the given individual address or address collection contains at least one individual address that is also in this address or address collection.
+// Implements the IPAddressAggregation interface.
+func (addr *MACAddress) OverlapsAddr(other AddressType) bool {
+	return addr.Overlaps(other)
+}
+
 // Overlaps returns true if this address overlaps the given address or address collection
 func (addr *MACAddress) Overlaps(other AddressType) bool {
 	if addr == nil {
-		return true
+		return false
 	}
 	return addr.init().overlaps(other)
 }
@@ -648,10 +686,18 @@ func (addr *MACAddress) Overlaps(other AddressType) bool {
 // Two address instances are equal if they represent the same set of addresses.
 func (addr *MACAddress) Equal(other AddressType) bool {
 	if addr == nil {
-		return other == nil || other.ToAddressBase() == nil
+		return other == nil || other.ToAddressBase() == nil // nil contains
 	}
 	// note: we don't use the same optimization as in IPv4/6 because we do need to check segment count with MAC
 	return addr.init().equals(other)
+}
+
+// EqualAggregation returns whether this collection of addresses contains the same set of individual addresses as the given aggregation of addresses.
+func (addr *MACAddress) EqualAggregation(otherAggregation AddressAggregation) bool {
+	if addr == nil {
+		return IsEmpty(otherAggregation) //   nil aggregation contains
+	}
+	return addr.init().equalAggregation(otherAggregation)
 }
 
 // CompareSize compares the counts of two addresses or address collections or address items, the number of individual addresses or items within.
@@ -755,6 +801,11 @@ func (addr *MACAddress) Iterator() Iterator[*MACAddress] {
 	return macAddressIterator{addr.init().addrIterator(nil)}
 }
 
+// AddressIterator is the same as Iterator while satisying the AddressAggregation interface
+func (addr *MACAddress) AddressIterator() Iterator[AddressType] {
+	return addrTypeIterator[*MACAddress]{addr.Iterator()}
+}
+
 // PrefixIterator provides an iterator to iterate through the individual prefixes of this subnet,
 // each iterated element spanning the range of values for its prefix.
 //
@@ -815,7 +866,12 @@ func (addr *MACAddress) GetSequentialBlockCount() *big.Int {
 //
 // On address overflow or underflow, IncrementBoundary returns nil.
 func (addr *MACAddress) IncrementBoundary(increment int64) *MACAddress {
-	return addr.init().incrementBoundary(increment).ToMAC()
+	return addr.checkIdentity(addr.GetSection().IncrementBoundary(increment))
+}
+
+// IncrementBoundarySingle increments the boundary of the address or subnet by 1 to produce a new address.  Equivalent to IncrementBoundary(1).
+func (addr *MACAddress) IncrementBoundarySingle() *MACAddress {
+	return addr.checkNil(addr.GetSection().IncrementBoundarySingle())
 }
 
 // Increment returns the address from the address collection that is the given increment upwards into the address range,
@@ -837,7 +893,56 @@ func (addr *MACAddress) IncrementBoundary(increment int64) *MACAddress {
 //
 // On address overflow or underflow, Increment returns nil.
 func (addr *MACAddress) Increment(increment int64) *MACAddress {
-	return addr.init().increment(increment).ToMAC()
+	return addr.checkIdentity(addr.GetSection().Increment(increment))
+}
+
+// IncrementSingle increments the address or subnet by 1 to produce a new address.  Equivalent to Increment(1).
+func (addr *MACAddress) IncrementSingle() *MACAddress {
+	return addr.checkNil(addr.GetSection().IncrementSingle())
+}
+
+// DecrementSingle decrements the address or subnet by 1 to produce a new address.  Equivalent to Increment(-1).
+func (addr *MACAddress) DecrementSingle() *MACAddress {
+	return addr.checkNil(addr.GetSection().DecrementSingle())
+}
+
+// IncrementBig returns the address from the subnet that is the given increment upwards into the subnet range.
+//
+// Equivalent to Increment, but taking a big integer as the increment argument.
+func (addr *MACAddress) IncrementBig(increment *big.Int) *MACAddress {
+	return addr.checkIdentity(addr.GetSection().IncrementBig(increment))
+}
+
+// UpperIsAdjacentTo indicates if the given address's lower value is the next individual address following this address's upper value.
+// This means they are adjacent, having no intervening address.
+//
+// UpperIsAdjacentTo returns true given the address produced by IncrementBoundarySingle.
+func (addr *MACAddress) UpperIsAdjacentTo(other AddressType) bool {
+	return addr.init().section.upperIsAdjacentTo(other.ToAddressBase().GetSection())
+}
+
+// UpperIsAdjacentTo indicates if the given address's lower value is the next individual address following this address's upper value.
+// This means they are adjacent, having no intervening address.
+//
+// UpperIsAdjacentTo returns true given the address produced by IncrementBoundarySingle.
+func (addr *MACAddress) upperIsAdjacentTo(other *MACAddress) bool {
+	return addr.GetSection().upperIsAdjacentTo(other.GetSection())
+}
+
+// Get returns the individual address that is at the given index in this subnet,
+// with the increment of 0 returning the first in the range.
+//
+// If the index is negative or exceeds GetCount() - 1, this panics.
+func (addr *MACAddress) Get(index int64) *MACAddress {
+	return addr.checkIdentity(addr.GetSection().Get(index))
+}
+
+// Get returns the individual address that is at the given index in this subnet,
+// with the increment of 0 returning the first in the range.
+//
+// If the index is negative or exceeds GetCount() - 1, this panics.
+func (addr *MACAddress) GetBig(index *big.Int) *MACAddress {
+	return addr.checkIdentity(addr.GetSection().GetBig(index))
 }
 
 // Enumerate indicates where an address sits relative to the address collection ordering.
@@ -860,7 +965,7 @@ func (addr *MACAddress) Increment(increment int64) *MACAddress {
 //
 // If the given address does not have the same MAC address type and size, then nil is returned.
 func (addr *MACAddress) Enumerate(other AddressType) *big.Int {
-	if other != nil {
+	if other != nil && addr != nil {
 		if otherAddr := other.ToAddressBase(); otherAddr != nil {
 			return addr.GetSection().Enumerate(otherAddr.GetSection())
 		}

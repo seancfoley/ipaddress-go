@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2023 Sean C Foley
+// Copyright 2020-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -233,7 +233,7 @@ func (addrStr *MACAddressString) validate(validationOptions addrstrparam.MACAddr
 	addrStr.addressProvider, addrStr.validateError = validator.validateMACAddressStr(addrStr, validationOptions)
 }
 
-// Validate validates that this string is a valid address, and if not, throws an exception with a descriptive message indicating why it is not.
+// Validate validates that this string is a valid address, and if not, returns an error with a descriptive message indicating why it is not.
 func (addrStr *MACAddressString) Validate() addrerr.AddressStringError {
 	return addrStr.init().validateError
 }

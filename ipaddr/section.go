@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2024 Sean C Foley
+// Copyright 2020-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -294,7 +294,7 @@ func createDivisionsFromSegs(
 	return
 }
 
-func (section *addressSectionInternal) matchesTypeAndCount(other *AddressSection) (matches bool, count int) {
+func (section *addressSectionInternal) matchesTypeAndSegCount(other *AddressSection) (matches bool, count int) {
 	count = section.GetDivisionCount()
 	if count != other.GetDivisionCount() {
 		return
@@ -313,7 +313,7 @@ func (section *addressSectionInternal) equal(otherT AddressSectionType) bool {
 	if other == nil {
 		return false
 	}
-	matchesStructure, _ := section.matchesTypeAndCount(other)
+	matchesStructure, _ := section.matchesTypeAndSegCount(other)
 	return matchesStructure && section.sameCountTypeEquals(other)
 }
 
@@ -321,6 +321,16 @@ func (section *addressSectionInternal) sameCountTypeEquals(other *AddressSection
 	count := section.GetSegmentCount()
 	for i := count - 1; i >= 0; i-- {
 		if !section.GetSegment(i).sameTypeEquals(other.GetSegment(i)) {
+			return false
+		}
+	}
+	return true
+}
+
+func (section *addressSectionInternal) singleSameTypeEquals(other *AddressSection) bool {
+	count := section.GetSegmentCount()
+	for i := count - 1; i >= 0; i-- {
+		if !section.GetSegment(i).singleSameTypeEquals(other.GetSegment(i)) {
 			return false
 		}
 	}
@@ -1151,14 +1161,17 @@ func (section *addressSectionInternal) prefixContains(other *AddressSection, con
 
 func (section *addressSectionInternal) contains(other AddressSectionType) bool {
 	if other == nil {
-		return true
+		return false
 	}
 	otherSection := other.ToSectionBase()
-	if section.toAddressSection() == otherSection || otherSection == nil {
+	if otherSection == nil {
+		return false
+	}
+	if section.toAddressSection() == otherSection {
 		return true
 	}
 	//check if they are comparable first
-	matches, count := section.matchesTypeAndCount(otherSection)
+	matches, count := section.matchesTypeAndSegCount(otherSection)
 	if !matches {
 		return false
 	}
@@ -1172,14 +1185,17 @@ func (section *addressSectionInternal) contains(other AddressSectionType) bool {
 
 func (section *addressSectionInternal) overlaps(other AddressSectionType) bool {
 	if other == nil {
-		return true
+		return false
 	}
 	otherSection := other.ToSectionBase()
-	if section.toAddressSection() == otherSection || otherSection == nil {
+	if otherSection == nil {
+		return false
+	}
+	if section.toAddressSection() == otherSection {
 		return true
 	}
 	//check if they are comparable first
-	matches, count := section.matchesTypeAndCount(otherSection)
+	matches, count := section.matchesTypeAndSegCount(otherSection)
 	if !matches {
 		return false
 	}
@@ -1222,7 +1238,7 @@ func (section *addressSectionInternal) enumerate(other AddressSectionType) *big.
 	}
 	if other != nil {
 		if otherSection := other.ToSectionBase(); otherSection != nil {
-			if matches, _ := section.matchesTypeAndCount(otherSection); matches {
+			if matches, _ := section.matchesTypeAndSegCount(otherSection); matches {
 				return enumerateBig(section.toAddressSection(), otherSection, low64, low64Upper)
 			}
 		}
@@ -1251,6 +1267,28 @@ func (section *addressSectionInternal) getUpper() *AddressSection {
 	return upper
 }
 
+func (section *addressSectionInternal) get(index int64) *AddressSection {
+	if sect := section.toIPv4AddressSection(); sect != nil {
+		return sect.Get(index).ToSectionBase()
+	} else if sect := section.toIPv6AddressSection(); sect != nil {
+		return sect.Get(index).ToSectionBase()
+	} else if sect := section.toMACAddressSection(); sect != nil {
+		return sect.Get(index).ToSectionBase()
+	}
+	return nil
+}
+
+func (section *addressSectionInternal) getBig(index *big.Int) *AddressSection {
+	if sect := section.toIPv4AddressSection(); sect != nil {
+		return sect.GetBig(index).ToSectionBase()
+	} else if sect := section.toIPv6AddressSection(); sect != nil {
+		return sect.GetBig(index).ToSectionBase()
+	} else if sect := section.toMACAddressSection(); sect != nil {
+		return sect.GetBig(index).ToSectionBase()
+	}
+	return nil
+}
+
 func (section *addressSectionInternal) incrementBoundary(increment int64) *AddressSection {
 	if increment <= 0 {
 		if increment == 0 {
@@ -1261,6 +1299,10 @@ func (section *addressSectionInternal) incrementBoundary(increment int64) *Addre
 	return section.getUpper().increment(increment)
 }
 
+func (section *addressSectionInternal) incrementBoundarySingle() *AddressSection {
+	return section.getUpper().incrementSingle()
+}
+
 func (section *addressSectionInternal) increment(increment int64) *AddressSection {
 	if sect := section.toIPv4AddressSection(); sect != nil {
 		return sect.Increment(increment).ToSectionBase()
@@ -1268,6 +1310,39 @@ func (section *addressSectionInternal) increment(increment int64) *AddressSectio
 		return sect.Increment(increment).ToSectionBase()
 	} else if sect := section.toMACAddressSection(); sect != nil {
 		return sect.Increment(increment).ToSectionBase()
+	}
+	return nil
+}
+
+func (section *addressSectionInternal) incrementSingle() *AddressSection {
+	if sect := section.toIPv4AddressSection(); sect != nil {
+		return sect.IncrementSingle().ToSectionBase()
+	} else if sect := section.toIPv6AddressSection(); sect != nil {
+		return sect.IncrementSingle().ToSectionBase()
+	} else if sect := section.toMACAddressSection(); sect != nil {
+		return sect.IncrementSingle().ToSectionBase()
+	}
+	return nil
+}
+
+func (section *addressSectionInternal) decrementSingle() *AddressSection {
+	if sect := section.toIPv4AddressSection(); sect != nil {
+		return sect.DecrementSingle().ToSectionBase()
+	} else if sect := section.toIPv6AddressSection(); sect != nil {
+		return sect.DecrementSingle().ToSectionBase()
+	} else if sect := section.toMACAddressSection(); sect != nil {
+		return sect.DecrementSingle().ToSectionBase()
+	}
+	return nil
+}
+
+func (section *addressSectionInternal) incrementBig(increment *big.Int) *AddressSection {
+	if sect := section.toIPv4AddressSection(); sect != nil {
+		return sect.IncrementBig(increment).ToSectionBase()
+	} else if sect := section.toIPv6AddressSection(); sect != nil {
+		return sect.IncrementBig(increment).ToSectionBase()
+	} else if sect := section.toMACAddressSection(); sect != nil {
+		return sect.IncrementBig(increment).ToSectionBase()
 	}
 	return nil
 }
@@ -1995,6 +2070,135 @@ func (section *addressSectionInternal) IsFullRange() bool {
 	return section.addressDivisionGroupingInternal.IsFullRange()
 }
 
+// IncludesZeroBits returns true if the bits in the lower value of this series between the indicated indices are all zero.
+// Index 0 is the most significant bit.  The bits are checked from fromBPrefixBitIndex inclusive to toPrefixBitIndex exclusive.
+func (section *addressSectionInternal) IncludesZeroBits(fromPrefixBitIndex, toPrefixBitIndex int) bool {
+	if section.GetSegmentCount() == 0 {
+		return true
+	}
+	seg := section.GetSegment(0)
+	return section.includesZeroBits(fromPrefixBitIndex, toPrefixBitIndex, seg.GetSegmentNetworkMask, seg.GetSegmentHostMask)
+}
+
+// IncludesMaxBits returns true if the bits in the upper value of this series between the indicated indices are all one.
+// Index 0 is the most significant bit.  The bits are checked from fromBPrefixBitIndex inclusive to toPrefixBitIndex exclusive.
+func (section *addressSectionInternal) IncludesMaxBits(fromPrefixBitIndex, toPrefixBitIndex int) bool {
+	if section.GetSegmentCount() == 0 {
+		return true
+	}
+	seg := section.GetSegment(0)
+	return section.includesMaxBits(fromPrefixBitIndex, toPrefixBitIndex, seg.GetSegmentNetworkMask, seg.GetSegmentHostMask)
+}
+
+func (section *addressSectionInternal) includesZeroBits(
+	prefixBitStart,
+	prefixBitEnd int,
+	getSegmentNetworkMask,
+	getSegmentHostMask func(networkBits BitCount) SegInt) bool {
+	if prefixBitStart < 0 {
+		prefixBitStart = 0
+	}
+	if prefixBitEnd > section.GetBitCount() {
+		prefixBitEnd = section.GetBitCount()
+	}
+	if prefixBitStart >= prefixBitEnd {
+		return true
+	}
+
+	bitsPerSegment, bytesPerSegment := section.GetBitsPerSegment(), section.GetBytesPerSegment()
+	prefixedSegmentIndex := getHostSegmentIndex(prefixBitStart, bytesPerSegment, bitsPerSegment)
+	prefixedSegmentEndIndex := getNetworkSegmentIndex(prefixBitEnd, bytesPerSegment, bitsPerSegment)
+	for i := prefixedSegmentIndex; i <= prefixedSegmentEndIndex; i++ {
+		div := section.GetSegment(i)
+		startSegPrefixLength := getPrefixedSegmentPrefixLength(bitsPerSegment, prefixBitStart, i)
+		if startSegPrefixLength != nil {
+			mask := getSegmentHostMask(startSegPrefixLength.bitCount())
+			endSegPrefixLength := getPrefixedSegmentPrefixLength(bitsPerSegment, prefixBitEnd, i)
+			if endSegPrefixLength != nil {
+				mask &= getSegmentNetworkMask(endSegPrefixLength.bitCount())
+			}
+			if (mask & div.GetSegmentValue()) != 0 {
+				return false
+			}
+			for i++; i <= prefixedSegmentEndIndex; i++ {
+				div = section.GetSegment(i)
+				endSegPrefixLength = getPrefixedSegmentPrefixLength(bitsPerSegment, prefixBitEnd, i)
+				if endSegPrefixLength != nil {
+					mask = getSegmentNetworkMask(endSegPrefixLength.bitCount())
+					if (mask & div.getSegmentValue()) != 0 {
+						return false
+					}
+					return true
+				} else if div.getSegmentValue() != 0 {
+					return false
+				}
+			}
+			return true
+		}
+	}
+	return true
+}
+
+func (section *addressSectionInternal) includesMaxBits(
+	prefixBitStart,
+	prefixBitEnd int,
+	getSegmentNetworkMask,
+	getSegmentHostMask func(networkBits BitCount) SegInt) bool {
+
+	if prefixBitStart < 0 {
+		prefixBitStart = 0
+	}
+	if prefixBitEnd > section.GetBitCount() {
+		prefixBitEnd = section.GetBitCount()
+	}
+	if prefixBitStart >= prefixBitEnd {
+		return true
+	}
+
+	bitsPerSegment, bytesPerSegment := section.GetBitsPerSegment(), section.GetBytesPerSegment()
+	prefixedSegmentIndex := getHostSegmentIndex(prefixBitStart, bytesPerSegment, bitsPerSegment)
+	prefixedSegmentEndIndex := getNetworkSegmentIndex(prefixBitEnd, bytesPerSegment, bitsPerSegment)
+
+	for i := prefixedSegmentIndex; i <= prefixedSegmentEndIndex; i++ {
+
+		div := section.GetSegment(i)
+		startSegPrefixLength := getPrefixedSegmentPrefixLength(bitsPerSegment, prefixBitStart, i)
+		if startSegPrefixLength != nil {
+			mask := getSegmentHostMask(startSegPrefixLength.bitCount())
+			endSegPrefixLength := getPrefixedSegmentPrefixLength(bitsPerSegment, prefixBitEnd, i)
+			if endSegPrefixLength != nil {
+				mask &= getSegmentNetworkMask(endSegPrefixLength.bitCount())
+			}
+			if (mask & div.getUpperSegmentValue()) != mask {
+				return false
+			}
+			i++
+			if i > prefixedSegmentEndIndex {
+				break
+			}
+			mask = getSegmentHostMask(0)
+			for {
+				div = section.GetSegment(i)
+				endSegPrefixLength = getPrefixedSegmentPrefixLength(bitsPerSegment, prefixBitEnd, i)
+				if endSegPrefixLength != nil {
+					mask = getSegmentNetworkMask(endSegPrefixLength.bitCount())
+					if (mask & div.getUpperSegmentValue()) != mask {
+						return false
+					}
+					return true
+				} else if div.GetUpperSegmentValue() != mask {
+					return false
+				}
+				i++
+				if i > prefixedSegmentEndIndex {
+					return true
+				}
+			}
+		}
+	}
+	return true
+}
+
 // GetSequentialBlockIndex gets the minimal segment index for which all following segments are full-range blocks.
 //
 // The segment at this index is not a full-range block itself, unless all segments are full-range.
@@ -2204,7 +2408,7 @@ type AddressSection struct {
 // Sections must also have the same number of segments to be comparable, otherwise false is returned.
 func (section *AddressSection) Contains(other AddressSectionType) bool {
 	if section == nil {
-		return other == nil || other.ToSectionBase() == nil
+		return false
 	}
 	return section.contains(other)
 }
@@ -2214,7 +2418,7 @@ func (section *AddressSection) Contains(other AddressSectionType) bool {
 // Sections must also have the same number of segments to be comparable, otherwise false is returned.
 func (section *AddressSection) Overlaps(other AddressSectionType) bool {
 	if section == nil {
-		return other == nil || other.ToSectionBase() == nil
+		return false
 	}
 	return section.overlaps(other)
 }
@@ -2374,6 +2578,13 @@ func (section *AddressSection) GetLower() *AddressSection {
 // For example, for "1.2-3.4.5-6", the section "1.3.4.6" is returned.
 func (section *AddressSection) GetUpper() *AddressSection {
 	return section.getUpper()
+}
+
+// GetLowerAndUpper returns the sections in the range with the lowest and highest numeric value,
+// which will be the same section if it represents a single value.
+// For example, for "1.2-3.4.5-6", the sections "1.2.4.5" and "1.3.4.6" are returned.
+func (section *AddressSection) GetLowerAndUpper() (lower, upper *AddressSection) {
+	return section.getLowestHighestSections()
 }
 
 // IsPrefixed returns whether this section has an associated prefix length.
@@ -2599,17 +2810,22 @@ func (section *AddressSection) PrefixBlockIterator() Iterator[*AddressSection] {
 	return section.prefixIterator(true)
 }
 
-// IncrementBoundary returns the item that is the given increment from the range boundaries of this item.
+// IncrementBoundary returns the item that is the given increment from the range boundaries of this section.
 //
-// If the given increment is positive, adds the value to the highest (GetUpper) in the range to produce a new item.
-// If the given increment is negative, adds the value to the lowest (GetLower) in the range to produce a new item.
+// If the given increment is positive, adds the value to the highest (GetUpper) in the range to produce a new section.
+// If the given increment is negative, adds the value to the lowest (GetLower) in the range to produce a new section.
 // If the increment is zero, returns this.
 //
-// If this represents just a single value, this item is simply incremented by the given increment value, positive or negative.
+// If this represents just a single value, this section is simply incremented by the given increment value, positive or negative.
 //
 // On overflow or underflow, IncrementBoundary returns nil.
 func (section *AddressSection) IncrementBoundary(increment int64) *AddressSection {
 	return section.incrementBoundary(increment)
+}
+
+// IncrementBoundarySingle increments the boundary of the address or subnet section by 1 to produce a new address section.  Equivalent to IncrementBoundary(1).
+func (section *AddressSection) IncrementBoundarySingle() *AddressSection {
+	return section.incrementBoundarySingle()
 }
 
 // Increment returns the item that is the given increment upwards into the range,
@@ -2632,6 +2848,39 @@ func (section *AddressSection) IncrementBoundary(increment int64) *AddressSectio
 // On overflow or underflow, Increment returns nil.
 func (section *AddressSection) Increment(increment int64) *AddressSection {
 	return section.increment(increment)
+}
+
+// IncrementSingle increments the address or subnet section by 1 to produce a new address.  Equivalent to Increment(1).
+func (section *AddressSection) IncrementSingle() *AddressSection {
+	return section.incrementSingle()
+}
+
+// DecrementSingle decrements the address or subnet section by 1 to produce a new address.  Equivalent to Increment(-1).
+func (section *AddressSection) DecrementSingle() *AddressSection {
+	return section.decrementSingle()
+}
+
+// IncrementBig returns the address from the subnet section that is the given increment upwards into the subnet section range.
+//
+// Equivalent to Increment, but taking a big integer as the increment argument.
+func (section *AddressSection) IncrementBig(increment *big.Int) *AddressSection {
+	return section.incrementBig(increment)
+}
+
+// UpperIsAdjacentTo indicates if the given section's lower value is the next individual address following this section's upper value.
+// This means they are adjacent, having no intervening section.
+//
+// UpperIsAdjacentTo returns true given the section produced by IncrementBoundarySingle.
+func (section *AddressSection) UpperIsAdjacentTo(other AddressSectionType) bool {
+	return upperIsAdjacentTo(section, other.ToSectionBase())
+}
+
+// UpperIsAdjacentTo indicates if the given section's lower value is the next individual address following this section's upper value.
+// This means they are adjacent, having no intervening section.
+//
+// UpperIsAdjacentTo returns true given the section produced by IncrementBoundarySingle.
+func (section *AddressSection) upperIsAdjacentTo(other *AddressSection) bool {
+	return upperIsAdjacentTo(section, other)
 }
 
 // Enumerate indicates where an individual address section sits relative to the address section range ordering.

@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2023 Sean C Foley
+// Copyright 2020-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,19 +27,59 @@ type addressNetwork interface {
 
 // IPAddressNetwork represents a network of addresses of a single IP version providing a collection of standard address components for that version, such as masks and loopbacks.
 type IPAddressNetwork interface {
+	// GetBitCount returns the number of bits in addresses from this network
+	GetBitCount() BitCount
+
+	// Returns the address representing the entire address space, with a prefix length of 0
+	GetAddressSpace() *IPAddress
+
+	// Returns the smallest (zero) and largest addresses in the address space
+	GetBoundaryAddresses() (min, max *IPAddress)
+
+	// GetLoopback returns the loopback address for this address protocol
 	GetLoopback() *IPAddress
 
+	// GetNetworkMask returns the network mask associated with the given CIDR network prefix length.
 	GetNetworkMask(prefixLength BitCount) *IPAddress
 
+	// GetPrefixedNetworkMask returns the network mask associated with the given CIDR network prefix length, with the masking having the same prefix length
 	GetPrefixedNetworkMask(prefixLength BitCount) *IPAddress
 
+	// GetHostMask returns the host mask associated with the given CIDR network prefix length.
 	GetHostMask(prefixLength BitCount) *IPAddress
 
+	// GetPrefixedHostMask returns the host mask associated with the given CIDR network prefix length, with the masking having the same prefix length
 	GetPrefixedHostMask(prefixLength BitCount) *IPAddress
 
 	getIPAddressCreator() ipAddressCreator
 
 	addressNetwork
+}
+
+type IPAddressNetworkConstraint[T any] interface {
+	// GetBitCount returns the number of bits in addresses from this network
+	GetBitCount() BitCount
+
+	// GetAddressSpace returns the address representing the entire address space, with a prefix length of 0
+	GetAddressSpace() T
+
+	// GetBoundaryAddresses returns the smallest (zero) and largest addresses in the address space
+	GetBoundaryAddresses() (min, max T)
+
+	// GetLoopback returns the loopback address for this address protocol
+	GetLoopback() T
+
+	// GetNetworkMask returns the network mask associated with the given CIDR network prefix length.
+	GetNetworkMask(prefLen BitCount) T
+
+	// GetPrefixedNetworkMask returns the network mask associated with the given CIDR network prefix length, with the masking having the same prefix length
+	GetPrefixedNetworkMask(prefLen BitCount) T
+
+	// GetHostMask returns the host mask associated with the given CIDR network prefix length.
+	GetHostMask(prefLen BitCount) T
+
+	// GetPrefixedHostMask returns the host mask associated with the given CIDR network prefix length, with the masking having the same prefix length
+	GetPrefixedHostMask(prefLen BitCount) T
 }
 
 type ipAddressNetwork struct {
@@ -59,22 +99,43 @@ func (network *ipv6AddressNetwork) getAddressCreator() parsedAddressCreator {
 	return &network.creator
 }
 
+// GetBitCount returns the number of bits in addresses from this network
+func (network *ipv6AddressNetwork) GetBitCount() BitCount {
+	return IPv6BitCount
+}
+
+// GetAddressSpace returns the address representing the entire address space, with a prefix length of 0
+func (network *ipv6AddressNetwork) GetAddressSpace() *IPAddress {
+	return ipv6AddressSpace.ToIP()
+}
+
+// Returns the smallest (zero) and largest addresses in the address space
+func (network *ipv6AddressNetwork) GetBoundaryAddresses() (min, max *IPAddress) {
+	min, max = ipv6min.ToIP(), ipv6max.ToIP()
+	return
+}
+
+// GetLoopback returns the loopback address for this address protocol
 func (network *ipv6AddressNetwork) GetLoopback() *IPAddress {
 	return ipv6loopback.ToIP()
 }
 
+// GetNetworkMask returns the network mask associated with the given CIDR network prefix length.
 func (network *ipv6AddressNetwork) GetNetworkMask(prefLen BitCount) *IPAddress {
 	return network.subnetMasks[adjustBits(IPv6, prefLen)]
 }
 
+// GetPrefixedNetworkMask returns the network mask associated with the given CIDR network prefix length, with the masking having the same prefix length
 func (network *ipv6AddressNetwork) GetPrefixedNetworkMask(prefLen BitCount) *IPAddress {
 	return network.subnetsMasksWithPrefix[adjustBits(IPv6, prefLen)]
 }
 
+// GetHostMask returns the host mask associated with the given CIDR network prefix length.
 func (network *ipv6AddressNetwork) GetHostMask(prefLen BitCount) *IPAddress {
 	return network.hostMasks[adjustBits(IPv6, prefLen)]
 }
 
+// GetPrefixedHostMask returns the host mask associated with the given CIDR network prefix length, with the masking having the same prefix length
 func (network *ipv6AddressNetwork) GetPrefixedHostMask(prefLen BitCount) *IPAddress {
 	return network.hostMasksWithPrefix[adjustBits(IPv6, prefLen)]
 }
@@ -98,22 +159,38 @@ type IPv6AddressNetwork struct {
 	*ipv6AddressNetwork
 }
 
+// GetAddressSpace returns the address representing the entire address space, with a prefix length of 0
+func (network IPv6AddressNetwork) GetAddressSpace() *IPv6Address {
+	return ipv6AddressSpace
+}
+
+// Returns the smallest (zero) and largest addresses in the address space
+func (network IPv6AddressNetwork) GetBoundaryAddresses() (min, max *IPv6Address) {
+	min, max = ipv6min, ipv6max
+	return
+}
+
+// GetLoopback returns the loopback address for this address protocol
 func (network IPv6AddressNetwork) GetLoopback() *IPv6Address {
 	return ipv6loopback
 }
 
+// GetNetworkMask returns the network mask associated with the given CIDR network prefix length.
 func (network IPv6AddressNetwork) GetNetworkMask(prefLen BitCount) *IPv6Address {
 	return network.ipv6AddressNetwork.GetNetworkMask(prefLen).ToIPv6()
 }
 
+// GetPrefixedNetworkMask returns the network mask associated with the given CIDR network prefix length, with the masking having the same prefix length
 func (network IPv6AddressNetwork) GetPrefixedNetworkMask(prefLen BitCount) *IPv6Address {
 	return network.ipv6AddressNetwork.GetPrefixedNetworkMask(prefLen).ToIPv6()
 }
 
+// GetHostMask returns the host mask associated with the given CIDR network prefix length.
 func (network IPv6AddressNetwork) GetHostMask(prefLen BitCount) *IPv6Address {
 	return network.ipv6AddressNetwork.GetHostMask(prefLen).ToIPv6()
 }
 
+// GetPrefixedHostMask returns the host mask associated with the given CIDR network prefix length, with the masking having the same prefix length
 func (network IPv6AddressNetwork) GetPrefixedHostMask(prefLen BitCount) *IPv6Address {
 	return network.ipv6AddressNetwork.GetPrefixedHostMask(prefLen).ToIPv6()
 }
@@ -134,16 +211,6 @@ func createIPv6AddressNetwork() *ipv6AddressNetwork {
 		ipv6NetworkMasks[i] = [2]uint64{high, low}
 	}
 	return network
-}
-
-func populateNetwork(version IPVersion, network *ipAddressNetwork, zeroDiv *AddressDivision) {
-	addressBitLength := version.GetBitCount()
-	for i := 0; i <= addressBitLength; i++ {
-		_ = createMask(version, zeroDiv, i, network.subnetMasks, true, false)
-		_ = createMask(version, zeroDiv, i, network.subnetsMasksWithPrefix, true, true)
-		_ = createMask(version, zeroDiv, i, network.hostMasks, false, false)
-		_ = createMask(version, zeroDiv, i, network.hostMasksWithPrefix, false, true)
-	}
 }
 
 var ipv6Network = createIPv6AddressNetwork()
@@ -171,22 +238,43 @@ func (network *ipv4AddressNetwork) getAddressCreator() parsedAddressCreator {
 	return &network.creator
 }
 
+// GetBitCount returns the number of bits in addresses from this network
+func (network *ipv4AddressNetwork) GetBitCount() BitCount {
+	return IPv4BitCount
+}
+
+// GetAddressSpace returns the address representing the entire address space, with a prefix length of 0
+func (network *ipv4AddressNetwork) GetAddressSpace() *IPAddress {
+	return ipv4AddressSpace.ToIP()
+}
+
+// Returns the smallest (zero) and largest addresses in the address space
+func (network *ipv4AddressNetwork) GetBoundaryAddresses() (min, max *IPAddress) {
+	min, max = ipv4min.ToIP(), ipv4max.ToIP()
+	return
+}
+
+// GetLoopback returns the loopback address for this address protocol
 func (network *ipv4AddressNetwork) GetLoopback() *IPAddress {
 	return ipv4loopback.ToIP()
 }
 
+// GetNetworkMask returns the network mask associated with the given CIDR network prefix length.
 func (network *ipv4AddressNetwork) GetNetworkMask(prefLen BitCount) *IPAddress {
 	return network.subnetMasks[adjustBits(IPv4, prefLen)]
 }
 
+// GetPrefixedNetworkMask returns the network mask associated with the given CIDR network prefix length, with the masking having the same prefix length
 func (network *ipv4AddressNetwork) GetPrefixedNetworkMask(prefLen BitCount) *IPAddress {
 	return network.subnetsMasksWithPrefix[adjustBits(IPv4, prefLen)]
 }
 
+// GetHostMask returns the host mask associated with the given CIDR network prefix length.
 func (network *ipv4AddressNetwork) GetHostMask(prefLen BitCount) *IPAddress {
 	return network.hostMasks[adjustBits(IPv4, prefLen)]
 }
 
+// GetPrefixedHostMask returns the host mask associated with the given CIDR network prefix length, with the masking having the same prefix length
 func (network *ipv4AddressNetwork) GetPrefixedHostMask(prefLen BitCount) *IPAddress {
 	return network.hostMasksWithPrefix[adjustBits(IPv4, prefLen)]
 }
@@ -198,22 +286,38 @@ type IPv4AddressNetwork struct {
 	*ipv4AddressNetwork
 }
 
+// GetAddressSpace returns the address representing the entire address space, with a prefix length of 0
+func (network IPv4AddressNetwork) GetAddressSpace() *IPv4Address {
+	return ipv4AddressSpace
+}
+
+// Returns the smallest (zero) and largest addresses in the address space
+func (network IPv4AddressNetwork) GetBoundaryAddresses() (min, max *IPv4Address) {
+	min, max = ipv4min, ipv4max
+	return
+}
+
+// GetLoopback returns the loopback address for this address protocol
 func (network IPv4AddressNetwork) GetLoopback() *IPv4Address {
 	return ipv4loopback
 }
 
+// GetNetworkMask returns the network mask associated with the given CIDR network prefix length.
 func (network IPv4AddressNetwork) GetNetworkMask(prefLen BitCount) *IPv4Address {
 	return network.ipv4AddressNetwork.GetNetworkMask(prefLen).ToIPv4()
 }
 
+// GetPrefixedNetworkMask returns the network mask associated with the given CIDR network prefix length, with the masking having the same prefix length
 func (network IPv4AddressNetwork) GetPrefixedNetworkMask(prefLen BitCount) *IPv4Address {
 	return network.ipv4AddressNetwork.GetPrefixedNetworkMask(prefLen).ToIPv4()
 }
 
+// GetHostMask returns the host mask associated with the given CIDR network prefix length.
 func (network IPv4AddressNetwork) GetHostMask(prefLen BitCount) *IPv4Address {
 	return network.ipv4AddressNetwork.GetHostMask(prefLen).ToIPv4()
 }
 
+// GetPrefixedHostMask returns the host mask associated with the given CIDR network prefix length, with the masking having the same prefix length
 func (network IPv4AddressNetwork) GetPrefixedHostMask(prefLen BitCount) *IPv4Address {
 	return network.ipv4AddressNetwork.GetPrefixedHostMask(prefLen).ToIPv4()
 }
@@ -389,15 +493,38 @@ var macNetwork = &macAddressNetwork{}
 
 var _ addressNetwork = &macAddressNetwork{}
 
-var ipv4loopback = createIPv4Loopback()
-var ipv6loopback = createIPv6Loopback()
+var ipv6min, ipv6max, ipv6loopback, ipv6AddressSpace = createIPv6InitialAddresses()
+var ipv4min, ipv4max, ipv4loopback, ipv4AddressSpace = createIPv4InitialAddresses()
 
-func createIPv6Loopback() *IPv6Address {
-	ipv6loopback, _ := NewIPv6AddressFromBytes(net.IPv6loopback)
-	return ipv6loopback
+func createIPv6InitialAddresses() (min, max, loopback, addressSpace *IPv6Address) {
+	loopback, _ = NewIPv6AddressFromBytes(net.IPv6loopback)
+	min = IPv6Network.GetNetworkMask(0)
+	max = IPv6Network.GetHostMask(0)
+	addressSpace = IPv6Network.GetPrefixedNetworkMask(0).ToPrefixBlock()
+	return
 }
 
-func createIPv4Loopback() *IPv4Address {
-	ipv4loopback, _ := NewIPv4AddressFromBytes([]byte{127, 0, 0, 1})
-	return ipv4loopback
+func createIPv4InitialAddresses() (min, max, loopback, addressSpace *IPv4Address) {
+	loopback, _ = NewIPv4AddressFromBytes([]byte{127, 0, 0, 1})
+	min = IPv4Network.GetNetworkMask(0)
+	max = IPv4Network.GetHostMask(0)
+	addressSpace = IPv4Network.GetPrefixedNetworkMask(0).ToPrefixBlock()
+	return
+}
+
+func populateNetwork(version IPVersion, network *ipAddressNetwork, zeroDiv *AddressDivision) {
+	addressBitLength := version.GetBitCount()
+
+	for i := 0; i <= addressBitLength; i++ {
+		networkMaskWithPrefix := createMask(version, zeroDiv, i, network.subnetsMasksWithPrefix, true, true)
+		network.subnetMasks[i] = networkMaskWithPrefix.WithoutPrefixLen()
+		_ = createMask(version, zeroDiv, i, network.hostMasksWithPrefix, false, true)
+	}
+
+	network.hostMasks[0] = network.subnetMasks[addressBitLength]
+	network.hostMasks[addressBitLength] = network.subnetMasks[0]
+
+	for i := 1; i < addressBitLength; i++ {
+		network.hostMasks[i] = network.hostMasksWithPrefix[i].WithoutPrefixLen()
+	}
 }

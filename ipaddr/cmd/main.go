@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2024 Sean C Foley
+// Copyright 2020-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -373,10 +373,10 @@ func main() {
 		fmt.Printf("%v ", mAddrIter.Next())
 	}
 
-	fmt.Printf("\nincremented by 1 mac addr %+v is %+v\n", mAddr, mAddr.Increment(1))
+	fmt.Printf("\nincremented by 1 mac addr %+v is %+v\n", mAddr, mAddr.IncrementSingle())
 	fmt.Printf("\nincremented by -1 mac addr %+v is %+v\n", mAddr, mAddr.Increment(-1))
-	fmt.Printf("\nincremented by -1 and then by +1 mac addr %+v is %+v\n", mAddr, mAddr.Increment(-1).Increment(1))
-	fmt.Printf("\nincremented by +1 and then by -1 mac addr %+v is %+v\n", mAddr, mAddr.Increment(1).Increment(-1))
+	fmt.Printf("\nincremented by -1 and then by +1 mac addr %+v is %+v\n", mAddr, mAddr.DecrementSingle().IncrementSingle())
+	fmt.Printf("\nincremented by +1 and then by -1 mac addr %+v is %+v\n", mAddr, mAddr.IncrementSingle().DecrementSingle())
 
 	splitIntoBlocks("0.0.0.0", "0.0.0.254")
 	splitIntoBlocks("0.0.0.1", "0.0.0.254")

@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2024 Sean C Foley
+// Copyright 2020-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -188,7 +188,7 @@ func (addr *MACAddressSection) containsSame(other *MACAddressSection) bool {
 // Sections must also have the same number of segments to be comparable, otherwise false is returned.
 func (section *MACAddressSection) Contains(other AddressSectionType) bool {
 	if section == nil {
-		return other == nil || other.ToSectionBase() == nil
+		return false
 	}
 	return section.contains(other)
 }
@@ -198,7 +198,7 @@ func (section *MACAddressSection) Contains(other AddressSectionType) bool {
 // Sections must also have the same number of segments to be comparable, otherwise false is returned.
 func (section *MACAddressSection) Overlaps(other AddressSectionType) bool {
 	if section == nil {
-		return other == nil || other.ToSectionBase() == nil
+		return false
 	}
 	return section.overlaps(other)
 }
@@ -213,7 +213,7 @@ func (section *MACAddressSection) Overlaps(other AddressSectionType) bool {
 // Prefix lengths are ignored.
 func (section *MACAddressSection) Equal(other AddressSectionType) bool {
 	if section == nil {
-		return other == nil || other.ToSectionBase() == nil
+		return other == nil || other.ToSectionBase() == nil // nil equality
 	}
 	return section.equal(other)
 }
@@ -502,6 +502,14 @@ func (section *MACAddressSection) GetUpper() *MACAddressSection {
 	return section.getUpper().ToMAC()
 }
 
+// GetLowerAndUpper returns the sections in the range with the lowest and highest numeric values,
+// which will be the same section if it represents a single value.
+// For example, for "1:1:1:2-3:4:5-6", the series "1:1:1:2:4:5" and "1:1:1:3:4:6" are returned.
+func (section *MACAddressSection) GetLowerAndUpper() (lower, upper *MACAddressSection) {
+	l, u := section.getLowestHighestSections()
+	return l.ToMAC(), u.ToMAC()
+}
+
 // Uint64Value returns the lowest individual address section in the address section collection as a uint64.
 func (section *MACAddressSection) Uint64Value() uint64 {
 	return section.getLongValue(true)
@@ -587,25 +595,38 @@ func (section *MACAddressSection) PrefixBlockIterator() Iterator[*MACAddressSect
 	return macSectionIterator{section.prefixIterator(true)}
 }
 
-// IncrementBoundary returns the item that is the given increment from the range boundaries of this item.
-//
-// If the given increment is positive, adds the value to the highest (GetUpper) in the range to produce a new item.
-// If the given increment is negative, adds the value to the lowest (GetLower) in the range to produce a new item.
-// If the increment is zero, returns this.
-//
-// If this represents just a single value, this item is simply incremented by the given increment value, positive or negative.
-//
-// On overflow or underflow, IncrementBoundary returns nil.
-func (section *MACAddressSection) IncrementBoundary(increment int64) *MACAddressSection {
-	return section.incrementBoundary(increment).ToMAC()
-}
-
 // IsAdaptiveZero returns true if the division grouping was originally created as an implicitly zero-valued section or grouping (e.g. IPv4AddressSection{}),
 // meaning it was not constructed using a constructor function.
 // Such a grouping, which has no divisions or segments, is convertible to an implicitly zero-valued grouping of any type or version, whether IPv6, IPv4, MAC, or other.
 // In other words, when a section or grouping is the zero-value, then it is equivalent and convertible to the zero value of any other section or grouping type.
 func (section *MACAddressSection) IsAdaptiveZero() bool {
 	return section != nil && section.matchesZeroGrouping()
+}
+
+// IncrementBoundary returns the item that is the given increment from the range boundaries of this item.
+//
+// If the given increment is positive, adds the value to the highest (GetUpper) in the range to produce a new section.
+// If the given increment is negative, adds the value to the lowest (GetLower) in the range to produce a new section.
+// If the increment is zero, returns the receiver section.
+//
+// If this represents just a single value, this item is simply incremented by the given increment value, positive or negative.
+//
+// On overflow or underflow, IncrementBoundary returns nil.
+func (section *MACAddressSection) IncrementBoundary(increment int64) *MACAddressSection {
+	if increment <= 0 {
+		if increment == 0 {
+			return section
+		}
+		return section.GetLower().Increment(increment)
+	} else if increment == 1 {
+		return section.IncrementBoundarySingle()
+	}
+	return section.GetUpper().Increment(increment)
+}
+
+// IncrementBoundarySingle increments the boundary of the address or subnet section by 1 to produce a new address section.  Equivalent to IncrementBoundary(1).
+func (section *MACAddressSection) IncrementBoundarySingle() *MACAddressSection {
+	return incrementBoundaryOne(section.toAddressSection(), macNetwork.getAddressCreator(), section.getPrefixLen()).ToMAC()
 }
 
 func getMacMaxValueLong(segmentCount int) uint64 {
@@ -622,6 +643,21 @@ var macMaxValues = []uint64{
 	0xffffffffffff,
 	0xffffffffffffff,
 	0xffffffffffffffff}
+
+func getMacMaxValueBig(segmentCount int) *big.Int {
+	return macMaxValuesBig[segmentCount]
+}
+
+var macMaxValuesBig = []*big.Int{
+	bigZero(),
+	bigZero().SetUint64(MACMaxValuePerSegment),
+	bigZero().SetUint64(0xffff),
+	bigZero().SetUint64(0xffffff),
+	bigZero().SetUint64(0xffffffff),
+	bigZero().SetUint64(0xffffffffff),
+	bigZero().SetUint64(0xffffffffffff),
+	bigZero().SetUint64(0xffffffffffffff),
+	bigZero().SetUint64(0xffffffffffffffff)}
 
 func (section *MACAddressSection) getMacCountLong() uint64 {
 	return section.getCachedCount().Uint64()
@@ -646,8 +682,16 @@ func (section *MACAddressSection) getMacCountLong() uint64 {
 //
 // On overflow or underflow, Increment returns nil.
 func (section *MACAddressSection) Increment(incrementVal int64) *MACAddressSection {
-	if incrementVal == 0 && !section.isMultiple() {
-		return section
+	if incrementVal <= 1 {
+		if incrementVal == 0 {
+			if !section.isMultiple() {
+				return section
+			}
+		} else if incrementVal == 1 {
+			return section.IncrementSingle()
+		} else if incrementVal == -1 {
+			return section.DecrementSingle()
+		}
 	}
 	segCount := section.GetSegmentCount()
 	if isOverflow := checkOverflow(incrementVal, section.Uint64Value, section.UpperUint64Value, section.getMacCountLong, func() uint64 { return getMacMaxValueLong(segCount) }, section.IsSequential); isOverflow {
@@ -665,6 +709,120 @@ func (section *MACAddressSection) Increment(incrementVal int64) *MACAddressSecti
 		section.getPrefixLen()).ToMAC()
 }
 
+// IncrementSingle increments the address or subnet section by 1 to produce a new address section.  Equivalent to Increment(1).
+func (section *MACAddressSection) IncrementSingle() *MACAddressSection {
+	return incrementOne(section.toAddressSection(), macNetwork.getAddressCreator(), section.getPrefixLen()).ToMAC()
+}
+
+// DecrementSingle decrements the address or subnet section by 1 to produce a new address section.  Equivalent to Increment(-1).
+func (section *MACAddressSection) DecrementSingle() *MACAddressSection {
+	return decrementOne(section.toAddressSection(), macNetwork.getAddressCreator(), section.getPrefixLen()).ToMAC()
+}
+
+// IncrementBig returns the address from the subnet section that is the given increment upwards into the subnet section range.
+//
+// Equivalent to Increment, but taking a big integer as the increment argument.
+func (section *MACAddressSection) IncrementBig(bigIncrement *big.Int) *MACAddressSection {
+	// unlike IPV4, and because we use int64 and not uint64 for the int-based increment, we cannot always divert to that function, we must use big.Ints
+	if bigIncrement.IsInt64() {
+		return section.Increment(bigIncrement.Int64())
+	}
+	if isOverflow := checkOverflowBigger(bigIncrement, section.GetValue, section.GetUpperValue, section.GetCount, func() *big.Int { return getMacMaxValueBig(section.GetSegmentCount()) }, section.IsSequential); isOverflow {
+		return nil
+	}
+	return incrementBigger(
+		section.ToSectionBase(),
+		bigIncrement,
+		macNetwork.getAddressCreator(),
+		section.getLower,
+		section.getUpper,
+		section.getPrefixLen()).ToMAC()
+}
+
+// UpperIsAdjacentTo indicates if the given section's lower value is the next individual address following this section's upper value.
+// This means they are adjacent, having no intervening section.
+//
+// UpperIsAdjacentTo returns true given the section produced by IncrementBoundarySingle.
+func (section *MACAddressSection) UpperIsAdjacentTo(other AddressSectionType) bool {
+	return upperIsAdjacentTo(section.ToSectionBase(), other.ToSectionBase())
+}
+
+// UpperIsAdjacentTo indicates if the given section's lower value is the next individual address following this section's upper value.
+// This means they are adjacent, having no intervening section.
+//
+// UpperIsAdjacentTo returns true given the section produced by IncrementBoundarySingle.
+func (section *MACAddressSection) upperIsAdjacentTo(other *MACAddressSection) bool {
+	return upperIsAdjacentTo(section.ToSectionBase(), other.ToSectionBase())
+}
+
+// Get returns the individual address section that is at the given index in this collection of address sections,
+// with the increment of 0 returning the first in the range.
+//
+// If the index is negative or exceeds GetCount() - 1, this panics.
+func (section *MACAddressSection) Get(index int64) *MACAddressSection {
+	if index <= 0 {
+		if index == 0 {
+			return section.GetLower() // panics for section nil ptr which is correct, for section with no segments, count is 1 so no panic necessary
+		}
+		outOfBounds()
+	}
+	count := section.GetCount()
+	if count.IsUint64() {
+		count64 := count.Uint64()
+		uindex := uint64(index)
+		countMinus164 := count64 - 1
+		if countMinus164 >= uindex {
+			if countMinus164 == uindex {
+				return section.GetUpper()
+			}
+			return incrementRange(section.toAddressSection(), index, section.getPrefixLen()).ToMAC()
+		}
+		outOfBounds()
+	}
+	countMinus1 := count
+	countMinus1.Sub(countMinus1, bigOneConst())
+	if countMinus1.IsUint64() {
+		countMinus164 := countMinus1.Uint64()
+		uindex := uint64(index)
+		if countMinus164 >= uindex {
+			if countMinus164 == uindex {
+				return section.GetUpper()
+			}
+			return incrementRange(section.toAddressSection(), index, section.getPrefixLen()).ToMAC()
+		}
+		outOfBounds()
+	}
+	// can only reach here if the section has more than 8 segments, which is allowed, even though no mac address can have that many bits
+	return incrementRange(section.toAddressSection(), index, section.getPrefixLen()).ToMAC()
+}
+
+// GetBig returns the individual address section that is at the given index in this collection of address sections,
+// with the increment of 0 returning the first in the range.
+//
+// If the index is negative or exceeds GetCount() - 1, this panics.
+func (section *MACAddressSection) GetBig(index *big.Int) *MACAddressSection {
+	if index.IsInt64() {
+		return section.Get(index.Int64())
+	}
+	sign := index.Sign()
+	if sign <= 0 {
+		if sign == 0 {
+			return section.GetLower()
+		}
+		outOfBounds()
+	}
+	count := section.GetCount()
+	countMinus1 := count.Sub(count, bigOneConst())
+	cmpAbs := index.CmpAbs(countMinus1)
+	if cmpAbs >= 0 {
+		if cmpAbs == 0 {
+			return section.GetUpper()
+		}
+		outOfBounds()
+	}
+	return incrementRangeBig(section.toAddressSection(), index, section.getPrefixLen()).ToMAC()
+}
+
 func low64MAC(section *AddressSection) uint64 {
 	return section.ToMAC().Uint64Value()
 }
@@ -675,7 +833,7 @@ func low64UpperMAC(section *AddressSection) uint64 {
 
 func (section *MACAddressSection) enumerateAddr(other AddressSectionType) *big.Int {
 	if otherSection := other.ToSectionBase(); otherSection != nil {
-		if matches, count := section.matchesTypeAndCount(otherSection); matches {
+		if matches, count := section.matchesTypeAndSegCount(otherSection); matches {
 			if count < 8 {
 				if val, ok := enumerateSmall(section.ToSectionBase(), otherSection, low64MAC, low64UpperMAC); ok {
 					return big.NewInt(val)

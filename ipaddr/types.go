@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2024 Sean C Foley
+// Copyright 2020-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -215,10 +215,10 @@ func cachePrefixLen(external PrefixLen) PrefixLen {
 	return cacheBitCount(external.bitCount())
 }
 
-var p PrefixLen
+var pNil PrefixLen
 
 func cacheNilPrefix() *PrefixLen {
-	return &p
+	return &pNil
 }
 
 const maxPortNumInternal, minPortNumInternal = math.MaxUint16, 0

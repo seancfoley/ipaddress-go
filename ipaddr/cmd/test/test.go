@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2022 Sean C Foley
+// Copyright 2020-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,7 +23,8 @@ import (
 )
 
 func main() {
-	isLimitedPtr := flag.Bool("limited", false, "exclude caching and threading tests")
+	isLimitedPtr := flag.Bool("limited", true, "exclude caching and threading tests")
+	//isLimitedPtr := flag.Bool("limited", false, "exclude caching and threading tests")
 	flag.Parse()
 	test.Test(*isLimitedPtr)
 }

@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2024 Sean C Foley
+// Copyright 2020-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -187,16 +187,16 @@ func (seg *IPv6AddressSegment) GetIPv6UpperSegmentValue() IPv6SegInt {
 
 // Contains returns whether this is same type and version as the given segment and whether it contains all values in the given segment.
 func (seg *IPv6AddressSegment) Contains(other AddressSegmentType) bool {
-	if seg == nil {
-		return other == nil || other.ToSegmentBase() == nil
+	if seg == nil || other == nil || other.ToSegmentBase() == nil {
+		return false
 	}
 	return seg.init().contains(other)
 }
 
 // Overlaps returns whether this is same type and version as the given segment and whether it overlaps with the values in the given segment.
 func (seg *IPv6AddressSegment) Overlaps(other AddressSegmentType) bool {
-	if seg == nil {
-		return other == nil || other.ToSegmentBase() == nil
+	if seg == nil || other == nil || other.ToSegmentBase() == nil {
+		return false
 	}
 	return seg.init().overlaps(other)
 }

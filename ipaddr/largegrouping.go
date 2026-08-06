@@ -1,5 +1,5 @@
 //
-// Copyright 2022-2024 Sean C Foley
+// Copyright 2022-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -518,7 +518,7 @@ func (grouping *IPAddressLargeDivisionGrouping) CompareSize(other AddressItem) i
 		// we have size 0, other has size >= 1
 		return -1
 	}
-	return compareCount(grouping, other)
+	return compareCounts(grouping, other)
 	//return grouping.compareSize(other)
 }
 

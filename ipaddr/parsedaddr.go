@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2022 Sean C Foley
+// Copyright 2020-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -371,8 +371,8 @@ func (parseData *parsedIPAddress) skipContains() bool {
 	return false
 }
 
-//we do not call this method with parse data from inet_aton or single segment strings, so the cast to int is fine.
-//this is only for addresses with standard segment counts, although we do allow compressed.
+// we do not call this method with parse data from inet_aton or single segment strings, so the cast to int is fine.
+// this is only for addresses with standard segment counts, although we do allow compressed.
 func (parseData *parsedIPAddress) isPrefixSubnet(networkPrefixLength BitCount) bool {
 	var bytesPerSegment int
 	var max SegInt
@@ -464,7 +464,7 @@ func (parseData *parsedIPAddress) prefixEqualsProvider(other ipAddressProvider) 
 	return parseData.containmentCheck(other, true, true, false)
 }
 
-//not used for invalid, or cases where parseData.isEmpty or parseData.isAll
+// not used for invalid, or cases where parseData.isEmpty or parseData.isAll
 func (parseData *parsedIPAddress) containsProv(other *parsedIPAddress, networkOnly, equals bool) (res boolSetting) {
 	pd := parseData.getAddressParseData()
 	otherParseData := other.getAddressParseData()
@@ -1370,12 +1370,14 @@ func (parseData *parsedIPAddress) createIPv6Sections(doSections, doRangeBoundari
 		for n := 0; n < 2; n++ {
 			m := n << 1
 			segmentPrefixLength := getSegmentPrefixLength(IPv6BitsPerSegment, prefLen, normalizedSegmentIndex)
-			//segmentPrefixLength := getQualifierSegmentPrefixLength(normalizedSegmentIndex, IPv6BitsPerSegment, qualifier)
 			o := m + 1
-			oneLow := ipv4Range.GetLower().GetSegment(m)
-			twoLow := ipv4Range.GetLower().GetSegment(o)
-			oneUp := ipv4Range.GetUpper().GetSegment(m)
-			twoUp := ipv4Range.GetUpper().GetSegment(o)
+
+			lower, upper := ipv4Range.GetLowerAndUpper()
+
+			oneLow := lower.GetSegment(m)
+			twoLow := lower.GetSegment(o)
+			oneUp := upper.GetSegment(m)
+			twoUp := upper.GetSegment(o)
 			oneLower := oneLow.GetSegmentValue()
 			twoLower := twoLow.GetSegmentValue()
 			oneUpper := oneUp.GetSegmentValue()

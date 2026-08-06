@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2023 Sean C Foley
+// Copyright 2020-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -253,37 +253,97 @@ func checkRangeType(r IPAddressSeqRangeType) (isNil bool, rngType rangeType, rng
 	return
 }
 
-// compareAddressLowerValues compares any two individual addresses (including different versions or address types)
-// It returns a negative integer, zero, or a positive integer if address item one is less than, equal, or greater than address item two.
-// It ignores IPv6 zone and panics on nil AddressType or nil addresses.
-// If an address is not a single address, then the lower values are used.
-func compareAddressLowerValues(one, two AddressType) int {
-	oneAddr := one.ToAddressBase()
-	twoAddr := two.ToAddressBase()
-	return compareSegmentValues(false, oneAddr.GetSection(), twoAddr.GetSection())
+type addrConstraint interface {
+	ToAddressBase() *Address
+}
+
+func compareLowerValues[T addrConstraint](one, two T) int {
+	return compareSegValues(false, one.ToAddressBase().GetSection(), two.ToAddressBase().GetSection())
+}
+
+func compareUpperValues[T addrConstraint](one, two T) int {
+	return compareSegValues(true, one.ToAddressBase().GetSection(), two.ToAddressBase().GetSection())
+}
+
+func compareLowerValuesDifferentTypes[T, R addrConstraint](one T, two R) int {
+	return compareSegValues(false, one.ToAddressBase().GetSection(), two.ToAddressBase().GetSection())
+}
+
+func compareUpperValuesDifferentTypes[T, R addrConstraint](one T, two R) int {
+	return compareSegValues(true, one.ToAddressBase().GetSection(), two.ToAddressBase().GetSection())
 }
 
 // called only when it is known the sections have same segment count and segment bit size
-func compareSegmentValues(compareUpper bool, one, two *AddressSection) (result int) {
-	segCount := one.GetSegmentCount()
+func compareSegValues(compareUpper bool, one, two *AddressSection) (result int) {
+	divArray1, divArray2 := one.getDivArray(), two.getDivArray()
+	segCount := divArray1.getDivisionCount()
+	if compareUpper {
+		for i := 0; i < segCount; i++ {
+			s1 := divArray1[i].divisionValues.getUpperSegmentValue()
+			s2 := divArray2[i].divisionValues.getUpperSegmentValue()
+			if s1 != s2 {
+				if s1 > s2 {
+					return 1
+				}
+				return -1
+			}
+		}
+	} else {
+		for i := 0; i < segCount; i++ {
+			s1 := divArray1[i].divisionValues.getSegmentValue()
+			s2 := divArray2[i].divisionValues.getSegmentValue()
+			if s1 != s2 {
+				if s1 > s2 {
+					return 1
+				}
+				return -1
+			}
+		}
+	}
+	return
+}
+
+func compareValues[T addrConstraint](oneUpper, twoUpper bool, one, two T) int {
+	return compareDifferentSegmentValues(oneUpper, twoUpper, one.ToAddressBase().GetSection(), two.ToAddressBase().GetSection())
+}
+
+func compareValuesDifferentTypes[T, R addrConstraint](oneUpper, twoUpper bool, one T, two R) int {
+	return compareDifferentSegmentValues(oneUpper, twoUpper, one.ToAddressBase().GetSection(), two.ToAddressBase().GetSection())
+}
+
+// Turns out I did not need compareDifferentSegmentValues, mostly because of two reasons:
+// - the nature of CIDR prefix blocks
+// Because CIDR prefix blocks cannot overlap, they can only contain each oether,
+// you never need to compare upper and lower between two,
+// you can always choose lower/lower or upper/upper
+// - the way we represent IP sequential ranges
+// You can also get the lower address and the upper address of the ranges to compare,
+// which are always individual singleton addresses,
+// so it does not matter if you grab lower or upper values within each,
+// so you might as well just grab lower of both or upper of both.
+//
+// But leaving here for future use if necessary.
+
+func compareDifferentSegmentValues(oneUpper, twoUpper bool, one, two *AddressSection) (result int) {
+	divArray1, divArray2 := one.getDivArray(), two.getDivArray()
+	segCount := divArray1.getDivisionCount()
+	var s1, s2 SegInt
 	for i := 0; i < segCount; i++ {
-		segOne := one.GetSegment(i)
-		segTwo := two.GetSegment(i)
-		var s1, s2 SegInt
-		if compareUpper {
-			s1 = segOne.GetUpperSegmentValue()
-			s2 = segTwo.GetUpperSegmentValue()
+		if oneUpper {
+			s1 = divArray1[i].divisionValues.getUpperSegmentValue()
 		} else {
-			s1 = segOne.GetSegmentValue()
-			s2 = segTwo.GetSegmentValue()
+			s1 = divArray1[i].divisionValues.getSegmentValue()
+		}
+		if twoUpper {
+			s2 = divArray2[i].divisionValues.getUpperSegmentValue()
+		} else {
+			s2 = divArray2[i].divisionValues.getSegmentValue()
 		}
 		if s1 != s2 {
 			if s1 > s2 {
-				result = 1
-			} else {
-				result = -1
+				return 1
 			}
-			return
+			return -1
 		}
 	}
 	return
@@ -482,8 +542,10 @@ func (comp AddressComparator) CompareRanges(one, two IPAddressSeqRangeType) int 
 	compComp := comp.getCompComp()
 	if r1Type == ipv4rangetype { // avoid using the large values
 		r1ipv4 := r1.ToIPv4()
+		r1ipv4Lower, r1ipv4Upper := r1ipv4.GetLowerAndUpper()
 		r2ipv4 := r2.ToIPv4()
-		return compComp.compareValues(uint64(r1ipv4.GetUpper().Uint32Value()), uint64(r1ipv4.GetLower().Uint32Value()), uint64(r2ipv4.GetUpper().Uint32Value()), uint64(r2ipv4.GetLower().Uint32Value()))
+		r2ipv4Lower, r2ipv4Upper := r2ipv4.GetLowerAndUpper()
+		return compComp.compareValues(uint64(r1ipv4Upper.Uint32Value()), uint64(r1ipv4Lower.Uint32Value()), uint64(r2ipv4Upper.Uint32Value()), uint64(r2ipv4Lower.Uint32Value()))
 	}
 	return compComp.compareLargeValues(one.GetUpperValue(), one.GetValue(), two.GetUpperValue(), two.GetValue())
 }
@@ -545,7 +607,7 @@ type valueComparator struct {
 func (comp valueComparator) compareSectionParts(one, two *AddressSection) int {
 	compareHigh := comp.compareHighValue
 	for {
-		result := compareSegmentValues(compareHigh, one, two)
+		result := compareSegValues(compareHigh, one, two)
 		if result != 0 {
 			if comp.flipSecond && compareHigh != comp.compareHighValue {
 				result = -result
@@ -817,7 +879,7 @@ func (comp valueComparator) compareLargeValues(oneUpper, oneLower, twoUpper, two
 type countComparator struct{}
 
 func (comp countComparator) compareSectionParts(one, two *AddressSection) int {
-	result := compareCount(one, two)
+	result := compareCounts(one, two)
 	if result == 0 {
 		result = comp.compareEqualSizedSections(one, two)
 	}
@@ -844,7 +906,7 @@ func (comp countComparator) compareEqualSizedSections(one, two *AddressSection) 
 func (comp countComparator) compareParts(one, two AddressDivisionSeries) int {
 	result := int(one.GetBitCount() - two.GetBitCount())
 	if result == 0 {
-		result = compareCount(one, two)
+		result = compareCounts(one, two)
 		if result == 0 {
 			result = comp.compareDivisionGroupings(one, two)
 		}
@@ -1108,7 +1170,7 @@ func isNilItem(item AddressItem) bool {
 }
 
 // Note: never called with an address instance, never called with an instance of AddressType
-func compareCount(one, two AddressItem) int {
+func compareCounts(one, two AddressItem) int {
 	if !one.IsMultiple() {
 		if two.IsMultiple() {
 			return -1
