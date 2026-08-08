@@ -108,13 +108,8 @@ func (seg *addressSegmentInternal) overlaps(other AddressSegmentType) bool {
 	if other.ToSegmentBase() == nil {
 		return false
 	}
-	// if other == nil {
-	// 	return true // nil contains
-	// }
-	// otherSeg := other.ToSegmentBase()
 	if seg.toAddressSegment() == otherSeg {
-		//if seg.toAddressSegment() == otherSeg || otherSeg == nil {
-		return true // nil contains
+		return true
 	} else if matchesStructure, _ := seg.matchesStructure(other); matchesStructure {
 		return seg.sameTypeOverlaps(otherSeg)
 	}
