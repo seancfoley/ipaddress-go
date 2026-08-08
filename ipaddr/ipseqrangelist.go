@@ -1735,7 +1735,7 @@ func (list *SequentialRangeList[T]) SeqRangeIterator() IteratorWithRemove[*Seque
 	}
 }
 
-// Iterator returns an iterator that iterates through all addresses in ascending order.  This iterator supports the remove operation.
+// Iterator returns an iterator that iterates through all addresses in ascending order.
 func (list *SequentialRangeList[T]) Iterator() Iterator[T] {
 	return list.IteratorWithRemove()
 }
@@ -2487,7 +2487,7 @@ func (list *SequentialRangeList[T]) Clone() *SequentialRangeList[T] {
 
 // NewEmpty creates a new IPAddressSeqRangeList using the same element type T.
 // Satisfies the IPAddressCollConstraint[S IPAddressCollAddrConstraint[T], T IPAddressTypeConstraint[T]] interface,
-// allowing for ogeneric code that can create new collections generically, with generic code.
+// allowing for ogeneric code that can create new collections with generic code.
 // For code that is using a generic collection type, you can simply use &SequentialRangeList[T]{} to create a new list.
 func (list *SequentialRangeList[T]) NewEmpty() *SequentialRangeList[T] {
 	return &SequentialRangeList[T]{}
@@ -2503,7 +2503,7 @@ func (list *SequentialRangeList[T]) IsSequential() bool {
 // Format implements the [fmt.Formatter] interface.
 //
 // The formats, flags, and other specifications supported are those supported by Format in IPAddress.
-func (list *SequentialRangeList[T]) Format(state fmt.State, verb rune) {
+func (list SequentialRangeList[T]) Format(state fmt.State, verb rune) {
 	switch verb {
 	case 's', 'v':
 		_, _ = state.Write([]byte(list.String()))
@@ -2512,7 +2512,7 @@ func (list *SequentialRangeList[T]) Format(state fmt.State, verb rune) {
 	list.format(state, verb)
 }
 
-func (list *SequentialRangeList[T]) format(state fmt.State, verb rune) {
+func (list SequentialRangeList[T]) format(state fmt.State, verb rune) {
 	_, _ = state.Write([]byte{'['})
 	ranges := list.ranges
 	if len(ranges) > 0 {
