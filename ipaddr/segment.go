@@ -84,7 +84,7 @@ func (seg *addressSegmentInternal) contains(other AddressSegmentType) bool {
 		return false
 	}
 	otherSeg := other.ToSegmentBase()
-	if other.ToSegmentBase() == nil {
+	if otherSeg == nil {
 		return false
 	}
 	if seg.toAddressSegment() == otherSeg {
@@ -105,7 +105,7 @@ func (seg *addressSegmentInternal) overlaps(other AddressSegmentType) bool {
 		return false
 	}
 	otherSeg := other.ToSegmentBase()
-	if other.ToSegmentBase() == nil {
+	if otherSeg == nil {
 		return false
 	}
 	if seg.toAddressSegment() == otherSeg {
