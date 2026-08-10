@@ -6,9 +6,9 @@ IP address and network manipulations, CIDR, address and subnet operations, addre
 
 [Docs Site](https://seancfoley.github.io/IPAddress/)
 
-[Godoc](https://pkg.go.dev/github.com/seancfoley/ipaddress-go/ipaddr) [![Go Reference](https://pkg.go.dev/badge/github.com/seancfoley/ipaddress-go/ipaddr.svg)](https://pkg.go.dev/github.com/seancfoley/ipaddress-go/ipaddr)
-
 [Code Examples](https://github.com/seancfoley/ipaddress-go/wiki/Code-Examples)
+
+[Godoc](https://pkg.go.dev/github.com/seancfoley/ipaddress-go/ipaddr) [![Go Reference](https://pkg.go.dev/badge/github.com/seancfoley/ipaddress-go/ipaddr.svg)](https://pkg.go.dev/github.com/seancfoley/ipaddress-go/ipaddr)
 
 [List of Users](https://github.com/seancfoley/ipaddress-go/wiki)
 
