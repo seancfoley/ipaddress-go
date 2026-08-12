@@ -283,8 +283,11 @@ func (iter *toSeqRangeIterator[T]) Next() *SequentialRange[T] {
 			break
 		}
 	}
+
 	// next spans from lower of current to upper of latest
+	current = current.WithoutPrefixLen()
 	if merged {
+		latest = latest.WithoutPrefixLen()
 		return newSequRangeUnchecked(current.GetLower(), latest.GetUpper(), true)
 	}
 	lower, upper := current.GetLowerAndUpper()
