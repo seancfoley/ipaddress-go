@@ -16,10 +16,10 @@ IP address and network manipulations, CIDR, address and subnet operations, addre
 | ------- | ------------- |
 | [1.2.1](https://github.com/seancfoley/ipaddress-go/releases/tag/v1.2.1) | Requires Go 1.12 or higher |
 | [1.4.1](https://github.com/seancfoley/ipaddress-go/releases/tag/v1.4.1) | Requires Go 1.13 or higher |
-| [1.8.2](https://github.com/seancfoley/ipaddress-go/releases/tag/v1.8.2) | Requires Go 1.18 or higher |
+| [1.8.3](https://github.com/seancfoley/ipaddress-go/releases/tag/v1.8.3) | Requires Go 1.18 or higher |
 
 In your go.mod file:\
-require github.com/seancfoley/ipaddress-go v1.8.2
+require github.com/seancfoley/ipaddress-go v1.8.3
 
 In your source file:\
 import "github.com/seancfoley/ipaddress-go/ipaddr"
