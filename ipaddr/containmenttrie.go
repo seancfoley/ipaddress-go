@@ -58,6 +58,14 @@ func (trie *collectionTrie[T]) containingCeilingAddedNode(addr T) *TrieNode[T] {
 	return toAddressTrieNode(trie.containingCeilingAddedNodeNoCheck(addr))
 }
 
+// NewContainmentTrie creates a new containment trie.
+//
+// You can also simply declare an instance of type ContainmentTrieBase[T] to create one,
+// or a instance of type IPAddressContainmentTrie, IPv4AddressContainmentTrie, or IPv6AddressContainmentTrie.
+func NewContainmentTrie[T ipAddressTypeConstraint[T]]() *ContainmentTrieBase[T] {
+	return &ContainmentTrieBase[T]{}
+}
+
 // ContainmentTrieBase is an IP address collection backed by an IP address trie.
 //
 // Sequential ranges and subnets are converted to prefix blocks in order to be inserted into the trie.
@@ -488,9 +496,85 @@ func (coll *ContainmentTrieBase[T]) PrefixBlockIterator() IteratorWithRemove[T] 
 
 // SpanningPrefixBlockIterator returns an iterator for iterating through the minimal set of disjoint prefix blocks containing the addresses in this collection of addresses.
 //
-// It returns the same iterator as PrefixBlockIterator, while also satisifying the IPAddressAggregationConstraint interface.
+// It returns an iterator similar to PrefixBlockIterator, while also satisifying the IPAddressAggregationConstraint interface.
+//
+// Individual addresses will be shown with as prefix blocks with a prefix extending to the end of the address.
+// They are represented as 2001:4860:4860::8844/128 or 192.168.10.1/32, instead of 2001:4860:4860::8844 or 192.168.10.1.
+// You can esily remove such prefix lengths with calls to RemoveBitcountPrefixLen, or use PrefixBlockIterator instead.
 func (coll *ContainmentTrieBase[T]) SpanningPrefixBlockIterator() Iterator[T] {
-	return coll.PrefixBlockIterator()
+	if coll == nil {
+		return nilIterator[T]()
+	}
+	return spanningIterWrapper[T]{coll.trie.iterator()}
+}
+
+// SpanningSeqBlockIterator returns an iterator for iterating through the minimal set of disjoint sequential blocks containing the addresses in this collection of addresses.
+//
+// It satisifes the IPAddressAggregationConstraint interface.
+func (coll *ContainmentTrieBase[T]) SpanningSeqBlockIterator() Iterator[T] {
+	trie := &coll.trie.Trie
+	changeTracker := trie.changeTracker()
+	var currentChange tree.Change
+	if changeTracker != nil { // can be nil with empty trie
+		currentChange = changeTracker.GetCurrent()
+	}
+	return &seqBlockIterator[T]{
+		rangeIter:     coll.SpanningSeqRangeIterator(),
+		trie:          trie,
+		changeTracker: changeTracker,
+		currentChange: currentChange,
+	}
+}
+
+type seqBlockIterator[T ipAddressTypeConstraint[T]] struct {
+	rangeIter    Iterator[*SequentialRange[T]]
+	next         Iterator[T]
+	nextNotEmpty bool
+
+	trie          *Trie[T]
+	changeTracker *tree.ChangeTracker
+	currentChange tree.Change
+}
+
+func (iter *seqBlockIterator[T]) HasNext() bool {
+	return iter.rangeIter.HasNext() || (iter.nextNotEmpty && iter.next.HasNext())
+}
+
+func (iter *seqBlockIterator[T]) Next() T {
+	if iter.nextNotEmpty {
+		if iter.next.HasNext() {
+			// before we return this element, check if the trie has changed
+			currentTracker := iter.trie.changeTracker()
+			originalTracker := iter.changeTracker
+			// if the current change tracker is no longer the same, that means the root of the trie has changed
+			if currentTracker != originalTracker {
+				originalTracker.ChangePanic()
+			}
+			// now we check if there has been a non-root change, any other change
+			originalTracker.ChangedSince(iter.currentChange)
+			return iter.next.Next()
+		}
+		iter.nextNotEmpty = false
+		iter.next = nil
+	}
+	if iter.rangeIter.HasNext() {
+		next := iter.rangeIter.Next()
+		blocks := next.SpanWithSequentialBlocks()
+		if len(blocks) > 1 {
+			iter.nextNotEmpty = true
+			iter.next = &sliceIterator[T]{blocks[1:]}
+		}
+		return blocks[0]
+	}
+	var t T
+	return t
+}
+
+// SpanningSeqRangeIterator returns an iterator for iterating through the minimal set of disjoint sequential ranges containing the addresses in this collection of addresses.
+//
+// It satisifes the IPAddressCollAddrConstraint interface.
+func (coll *ContainmentTrieBase[T]) SpanningSeqRangeIterator() Iterator[*SequentialRange[T]] {
+	return prefixBlockToSeqRangeIterator(coll.SpanningPrefixBlockIterator())
 }
 
 // GetPrefixBlockCount returns the number of prefix blocks in the backing trie.

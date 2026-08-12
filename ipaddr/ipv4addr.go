@@ -1502,6 +1502,10 @@ func (addr *IPv4Address) SpanWithPrefixBlocks() []*IPv4Address {
 }
 
 // SpanningPrefixBlockIterator returns the result of SpanWithPrefixBlocks as an iterator.
+//
+// Individual addresses will be shown with a prefix extending to the end of the address.
+// They are represented as 192.168.10.1/32, instead of 192.168.10.1.
+// You can esily remove such prefix lengths with calls to RemoveBitcountPrefixLen.
 func (addr *IPv4Address) SpanningPrefixBlockIterator() Iterator[*IPv4Address] {
 	return &sliceIterator[*IPv4Address]{addr.SpanWithPrefixBlocks()}
 }
@@ -2070,6 +2074,10 @@ func (addr *IPv4Address) SpanWithIPNetsTo(other *IPv4Address) []*net.IPNet {
 // RemoveBitCountPrefixLen removes the prefix length from addresses with a prefix length extending to the end of the address.
 func (addr *IPv4Address) RemoveBitCountPrefixLen() *IPv4Address {
 	return addr.removeBitCountPrefixLen().ToIPv4()
+}
+
+func (addr *IPv4Address) setBitCountPrefixLen() *IPv4Address {
+	return addr.ipAddressInternal.setBitCountPrefixLen().ToIPv4()
 }
 
 // IntoSequentialRangeList creates a new sequential range list collection containing all the individual addresses in this address or subnet.

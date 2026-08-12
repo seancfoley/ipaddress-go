@@ -964,6 +964,43 @@ func main() {
 
 	fmt.Println()
 	zeros()
+
+	example()
+
+	list := ipaddr.NewSequentialRangeList[*ipaddr.IPAddress](10)
+
+	addRangeToColl(list, "2001:4800:7800::", "2001:4860:4860::8844")
+	addRangeToColl(list, "2001:4800:7830::", "2001:4800:7800::")
+	addRangeToColl(list, "2620::", "2620:119::")
+	addAddrToColl(list, "ff80:9000::/24")
+	addAddrToColl(list, "ff80:8000::/32")
+	addAddrToColl(list, "ff80:c000::/34")
+	addAddrToColl(list, "ff80:e000:c800::")
+	addRangeToColl(list, "fff0:e000:c800::", "fff0:e000:c800::ffff")
+	printList(list)
+
+	var nilList *ipaddr.IPAddressSeqRangeList
+	printList(nilList)
+
+	emptyList := &ipaddr.IPAddressSeqRangeList{}
+	printList(emptyList)
+
+	list = ipaddr.NewSequentialRangeList[*ipaddr.IPAddress](10)
+	addAddrToColl(list, "1.2.3.4")
+	addAddrToColl(list, "1.2.3.5")
+	addAddrToColl(list, "1.2.3.7")
+	addAddrToColl(list, "1.2.3.9")
+	printList(list)
+}
+
+func printList(list *ipaddr.IPAddressSeqRangeList) {
+	fmt.Print(list)
+
+	fmt.Print(list.ListString(true, false, nil))
+
+	fmt.Print(list.ListString(false, true, nil))
+
+	fmt.Print(list.ListString(true, true, nil))
 }
 
 func splitIntoBlocks(one, two string) {
@@ -1353,4 +1390,144 @@ func zeros() {
 		indent := truncateIndent(name, baseIndent+"\t\t\t")
 		fmt.Printf("%s%s\"%v\"\n", name, indent, v)
 	}
+}
+
+func example() {
+	ipv6BlockStrs := []string{
+		"2001:4860:4860::8888",
+		"2001:4860:4860::/64",
+		"2001:4860:4860::/96",
+		"2001:4860:4860:0:1::/96",
+		"2001:4860:4860::8844",
+
+		"2001:4801:7825:103:be76:4eff::/96",
+		"2001:4801:7825:103:be76:4efe::/96",
+		"2001:4801:7825:103:be76::/80",
+		"2001:4801:7825:103:be75::/80",
+		"2001:4801:7825:103:be77::/80",
+		"2001:4801:7825:103:be76:4eff:fe10:2e49",
+
+		"2001:4800:780e:510:a8cf:392e:ff04:8982",
+		"2001:4800:7825:103:be76:4eff:fe10:2e49",
+		"2001:4800:7825:103:be76:4eff:fe10:2e48",
+		"2001:4800:7800::/40",
+		"2001:4800:7825::/40",
+		"2001:4800:7825:103::/64",
+		"2001:4800:780e:510::/64",
+		"2001:4800:780e:510:a8cf::/80",
+		"2001:4800:780e:510:a8ff::/80",
+		"2001:4800:7825:103:be76:4eff::/96",
+		"2001:4800:7825:103:be76:4efe::/96",
+		"2001:4800:7825:103:be76::/80",
+		"2001:4800:7825:103:ce76::/80",
+
+		"2620:fe::fe",
+		"2620:fe::9",
+		"2620:119:35::/64",
+		"2620:119:35::35",
+		"2620:119:35::37",
+		"2620:119:53::53",
+	}
+
+	ipv6Blocks := make([]*ipaddr.IPAddress, 0, len(ipv6BlockStrs))
+	for _, str := range ipv6BlockStrs {
+		ipv6Blocks = append(ipv6Blocks, ipaddr.NewIPAddressString(str).GetAddress())
+	}
+
+	// Given a series of lists of subnets and/or address ranges and/or individual addresses, we find the individual addresses present in all lists.
+
+	// In the second-previous example we determined which CIDR block subnets intersected with an arbitrary block. In the previous example, we determined which IP address sequential ranges intersected with an arbitrary IP address range. Now we take it a step further, finding the intersection itself, the intersection of a series of address collections. To start, we reuse that same set of IP address blocks from the second-previous example, ipv6Blocks, to form the first sequential range list.
+
+	list1 := ipaddr.NewSequentialRangeList[*ipaddr.IPAddress](len(ipv6Blocks))
+	for _, block := range ipv6Blocks {
+		list1.Add(block)
+	}
+	trie1 := &ipaddr.IPAddressContainmentTrie{}
+	for _, block := range ipv6Blocks {
+		trie1.Add(block)
+	}
+	//fmt.Println("list 1 is:", list1)
+
+	// Our second list will consist of the union of several address ranges:
+	list2 := ipaddr.NewSequentialRangeList[*ipaddr.IPAddress](3)
+	trie2 := &ipaddr.IPAddressContainmentTrie{}
+
+	addRangeToColl(list2, "2001:4800:7800::", "2001:4860:4860::8844")
+	addRangeToColl(list2, "2001:4800:7830::", "2001:4800:7800::")
+	addRangeToColl(list2, "2620::", "2620:119::")
+
+	addRangeToColl(trie2, "2001:4800:7800::", "2001:4860:4860::8844")
+	addRangeToColl(trie2, "2001:4800:7830::", "2001:4800:7800::")
+	addRangeToColl(trie2, "2620::", "2620:119::")
+
+	// Our third list will be the union of one address range and one CIDR block subnet:
+
+	list3 := ipaddr.NewSequentialRangeList[*ipaddr.IPAddress](2)
+	trie3 := &ipaddr.IPAddressContainmentTrie{}
+	addAddrToColl(list3, "2001::/16")
+	addRangeToColl(list3, "2001:4800::", "2001:4855::")
+
+	addAddrToColl(trie3, "2001::/16")
+	addRangeToColl(trie3, "2001:4800::", "2001:4855::")
+
+	// To find the common addresses, we use the intersection operation. The result is represented as a series of sequential ranges, but can also be expressed as a list of CIDR prefix blocks, or as a list of sequential blocks:
+
+	result := list1.IntersectIntoNew(list2).IntersectIntoNew(list3)
+	fmt.Println("\nThe resulting intersection is:", result)
+	fmt.Println("\nExpressed as prefix blocks:",
+		result.SpanWithPrefixBlocks())
+	fmt.Println("\nExpressed as sequential blocks:",
+		result.SpanWithSequentialBlocks())
+
+	intersectAll((*ipaddr.IPAddressSeqRangeList).IntersectIntoNew, list1, list2, list3)
+	intersectAll((*ipaddr.IPAddressContainmentTrie).IntersectIntoNew, trie1, trie2, trie3)
+
+	intersectAll((*ipaddr.IPAddressSeqRangeList).RemoveIntoNew, list1, list2, list3)
+	intersectAll((*ipaddr.IPAddressContainmentTrie).RemoveIntoNew, trie1, trie2, trie3)
+}
+
+func addRangeToColl[S ipaddr.IPAddressCollAddrConstraint[*ipaddr.IPAddress]](coll S, lower, upper string) {
+	coll.AddSeqRange(ipaddr.NewIPAddressString(lower).GetAddress().SpanWithRange(
+		ipaddr.NewIPAddressString(upper).GetAddress()))
+}
+
+func addAddrToColl[S ipaddr.IPAddressCollAddrConstraint[*ipaddr.IPAddress]](coll S, addr string) {
+	coll.Add(ipaddr.NewIPAddressString(addr).GetAddress())
+}
+
+func intersectAll[S ipaddr.IPAddressCollConstraint[S, E], E ipaddr.IPAddressTypeConstraint[E]](operator func(S, S) S, collections ...S) (result S) {
+
+	if len(collections) > 0 {
+		result = collections[0]
+		for _, collection := range collections[1:] {
+			//result = result.IntersectIntoNew(collection)
+			result = operator(result, collection)
+		}
+	}
+
+	fmt.Println("\nThe result printed:")
+	fmt.Println(result)
+
+	fmt.Println("\nThe result expressed as sequential ranges:")
+	printAll(result.SpanningSeqRangeIterator())
+
+	fmt.Println("\nExpressed as prefix blocks:")
+	printAll(result.SpanningPrefixBlockIterator())
+
+	fmt.Println("\nExpressed as sequential blocks:")
+	printAll(result.SpanningSeqBlockIterator())
+
+	return result
+}
+
+func printAll[T any](iterator ipaddr.Iterator[T]) {
+	var separator string
+	commaString := ",\n"
+	//for addr := range ipaddr.StdPushIterator(iterator) {
+	for iterator.HasNext() {
+		addr := iterator.Next()
+		fmt.Print(separator, addr)
+		separator = commaString
+	}
+	fmt.Println()
 }

@@ -1139,6 +1139,10 @@ func (rng *SequentialRange[T]) SpanWithPrefixBlocks() []T {
 }
 
 // SpanningPrefixBlockIterator returns the result of SpanWithPrefixBlocks as an iterator.
+//
+// Individual addresses will be shown with a prefix length extending to the end of the address.
+// They are represented as 2001:4860:4860::8844/128 or 192.168.10.1/32, instead of 2001:4860:4860::8844 or 192.168.10.1.
+// You can esily remove such prefix lengths with calls to RemoveBitcountPrefixLen.
 func (rng *SequentialRange[T]) SpanningPrefixBlockIterator() Iterator[T] {
 	return &sliceIterator[T]{rng.SpanWithPrefixBlocks()}
 }
@@ -1152,7 +1156,7 @@ func (rng *SequentialRange[T]) SpanWithSequentialBlocks() []T {
 
 // SpanningSeqBlockIterator returns the result of SpanWithSequentialBlocks as an iterator.
 func (rng *SequentialRange[T]) SpanningSeqBlockIterator() Iterator[T] {
-	return &sliceIterator[T]{rng.SpanWithPrefixBlocks()}
+	return &sliceIterator[T]{rng.SpanWithSequentialBlocks()}
 }
 
 // Join joins the receiver with the given ranges into the fewest number of ranges.

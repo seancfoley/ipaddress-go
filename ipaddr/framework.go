@@ -1344,7 +1344,7 @@ type ipAddressTypeConstraint[T any] interface {
 	// because the conversion results in a subnet segment that is not a sequential range of values.
 	ToZeroHostLen(prefixLength BitCount) (T, addrerr.IncompatibleAddressError)
 
-	upperIsAdjacentTo(T) bool
+	upperIsAdjacentTo(T) bool // uses T instead of AddressType like UpperIsAdjacentTo
 
 	iteratorWrapper(Iterator[*Address]) Iterator[T]
 
@@ -1354,6 +1354,9 @@ type ipAddressTypeConstraint[T any] interface {
 	getAddrType() addrType
 
 	trieKeyConstraintExtras[T]
+
+	// setBitCountPrefixLen sets the prefix length to the bit-length of the address
+	setBitCountPrefixLen() T
 }
 
 // IPAddressTypeConstraint constrains IPAddressType, restricting it to a single IP address type, rather than representing any one of multiple IP address types

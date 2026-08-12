@@ -77,6 +77,10 @@ type addrsCache struct {
 	lower, upper *Address
 }
 
+type prefLenCache struct {
+	withoutPrefixLen *Address
+}
+
 // identifierStr is a string representation of an address or host name.
 type identifierStr struct {
 	idStr HostIdentifierString // MACAddressString or IPAddressString or HostName
@@ -84,6 +88,8 @@ type identifierStr struct {
 
 type addressCache struct {
 	addrsCache *addrsCache
+
+	prefLenCache *prefLenCache
 
 	stringCache *stringCache // only used by IPv6 when there is a zone
 
@@ -842,7 +848,20 @@ func (addr *addressInternal) equalAggregation(otherAggregation AddressAggregatio
 
 // withoutPrefixLen returns the same address but with no associated prefix length.
 func (addr *addressInternal) withoutPrefixLen() *Address {
-	return addr.checkIdentity(addr.section.withoutPrefixLen())
+	if !addr.isPrefixed() {
+		return addr.toAddress()
+	}
+	cache := addr.cache
+	if cache == nil {
+		return createAddress(addr.section.withoutPrefixLen(), addr.zone)
+	}
+	cached := (*prefLenCache)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&cache.prefLenCache))))
+	if cached == nil {
+		cached = &prefLenCache{withoutPrefixLen: createAddress(addr.section.withoutPrefixLen(), addr.zone)}
+		dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache.prefLenCache))
+		atomicStorePointer(dataLoc, unsafe.Pointer(cached))
+	}
+	return cached.withoutPrefixLen
 }
 
 func (addr *addressInternal) adjustPrefixLen(prefixLen BitCount) *Address {

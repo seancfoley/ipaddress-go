@@ -64,10 +64,25 @@ func NewSequentialRangeList[T ipAddressTypeConstraint[T]](initialCapacity int) *
 	}
 }
 
+// NewSeqRangeList creates a new sequential range list
+//
+// You can also simply declare an instance of type SequentialRangeList[T] to create one,
+// or an instance of type IPAddressSeqRangeList, IPv4AddressSeqRangeList, or IPv6AddressSeqRangeList.
+func NewSeqRangeList[T ipAddressTypeConstraint[T]]() *SequentialRangeList[T] {
+	return &SequentialRangeList[T]{}
+}
+
 // Contains returns true if and only if this list contains all the individual addresses in the given address or subnet
 func (list *SequentialRangeList[T]) Contains(address AddressType) bool {
 	addr, isNil, ok := ConvertAddressTypeCheckNil[T](address)
 	return ok && !isNil && list != nil && list.IndexOfSeqRangeContainingAddress(addr) >= 0
+}
+
+// ExpandCapacity expands the capacity of list by allocating enough space to hold an additional "requiredAdditional" ranges,
+// if that goes beyond the current capacity.
+func (list *SequentialRangeList[T]) ExpandCapacity(requiredAdditional int) {
+	list.ranges = expandCapacity(list.ranges, requiredAdditional)
+	list.rangeSizes = expandCapacity(list.rangeSizes, requiredAdditional)
 }
 
 // ContainsAddress returns true if and only if this list contains all the individual addresses in the given address or subnet
@@ -1724,6 +1739,13 @@ func (list *SequentialRangeList[T]) GetSeqRange(rangeIndex int) *SequentialRange
 	return &rng
 }
 
+// SpanningSeqRangeIterator returns the same iterator as SeqRangeIterator.
+//
+// SpanningSeqRangeIterator satisifes the IPAddressCollAddrConstraint interface.
+func (list *SequentialRangeList[T]) SpanningSeqRangeIterator() Iterator[*SequentialRange[T]] {
+	return list.SeqRangeIterator()
+}
+
 // SeqRangeIterator returns an iterator to iterate through the discontinuous sequential ranges of addresses in this list.
 func (list *SequentialRangeList[T]) SeqRangeIterator() IteratorWithRemove[*SequentialRange[T]] {
 	if list == nil {
@@ -2528,8 +2550,78 @@ func (list SequentialRangeList[T]) format(state fmt.State, verb rune) {
 
 // String returns the canonical string representing this sequential range list.
 func (list *SequentialRangeList[T]) String() string {
-	return list.ToCanonicalString()
+	return list.ListString(true, true, nil)
 }
+
+// ListString a visual representation of the list with one sequential range per line.
+// You can customize how ranges are printed by providing your own function for rangeStringer,
+// however you can also provide nil to use the default.
+func (list *SequentialRangeList[T]) ListString(withSizes, withTotal bool, rangeStringer func(*SequentialRange[T]) string) string {
+	builder := strings.Builder{}
+	builder.WriteByte('\n')
+
+	if list.IsEmpty() {
+		builder.WriteString(nonAddedNodeCircle)
+		builder.WriteByte(' ')
+		builder.WriteString(nilString())
+		if withTotal {
+			builder.WriteString(" (0)")
+		}
+		builder.WriteByte('\n')
+	} else {
+		if withTotal {
+			builder.WriteString(nonAddedNodeCircle)
+			builder.WriteString(" (")
+			builder.WriteString(list.GetCount().String())
+			builder.WriteString(")\n")
+		}
+		ranges := list.ranges
+		lastIndex := len(ranges) - 1
+		for i, rng := range ranges {
+			if i == lastIndex {
+				builder.WriteString(lowerElbow)
+			} else if i == 0 {
+				if withTotal {
+					builder.WriteString(middleElbow)
+				} else {
+					builder.WriteString(upperElbow)
+				}
+			} else {
+				builder.WriteString(middleElbow)
+			}
+			builder.WriteString(addedNodeCircle)
+			builder.WriteByte(' ')
+			if rangeStringer == nil {
+				builder.WriteString(rng.lower.String())
+				if rng.IsMultiple() {
+					builder.WriteString(DefaultSeqRangeSeparator)
+					builder.WriteString(rng.upper.String())
+				}
+			} else {
+				builder.WriteString(rangeStringer(&rng))
+			}
+			if withSizes {
+				builder.WriteString(" (")
+				builder.WriteString(rng.GetCount().String())
+				builder.WriteByte(')')
+			}
+			builder.WriteByte('\n')
+		}
+	}
+	return builder.String()
+}
+
+// https://jrgraphix.net/r/Unicode/2500-257F
+// https://jrgraphix.net/r/Unicode/25A0-25FF
+const (
+	nonAddedNodeCircle = "\u25cb"
+	addedNodeCircle    = "\u25cf"
+
+	middleElbow = "\u251C\u2500" // |-
+	lowerElbow  = "\u2514\u2500" // --
+	upperElbow  = "\u250c\u2500"
+	indent      = "  "
+)
 
 // ToCanonicalString returns the canonical string representing this sequential range list, showing the underlying list of sequential ranges.
 func (list *SequentialRangeList[T]) ToCanonicalString() string {
@@ -2644,12 +2736,19 @@ func (list *SequentialRangeList[T]) SpanWithSequentialBlocks() []T {
 
 // SpanningSeqBlockIterator returns an iterator to iterate, in order, the minimal set of disjoint sequential blocks containing the addresses in this collection.
 func (list *SequentialRangeList[T]) SpanningSeqBlockIterator() Iterator[T] {
-	return list.SpanningSeqIteratorWithRemove()
+	return list.SpanningSeqBlockIteratorWithRemove()
+}
+
+// SpanningSeqIteratorWithRemove spans the sequential blocks of this collection.
+//
+// Deprecated: Use SpanningSeqBlockIteratorWithRemove instead
+func (list *SequentialRangeList[T]) SpanningSeqIteratorWithRemove() IteratorWithRemove[T] {
+	return list.SpanningSeqBlockIteratorWithRemove()
 }
 
 // SpanningSeqIteratorWithRemove returns an iterator to iterate, in order, the minimal set of disjoint sequential blocks containing the addresses in this collection,
 // while allowing for element removal after each iteration.
-func (list *SequentialRangeList[T]) SpanningSeqIteratorWithRemove() IteratorWithRemove[T] {
+func (list *SequentialRangeList[T]) SpanningSeqBlockIteratorWithRemove() IteratorWithRemove[T] {
 	if list == nil {
 		return nilIteratorWithRemove[T]()
 	}
@@ -2721,7 +2820,7 @@ type rangeListAddrIterator[T ipAddressTypeConstraint[T]] struct {
 
 	last T
 
-	firstOfRange /* removedLast, */, hasLast bool
+	firstOfRange, hasLast bool
 }
 
 // Note: If we used an iterator on the range list,

@@ -1825,6 +1825,10 @@ func (addr *IPv6Address) SpanWithPrefixBlocks() []*IPv6Address {
 }
 
 // SpanningPrefixBlockIterator returns the result of SpanWithPrefixBlocks as an iterator.
+//
+// Individual addresses will be shown with a prefix extending to the end of the address.
+// They are represented as 2001:4860:4860::8844/128, instead of 2001:4860:4860::8844.
+// You can esily remove such prefix lengths with calls to RemoveBitcountPrefixLen.
 func (addr *IPv6Address) SpanningPrefixBlockIterator() Iterator[*IPv6Address] {
 	return &sliceIterator[*IPv6Address]{addr.SpanWithPrefixBlocks()}
 }
@@ -2400,6 +2404,10 @@ func (addr *IPv6Address) SpanWithIPNetsTo(other *IPv6Address) []*net.IPNet {
 // RemoveBitCountPrefixLen removes the prefix length from asddresses with a prefix length extending to the end of the address.
 func (addr *IPv6Address) RemoveBitCountPrefixLen() *IPv6Address {
 	return addr.removeBitCountPrefixLen().ToIPv6()
+}
+
+func (addr *IPv6Address) setBitCountPrefixLen() *IPv6Address {
+	return addr.ipAddressInternal.setBitCountPrefixLen().ToIPv6()
 }
 
 // IntoSequentialRangeList creates a new sequential range list collection containing all the individual addresses in this address or subnet.

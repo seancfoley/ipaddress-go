@@ -705,6 +705,10 @@ func (addr *ipAddressInternal) removeBitCountPrefixLen() *IPAddress {
 	return addr.toIPAddress()
 }
 
+func (addr *ipAddressInternal) setBitCountPrefixLen() *IPAddress {
+	return addr.setPrefixLen(addr.GetBitCount()).ToIP()
+}
+
 //// end needed for godoc / pkgsite
 
 var zeroIPAddr = createIPAddress(zeroSection, NoZone)
@@ -2048,6 +2052,10 @@ func (addr *IPAddress) SpanWithPrefixBlocks() []*IPAddress {
 }
 
 // SpanningPrefixBlockIterator returns the result of SpanWithPrefixBlocks as an iterator.
+//
+// Individual addresses will be shown with a prefix extending to the end of the address.
+// They are represented as 2001:4860:4860::8844/128 or 192.168.10.1/32, instead of 2001:4860:4860::8844 or 192.168.10.1.
+// You can esily remove such prefix lengths with calls to RemoveBitcountPrefixLen.
 func (addr *IPAddress) SpanningPrefixBlockIterator() Iterator[*IPAddress] {
 	return &sliceIterator[*IPAddress]{addr.SpanWithPrefixBlocks()}
 }

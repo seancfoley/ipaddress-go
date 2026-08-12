@@ -16,6 +16,8 @@
 
 package ipaddr
 
+import "unsafe"
+
 // Iterator iterates collections, such as subnets and sequential address ranges.
 // Use StdPushIterator or StdPullIterator to convert an Iterator to a standard library iterator.
 type Iterator[T any] interface {
@@ -236,6 +238,82 @@ func (iter ipSectionSeriesIterator) Next() ExtendedIPSegmentSeries {
 		return nil
 	}
 	return wrapIPSection(iter.Iterator.Next())
+}
+
+// prefixBlockToSeqRangeIterator converts any ordered iterator of addresses or subnets into an ordered iterator of disjoint sequential ranges
+func prefixBlockToSeqRangeIterator[T ipAddressTypeConstraint[T]](inputIterator Iterator[T]) Iterator[*SequentialRange[T]] {
+	return &toSeqRangeIterator[T]{iter: inputIterator}
+}
+
+type toSeqRangeIterator[T ipAddressTypeConstraint[T]] struct {
+	iter            Iterator[T]
+	currentLower    T
+	currentNotEmpty bool
+}
+
+func (iter *toSeqRangeIterator[T]) HasNext() bool {
+	return iter.currentNotEmpty || iter.iter.HasNext()
+}
+
+func (iter *toSeqRangeIterator[T]) Next() *SequentialRange[T] {
+	var current T
+	nestedIter := iter.iter
+	if iter.currentNotEmpty {
+		current = iter.currentLower
+	} else if nestedIter.HasNext() {
+		current = nestedIter.Next()
+	} else {
+		return nil
+	}
+
+	latest := current
+	merged := false
+	for {
+		if !nestedIter.HasNext() {
+			iter.currentNotEmpty = false
+			break
+		}
+		next := nestedIter.Next()
+		if latest.upperIsAdjacentTo(next) {
+			merged = true
+			latest = next
+		} else {
+			iter.currentLower = next
+			iter.currentNotEmpty = true
+			break
+		}
+	}
+	// next spans from lower of current to upper of latest
+	if merged {
+		return newSequRangeUnchecked(current.GetLower(), latest.GetUpper(), true)
+	}
+	lower, upper := current.GetLowerAndUpper()
+	return newSequRangeUnchecked(lower, upper, current.IsMultiple())
+}
+
+type spanningIterWrapper[T ipAddressTypeConstraint[T]] struct {
+	Iterator[T]
+}
+
+func (iter spanningIterWrapper[T]) Next() T {
+	hasNext := iter.HasNext()
+	next := iter.Iterator.Next()
+	if hasNext && !next.IsMultiple() {
+		wasNext := next
+		next = wasNext.setBitCountPrefixLen()
+		nextAddr := next.ToAddressBase()
+		cache := nextAddr.cache
+		if cache != nil {
+			cached := (*prefLenCache)(atomicLoadPointer((*unsafe.Pointer)(unsafe.Pointer(&cache.prefLenCache))))
+			if cached == nil {
+				cached = &prefLenCache{withoutPrefixLen: wasNext.ToAddressBase()}
+				dataLoc := (*unsafe.Pointer)(unsafe.Pointer(&cache.prefLenCache))
+				atomicStorePointer(dataLoc, unsafe.Pointer(cached))
+			}
+		}
+
+	}
+	return next
 }
 
 // StdPushIterator converts a "pull" iterator in this libary to a "push" iterator assignable to the type iter.Seq in the standard library.

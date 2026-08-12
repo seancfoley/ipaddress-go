@@ -49,6 +49,16 @@ func cloneSeries[T any](addr T, orig []T) []T {
 	return append(append(make([]T, 0, len(orig)+1), addr), orig...)
 }
 
+func expandCapacity[T any](orig []T, additionalCapacity int) []T {
+	currentAdditional := cap(orig) - len(orig)
+	if currentAdditional < additionalCapacity {
+		needed := additionalCapacity - currentAdditional
+		// the make here does not allocate
+		return append(orig[:cap(orig)], make([]T, needed)...)[:len(orig)]
+	}
+	return orig
+}
+
 func fillDivs(orig []*AddressDivision, val *AddressDivision) {
 	for i := range orig {
 		orig[i] = val

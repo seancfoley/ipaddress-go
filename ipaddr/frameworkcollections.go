@@ -133,6 +133,9 @@ type IPAddressAggregationConstraint[T IPAddressTypeConstraint[T]] interface {
 	// SpanningPrefixBlockIterator returns an iterator to iterate over the minimal set of prefix blocks that spans the aggregation of addresses, no less and no more, in order
 	SpanningPrefixBlockIterator() Iterator[T]
 
+	// SpanningPrefixBlockIterator returns an iterator to iterate over the minimal set of sequential blocks that spans the aggregation of addresses, no less and no more, in order
+	SpanningSeqBlockIterator() Iterator[T]
+
 	// GetLower returns the individual address with the lowest numeric value in the collection
 	GetLower() T
 
@@ -269,6 +272,9 @@ type IPAddressCollAddrConstraint[T IPAddressTypeConstraint[T]] interface {
 
 	// Ceiling returns the lowest address in the collection greater than or equal to the highest address in the given address or subnet.
 	Ceiling(T) T
+
+	// SpanningSeqRangeIterator returns an iterator for iterating through the minimal set of disjoint sequential ranges containing the addresses in this collection of addresses.
+	SpanningSeqRangeIterator() Iterator[*SequentialRange[T]]
 }
 
 var (
