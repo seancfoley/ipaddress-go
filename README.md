@@ -4,7 +4,7 @@
 
 IP address and network manipulations, CIDR, address and subnet operations, address ranges, iterators, containment checks, longest prefix match, subnetting, address tries, address collections, and more, with polymorphic code
 
-[Docs Site](https://seancfoley.github.io/IPAddress/)
+[Docs](https://seancfoley.github.io/IPAddress/)
 
 [Code Examples](https://github.com/seancfoley/ipaddress-go/wiki/Code-Examples)
 
