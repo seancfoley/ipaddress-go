@@ -462,7 +462,7 @@ func (trie *trieBase[T, V]) toTrie() *tree.BinTrie[trieKey[T], V] {
 //
 // Tries are concurrency-safe when not being modified (elements added or removed), but are not concurrency-safe when any goroutine is modifying the trie.
 //
-// The trie is also used as the backing structure for ContainmentTrieBase.
+// The trie is also used as the backing structure for ContainmentTrie.
 // With the containment trie, blocks are not considered to be the elements of the trie, instead the contained individual addresses are the elements.
 // An individual address can appear in only one added block in a containment trie.
 // Direct access to the trie inside a containment trie is not allowed to ensure these structural invariants are not invalidated.

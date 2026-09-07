@@ -713,44 +713,6 @@ var _, _, _, _, _ AddressSectionType = &AddressSection{},
 // they require that you use a single type for such modifications and manipulations,
 // there is no need to extend those operations to allow mixed types.
 
-type addressAggr interface {
-	AddressIterator() Iterator[AddressType]
-
-	// Contains returns whether this aggregation contains all individual addresses in the given address or subnet.
-	Contains(AddressType) bool
-
-	// Enumerate indicates where an address sits relative to the address ordering.
-	//
-	// It determines how many individual address elements precede the given address element, if the address is in the aggregation.
-	// If above all addresses in the aggregation, it is the distance to the upper boundary added to the aggregation count less one, and if below the aggregation, the distance to the lower boundary.
-	//
-	// In other words, if the given address is not in the aggregation but above it, returns the number of addresses preceding the address from the upper aggregation boundary,
-	// added to one less than the total number of aggregation addresses.  If the given address is not in the aggregation but below it, returns the number of addresses following the address to the lower aggregation boundary.
-	//
-	// If the argument is not in the aggregation, but neither above nor below it, then nil is returned.
-	//
-	// Enumerate returns nil when the argument is multi-valued. The argument must be an individual address.
-	//
-	// When this aggregation happens to be an individual address, the returned value is the distance (difference) between the two addresses.
-	//
-	// If the given address does not have the same version or type as the addresses in this aggregation, then nil is returned.
-	Enumerate(AddressType) *big.Int
-
-	// OverlapsAddr returns whether this aggregation contains any individual addresses in the given address or subnet.
-	OverlapsAddr(AddressType) bool
-
-	// EqualAggregation returns true if and only if this aggregation of addresses are the same as the=ose in the given aggregation.
-	EqualAggregation(AddressAggregation) bool
-}
-
-type rangeAggr interface {
-	// ContainsRange returns whether all the addresses in the given sequential range are also contained in this aggregation of addresses.
-	ContainsRange(IPAddressSeqRangeType) bool
-
-	// OverlapsRange returns whether this aggregation includes any of the addresses in the given sequential range, if there is at least one individual address common to both.
-	OverlapsRange(IPAddressSeqRangeType) bool
-}
-
 // AddressType represents any address, all of which can be represented by the base type [Address].
 // This includes [IPAddress], [IPv4Address], [IPv6Address], and [MACAddress].
 // You must use the pointer types *Address, *IPAddress, *IPv4Address, *IPv6Address, and *MACAddress when implementing AddressType.
@@ -758,7 +720,7 @@ type rangeAggr interface {
 type AddressType interface {
 	AddressSegmentSeries
 
-	addressAggr
+	AddressAggregation
 
 	// Equal returns whether the given address or subnet is equal to this address or subnet.
 	// Two address instances are equal if they represent the same set of addresses.
@@ -1071,6 +1033,8 @@ var (
 type IPAddressRange interface {
 	AddressItem
 
+	IPAddressAggregation
+
 	// GetIPVersion returns the IP version of this IP address range
 	GetIPVersion() IPVersion
 
@@ -1119,14 +1083,12 @@ var _, _, _, _, _, _ IPAddressRange = &IPAddress{},
 // IPAddressType represents any IP address, all of which can be represented by the base type [IPAddress].
 // This includes [IPv4Address] and [IPv6Address].
 // You must use the pointer types *IPAddress, *IPv4Address, and *IPv6Address when implementing IPAddressType.
-type ipAddressType interface {
+type IPAddressType interface {
 	AddressType
 
 	IPAddressSegmentSeries
 
 	IPAddressRange
-
-	rangeAggr
 
 	// Wrap wraps this IP address, returning a WrappedIPAddress, an implementation of ExtendedIPSegmentSeries,
 	// which can be used to write code that works with both IP addresses and IP address sections.
@@ -1150,28 +1112,12 @@ type ipAddressType interface {
 	GetNetwork() IPAddressNetwork
 }
 
-// IPAddressType represents any IP address, all of which can be represented by the base type [IPAddress].
-// This includes [IPv4Address] and [IPv6Address].
-// You must use the pointer types *IPAddress, *IPv4Address, and *IPv6Address when implementing IPAddressType.
-type IPAddressType interface {
-	ipAddressType
-
-	// ToAddressString retrieves or generates an IPAddressString instance for this IP address.
-	// This may be the IPAddressString this instance was generated from, if it was generated from an IPAddressString.
-	//
-	// In general, users are intended to create IP address instances from IPAddressString instances,
-	// while the reverse direction, calling this method, is generally not encouraged and not useful, except under specific circumstances.
-	//
-	// Those specific circumstances may include when maintaining a collection of HostIdentifierString or IPAddressString instances.
-	ToAddressString() *IPAddressString
-}
-
 var _, _, _ IPAddressType = &IPAddress{},
 	&IPv4Address{},
 	&IPv6Address{}
 
 type ipAddressTypeConstraint[T any] interface {
-	ipAddressType
+	IPAddressType
 
 	addressTypeConstraint[T]
 
@@ -1344,6 +1290,18 @@ type ipAddressTypeConstraint[T any] interface {
 	// because the conversion results in a subnet segment that is not a sequential range of values.
 	ToZeroHostLen(prefixLength BitCount) (T, addrerr.IncompatibleAddressError)
 
+	// Get returns the individual address at the given index into the subnet.
+	// The index of zero returns the first individual address.
+	//
+	// If the index is negative, or the index exceeds GetCount() - 1, Get will panic.  It is much like indexing a slice or array.
+	Get(int64) T
+
+	// GetBig returns the individual address at the given index into the subnet.
+	// The index of zero returns the first individual address.
+	//
+	// If the index is negative, or the index exceeds GetCount() - 1, Get will panic.  It is much like indexing a slice or array.
+	GetBig(*big.Int) T
+
 	upperIsAdjacentTo(T) bool // uses T instead of AddressType like UpperIsAdjacentTo
 
 	iteratorWrapper(Iterator[*Address]) Iterator[T]
@@ -1371,7 +1329,7 @@ type IPAddressTypeConstraint[T ipAddressTypeConstraint[T]] interface {
 	IntoSequentialRangeList() *SequentialRangeList[T]
 
 	// IntoContainmentTrie creates a containment trie collection containing all the individual addresses in this address or subnet.
-	IntoContainmentTrie() *ContainmentTrieBase[T]
+	IntoContainmentTrie() *ContainmentTrie[T]
 
 	// CoverWithSequentialRange returns the unique sequential range of minimal size that includes all the individual addresses in this subnet od address.
 	// The result will represent the same set of addresses if and only if this address is sequential, in which case IsSequential returns true.
@@ -1392,11 +1350,7 @@ var (
 // IPAddressSeqRangeType represents any IP address sequential range, all of which can be represented by the base type IPAddressSeqRange.
 // This includes IPv4AddressSeqRange and IPv6AddressSeqRange.
 type IPAddressSeqRangeType interface {
-	addressAggr
-
 	IPAddressRange
-
-	rangeAggr
 
 	// OverlapsAddress indicates whether this range is the same type and version as the given IP address and whether it overlaps with the given address, containing at least one individual address common to both.
 	OverlapsAddress(IPAddressType) bool
@@ -1524,7 +1478,7 @@ func ConvertAddressTypeCheckNil[T AddressType](in AddressType) (out T, isNil, ok
 // ConvertAddressType converts in to out, if possible, using conversion methods ToAddressBase, ToIP, ToIPv4, or ToIPv6 if the types do not match.
 // If in is nil, or is not a nil interface but the interface value is nil, then out is nil.
 // See ConvertAddressTypeCheckNil for more details.
-func ConvertAddressType[T any](in AddressType) (out T, ok bool) {
+func ConvertAddressType[T AddressType](in AddressType) (out T, ok bool) {
 	if out, ok = any(in).(T); !ok {
 		if ok = in == nil; !ok {
 			inAddr := in.ToAddressBase()

@@ -30,7 +30,7 @@ import (
 // so that it is always the minimal list of sequential ranges that includes all the specified addresses.
 //
 // It is one of the efficient options provided by this library to maintain sets of individual IP addresses,
-// the other option being [ContainmentTrieBase], representing collections backed by IP address tries.
+// the other option being [ContainmentTrie], representing collections backed by IP address tries.
 //
 // Lookups of addresses, subnets, or sequential ranges the list are performed by binary search on the list of sequential address ranges.
 //
@@ -42,7 +42,7 @@ import (
 // With some data-sets, this collection type will have better search performance than a trie or containment trie due to improved cache coherency with many CPU processors.
 //
 // IP address collection equality with another IP address collection is determined by the contents of the collections.
-// A SequentialRangeList is equal to a ContainmentTrieBase if the collections contain the same set of individual addresses.
+// A SequentialRangeList is equal to a ContainmentTrie if the collections contain the same set of individual addresses.
 // The same is true for IP address aggregation equality.
 //
 // A SequentialRangeList may contain either IPv6 addresses, or IPv4 addresses, but not both at the same time.
@@ -122,7 +122,7 @@ func (list *SequentialRangeList[T]) IndexOfSeqRangeContainingAddress(address T) 
 }
 
 // Contains returns whether this list contains all addresses in the given containment trie.
-func (list *SequentialRangeList[T]) ContainsContainmentTrie(collection *ContainmentTrieBase[T]) bool {
+func (list *SequentialRangeList[T]) ContainsContainmentTrie(collection *ContainmentTrie[T]) bool {
 	return list != nil && collection != nil && list.IndexOfSeqRangeContainingContainmentTrie(collection) >= 0
 }
 
@@ -136,7 +136,7 @@ func (list *SequentialRangeList[T]) ContainsContainmentTrie(collection *Containm
 // It returns 0 if both this list and the given containment trie are empty.
 //
 // This means that the returned value will be >= 0 if and only if the ranges in the list contain the addresses in the given containment trie.
-func (list *SequentialRangeList[T]) IndexOfSeqRangeContainingContainmentTrie(collection *ContainmentTrieBase[T]) int {
+func (list *SequentialRangeList[T]) IndexOfSeqRangeContainingContainmentTrie(collection *ContainmentTrie[T]) int {
 	return list.IndexOfSeqRangeContainingTrie(&collection.trie.Trie)
 }
 
@@ -2455,7 +2455,7 @@ func (list *SequentialRangeList[T]) equalRange(other IPAddressSeqRangeType) bool
 	return len(ranges) == 1 && ranges[0].Equal(other)
 }
 
-func equalListAndContainmentTrie[T ipAddressTypeConstraint[T], C ipAddressTypeConstraint[C]](list *SequentialRangeList[T], other *ContainmentTrieBase[C]) bool {
+func equalListAndContainmentTrie[T ipAddressTypeConstraint[T], C ipAddressTypeConstraint[C]](list *SequentialRangeList[T], other *ContainmentTrie[C]) bool {
 	//   nil aggregation contains
 	if list == nil {
 		return IsEmpty(other)

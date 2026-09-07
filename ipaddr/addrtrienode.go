@@ -40,7 +40,7 @@ type TrieKeyConstraint[T any] interface {
 
 	ToAddressBase() *Address // used by MatchBits, and made public for users who use TrieKeyConstraint in generic code.
 
-	IncrementBig(*big.Int) T // used by GetKeyElement which is used by Get in ContainmentTrieBase
+	IncrementBig(*big.Int) T // used by GetKeyElement which is used by Get in ContainmentTrie
 
 	trieKeyConstraintExtras[T]
 }

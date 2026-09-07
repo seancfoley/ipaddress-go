@@ -60,13 +60,13 @@ func (trie *collectionTrie[T]) containingCeilingAddedNode(addr T) *TrieNode[T] {
 
 // NewContainmentTrie creates a new containment trie.
 //
-// You can also simply declare an instance of type ContainmentTrieBase[T] to create one,
+// You can also simply declare an instance of type ContainmentTrie[T] to create one,
 // or a instance of type IPAddressContainmentTrie, IPv4AddressContainmentTrie, or IPv6AddressContainmentTrie.
-func NewContainmentTrie[T ipAddressTypeConstraint[T]]() *ContainmentTrieBase[T] {
-	return &ContainmentTrieBase[T]{}
+func NewContainmentTrie[T ipAddressTypeConstraint[T]]() *ContainmentTrie[T] {
+	return &ContainmentTrie[T]{}
 }
 
-// ContainmentTrieBase is an IP address collection backed by an IP address trie.
+// ContainmentTrie is an IP address collection backed by an IP address trie.
 //
 // Sequential ranges and subnets are converted to prefix blocks in order to be inserted into the trie.
 //
@@ -83,17 +83,21 @@ func NewContainmentTrie[T ipAddressTypeConstraint[T]]() *ContainmentTrieBase[T] 
 // This trie will change shape as addresses are added and removed to contain the minimal number of nodes to represent the addresses in the collection.
 //
 // IP address collection equality with another IP address collection is determined by the contents of the collections.
-// A SequentialRangeList is equal to a ContainmentTrieBase if the collections contain the same set of individual addresses.
+// A SequentialRangeList is equal to a ContainmentTrie if the collections contain the same set of individual addresses.
 // The same is true for IP address aggregation equality.
 //
-// A ContainmentTrieBase may contain either IPv6 addresses, or IPv4 addresses, but not both at the same time.
+// A ContainmentTrie may contain either IPv6 addresses, or IPv4 addresses, but not both at the same time.
 // An attempt to add an address when the collection already contains an address of a different version will panic.
 // However, once such a collection becomes empty again, it can accept either an IPv6 address or IPv4 address once more.
-type ContainmentTrieBase[T ipAddressTypeConstraint[T]] struct {
+type ContainmentTrie[T ipAddressTypeConstraint[T]] struct {
 	trie collectionTrie[T]
 }
 
-func (coll *ContainmentTrieBase[T]) addBlock(block T) bool {
+// ContainmentTrieBase is an IP address collection backed by an IP address trie.
+// Deprecated: Use ContainmentTrie instead.
+type ContainmentTrieBase[T ipAddressTypeConstraint[T]] = ContainmentTrie[T]
+
+func (coll *ContainmentTrie[T]) addBlock(block T) bool {
 	// The node is added to the trie if no existing elements in trie contain the new key.
 	// The added node is returned.
 	// Go up the chain of parents of the returned node.  If any such parent (which are all non-added) is full according to the contained count, we record it and keep going up.
@@ -119,7 +123,7 @@ func (coll *ContainmentTrieBase[T]) addBlock(block T) bool {
 	return false
 }
 
-func (coll *ContainmentTrieBase[T]) removeBlock(block T) bool {
+func (coll *ContainmentTrie[T]) removeBlock(block T) bool {
 	deletedNode := coll.trie.elementsIntersected(block)
 	if deletedNode != nil {
 		parentNode := deletedNode.GetParent()
@@ -142,7 +146,7 @@ func (coll *ContainmentTrieBase[T]) removeBlock(block T) bool {
 	return false
 }
 
-func (coll *ContainmentTrieBase[T]) addressPredicateOp(addr T, op func(T) bool, all, breakEarly, stripSingleAddressPrefLen bool) bool {
+func (coll *ContainmentTrie[T]) addressPredicateOp(addr T, op func(T) bool, all, breakEarly, stripSingleAddressPrefLen bool) bool {
 	if !addr.IsMultiple() {
 		if !addr.IsPrefixed() {
 			return op(addr)
@@ -154,7 +158,7 @@ func (coll *ContainmentTrieBase[T]) addressPredicateOp(addr T, op func(T) bool, 
 	return coll.blocksPredicateOp(addr.SpanWithPrefixBlocks(), op, all, breakEarly, stripSingleAddressPrefLen)
 }
 
-func (coll *ContainmentTrieBase[T]) blocksPredicateOp(blocks []T, op func(T) bool, all, breakEarly, stripSingleAddressPrefLen bool) bool {
+func (coll *ContainmentTrie[T]) blocksPredicateOp(blocks []T, op func(T) bool, all, breakEarly, stripSingleAddressPrefLen bool) bool {
 	result := all
 	for _, block := range blocks {
 		if stripSingleAddressPrefLen {
@@ -180,7 +184,7 @@ func (coll *ContainmentTrieBase[T]) blocksPredicateOp(blocks []T, op func(T) boo
 	return result
 }
 
-func (coll *ContainmentTrieBase[T]) rangePredicateOp(rng *SequentialRange[T], op func(T) bool, all, breakEarly, stripSingleAddressPrefLen bool) bool {
+func (coll *ContainmentTrie[T]) rangePredicateOp(rng *SequentialRange[T], op func(T) bool, all, breakEarly, stripSingleAddressPrefLen bool) bool {
 	if !rng.IsMultiple() {
 		addr := rng.GetLower()
 		if stripSingleAddressPrefLen {
@@ -192,7 +196,7 @@ func (coll *ContainmentTrieBase[T]) rangePredicateOp(rng *SequentialRange[T], op
 }
 
 // Clear empties the collection
-func (coll *ContainmentTrieBase[T]) Clear() {
+func (coll *ContainmentTrie[T]) Clear() {
 	coll.trie.clear()
 }
 
@@ -201,7 +205,7 @@ func (coll *ContainmentTrieBase[T]) Clear() {
 // If the address version does match existing addresses in the collection, the address is not added.
 //
 // Returns whether addresses were added, whether the collection was changed.
-func (coll *ContainmentTrieBase[T]) Add(addr T) bool {
+func (coll *ContainmentTrie[T]) Add(addr T) bool {
 	return coll.addressPredicateOp(addr, coll.addBlock, false, false, true)
 }
 
@@ -210,49 +214,49 @@ func (coll *ContainmentTrieBase[T]) Add(addr T) bool {
 // If the address version of the addresses in the collection does match the version of addresses in the given range, this method panics.
 //
 // Returns whether at least one address in the given sequential range was added, whether the collection was changed.
-func (coll *ContainmentTrieBase[T]) AddSeqRange(rng *SequentialRange[T]) bool {
+func (coll *ContainmentTrie[T]) AddSeqRange(rng *SequentialRange[T]) bool {
 	return coll.rangePredicateOp(rng, coll.addBlock, false, false, true)
 }
 
 // Remove removes the given address from the collection.  It returns true if the collection was changed.
 // It returns false if the address was not in the collection.
-func (coll *ContainmentTrieBase[T]) Remove(addr T) bool {
+func (coll *ContainmentTrie[T]) Remove(addr T) bool {
 	return coll.addressPredicateOp(addr, coll.removeBlock, false, false, false)
 }
 
 // RemoveSeqRange removes all the addresses in the sequential range from the collection.
 // Returns true if the collection was changed.
-func (coll *ContainmentTrieBase[T]) RemoveSeqRange(rng *SequentialRange[T]) bool {
+func (coll *ContainmentTrie[T]) RemoveSeqRange(rng *SequentialRange[T]) bool {
 	return coll.rangePredicateOp(rng, coll.removeBlock, false, false, false)
 }
 
 // Contains returns true if and only if this collection contains all the individual addresses in the given address or subnet
-func (coll *ContainmentTrieBase[T]) Contains(address AddressType) bool {
+func (coll *ContainmentTrie[T]) Contains(address AddressType) bool {
 	addr, isNil, ok := ConvertAddressTypeCheckNil[T](address)
 	return ok && !isNil && coll != nil && coll.addressPredicateOp(addr, coll.trie.elementContainsNoCheck, true, true, false)
 }
 
 // ContainsAddress returns true if and only if this collection contains all the individual addresses in the given address or subnet
-func (coll *ContainmentTrieBase[T]) ContainsAddress(addr T) bool {
+func (coll *ContainmentTrie[T]) ContainsAddress(addr T) bool {
 	return coll != nil && !isNilPtr(addr) && coll.addressPredicateOp(addr, coll.trie.elementContainsNoCheck, true, true, false)
 }
 
 // ContainsRange returns true if and only if all individual addresses in the given sequential range are also in this collection
 // Implements the IPAddressAggregation interface.
-func (coll *ContainmentTrieBase[T]) ContainsRange(rng IPAddressSeqRangeType) bool {
+func (coll *ContainmentTrie[T]) ContainsRange(rng IPAddressSeqRangeType) bool {
 	r, isNil, ok := ConvertRangeTypeCheckNil[T](rng)
 	return ok && !isNil && coll != nil && coll.rangePredicateOp(r, coll.trie.elementContainsNoCheck, true, true, false)
 }
 
 // ContainsSeqRange returns true if and only if all individual addresses in the given sequential range are also in this collection
 // Implements the IPAddressCollAddrConstraint interface.
-func (coll *ContainmentTrieBase[T]) ContainsSeqRange(rng *SequentialRange[T]) bool {
+func (coll *ContainmentTrie[T]) ContainsSeqRange(rng *SequentialRange[T]) bool {
 	return coll != nil && rng != nil && coll.rangePredicateOp(rng, coll.trie.elementContainsNoCheck, true, true, false)
 }
 
 // OverlapsAddr returns true if and only the given individual address or subnet contains at least one individual address that is also in this collection.
 // Implements the IPAddressAggregation interface.
-func (coll *ContainmentTrieBase[T]) OverlapsAddr(address AddressType) bool {
+func (coll *ContainmentTrie[T]) OverlapsAddr(address AddressType) bool {
 	addr, isNil, ok := ConvertAddressTypeCheckNil[T](address)
 	return ok && !isNil && coll != nil && coll.addressPredicateOp(addr, coll.trie.elementOverlapsNoCheck, false, true, false)
 }
@@ -260,23 +264,23 @@ func (coll *ContainmentTrieBase[T]) OverlapsAddr(address AddressType) bool {
 // OverlapsAddress returns true if and only the given individual address or subnet contains at least one individual address that is also in this collection.
 // In a trie of prefix blocks, for a block to overlap with another block means that one of the two blocks contains the other, or they are equal.
 // Implements the IPAddressCollAddrConstraint interface.
-func (coll *ContainmentTrieBase[T]) OverlapsAddress(addr T) bool {
+func (coll *ContainmentTrie[T]) OverlapsAddress(addr T) bool {
 	return coll != nil && !isNilPtr(addr) && coll.addressPredicateOp(addr, coll.trie.elementOverlapsNoCheck, false, true, false)
 }
 
-func (coll *ContainmentTrieBase[T]) OverlapsRange(rng IPAddressSeqRangeType) bool {
+func (coll *ContainmentTrie[T]) OverlapsRange(rng IPAddressSeqRangeType) bool {
 	r, isNil, ok := ConvertRangeTypeCheckNil[T](rng)
 	return ok && !isNil && coll != nil && coll.rangePredicateOp(r, coll.trie.elementOverlapsNoCheck, false, true, false)
 }
 
 // OverlapsRange returns true if and only if the given sequential range overlaps with blocks or addresses in the trie.
 // In a trie of prefix blocks, for a block to overlap with another block means that one of the two blocks contains the other, or they are equal.
-func (coll *ContainmentTrieBase[T]) OverlapsSeqRange(rng *SequentialRange[T]) bool {
+func (coll *ContainmentTrie[T]) OverlapsSeqRange(rng *SequentialRange[T]) bool {
 	return coll != nil && rng != nil && coll.rangePredicateOp(rng, coll.trie.elementOverlapsNoCheck, false, true, false)
 }
 
 // Lower returns the highest address in the collection strictly less than all addresses in the given address or subnet.
-func (coll *ContainmentTrieBase[T]) Lower(addr T) T {
+func (coll *ContainmentTrie[T]) Lower(addr T) T {
 	addr = addr.GetLower()
 	node := coll.trie.containingLowerAddedNode(addr)
 	if node == nil {
@@ -290,7 +294,7 @@ func (coll *ContainmentTrieBase[T]) Lower(addr T) T {
 }
 
 // Floor returns the highest address in the collection less than or equal to the lowest address in the given address or subnet.
-func (coll *ContainmentTrieBase[T]) Floor(addr T) T {
+func (coll *ContainmentTrie[T]) Floor(addr T) T {
 	addr = addr.GetLower()
 	node := coll.trie.containingFloorAddedNode(addr)
 	if node == nil {
@@ -304,7 +308,7 @@ func (coll *ContainmentTrieBase[T]) Floor(addr T) T {
 }
 
 // Ceiling returns the lowest address in the collection greater than or equal to the highest address in the given address or subnet.
-func (coll *ContainmentTrieBase[T]) Ceiling(addr T) T {
+func (coll *ContainmentTrie[T]) Ceiling(addr T) T {
 	addr = addr.GetUpper()
 	node := coll.trie.containingCeilingAddedNode(addr)
 	if node == nil {
@@ -318,7 +322,7 @@ func (coll *ContainmentTrieBase[T]) Ceiling(addr T) T {
 }
 
 // Higher returns the lowest address in the collection strictly greater than all addresses in the given address or subnet.
-func (coll *ContainmentTrieBase[T]) Higher(addr T) T {
+func (coll *ContainmentTrie[T]) Higher(addr T) T {
 	addr = addr.GetUpper()
 	node := coll.trie.containingHigherAddedNode(addr)
 	if node == nil {
@@ -333,7 +337,7 @@ func (coll *ContainmentTrieBase[T]) Higher(addr T) T {
 
 // CoverWithPrefixBlock returns the unique CIDR prefix block subnet or individual address of minimal size that includes all the addresses in this collection.
 // If there are no addresses in this collection, then nil is returned.
-func (coll *ContainmentTrieBase[T]) CoverWithPrefixBlock() T {
+func (coll *ContainmentTrie[T]) CoverWithPrefixBlock() T {
 	root := coll.trie.GetRoot()
 	var coveringNode *TrieNode[T]
 	if root.IsAdded() {
@@ -363,7 +367,7 @@ func trieKeyZero[T ipAddressTypeConstraint[T]]() (t T) {
 // It is much like indexing a slice or array.
 //
 // If the increment is negative, or the increment exceeds GetCount() - 1, this method panics.
-func (coll *ContainmentTrieBase[T]) Get(addressIndex int64) T {
+func (coll *ContainmentTrie[T]) Get(addressIndex int64) T {
 	node, index := coll.trie.GetElementAddress(addressIndex)
 	return node.getKey().WithoutPrefixLen().Increment(index)
 }
@@ -372,7 +376,7 @@ func (coll *ContainmentTrieBase[T]) Get(addressIndex int64) T {
 // It is much like indexing a slice or array.
 //
 // If the increment is negative, or the increment exceeds GetCount() - 1, this method panics.
-func (coll *ContainmentTrieBase[T]) GetBig(addressIndex *big.Int) T {
+func (coll *ContainmentTrie[T]) GetBig(addressIndex *big.Int) T {
 	node, index := coll.trie.GetElementAddressBig(addressIndex)
 	return node.getKey().WithoutPrefixLen().IncrementBig(index)
 }
@@ -381,7 +385,7 @@ func (coll *ContainmentTrieBase[T]) GetBig(addressIndex *big.Int) T {
 // Similar to Get but also removes the address found.
 //
 // If the index is negative or larger than GetCount() - 1, this method panics.
-func (coll *ContainmentTrieBase[T]) RemoveAt(addressIndex int64) T {
+func (coll *ContainmentTrie[T]) RemoveAt(addressIndex int64) T {
 	deletedNode, index := coll.trie.GetElementAddress(addressIndex)
 	address := deletedNode.getKey().WithoutPrefixLen().Increment(index)
 	return coll.removeFromNode(deletedNode, address)
@@ -391,13 +395,13 @@ func (coll *ContainmentTrieBase[T]) RemoveAt(addressIndex int64) T {
 // Similar to GetBig but also removes the address found.
 //
 // If the index is negative or larger than GetCount() - 1, this method panics.
-func (coll *ContainmentTrieBase[T]) RemoveAtBig(addressIndex *big.Int) T {
+func (coll *ContainmentTrie[T]) RemoveAtBig(addressIndex *big.Int) T {
 	deletedNode, index := coll.trie.GetElementAddressBig(addressIndex)
 	address := deletedNode.getKey().WithoutPrefixLen().IncrementBig(index)
 	return coll.removeFromNode(deletedNode, address)
 }
 
-func (coll *ContainmentTrieBase[T]) removeFromNode(deletedNode *TrieNode[T], address T) T {
+func (coll *ContainmentTrie[T]) removeFromNode(deletedNode *TrieNode[T], address T) T {
 	parentNode := deletedNode.GetParent()
 	if parentNode != nil && !parentNode.IsAdded() {
 		parentNode = parentNode.GetParent()
@@ -420,7 +424,7 @@ func (coll *ContainmentTrieBase[T]) removeFromNode(deletedNode *TrieNode[T], add
 // If there are no addresses in this collection, then nil is returned.
 //
 // The result will represent the same set of addresses if and only if the set of addresses in this collection are sequential, in which case IsSequential is true.
-func (coll *ContainmentTrieBase[T]) CoverWithSequentialRange() *SequentialRange[T] {
+func (coll *ContainmentTrie[T]) CoverWithSequentialRange() *SequentialRange[T] {
 	if coll.IsEmpty() {
 		return nil
 	}
@@ -428,7 +432,7 @@ func (coll *ContainmentTrieBase[T]) CoverWithSequentialRange() *SequentialRange[
 }
 
 // GetCount returns the number of individual addresses in this containment trie, the number of elements in this collection.
-func (coll *ContainmentTrieBase[T]) GetCount() *big.Int {
+func (coll *ContainmentTrie[T]) GetCount() *big.Int {
 	if coll == nil {
 		return bigZero()
 	}
@@ -436,7 +440,7 @@ func (coll *ContainmentTrieBase[T]) GetCount() *big.Int {
 }
 
 // GetLower returns the individual address with the lowest numeric value in this collection.
-func (coll *ContainmentTrieBase[T]) GetLower() T {
+func (coll *ContainmentTrie[T]) GetLower() T {
 	firstNode := coll.trie.FirstAddedNode()
 	if firstNode == nil {
 		return trieKeyZero[T]()
@@ -445,7 +449,7 @@ func (coll *ContainmentTrieBase[T]) GetLower() T {
 }
 
 // GetUpper returns the individual addresses with the highest numeric value in this collection.
-func (coll *ContainmentTrieBase[T]) GetUpper() T {
+func (coll *ContainmentTrie[T]) GetUpper() T {
 	lastNode := coll.trie.LastAddedNode()
 	if lastNode == nil {
 		return trieKeyZero[T]()
@@ -454,14 +458,14 @@ func (coll *ContainmentTrieBase[T]) GetUpper() T {
 }
 
 // GetLowerAndUpper returns the individual addresses with the lowest and highest numeric values in this collection.
-func (coll *ContainmentTrieBase[T]) GetLowerAndUpper() (lower, upper T) {
+func (coll *ContainmentTrie[T]) GetLowerAndUpper() (lower, upper T) {
 	return coll.GetLower(), coll.GetUpper()
 }
 
 // Iterator provides an iterator to iterate through the individual IP addresses in this collection in order.
 //
 // Use the function ipaddr.StdPushIterator to convert the returned iterator to a standard library iter.Seq
-func (coll *ContainmentTrieBase[T]) Iterator() Iterator[T] {
+func (coll *ContainmentTrie[T]) Iterator() Iterator[T] {
 	if coll == nil {
 		return nilIterator[T]()
 	}
@@ -480,14 +484,14 @@ func (coll *ContainmentTrieBase[T]) Iterator() Iterator[T] {
 }
 
 // AddressIterator is the same as Iterator while satisying the AddressAggregation interface
-func (coll *ContainmentTrieBase[T]) AddressIterator() Iterator[AddressType] {
+func (coll *ContainmentTrie[T]) AddressIterator() Iterator[AddressType] {
 	return addrTypeIterator[T]{coll.Iterator()}
 }
 
 // PrefixBlockIterator returns an iterator for iterating through the prefix blocks in the backing trie, in sorted order.
 //
 // These prefix blocks are the minimal set of disjoint prefix blocks for containing the addresses in this collection of addresses.
-func (coll *ContainmentTrieBase[T]) PrefixBlockIterator() IteratorWithRemove[T] {
+func (coll *ContainmentTrie[T]) PrefixBlockIterator() IteratorWithRemove[T] {
 	if coll == nil {
 		return nilIteratorWithRemove[T]()
 	}
@@ -501,7 +505,7 @@ func (coll *ContainmentTrieBase[T]) PrefixBlockIterator() IteratorWithRemove[T] 
 // Individual addresses will be shown with as prefix blocks with a prefix extending to the end of the address.
 // They are represented as 2001:4860:4860::8844/128 or 192.168.10.1/32, instead of 2001:4860:4860::8844 or 192.168.10.1.
 // You can esily remove such prefix lengths with calls to RemoveBitcountPrefixLen, or use PrefixBlockIterator instead.
-func (coll *ContainmentTrieBase[T]) SpanningPrefixBlockIterator() Iterator[T] {
+func (coll *ContainmentTrie[T]) SpanningPrefixBlockIterator() Iterator[T] {
 	if coll == nil {
 		return nilIterator[T]()
 	}
@@ -511,7 +515,7 @@ func (coll *ContainmentTrieBase[T]) SpanningPrefixBlockIterator() Iterator[T] {
 // SpanningSeqBlockIterator returns an iterator for iterating through the minimal set of disjoint sequential blocks containing the addresses in this collection of addresses.
 //
 // It satisifes the IPAddressAggregationConstraint interface.
-func (coll *ContainmentTrieBase[T]) SpanningSeqBlockIterator() Iterator[T] {
+func (coll *ContainmentTrie[T]) SpanningSeqBlockIterator() Iterator[T] {
 	trie := &coll.trie.Trie
 	changeTracker := trie.changeTracker()
 	var currentChange tree.Change
@@ -573,19 +577,19 @@ func (iter *seqBlockIterator[T]) Next() T {
 // SpanningSeqRangeIterator returns an iterator for iterating through the minimal set of disjoint sequential ranges containing the addresses in this collection of addresses.
 //
 // It satisifes the IPAddressCollAddrConstraint interface.
-func (coll *ContainmentTrieBase[T]) SpanningSeqRangeIterator() Iterator[*SequentialRange[T]] {
+func (coll *ContainmentTrie[T]) SpanningSeqRangeIterator() Iterator[*SequentialRange[T]] {
 	return prefixBlockToSeqRangeIterator(coll.SpanningPrefixBlockIterator())
 }
 
 // GetPrefixBlockCount returns the number of prefix blocks in the backing trie.
 //
 // The prefix blocks are the minimal set of disjoint prefix blocks for containing the addresses in this  collection of addresses.
-func (coll *ContainmentTrieBase[T]) GetPrefixBlockCount() int {
+func (coll *ContainmentTrie[T]) GetPrefixBlockCount() int {
 	return coll.trie.size()
 }
 
 // GetLowerPrefixBlock returns the prefix block in the backing trie containing the lowest numeric value in this collection, or nil if the trie is empty
-func (coll *ContainmentTrieBase[T]) GetLowerPrefixBlock() T {
+func (coll *ContainmentTrie[T]) GetLowerPrefixBlock() T {
 	firstNode := coll.trie.FirstAddedNode()
 	if firstNode == nil {
 		return trieKeyZero[T]()
@@ -594,7 +598,7 @@ func (coll *ContainmentTrieBase[T]) GetLowerPrefixBlock() T {
 }
 
 // GetUpperPrefixBlock returns the prefix block in the backing trie containing the highest numeric value in this collection, or nil if the trie is empty
-func (coll *ContainmentTrieBase[T]) GetUpperPrefixBlock() T {
+func (coll *ContainmentTrie[T]) GetUpperPrefixBlock() T {
 	lastNode := coll.trie.LastAddedNode()
 	if lastNode == nil {
 		return trieKeyZero[T]()
@@ -603,7 +607,7 @@ func (coll *ContainmentTrieBase[T]) GetUpperPrefixBlock() T {
 }
 
 // IsEmpty returns true if and only if there are no elements in this collection.
-func (coll *ContainmentTrieBase[T]) IsEmpty() bool {
+func (coll *ContainmentTrie[T]) IsEmpty() bool {
 	if coll == nil {
 		return true
 	}
@@ -611,7 +615,7 @@ func (coll *ContainmentTrieBase[T]) IsEmpty() bool {
 }
 
 // IsMultiple returns true if this collection contains more than 1 element.
-func (coll *ContainmentTrieBase[T]) IsMultiple() bool {
+func (coll *ContainmentTrie[T]) IsMultiple() bool {
 	if coll == nil {
 		return false
 	}
@@ -627,13 +631,13 @@ func (coll *ContainmentTrieBase[T]) IsMultiple() bool {
 }
 
 // IncludesZero Returns whether this collection contains the address matching the version of addresses in this list and having the value of zero.
-func (coll *ContainmentTrieBase[T]) IncludesZero() bool {
+func (coll *ContainmentTrie[T]) IncludesZero() bool {
 	firstNode := coll.trie.FirstAddedNode()
 	return firstNode != nil && firstNode.GetKey().IncludesZero()
 }
 
 // IncludesMax Returns whether this list contains the address matching the version of the addresses in this list and has the maximum value for addresses of that address version.
-func (coll *ContainmentTrieBase[T]) IncludesMax() bool {
+func (coll *ContainmentTrie[T]) IncludesMax() bool {
 	lastNode := coll.trie.LastAddedNode()
 	return lastNode != nil && lastNode.GetKey().IncludesMax()
 }
@@ -641,7 +645,7 @@ func (coll *ContainmentTrieBase[T]) IncludesMax() bool {
 // IsSequential returns whether the collection represents a range of addresses that are sequential.
 //
 // Generally, this means that given any two addresses in the collection, all addresses between are also in the collection.
-func (coll *ContainmentTrieBase[T]) IsSequential() bool {
+func (coll *ContainmentTrie[T]) IsSequential() bool {
 	if coll.IsEmpty() {
 		return true
 	}
@@ -652,7 +656,7 @@ func (coll *ContainmentTrieBase[T]) IsSequential() bool {
 }
 
 // Format implements the [fmt.Formatter] interface.
-func (coll ContainmentTrieBase[T]) Format(state fmt.State, verb rune) {
+func (coll ContainmentTrie[T]) Format(state fmt.State, verb rune) {
 	switch verb {
 	case 's', 'v':
 		_, _ = state.Write([]byte(coll.String()))
@@ -662,7 +666,7 @@ func (coll ContainmentTrieBase[T]) Format(state fmt.State, verb rune) {
 }
 
 // String provides a string representation of the collection which shows the underlying trie structure.
-func (coll *ContainmentTrieBase[T]) String() string {
+func (coll *ContainmentTrie[T]) String() string {
 	if coll == nil {
 		return "\n" + nilString()
 	}
@@ -683,14 +687,14 @@ func (coll *ContainmentTrieBase[T]) String() string {
 // Returns nil when the containment trie is empty.
 //
 // Returns nil when the address version does not match the addresses in this containment trie.
-func (coll *ContainmentTrieBase[T]) EnumerateAddress(address T) *big.Int {
+func (coll *ContainmentTrie[T]) EnumerateAddress(address T) *big.Int {
 	if isNilPtr(address) || address.IsMultiple() || coll.IsEmpty() {
 		return nil
 	}
 	return coll.enumerateAddress(address)
 }
 
-func (coll *ContainmentTrieBase[T]) enumerateAddress(address T) *big.Int {
+func (coll *ContainmentTrie[T]) enumerateAddress(address T) *big.Int {
 	if coll.IsEmpty() {
 		return nil
 	}
@@ -729,7 +733,7 @@ func (coll *ContainmentTrieBase[T]) enumerateAddress(address T) *big.Int {
 // Returns nil when the containment trie is empty.
 //
 // Returns nil when the address version does not match the addresses in this containment trie.
-func (coll *ContainmentTrieBase[T]) Enumerate(address AddressType) *big.Int {
+func (coll *ContainmentTrie[T]) Enumerate(address AddressType) *big.Int {
 	addr, isNil, ok := ConvertAddressTypeCheckNil[T](address)
 	if !ok || isNil || coll == nil {
 		return nil
@@ -738,7 +742,7 @@ func (coll *ContainmentTrieBase[T]) Enumerate(address AddressType) *big.Int {
 }
 
 // Equal returns true if and only if this collection has the same set of individual addresses as the given collectioj
-func (coll *ContainmentTrieBase[T]) Equal(other *ContainmentTrieBase[T]) bool {
+func (coll *ContainmentTrie[T]) Equal(other *ContainmentTrie[T]) bool {
 	if coll == nil {
 		return other == nil || other.IsEmpty()
 	} else if other == nil {
@@ -748,7 +752,7 @@ func (coll *ContainmentTrieBase[T]) Equal(other *ContainmentTrieBase[T]) bool {
 }
 
 // EqualAggregation returns true if and only if this collection has the same set of individual addresses as the given aggregation of addresses
-func (coll *ContainmentTrieBase[T]) EqualAggregation(otherAggregation AddressAggregation) bool {
+func (coll *ContainmentTrie[T]) EqualAggregation(otherAggregation AddressAggregation) bool {
 	if coll == nil {
 		return IsEmpty(otherAggregation)
 	}
@@ -759,7 +763,7 @@ func (coll *ContainmentTrieBase[T]) EqualAggregation(otherAggregation AddressAgg
 		return coll.equalAddr(other)
 	case IPAddressSeqRangeType:
 		return coll.equalRange(other)
-	case *ContainmentTrieBase[T]:
+	case *ContainmentTrie[T]:
 		return coll.Equal(other)
 	case *IPAddressContainmentTrie:
 		return equalContainmentTries(coll, other)
@@ -791,7 +795,7 @@ func equalAggregation(one, two AddressAggregation) bool {
 	return true
 }
 
-func (coll *ContainmentTrieBase[T]) equalAddr(other AddressType) bool {
+func (coll *ContainmentTrie[T]) equalAddr(other AddressType) bool {
 	if coll == nil {
 		return isEmptyAddr(other) // addresses are never empty, unless they are nil pointers
 	} else if other == nil {
@@ -838,7 +842,7 @@ func (coll *ContainmentTrieBase[T]) equalAddr(other AddressType) bool {
 	return true
 }
 
-func (coll *ContainmentTrieBase[T]) equalRange(other IPAddressSeqRangeType) bool {
+func (coll *ContainmentTrie[T]) equalRange(other IPAddressSeqRangeType) bool {
 	if coll == nil {
 		return isEmptyRange(other) // addresses are never empty, unless they are nil pointers
 	} else if other == nil || other.ToIP() == nil {
@@ -854,7 +858,7 @@ func (coll *ContainmentTrieBase[T]) equalRange(other IPAddressSeqRangeType) bool
 	return coll.GetLower().Equal(other.ToIP().GetLower())
 }
 
-func equalContainmentTries[T ipAddressTypeConstraint[T], R ipAddressTypeConstraint[R]](coll *ContainmentTrieBase[T], other *ContainmentTrieBase[R]) bool {
+func equalContainmentTries[T ipAddressTypeConstraint[T], R ipAddressTypeConstraint[R]](coll *ContainmentTrie[T], other *ContainmentTrie[R]) bool {
 	if coll == nil {
 		return IsEmpty(other)
 	} else if other == nil {
@@ -881,32 +885,32 @@ func equalContainmentTries[T ipAddressTypeConstraint[T], R ipAddressTypeConstrai
 }
 
 // Clone makes a copy of the collection
-func (coll *ContainmentTrieBase[T]) Clone() *ContainmentTrieBase[T] {
+func (coll *ContainmentTrie[T]) Clone() *ContainmentTrie[T] {
 	if coll == nil {
 		return nil
 	}
-	return &ContainmentTrieBase[T]{
+	return &ContainmentTrie[T]{
 		trie: collectionTrie[T]{
 			Trie: *coll.trie.Clone(),
 		},
 	}
 }
 
-// NewEmpty creates a new ContainmentTrieBase using the same element type T.
+// NewEmpty creates a new ContainmentTrie using the same element type T.
 // Satisfies the IPAddressCollConstraint[S IPAddressCollAddrConstraint[T], T IPAddressTypeConstraint[T]] interface,
 // allowing for ogeneric code that can create new collections generically, with generic code.
-// For code that is using a generic collection type, you can simply use &ContainmentTrieBase[T]{}
-func (list *ContainmentTrieBase[T]) NewEmpty() *ContainmentTrieBase[T] {
-	return &ContainmentTrieBase[T]{}
+// For code that is using a generic collection type, you can simply use &ContainmentTrie[T]{}
+func (list *ContainmentTrie[T]) NewEmpty() *ContainmentTrie[T] {
+	return &ContainmentTrie[T]{}
 }
 
 // ComplementIntoNew returns a new collection comprising all the addresses not contained in this collection.
 //
 // If this list is empty and is not restricted to a single IP version of IPv4 or IPv6,
 // then the IP version is ambiguous, so the complement is indeterminate, in which case nil is returned.
-func (coll *ContainmentTrieBase[T]) ComplementIntoNew() *ContainmentTrieBase[T] {
+func (coll *ContainmentTrie[T]) ComplementIntoNew() *ContainmentTrie[T] {
 	//fmt.Println("getting complement of", coll)
-	newColl := &ContainmentTrieBase[T]{}
+	newColl := &ContainmentTrie[T]{}
 	if coll.IsEmpty() {
 		var t T
 		network := t.GetIPNetwork()
@@ -943,13 +947,13 @@ func (coll *ContainmentTrieBase[T]) ComplementIntoNew() *ContainmentTrieBase[T] 
 }
 
 // JoinIntoNew creates a new containment trie that has all addresses in this containment trie and the provided containment trie.
-func (coll *ContainmentTrieBase[T]) JoinIntoNew(other *ContainmentTrieBase[T]) *ContainmentTrieBase[T] {
+func (coll *ContainmentTrie[T]) JoinIntoNew(other *ContainmentTrie[T]) *ContainmentTrie[T] {
 	if coll.IsEmpty() {
 		return other.Clone()
 	} else if other.IsEmpty() {
 		return coll.Clone()
 	}
-	result := &ContainmentTrieBase[T]{}
+	result := &ContainmentTrie[T]{}
 	thisIterator := coll.PrefixBlockIterator()
 	otherIterator := other.PrefixBlockIterator()
 	thisBlock := thisIterator.Next()
@@ -1061,13 +1065,13 @@ func (coll *ContainmentTrieBase[T]) JoinIntoNew(other *ContainmentTrieBase[T]) *
 }
 
 // RemoveIntoNew produces a new containment trie that has the addresses in this collection that are not in the given collection.
-func (coll *ContainmentTrieBase[T]) RemoveIntoNew(other *ContainmentTrieBase[T]) *ContainmentTrieBase[T] {
+func (coll *ContainmentTrie[T]) RemoveIntoNew(other *ContainmentTrie[T]) *ContainmentTrie[T] {
 	if coll.IsEmpty() {
-		return &ContainmentTrieBase[T]{}
+		return &ContainmentTrie[T]{}
 	} else if other.IsEmpty() {
 		return coll.Clone()
 	}
-	result := &ContainmentTrieBase[T]{}
+	result := &ContainmentTrie[T]{}
 	thisIterator := coll.PrefixBlockIterator()
 	otherIterator := other.PrefixBlockIterator()
 	thisBlock := thisIterator.Next()
@@ -1220,8 +1224,8 @@ func (coll *ContainmentTrieBase[T]) RemoveIntoNew(other *ContainmentTrieBase[T])
 }
 
 // IntersectIntoNew produces a new containment tries that is the intersection of this collection with the given collection.
-func (coll *ContainmentTrieBase[T]) IntersectIntoNew(other *ContainmentTrieBase[T]) *ContainmentTrieBase[T] {
-	result := &ContainmentTrieBase[T]{}
+func (coll *ContainmentTrie[T]) IntersectIntoNew(other *ContainmentTrie[T]) *ContainmentTrie[T] {
+	result := &ContainmentTrie[T]{}
 	if coll.IsEmpty() || other.IsEmpty() {
 		return result
 	}
@@ -1301,7 +1305,7 @@ func (coll *ContainmentTrieBase[T]) IntersectIntoNew(other *ContainmentTrieBase[
 }
 
 // ContainsOther returns whether this containment trie contains all addresses in the given containment trie
-func (coll *ContainmentTrieBase[T]) ContainsOther(other *ContainmentTrieBase[T]) bool {
+func (coll *ContainmentTrie[T]) ContainsOther(other *ContainmentTrie[T]) bool {
 	if other.IsEmpty() {
 		return true
 	} else if coll.IsEmpty() || coll.GetCount().Cmp(other.GetCount()) < 0 {
@@ -1364,7 +1368,7 @@ func (coll *ContainmentTrieBase[T]) ContainsOther(other *ContainmentTrieBase[T])
 }
 
 // OverlapsOther returns whether there is any overlap with the given containment trie
-func (coll *ContainmentTrieBase[T]) OverlapsOther(other *ContainmentTrieBase[T]) bool {
+func (coll *ContainmentTrie[T]) OverlapsOther(other *ContainmentTrie[T]) bool {
 	if coll.IsEmpty() || other.IsEmpty() {
 		return false
 	}
@@ -1396,7 +1400,7 @@ func (coll *ContainmentTrieBase[T]) OverlapsOther(other *ContainmentTrieBase[T])
 }
 
 type (
-	IPAddressContainmentTrie   = ContainmentTrieBase[*IPAddress]
-	IPv4AddressContainmentTrie = ContainmentTrieBase[*IPv4Address]
-	IPv6AddressContainmentTrie = ContainmentTrieBase[*IPv6Address]
+	IPAddressContainmentTrie   = ContainmentTrie[*IPAddress]
+	IPv4AddressContainmentTrie = ContainmentTrie[*IPv4Address]
+	IPv6AddressContainmentTrie = ContainmentTrie[*IPv6Address]
 )

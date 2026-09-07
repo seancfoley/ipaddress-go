@@ -2211,7 +2211,7 @@ func (r *singleRangeTest) testOpSingleRange(list *ipaddr.IPAddressSeqRangeList, 
 	}
 }
 
-func (r *singleRangeTest) testCollectionBooleanOpSingleRange(list1 *ipaddr.IPAddressSeqRangeList, list2 *ipaddr.IPAddressSeqRange, containmentTrie *ipaddr.ContainmentTrieBase[*ipaddr.IPAddress], op func(ipaddr.IPAddressCollAddrConstraint[*ipaddr.IPAddress], *ipaddr.IPAddressSeqRange) bool, opName string, expected bool) {
+func (r *singleRangeTest) testCollectionBooleanOpSingleRange(list1 *ipaddr.IPAddressSeqRangeList, list2 *ipaddr.IPAddressSeqRange, containmentTrie *ipaddr.ContainmentTrie[*ipaddr.IPAddress], op func(ipaddr.IPAddressCollAddrConstraint[*ipaddr.IPAddress], *ipaddr.IPAddressSeqRange) bool, opName string, expected bool) {
 	t := r.t
 	t.rangeListTestCount++
 	res := op(list1, list2)
@@ -3468,14 +3468,14 @@ func testEmptyAndNils[T ipaddr.IPAddressTypeConstraint[T]](t *collectionTester, 
 	var nilAddr T
 	var nilRng *ipaddr.SequentialRange[T]
 	var nilRngList *ipaddr.SequentialRangeList[T]
-	var nilContTrie *ipaddr.ContainmentTrieBase[T]
+	var nilContTrie *ipaddr.ContainmentTrie[T]
 
 	emptyRngList := &ipaddr.SequentialRangeList[T]{}
-	emptyContTrie := &ipaddr.ContainmentTrieBase[T]{}
+	emptyContTrie := &ipaddr.ContainmentTrie[T]{}
 
 	regRngList := &ipaddr.SequentialRangeList[T]{}
 	regRngList.Add(regularAddr)
-	regContTrie := &ipaddr.ContainmentTrieBase[T]{}
+	regContTrie := &ipaddr.ContainmentTrie[T]{}
 	regContTrie.Add(regularAddr)
 
 	regularRng := regularAddr.SpanWithRange(regularAddr)
@@ -3514,14 +3514,14 @@ func testEmptyAndNils[T ipaddr.IPAddressTypeConstraint[T]](t *collectionTester, 
 	testEmptyAggregations(t, emptyRngList)
 	testEmptyAggregations(t, emptyContTrie)
 
-	testEmptyCollections(t, nilRngList, nilRngList)
-	testEmptyCollections(t, nilRngList, emptyRngList)
+	testEmptyCollections[*ipaddr.SequentialRangeList[T], T](t, nilRngList, nilRngList)
+	testEmptyCollections[*ipaddr.SequentialRangeList[T], T](t, nilRngList, emptyRngList)
 
-	testEmptyCollections(t, nilContTrie, nilContTrie)
-	testEmptyCollections(t, nilContTrie, emptyContTrie)
+	testEmptyCollections[*ipaddr.ContainmentTrie[T], T](t, nilContTrie, nilContTrie)
+	testEmptyCollections[*ipaddr.ContainmentTrie[T], T](t, nilContTrie, emptyContTrie)
 
-	testEmptyCollections(t, emptyRngList, emptyRngList)
-	testEmptyCollections(t, emptyContTrie, emptyContTrie)
+	testEmptyCollections[*ipaddr.SequentialRangeList[T], T](t, emptyRngList, emptyRngList)
+	testEmptyCollections[*ipaddr.ContainmentTrie[T], T](t, emptyContTrie, emptyContTrie)
 
 	testEmptyAddrs(t, nilRngList, regularAddr)
 	testEmptyAddrs(t, nilContTrie, regularAddr)

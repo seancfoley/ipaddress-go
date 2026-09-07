@@ -1493,8 +1493,8 @@ func (rng *SequentialRange[T]) IntoSequentialRangeList() *SequentialRangeList[T]
 }
 
 // IntoContainmentTrie creates a new containement trie collection containing all the individual addresses in this sequential range list.
-func (rng *SequentialRange[T]) IntoContainmentTrie() *ContainmentTrieBase[T] {
-	trie := &ContainmentTrieBase[T]{}
+func (rng *SequentialRange[T]) IntoContainmentTrie() *ContainmentTrie[T] {
+	trie := &ContainmentTrie[T]{}
 	trie.AddSeqRange(rng)
 	return trie
 }

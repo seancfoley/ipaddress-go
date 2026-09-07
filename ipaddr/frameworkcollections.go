@@ -29,7 +29,33 @@ import "math/big"
 type AddressAggregation interface { // this is the type used by equality in containers (and maybe others) - cannot combine with AddressItemAggregation
 	AddressItemAggregation
 
-	addressAggr
+	AddressIterator() Iterator[AddressType]
+
+	// Contains returns whether this aggregation contains all individual addresses in the given address or subnet.
+	Contains(AddressType) bool
+
+	// Enumerate indicates where an address sits relative to the address ordering.
+	//
+	// It determines how many individual address elements precede the given address element, if the address is in the aggregation.
+	// If above all addresses in the aggregation, it is the distance to the upper boundary added to the aggregation count less one, and if below the aggregation, the distance to the lower boundary.
+	//
+	// In other words, if the given address is not in the aggregation but above it, returns the number of addresses preceding the address from the upper aggregation boundary,
+	// added to one less than the total number of aggregation addresses.  If the given address is not in the aggregation but below it, returns the number of addresses following the address to the lower aggregation boundary.
+	//
+	// If the argument is not in the aggregation, but neither above nor below it, then nil is returned.
+	//
+	// Enumerate returns nil when the argument is multi-valued. The argument must be an individual address.
+	//
+	// When this aggregation happens to be an individual address, the returned value is the distance (difference) between the two addresses.
+	//
+	// If the given address does not have the same version or type as the addresses in this aggregation, then nil is returned.
+	Enumerate(AddressType) *big.Int
+
+	// OverlapsAddr returns whether this aggregation contains any individual addresses in the given address or subnet.
+	OverlapsAddr(AddressType) bool
+
+	// EqualAggregation returns true if and only if this aggregation of addresses are the same as the=ose in the given aggregation.
+	EqualAggregation(AddressAggregation) bool
 }
 
 // IsEmpty returns true if the aggregation has no elements.
@@ -92,7 +118,11 @@ var _, _, _, _, _, _, _, _, _, _, _, _, _,
 type IPAddressAggregation interface {
 	AddressAggregation
 
-	rangeAggr
+	// ContainsRange returns whether all the addresses in the given sequential range are also contained in this aggregation of addresses.
+	ContainsRange(IPAddressSeqRangeType) bool
+
+	// OverlapsRange returns whether this aggregation includes any of the addresses in the given sequential range, if there is at least one individual address common to both.
+	OverlapsRange(IPAddressSeqRangeType) bool
 }
 
 var _, _, _, _, _, _, _, _, _, _, _,
@@ -156,10 +186,25 @@ type IPAddressAggregationConstraint[T IPAddressTypeConstraint[T]] interface {
 	CoverWithPrefixBlock() T
 }
 
+// verify we can assign constraints for IP addresses, IP sequential ranges, and IP address collections, to IPAddressAggregationConstraint
+func f[T IPAddressTypeConstraint[T]]() (x IPAddressAggregationConstraint[T]) {
+	var s *SequentialRange[T]
+	var i IPAddressTypeConstraint[T]
+	var c IPAddressCollAddrConstraint[T]
+	//var r IPAddressRange
+	//x = r
+	x = s
+	x = i
+	x = c
+	return x
+}
+
 var (
 	_, _, _, _ IPAddressAggregationConstraint[*IPAddress]   = &IPAddress{}, &IPAddressSeqRange{}, &IPAddressSeqRangeList{}, &IPAddressContainmentTrie{}
 	_, _, _, _ IPAddressAggregationConstraint[*IPv4Address] = &IPv4Address{}, &IPv4AddressSeqRange{}, &IPv4AddressSeqRangeList{}, &IPv4AddressContainmentTrie{}
 	_, _, _, _ IPAddressAggregationConstraint[*IPv6Address] = &IPv6Address{}, &IPv6AddressSeqRange{}, &IPv6AddressSeqRangeList{}, &IPv6AddressContainmentTrie{}
+
+	_ = f[*IPAddress]()
 )
 
 // IPAddressCollection represents an arbitrary collection of IP addresses.
@@ -303,7 +348,7 @@ type IPAddressCollConstraint[S IPAddressCollAddrConstraint[T], T IPAddressTypeCo
 	// Clone makes a copy of the collection
 	Clone() S
 
-	// NewEmpty creates a new ContainmentTrieBase using the same element type T
+	// NewEmpty creates a new ContainmentTrie using the same element type T
 	NewEmpty() S
 
 	// Equal returns true if and only if this collection has the same set of individual addresses as the given collectioj
@@ -340,3 +385,96 @@ var (
 	_ IPAddressCollConstraint[*IPv4AddressContainmentTrie, *IPv4Address] = &IPv4AddressContainmentTrie{}
 	_ IPAddressCollConstraint[*IPv6AddressContainmentTrie, *IPv6Address] = &IPv6AddressContainmentTrie{}
 )
+
+//TODO NEXT, another release with the improvements below, so I can then finish the wiki examples
+// - Improved the string produced by ToString() of SequentialRangeList for an improved visual representation of the list
+// - small changes to framework interfaces: AddressType implements all of AddressAggregation, IPAddressType implements all of IPAddressAggregation, small correction to generic parameter for ConvertAddressType
+// - renamed ContainmentTrieBase to ContainmentTrie, retained an alias for ContainmentTrieBase
+
+//TODO need at least 1.19 if I do the atomicStorePointer change
+//1.23 is needed for alias of ContainmentTrie
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//  // TODO  ContainsProper - even though I don't need it in here anymore :-)
+//  /*
+//      for each segment
+//          if lower >= otherLower && upper <= otherUpper {
+//                  if lower > otherLower || upper < otherUpper {
+//                      for each segment
+//                          if lower < otherLower && upper > otherUpper {
+//                              return false
+//                      }
+//                      return true
+//                  }
+//          } else {
+//              return false
+//          }
+//      }
+//      return false
+//  */
+// however, contains plus compare counts does the trick as well, also contains and equals
+
+// DONE the wiki examples I did in Java
+//
+// diff
+// https://github.com/seancfoley/IPAddress/wiki/Code-Examples-2:-Subnet-Containment,-Matching,-Comparing/_compare/6f56ff179cd18b8545f19ba913dacc2df5be7ede...f7aa6bdaa2329fb56ae9fc93dc64af4c568bd73d
+//
+// altered:
+// DONE selectarbitraryrange.go - ## Select Addresses and Subnets within Arbitrary Address Range
+// DONE near.go - ## Select Address Closest to Arbitrary Address
+// NAH - https://github.com/seancfoley/IPAddress/wiki/Code-Examples-2:-Subnet-Containment,-Matching,-Comparing#select-address-ranges-intersecting-with-arbitrary-range
+//      This is stupid: put the range in a list, then go through them
+//      Is there a way to put them all in the collection?
+//      Not really
+//      In fact, this one, funny enough, seems to not fit with collections at all
+//
+// new:
+// just create some lists, do the intersection:
+// DONE * [Select Addresses Common to Lists of Subnets or Address Ranges](https://github.com/seancfoley/IPAddress/wiki/Code-Examples-2:-Subnet-Containment,-Matching,-Comparing#select-addresses-common-to-lists-of-subnets-or-address-ranges)
+// see main.go in here and common.go in samples, I have some extra generic code
+// I want to create a new verison with my new iteration options in the collection types, then use them in this example.
+// so that is ready to do now, see main.go
+// DONE I also need to fix up the printing of sequential range list in there
+//
+// diff
+// https://github.com/seancfoley/IPAddress/wiki/Code-Examples-3:-Subnetting-and-Other-Subnet-Operations/_compare/1bd838508ebbd74dc512c43cfbde05e5975ba996...19e899aa3df9919909257f786821c02aa2493fa1
+//
+//
+// DONE, again written in common.go at the bottom  * [Remove Lists of Subnets or Address Ranges from a Collection of IP Addresses](https://github.com/seancfoley/IPAddress/wiki/Code-Examples-3:-Subnetting-and-Other-Subnet-Operations#remove-lists-of-subnets-or-address-ranges-from-a-collection-of-ip-addresses)
+// THis one builds on the intersect one above. see main.go in here and common.go in samples, I have some extra generic code
+//
+// DONE * [Find the Complement of a Collection of Subnets within a Larger Subnet](https://github.com/seancfoley/IPAddress/wiki/Code-Examples-3:-Subnetting-and-Other-Subnet-Operations#find-the-complement-of-a-collection-of-subnets-within-a-larger-subnet)
+// DONE * [De Morgan's Laws of Set Theory](https://github.com/seancfoley/IPAddress/wiki/Code-Examples-3:-Subnetting-and-Other-Subnet-Operations#de-morgans-laws-of-set-theory)
+//
+// DONE Also, in Java I replaced calls to toSequentialRange with either coverWithSequentialRange or spanWithRange
+//
+// DONE add to the two first examples in section 3 the use of StdPushIterator to get iter.Seq
+//
+// DONE MAYBE a wiki example that uses IPAddressCollConstraint for polymorphism of collections - see testCollectionBooleanOpSingleAddress or testCollectionOpSingleAddress
+//  "you just need to specify the address type, but you can make that polymporhpic as well"
+//  show a func
+// I've already altered a couple, and will also do DeMorgan's laws that way. but perhaps you might want to think of something inventive and new?  Not sure
+
+// DONE emulate the Java side, on the seocnd example page there are 3 examples I divide as option 1 / 2.  Do the same with go.  It makes it easier to read.  as far as I can tell, I did not refactor any others (the others with options are the new ones I am adding)
+
+// TODO great ideas that I might want to add to Java:
+// - properContains which is like contains and not equal
+// - all the new node-based add methods (add, addNode, put, putNode) that check prefix first, allowing us to add to nodes directly
+// - the new logic for removeBlock above which finds the interesecting node, gets the parent, removes the intersecting node, adds back the non-intersecting pieces directly to the node
+//      replaces the logic of a remove that returns the parent and the removed node at the same time
+// - IsUpperAdjacentTo instead of using DecrementSingle/IncrementSingle to compare.
+// - Enumerate with tries.  The count prior to a node can be acquired by backtracking in the trie and using MatchingAddressCount.  Then add Enumerate to IPAddressAggregation.
+// - Increment with tries.  Uses MatchingAddressCount.
+// - the new collection methods in ContainmentTrie, then add them to collection, deprecating old names in IPAddressSeqRangeList and deferring to new names:
+//      ComplementIntoNew() S
+//      JoinIntoNew(S) S
+//      RemoveIntoNew(S) S
+//      IntersectIntoNew(S) S
+//      ContainsOther(S) bool
+//      OverlapsOther(S) bool
+// - in fact, all the stuff I added to ContainmentTrie
+// - I made an optimization to seg range list binary search in which I return two bools indicating if the searched address landed on a range boundary
+//      Not sure I can port it to Java, but who knows, maybe I can somehow, for instance if I passed in the pneding range object as an interface could store it there
+//  - If I change the behaviour of increment here for range lists, then maybe do the same, even though not backwards compatible?  Not sure about this one.
+//
