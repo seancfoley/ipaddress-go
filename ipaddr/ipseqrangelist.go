@@ -2620,7 +2620,6 @@ const (
 	middleElbow = "\u251C\u2500" // |-
 	lowerElbow  = "\u2514\u2500" // --
 	upperElbow  = "\u250c\u2500"
-	indent      = "  "
 )
 
 // ToCanonicalString returns the canonical string representing this sequential range list, showing the underlying list of sequential ranges.
