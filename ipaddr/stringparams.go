@@ -869,6 +869,12 @@ func (params *ipv6v4MixedParams) toString(addr *IPv6v4MixedAddressGrouping) stri
 }
 
 func (params *ipv6v4MixedParams) toZonedString(addr *IPv6v4MixedAddressGrouping, zone Zone) string {
+	if addr.GetIPv4AddressSection().IsPrefixBlock() && !addr.GetIPv6AddressSection().IsPrefixBlock() {
+		// The embedded IPv4 section's prefix alone cannot represent the host
+		// ranges when the encompassing IPv6 section is not a prefix block.
+		params = params.clone()
+		params.ipv4Params.wildcardOption = addrstr.WildcardsAll
+	}
 	length := params.getStringLength(addr, zone)
 	builder := &strings.Builder{}
 	builder.Grow(length)
