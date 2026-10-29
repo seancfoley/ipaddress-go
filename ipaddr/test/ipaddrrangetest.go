@@ -1186,6 +1186,10 @@ func (t ipAddressRangeTester) run() {
 	t.ipv6test(true, "a-f:b:c:d:e:f:a:bb")
 	t.ipv6test(true, "-f:b:c:d:e:f:a:bb")
 
+	t.ipv6test(true, "1::0.10.0-240.0/116")
+	t.ipv6test(true, "1::0.10.0-255.*/116")
+	t.ipv6test(true, "1::a:*/116")
+
 	t.testCIDRSubnets("9.*.237.26/0", "9.*.237.26")
 	t.testCIDRSubnets("9.*.237.26/1", "9.*.237.26")
 	t.testCIDRSubnets("9.*.237.26/4", "9.*.237.26")
@@ -4984,6 +4988,47 @@ func (t ipAddressRangeTester) testStrings() {
 		"008JQWOV7Skb)C|ve)jA"+ipaddr.IPv6AlternativeZoneSeparatorStr+".a.a",
 		"0x00010002000300040000000000000000%.a.a",
 		"00000020000200001400010000000000000000000000%.a.a") //mixed
+
+	t.testIPv6Strings("::1:*:*/63",
+		"0:0:0:0:0:1:*:*/63", //normalized
+		"0:0:0:0:0:1:*:*",    //normalizedWildcards
+		"::1:*:*",            //canonicalWildcards
+		"0:0:0:0:0:1:%:%",    //sql
+		"0000:0000:0000:0000:0000:0001:0000-ffff:0000-ffff/63",
+		"::1:*:*/63",     //compressed
+		"::1:*:*/63",     //canonical
+		"::1:*:*/63",     //subnet
+		"::1:*:*",        //compressed wildcard
+		"::1:*.*.*.*/63", //mixed no compress
+		"::1:*.*.*.*/63", //mixed no compress host
+		"::1:*.*.*.*/63", // mixed no compress covered host
+		"::1:*.*.*.*/63", // mixed
+		"*.*.*.*.*.*.*.*.1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.ip6.arpa",
+		"0-0-0-0-0-1-*-*.ipv6-literal.net/63",
+		"000000000000000|NsC1»000000000000001_lNO1/63",
+		"0x00000000000000000000000100000000-0x000000000000000000000001ffffffff",
+		"00000000000000000000000000000000040000000000-00000000000000000000000000000000077777777777")
+
+	t.testIPv6Strings("::1:1:*/63",
+		"0:0:0:0:0:1:1:*/63", //normalized
+		"0:0:0:0:0:1:1:*",    //normalizedWildcards
+		"::1:1:*",            //canonicalWildcards
+		"0:0:0:0:0:1:1:%",    //sql
+		"0000:0000:0000:0000:0000:0001:0001:0000-ffff/63",
+		"::1:1:*/63",     //compressed
+		"::1:1:*/63",     //canonical
+		"::1:1:*/63",     //subnet
+		"::1:1:*",        //compressed wildcard
+		"::1:0.1.*.*/63", //mixed no compress - the "no-compressed comment" refers to the mixed part
+		"::1:0.1.*.*/63", //mixed no compress host
+		"::1:0.1.*.*/63", //mixed no compress covered host
+		"::1:0.1.*.*/63", //mixed
+		"*.*.*.*.1.0.0.0.1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.ip6.arpa",
+		"0-0-0-0-0-1-1-*.ipv6-literal.net/63",
+		"000000000000000|N#I2»000000000000000|N;O2/63",
+		"0x00000000000000000000000100010000-0x0000000000000000000000010001ffff",
+		"00000000000000000000000000000000040000200000-00000000000000000000000000000000040000377777")
+
 	t.testIPv6Strings("1:2:3:4::*:*:*",
 		"1:2:3:4:0:*:*:*", //normalized
 		"1:2:3:4:0:*:*:*", //normalizedWildcards
