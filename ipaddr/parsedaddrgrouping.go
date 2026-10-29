@@ -380,6 +380,9 @@ func isPrefixSubnet(
 					if subnetOption == zerosOnly {
 						return false
 					} else if upper == segmentMaxValue {
+						// If a previous segment had full range, then we'd have switched subnetOption to fullRangeOnly (see assignment of subnetOption to fullRangeOnly below).
+						// So, if subnetOption is zerosOrFullRange, then previous segments had zeros, which means this segment should also be zeros.
+						// So we return false because not zeros.
 						if subnetOption == zerosOrFullRange && i > prefixedSegment {
 							return false
 						}
@@ -410,6 +413,9 @@ func isPrefixSubnet(
 						if subnetOption == zerosOnly {
 							return false
 						} else if hostUpper == hostMask {
+							// If a previous segment had full range, then we'd have switched subnetOption to fullRangeOnly (see assignment of subnetOption to fullRangeOnly below).
+							// So, if subnetOption is zerosOrFullRange, then previous segments had zeros, which means this segment should also be zeros.
+							// So we return false because not zeros.
 							if subnetOption == zerosOrFullRange && i > prefixedSegment {
 								return false
 							}
