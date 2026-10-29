@@ -1,5 +1,5 @@
 //
-// Copyright 2020-2022 Sean C Foley
+// Copyright 2020-2026 Sean C Foley
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,321 +18,319 @@
 
 package ipaddr
 
-var keyStrMap = map[string]int {
-`ipaddress.error.sizeMismatch`: 72,
-`ipaddress.error.ipv6.invalid.segment.count`: 130,
-`ipaddress.host.error.invalidService.no.chars`: 140,
-`ipaddress.error.no.wildcard`: 11,
-`ipaddress.error.single.wildcard.order`: 42,
-`ipaddress.error.zero.not.allowed`: 59,
-`ipaddress.host.error.host.resolve`: 89,
-`ipaddress.error.ipv4.too.few.segments`: 90,
-`ipaddress.host.error.bracketed.conflicting.prefix.length`: 115,
-`ipaddress.host.error.empty.host.resolve`: 20,
-`ipaddress.error.zone`: 35,
-`ipaddress.error.only.ipv6.square.brackets`: 53,
-`ipaddress.host.error.invalid.service.hyphen.end`: 60,
-`ipaddress.error.invalidMACIPv6Range`: 100,
-`ipaddress.error.single.segment`: 142,
-`ipaddress.error.exceeds.size`: 26,
-`ipaddress.mac.error.not.eui.convertible`: 28,
-`ipaddress.error.reverseRange`: 36,
-`ipaddress.error.null.segment`: 44,
-`ipaddress.error.ipVersionMismatch`: 105,
-`ipaddress.error.only.ipv6.has.zone`: 21,
-`ipaddress.error.maskMismatch`: 24,
-`ipaddress.host.error.invalid`: 18,
-`ipaddress.error.separatePrefixFromMask`: 62,
-`ipaddress.host.error`: 73,
-`ipaddress.error.ipv6.segment.format`: 75,
-`ipaddress.host.error.invalidPort.too.large`: 84,
-`ipaddress.host.error.host.brackets`: 121,
-`ipaddress.error.ipv6.ambiguous`: 5,
-`ipaddress.error.no.mixed`: 30,
-`ipaddress.error.ipVersionIndeterminate`: 64,
-`ipaddress.host.error.cidrprefixonly`: 108,
-`ipaddress.error.splitSeg`: 141,
-`ipaddress.host.error.port`: 33,
-`ipaddress.error.mixedNetworks`: 50,
-`ipaddress.error.ipv4.segment.hex`: 102,
-`ipaddress.mac.error.mix.format.characters.at.index`: 113,
-`ipaddress.error.invalid.mask.extra.chars`: 131,
-`ipaddress.error.mismatched.bit.size`: 13,
-`ipaddress.host.error.invalid.character.at.index`: 15,
-`ipaddress.host.error.ipaddress`: 58,
-`ipaddress.error.too.many.segments`: 123,
-`ipaddress.error.ipv4.format`: 54,
-`ipaddress.error.prefix.only`: 66,
-`ipaddress.error.ip.format`: 67,
-`ipaddress.error.nullNetwork`: 127,
-`ipaddress.error.ipv6.invalid.byte.count`: 137,
-`ipaddress.error.wildcardOrRangeIPv6`: 23,
-`ipaddress.host.error.segment.too.short`: 32,
-`ipaddress.host.error.bracketed.conflicting.mask`: 93,
-`ipaddress.host.error.invalid.port.service`: 126,
-`ipaddress.error.mask.single.segment`: 25,
-`ipaddress.error.ipv6.separator`: 56,
-`ipaddress.mac.error.format`: 94,
-`ipaddress.error.negative`: 133,
-`ipaddress.error.invalid.size`: 144,
-`ipaddress.error.incompatible.position`: 45,
-`ipaddress.error.no.range`: 22,
-`ipaddress.host.error.url`: 52,
-`ipaddress.error.only.zone`: 63,
-`ipaddress.error.url`: 65,
-`ipaddress.error.ipv6.format`: 76,
-`ipaddress.error.invalid.mask.empty`: 34,
-`ipaddress.error.invalid.character`: 46,
-`ipaddress.host.error.bracketed.missing.end`: 51,
-`ipaddress.host.error.ipv6.not.bracketed`: 86,
-`ipaddress.host.error.invalid.type`: 4,
-`ipaddress.error.mixedVersions`: 10,
-`ipaddress.error.invalidCIDRPrefixOrMask`: 88,
-`ipaddress.error.invalid.zone`: 98,
-`ipaddress.error.ipv4.invalid.octal.digit`: 1,
-`ipaddress.host.error.invalid.length`: 17,
-`ipaddress.error.too.few.segments`: 103,
-`ipaddress.error.empty`: 99,
-`ipaddress.error.address.out.of.range`: 114,
-`ipaddress.error.empty.segment.at.index`: 125,
-`ipaddress.error.ipv4.invalid.binary.digit`: 7,
-`ipaddress.error.special.ip`: 8,
-`ipaddress.error.invalid.zone.encoding`: 106,
-`ipaddress.error.invalidMixedRange`: 110,
-`ipaddress.error.invalid.joined.ranges`: 117,
-`ipaddress.error.invalidCIDRPrefix`: 6,
-`ipaddress.error.ipv4`: 16,
-`ipaddress.error.ipv4.invalid.decimal.digit`: 43,
-`ipaddress.error.address.lower.exceeds.upper`: 107,
-`ipaddress.error.no.iterator.element.to.remove`: 112,
-`ipaddress.host.error.all.numeric`: 145,
-`ipaddress.error.invalidRange`: 29,
-`ipaddress.error.ipv6`: 38,
-`ipaddress.error.mac.invalid.segment.count`: 40,
-`ipaddress.error.front.digit.count`: 95,
-`ipaddress.error.ipv6.cannot.start.with.single.separator`: 104,
-`ipaddress.error.separatePrefixFromAddress`: 111,
-`ipaddress.error.all`: 116,
-`ipaddress.error.address.is.ipv6`: 3,
-`ipaddress.error.invalid.character.at.index`: 139,
-`ipaddress.error.ipv6.prefix.leading.zeros`: 69,
-`ipaddress.error.invalid.character.combination`: 81,
-`ipaddress.error.invalidMultipleMask`: 109,
-`ipaddress.error.address.not.block`: 134,
-`ipaddress.error.unavailable.numeric`: 138,
-`ipaddress.address.error`: 48,
-`ipaddress.error.ipv4.segment.too.large`: 77,
-`ipaddress.error.address.too.large`: 82,
-`ipaddress.host.error.bracketed.not.ipv6`: 19,
-`ipaddress.error.segmentMismatch`: 12,
-`ipaddress.error.inconsistent.prefixes`: 31,
-`ipaddress.error.address.is.ipv4`: 47,
-`ipaddress.error.no.single.wildcard`: 91,
-`ipaddress.error.notNetworkMask`: 129,
-`ipaddress.host.error.empty`: 136,
-`ipaddress.error.segment.too.short.at.index`: 78,
-`ipaddress.error.prefixSize`: 128,
-`ipaddress.error.ipv4.invalid.byte.count`: 9,
-`ipaddress.host.error.invalidPort.no.digits`: 70,
-`ipaddress.error.invalid.mask.wildcard`: 83,
-`ipaddress.host.error.invalid.mechanism`: 120,
-`ipaddress.error.mac.invalid.byte.count`: 124,
-`ipaddress.error.lower.below.range`: 135,
-`ipaddress.host.error.invalid.service.hyphen.consecutive`: 49,
-`ipaddress.host.error.invalidService.too.long`: 57,
-`ipaddress.error.lower.above.range`: 85,
-`ipaddress.error.ipv4.too.many.segments`: 118,
-`ipaddress.error.segment.leading.zeros`: 0,
-`ipaddress.host.error.too.many.segments`: 14,
-`ipaddress.error.empty.start.of.range`: 74,
-`ipaddress.error.ipv4.invalid.segment.count`: 80,
-`ipaddress.error.CIDRNotAllowed`: 92,
-`ipaddress.error.invalid.position`: 37,
-`ipaddress.host.error.invalidService.no.letter`: 41,
-`ipaddress.error.segment.too.long.at.index`: 68,
-`ipaddress.error.zoneAndCIDRPrefix`: 97,
-`ipaddress.error.index.exceeds.prefix.length`: 119,
-`ipaddress.error.splitMismatch`: 132,
-`ipaddress.error.ipv6.has.zone`: 101,
-`ipaddress.error.invalid.mask.address.empty`: 2,
-`ipaddress.host.error.service`: 27,
-`ipaddress.error.invalid.character.combination.at.index`: 55,
-`ipaddress.error.ipv4.prefix.leading.zeros`: 79,
-`ipaddress.error.segment.too.long`: 39,
-`ipaddress.host.error.invalid.service.hyphen.start`: 71,
-`ipaddress.error.back.digit.count`: 87,
-`ipaddress.error.cannot.end.with.single.separator`: 96,
-`ipaddress.error.too.few.segments.digit.count`: 122,
-`ipaddress.error.version.mismatch`: 143,
-`ipaddress.error.ipMismatch`: 61,
-
+var keyStrMap = map[string]int{
+	`ipaddress.error.sizeMismatch`:                             72,
+	`ipaddress.error.ipv6.invalid.segment.count`:               130,
+	`ipaddress.host.error.invalidService.no.chars`:             140,
+	`ipaddress.error.no.wildcard`:                              11,
+	`ipaddress.error.single.wildcard.order`:                    42,
+	`ipaddress.error.zero.not.allowed`:                         59,
+	`ipaddress.host.error.host.resolve`:                        89,
+	`ipaddress.error.ipv4.too.few.segments`:                    90,
+	`ipaddress.host.error.bracketed.conflicting.prefix.length`: 115,
+	`ipaddress.host.error.empty.host.resolve`:                  20,
+	`ipaddress.error.zone`:                                     35,
+	`ipaddress.error.only.ipv6.square.brackets`:                53,
+	`ipaddress.host.error.invalid.service.hyphen.end`:          60,
+	`ipaddress.error.invalidMACIPv6Range`:                      100,
+	`ipaddress.error.single.segment`:                           142,
+	`ipaddress.error.exceeds.size`:                             26,
+	`ipaddress.mac.error.not.eui.convertible`:                  28,
+	`ipaddress.error.reverseRange`:                             36,
+	`ipaddress.error.null.segment`:                             44,
+	`ipaddress.error.ipVersionMismatch`:                        105,
+	`ipaddress.error.only.ipv6.has.zone`:                       21,
+	`ipaddress.error.maskMismatch`:                             24,
+	`ipaddress.host.error.invalid`:                             18,
+	`ipaddress.error.separatePrefixFromMask`:                   62,
+	`ipaddress.host.error`:                                     73,
+	`ipaddress.error.ipv6.segment.format`:                      75,
+	`ipaddress.host.error.invalidPort.too.large`:               84,
+	`ipaddress.host.error.host.brackets`:                       121,
+	`ipaddress.error.ipv6.ambiguous`:                           5,
+	`ipaddress.error.no.mixed`:                                 30,
+	`ipaddress.error.ipVersionIndeterminate`:                   64,
+	`ipaddress.host.error.cidrprefixonly`:                      108,
+	`ipaddress.error.splitSeg`:                                 141,
+	`ipaddress.host.error.port`:                                33,
+	`ipaddress.error.mixedNetworks`:                            50,
+	`ipaddress.error.ipv4.segment.hex`:                         102,
+	`ipaddress.mac.error.mix.format.characters.at.index`:       113,
+	`ipaddress.error.invalid.mask.extra.chars`:                 131,
+	`ipaddress.error.mismatched.bit.size`:                      13,
+	`ipaddress.host.error.invalid.character.at.index`:          15,
+	`ipaddress.host.error.ipaddress`:                           58,
+	`ipaddress.error.too.many.segments`:                        123,
+	`ipaddress.error.ipv4.format`:                              54,
+	`ipaddress.error.prefix.only`:                              66,
+	`ipaddress.error.ip.format`:                                67,
+	`ipaddress.error.nullNetwork`:                              127,
+	`ipaddress.error.ipv6.invalid.byte.count`:                  137,
+	`ipaddress.error.wildcardOrRangeIPv6`:                      23,
+	`ipaddress.host.error.segment.too.short`:                   32,
+	`ipaddress.host.error.bracketed.conflicting.mask`:          93,
+	`ipaddress.host.error.invalid.port.service`:                126,
+	`ipaddress.error.mask.single.segment`:                      25,
+	`ipaddress.error.ipv6.separator`:                           56,
+	`ipaddress.mac.error.format`:                               94,
+	`ipaddress.error.negative`:                                 133,
+	`ipaddress.error.invalid.size`:                             144,
+	`ipaddress.error.incompatible.position`:                    45,
+	`ipaddress.error.no.range`:                                 22,
+	`ipaddress.host.error.url`:                                 52,
+	`ipaddress.error.only.zone`:                                63,
+	`ipaddress.error.url`:                                      65,
+	`ipaddress.error.ipv6.format`:                              76,
+	`ipaddress.error.invalid.mask.empty`:                       34,
+	`ipaddress.error.invalid.character`:                        46,
+	`ipaddress.host.error.bracketed.missing.end`:               51,
+	`ipaddress.host.error.ipv6.not.bracketed`:                  86,
+	`ipaddress.host.error.invalid.type`:                        4,
+	`ipaddress.error.mixedVersions`:                            10,
+	`ipaddress.error.invalidCIDRPrefixOrMask`:                  88,
+	`ipaddress.error.invalid.zone`:                             98,
+	`ipaddress.error.ipv4.invalid.octal.digit`:                 1,
+	`ipaddress.host.error.invalid.length`:                      17,
+	`ipaddress.error.too.few.segments`:                         103,
+	`ipaddress.error.empty`:                                    99,
+	`ipaddress.error.address.out.of.range`:                     114,
+	`ipaddress.error.empty.segment.at.index`:                   125,
+	`ipaddress.error.ipv4.invalid.binary.digit`:                7,
+	`ipaddress.error.special.ip`:                               8,
+	`ipaddress.error.invalid.zone.encoding`:                    106,
+	`ipaddress.error.invalidMixedRange`:                        110,
+	`ipaddress.error.invalid.joined.ranges`:                    117,
+	`ipaddress.error.invalidCIDRPrefix`:                        6,
+	`ipaddress.error.ipv4`:                                     16,
+	`ipaddress.error.ipv4.invalid.decimal.digit`:               43,
+	`ipaddress.error.address.lower.exceeds.upper`:              107,
+	`ipaddress.error.no.iterator.element.to.remove`:            112,
+	`ipaddress.host.error.all.numeric`:                         145,
+	`ipaddress.error.invalidRange`:                             29,
+	`ipaddress.error.ipv6`:                                     38,
+	`ipaddress.error.mac.invalid.segment.count`:                40,
+	`ipaddress.error.front.digit.count`:                        95,
+	`ipaddress.error.ipv6.cannot.start.with.single.separator`:  104,
+	`ipaddress.error.separatePrefixFromAddress`:                111,
+	`ipaddress.error.all`:                                      116,
+	`ipaddress.error.address.is.ipv6`:                          3,
+	`ipaddress.error.invalid.character.at.index`:               139,
+	`ipaddress.error.ipv6.prefix.leading.zeros`:                69,
+	`ipaddress.error.invalid.character.combination`:            81,
+	`ipaddress.error.invalidMultipleMask`:                      109,
+	`ipaddress.error.address.not.block`:                        134,
+	`ipaddress.error.unavailable.numeric`:                      138,
+	`ipaddress.address.error`:                                  48,
+	`ipaddress.error.ipv4.segment.too.large`:                   77,
+	`ipaddress.error.address.too.large`:                        82,
+	`ipaddress.host.error.bracketed.not.ipv6`:                  19,
+	`ipaddress.error.segmentMismatch`:                          12,
+	`ipaddress.error.inconsistent.prefixes`:                    31,
+	`ipaddress.error.address.is.ipv4`:                          47,
+	`ipaddress.error.no.single.wildcard`:                       91,
+	`ipaddress.error.notNetworkMask`:                           129,
+	`ipaddress.host.error.empty`:                               136,
+	`ipaddress.error.segment.too.short.at.index`:               78,
+	`ipaddress.error.prefixSize`:                               128,
+	`ipaddress.error.ipv4.invalid.byte.count`:                  9,
+	`ipaddress.host.error.invalidPort.no.digits`:               70,
+	`ipaddress.error.invalid.mask.wildcard`:                    83,
+	`ipaddress.host.error.invalid.mechanism`:                   120,
+	`ipaddress.error.mac.invalid.byte.count`:                   124,
+	`ipaddress.error.lower.below.range`:                        135,
+	`ipaddress.host.error.invalid.service.hyphen.consecutive`:  49,
+	`ipaddress.host.error.invalidService.too.long`:             57,
+	`ipaddress.error.lower.above.range`:                        85,
+	`ipaddress.error.ipv4.too.many.segments`:                   118,
+	`ipaddress.error.segment.leading.zeros`:                    0,
+	`ipaddress.host.error.too.many.segments`:                   14,
+	`ipaddress.error.empty.start.of.range`:                     74,
+	`ipaddress.error.ipv4.invalid.segment.count`:               80,
+	`ipaddress.error.CIDRNotAllowed`:                           92,
+	`ipaddress.error.invalid.position`:                         37,
+	`ipaddress.host.error.invalidService.no.letter`:            41,
+	`ipaddress.error.segment.too.long.at.index`:                68,
+	`ipaddress.error.zoneAndCIDRPrefix`:                        97,
+	`ipaddress.error.index.exceeds.prefix.length`:              119,
+	`ipaddress.error.splitMismatch`:                            132,
+	`ipaddress.error.ipv6.has.zone`:                            101,
+	`ipaddress.error.invalid.mask.address.empty`:               2,
+	`ipaddress.host.error.service`:                             27,
+	`ipaddress.error.invalid.character.combination.at.index`:   55,
+	`ipaddress.error.ipv4.prefix.leading.zeros`:                79,
+	`ipaddress.error.segment.too.long`:                         39,
+	`ipaddress.host.error.invalid.service.hyphen.start`:        71,
+	`ipaddress.error.back.digit.count`:                         87,
+	`ipaddress.error.cannot.end.with.single.separator`:         96,
+	`ipaddress.error.too.few.segments.digit.count`:             122,
+	`ipaddress.error.version.mismatch`:                         143,
+	`ipaddress.error.ipMismatch`:                               61,
 }
 
 var strIndices = []int{
-0,30,49,72,87,110,146,314,334,409,
-444,502,550,625,652,669,695,731,750,762,
-792,821,856,902,959,1028,1086,1106,1153,1194,
-1248,1289,1339,1358,1397,1410,1431,1496,1522,1558,
-1574,1611,1653,1714,1735,1781,1814,1842,1857,1874,
-1918,1960,1997,2033,2077,2125,2187,2221,2242,2283,
-2313,2348,2399,2436,2475,2509,2549,2585,2721,2746,
-2786,2805,2844,2877,2888,2907,2922,2994,3016,3042,
-3082,3120,3164,3181,3197,3218,3230,3267,3315,3510,
-3533,3595,3660,3708,3765,3811,3860,3967,3991,4035,
-4062,4123,4143,4182,4210,4322,4347,4381,4430,4485,
-4522,4584,4641,4670,4723,4760,4826,4862,4927,4961,
-4988,5019,5088,5142,5171,5205,5235,5283,5297,5372,
-5398,5436,5474,5606,5628,5692,5704,5756,5791,5834,
-5858,5879,5960,6035,6080,6100,
+	0, 30, 49, 72, 87, 110, 146, 314, 334, 409,
+	444, 502, 550, 625, 652, 669, 695, 731, 750, 762,
+	792, 821, 856, 902, 959, 1028, 1086, 1106, 1153, 1194,
+	1248, 1289, 1339, 1358, 1397, 1410, 1431, 1496, 1522, 1558,
+	1574, 1611, 1653, 1714, 1735, 1781, 1814, 1842, 1857, 1874,
+	1918, 1960, 1997, 2033, 2077, 2125, 2187, 2221, 2242, 2283,
+	2313, 2348, 2399, 2436, 2475, 2509, 2549, 2585, 2721, 2746,
+	2786, 2805, 2844, 2877, 2888, 2907, 2922, 2994, 3016, 3042,
+	3082, 3120, 3164, 3181, 3197, 3218, 3230, 3267, 3315, 3510,
+	3533, 3595, 3660, 3708, 3765, 3811, 3860, 3967, 3991, 4035,
+	4062, 4123, 4143, 4182, 4210, 4322, 4347, 4381, 4430, 4485,
+	4522, 4584, 4641, 4670, 4723, 4760, 4826, 4862, 4927, 4961,
+	4988, 5019, 5088, 5142, 5171, 5205, 5235, 5283, 5297, 5372,
+	5398, 5436, 5474, 5606, 5628, 5692, 5704, 5756, 5791, 5834,
+	5858, 5879, 5960, 6035, 6080, 6100,
 }
 
-var strVals =
-`segment value starts with zero`+
-`invalid octal digit`+
-`mask with empty address`+
-`address is IPv6`+
-`invalid IP address type`+
-`IPv6 compressed address is ambiguous`+
-`CIDR prefix must indicate the count of subnet bits, between 0 and 32 subnet bits for IP version 4 addresses and between 0 and 128 subnet bits for IP version 6 addresses`+
-`invalid binary digit`+
-`a special IP address with first segment larger than 255 cannot be used here`+
-`IPv4 address has invalid byte count`+
-`Please specify either IPv4 or IPv6 addresses, but not both`+
-`validation options do no allow wildcard segments`+
-`joining segments results in a joined segment that is not a sequential range`+
-`mismatched address bit size`+
-`too many segments`+
-`invalid character at index`+
-`validation options do not allow IPv4`+
-`invalid host length`+
-`invalid host`+
-`bracketed address must be IPv6`+
-`empty host cannot be resolved`+
-`only ipv6 can have a zone specified`+
-`validation options do not allow range segments`+
-`Wildcards and ranges are not supported for IPv6 addresses`+
-`applying the mask results in a segment that is not a sequential range`+
-`mask with single segment not allowed by validation options`+
-`exceeds address size`+
-`validation options do no allow for service name`+
-`MAC address cannot be converted to EUI 64`+
-`in segment range, lower value must precede upper value`+
-`validation options do no allow mixed IPv6`+
-`segments invalid due to inconsistent prefix values`+
-`zero-length segment`+
-`validation options do no allow for port`+
-`mask is empty`+
-`IPv6 zone not allowed`+
-`reversing a range of values does not result in a sequential range`+
-`invalid index into address`+
-`validation options do not allow IPv6`+
-`segment too long`+
-`MAC address has invalid segment count`+
-`service name must have at least one letter`+
-`single wildcards can appear only as the end of segment values`+
-`invalid decimal digit`+
-`section or grouping array contains a nil value`+
-`incompatible positions in address`+
-`invalid character in segment`+
-`address is IPv4`+
-`IP Address error:`+
-`service name cannot have consecutive hyphens`+
-`Address components have different networks`+
-`bracketed address missing end bracket`+
-`please supply a host, not a full URL`+
-`only ipv6 can be enclosed in square brackets`+
-`invalid format of IPv4 (255.255.255.255) address`+
-`invalid combination with earlier character at character number`+
-`invalid position of IPv6 separator`+
-`service name too long`+
-`validation options do no allow IP address`+
-`a non-zero address is required`+
-`service name cannot end in a hyphen`+
-`IP version of address must match IP version of mask`+
-`specify a mask or prefix but not both`+
-`with a zone you must specify an address`+
-`requested version is indeterminate`+
-`please supply an address, not a full URL`+
-`a prefix-only address is not allowed`+
-`invalid format of IP address, whether IPv4 (255.255.255.255) or IPv6 (ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff) or other supported format`+
-`segment too long at index`+
-`IPv6 CIDR prefix length starts with zero`+
-`port value is empty`+
-`service name cannot start with a hyphen`+
-`the number of segments must match`+
-`host error:`+
-`range start missing`+
-`invalid segment`+
-`invalid format of IPv6 (ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff) address`+
-`IPv4 segment too large`+
-`segment too short at index`+
-`IPv4 CIDR prefix length starts with zero`+
-`IPv4 address has invalid segment count`+
-`invalid combination of characters in segment`+
-`address too large`+
-`wildcard in mask`+
-`port number too large`+
-`above range:`+
-`IPv6 address must be square-bracketed`+
-`back address in range has an invalid digit count`+
-`A mask must be a single IP address, while a CIDR prefix length must indicate the count of subnet bits, between 0 and 32 for IP version 4 addresses and between 0 and 128 for IP version 6 addresses`+
-`host cannot be resolved`+
-`options do not allow IPv4 address with less than four segments`+
-`validation options do no allow single character wildcard segments`+
-`CIDR prefix or mask not allowed for this address`+
-`conflicting masks inside and outside of bracketed address`+
-`validation options do no allow this mac format`+
-`front address in range has an invalid digit count`+
-`An IPv6 address cannot end with a single colon, it must end with either two colons or with the last segment`+
-`zone and prefix combined`+
-`invalid zone or scope id character at index:`+
-`you must specify an address`+
-`MAC segment ranges cannot be converted to IPv6 segment ranges`+
-`no ipv6 zone allowed`+
-`IPv4 segment contains hexadecimal value`+
-`address has too few segments`+
-`An IPv6 address cannot start with a single colon, it must start with either two colons or with the first segment`+
-`the IP version must match`+
-`invalid encoding in zone at index:`+
-`invalid address range, lower bound exceeds upper:`+
-`please supply an address, not a CIDR prefix length only`+
-`mask must specify a single IP address`+
-`IPv4 segment ranges cannot be converted to IPv6 segment ranges`+
-`specify the IP address separately from the mask or prefix`+
-`no iterator element to remove`+
-`invalid mix of mac address format characters at index`+
-`Address not within the assigned range`+
-`conflicting prefix lengths inside and outside of bracketed address`+
-`the universal address is not allowed`+
-`range of joined segments cannot be divided into individual ranges`+
-`IPv4 address has too many segments`+
-`index exceeds prefix length`+
-`address mechanism not supported`+
-`ipv6 addresses must be surrounded by square brackets [] in host names`+
-`address has too few segments or an invalid digit count`+
-`address has too many segments`+
-`MAC address has invalid byte count`+
-`segment value missing at index`+
-`invalid port or service name character at index:`+
-`network is nil`+
-`the network prefix bit-length is negative or exceeds the address bit-length`+
-`mask is not a network mask`+
-`IPv6 address has invalid segment count`+
-`invalid chars following mask at index:`+
-`splitting digits in range segments results in an invalid string (eg 12-22 becomes 1-2.2-2 which is 12 and 22 and nothing in between)`+
-`negative address value`+
-`Address is neither a CIDR prefix block nor an individual address`+
-`below range:`+
-`validation options do no allow empty string for host`+
-`IPv6 address has invalid byte count`+
-`No numeric value available for this address`+
-`invalid character number`+
-`service name is empty`+
-`cannot split ranged segment into smaller ranged segments spanning the same values`+
-`validation options do not allow you to specify a non-segmented single value`+
-`Unable to convert version of argument address`+
-`invalid address size`+
-`host cannot be all numeric`
+var strVals = `segment value starts with zero` +
+	`invalid octal digit` +
+	`mask with empty address` +
+	`address is IPv6` +
+	`invalid IP address type` +
+	`IPv6 compressed address is ambiguous` +
+	`CIDR prefix must indicate the count of subnet bits, between 0 and 32 subnet bits for IP version 4 addresses and between 0 and 128 subnet bits for IP version 6 addresses` +
+	`invalid binary digit` +
+	`a special IP address with first segment larger than 255 cannot be used here` +
+	`IPv4 address has invalid byte count` +
+	`Please specify either IPv4 or IPv6 addresses, but not both` +
+	`validation options do no allow wildcard segments` +
+	`joining segments results in a joined segment that is not a sequential range` +
+	`mismatched address bit size` +
+	`too many segments` +
+	`invalid character at index` +
+	`validation options do not allow IPv4` +
+	`invalid host length` +
+	`invalid host` +
+	`bracketed address must be IPv6` +
+	`empty host cannot be resolved` +
+	`only ipv6 can have a zone specified` +
+	`validation options do not allow range segments` +
+	`Wildcards and ranges are not supported for IPv6 addresses` +
+	`applying the mask results in a segment that is not a sequential range` +
+	`mask with single segment not allowed by validation options` +
+	`exceeds address size` +
+	`validation options do no allow for service name` +
+	`MAC address cannot be converted to EUI 64` +
+	`in segment range, lower value must precede upper value` +
+	`validation options do no allow mixed IPv6` +
+	`segments invalid due to inconsistent prefix values` +
+	`zero-length segment` +
+	`validation options do no allow for port` +
+	`mask is empty` +
+	`IPv6 zone not allowed` +
+	`reversing a range of values does not result in a sequential range` +
+	`invalid index into address` +
+	`validation options do not allow IPv6` +
+	`segment too long` +
+	`MAC address has invalid segment count` +
+	`service name must have at least one letter` +
+	`single wildcards can appear only as the end of segment values` +
+	`invalid decimal digit` +
+	`section or grouping array contains a nil value` +
+	`incompatible positions in address` +
+	`invalid character in segment` +
+	`address is IPv4` +
+	`IP Address error:` +
+	`service name cannot have consecutive hyphens` +
+	`Address components have different networks` +
+	`bracketed address missing end bracket` +
+	`please supply a host, not a full URL` +
+	`only ipv6 can be enclosed in square brackets` +
+	`invalid format of IPv4 (255.255.255.255) address` +
+	`invalid combination with earlier character at character number` +
+	`invalid position of IPv6 separator` +
+	`service name too long` +
+	`validation options do no allow IP address` +
+	`a non-zero address is required` +
+	`service name cannot end in a hyphen` +
+	`IP version of address must match IP version of mask` +
+	`specify a mask or prefix but not both` +
+	`with a zone you must specify an address` +
+	`requested version is indeterminate` +
+	`please supply an address, not a full URL` +
+	`a prefix-only address is not allowed` +
+	`invalid format of IP address, whether IPv4 (255.255.255.255) or IPv6 (ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff) or other supported format` +
+	`segment too long at index` +
+	`IPv6 CIDR prefix length starts with zero` +
+	`port value is empty` +
+	`service name cannot start with a hyphen` +
+	`the number of segments must match` +
+	`host error:` +
+	`range start missing` +
+	`invalid segment` +
+	`invalid format of IPv6 (ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff) address` +
+	`IPv4 segment too large` +
+	`segment too short at index` +
+	`IPv4 CIDR prefix length starts with zero` +
+	`IPv4 address has invalid segment count` +
+	`invalid combination of characters in segment` +
+	`address too large` +
+	`wildcard in mask` +
+	`port number too large` +
+	`above range:` +
+	`IPv6 address must be square-bracketed` +
+	`back address in range has an invalid digit count` +
+	`A mask must be a single IP address, while a CIDR prefix length must indicate the count of subnet bits, between 0 and 32 for IP version 4 addresses and between 0 and 128 for IP version 6 addresses` +
+	`host cannot be resolved` +
+	`options do not allow IPv4 address with less than four segments` +
+	`validation options do no allow single character wildcard segments` +
+	`CIDR prefix or mask not allowed for this address` +
+	`conflicting masks inside and outside of bracketed address` +
+	`validation options do no allow this mac format` +
+	`front address in range has an invalid digit count` +
+	`An IPv6 address cannot end with a single colon, it must end with either two colons or with the last segment` +
+	`zone and prefix combined` +
+	`invalid zone or scope id character at index:` +
+	`you must specify an address` +
+	`MAC segment ranges cannot be converted to IPv6 segment ranges` +
+	`no ipv6 zone allowed` +
+	`IPv4 segment contains hexadecimal value` +
+	`address has too few segments` +
+	`An IPv6 address cannot start with a single colon, it must start with either two colons or with the first segment` +
+	`the IP version must match` +
+	`invalid encoding in zone at index:` +
+	`invalid address range, lower bound exceeds upper:` +
+	`please supply an address, not a CIDR prefix length only` +
+	`mask must specify a single IP address` +
+	`IPv4 segment ranges cannot be converted to IPv6 segment ranges` +
+	`specify the IP address separately from the mask or prefix` +
+	`no iterator element to remove` +
+	`invalid mix of mac address format characters at index` +
+	`Address not within the assigned range` +
+	`conflicting prefix lengths inside and outside of bracketed address` +
+	`the universal address is not allowed` +
+	`range of joined segments cannot be divided into individual ranges` +
+	`IPv4 address has too many segments` +
+	`index exceeds prefix length` +
+	`address mechanism not supported` +
+	`ipv6 addresses must be surrounded by square brackets [] in host names` +
+	`address has too few segments or an invalid digit count` +
+	`address has too many segments` +
+	`MAC address has invalid byte count` +
+	`segment value missing at index` +
+	`invalid port or service name character at index:` +
+	`network is nil` +
+	`the network prefix bit-length is negative or exceeds the address bit-length` +
+	`mask is not a network mask` +
+	`IPv6 address has invalid segment count` +
+	`invalid chars following mask at index:` +
+	`splitting digits in range segments results in an invalid string (eg 12-22 becomes 1-2.2-2 which is 12 and 22 and nothing in between)` +
+	`negative address value` +
+	`Address is neither a CIDR prefix block nor an individual address` +
+	`below range:` +
+	`validation options do no allow empty string for host` +
+	`IPv6 address has invalid byte count` +
+	`No numeric value available for this address` +
+	`invalid character number` +
+	`service name is empty` +
+	`cannot split ranged segment into smaller ranged segments spanning the same values` +
+	`validation options do not allow you to specify a non-segmented single value` +
+	`Unable to convert version of argument address` +
+	`invalid address size` +
+	`host cannot be all numeric`
 
 func lookupStr(key string) (result string) {
 	if index, ok := keyStrMap[key]; ok {
