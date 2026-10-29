@@ -67,7 +67,7 @@ type HostNameParams interface {
 	// Characters not reserved include all digis, all letters both upper and lowercase, underscore, tilde, hyphen, and period.  All other characters are reserved.
 	AllowsReservedCharsInSquareBrackets() bool
 
-	// RequiresSquareBracketedIPv6 indicates whether an IPv6 literal address must be encapsualted within square brackets '[' and ']'
+	// RequiresSquareBracketedIPv6 indicates whether an IPv6 literal address must be encapsulated within square brackets '[' and ']'
 	RequiresSquareBracketedIPv6() bool
 
 	// ExpectsPort indicates whether a port should be inferred from a host like 1:2:3:4::80 that is ambiguous if a port might have been appended.
@@ -143,7 +143,7 @@ func (params *hostNameParameters) AllowsReservedCharsInSquareBrackets() bool {
 	return params.allowReservedCharsInSquareBrackets
 }
 
-// RequiresSquareBracketedIPv6 indicates whether an IPv6 literal address must be encapsualted within square brackets '[' and ']'
+// RequiresSquareBracketedIPv6 indicates whether an IPv6 literal address must be encapsulated within square brackets '[' and ']'
 func (params *hostNameParameters) RequiresSquareBracketedIPv6() bool {
 	return params.requireSquareBracketedIPv6
 }
