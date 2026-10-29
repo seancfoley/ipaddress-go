@@ -874,19 +874,19 @@ func (t testBase) testIPv6OnlyStrings(w *ipaddr.IPAddressString, ipAddr *ipaddr.
 	t.confirmAddrStrings(ipAddr.ToIP(), m, mixedCompressCoveredHost, mixedNoCompressHost, mixedNoCompressMixed, base85)
 	t.confirmHostStrings(ipAddr.ToIP(), false, m, mixedCompressCoveredHost, mixedNoCompressHost, mixedNoCompressMixed)
 
-	nMatch := m == (mixedString)
+	nMatch := m == mixedString
 	if !nMatch {
 		t.addFailure(newFailure("failed expected: "+mixedString+" actual: "+m, w))
 	} else {
-		mccMatch := mixedCompressCoveredHost == (mixedStringCompressCoveredHost)
+		mccMatch := mixedCompressCoveredHost == mixedStringCompressCoveredHost
 		if !mccMatch {
 			t.addFailure(newFailure("failed expected: "+mixedStringCompressCoveredHost+" actual: "+mixedCompressCoveredHost, w))
 		} else {
-			msMatch := mixedNoCompressHost == (mixedStringNoCompressHost)
+			msMatch := mixedNoCompressHost == mixedStringNoCompressHost
 			if !msMatch {
 				t.addFailure(newFailure("failed expected: "+mixedStringNoCompressHost+" actual: "+mixedNoCompressHost, w))
 			} else {
-				mncmMatch := mixedNoCompressMixed == (mixedStringNoCompressMixed)
+				mncmMatch := mixedNoCompressMixed == mixedStringNoCompressMixed
 				if !mncmMatch {
 					t.addFailure(newFailure("failed expected: "+mixedStringNoCompressMixed+" actual: "+mixedNoCompressMixed, w))
 				}
