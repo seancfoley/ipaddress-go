@@ -25,6 +25,7 @@ import (
 
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrstr"
+	"github.com/seancfoley/ipaddress-go/ipaddr/addrstrparam"
 )
 
 const (
@@ -2264,8 +2265,14 @@ func (addr *IPAddress) ToSQLWildcardString() string {
 	return addr.init().toSQLWildcardString()
 }
 
+// FullStringParsingParameters provides for the parsing of address strings while not interpreting a leading '0' in IPv4 segment values as indicating an octal value.
+// Use it as the paameters argument for NewIPAddressStringParams.
+// Build upon it by passing it into new(IPAddressStringParamsBuilder).Set and then calling ToParams on the built parameters object.
+var FullStringParsingParameters = new(addrstrparam.IPAddressStringParamsBuilder).GetIPv4AddressParamsBuilder().Allow_inet_aton_octal(false).GetParentBuilder().ToParams()
+
 // ToFullString produces a string with no compressed segments and all segments of full length with leading zeros,
 // which is 4 characters for IPv6 segments and 3 characters for IPv4 segments.
+// To parse a the string returned from ToFullString, you must not allow octal segments.  You can do this by passing FullStringParsingParameters into NewIPAddressStringParams as the parameters argument.
 func (addr *IPAddress) ToFullString() string {
 	if addr == nil {
 		return nilString()
