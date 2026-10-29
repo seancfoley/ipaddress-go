@@ -17,8 +17,9 @@
 package ipaddr
 
 import (
-	"github.com/seancfoley/ipaddress-go/ipaddr/addrstrparam"
 	"strings"
+
+	"github.com/seancfoley/ipaddress-go/ipaddr/addrstrparam"
 
 	"github.com/seancfoley/ipaddress-go/ipaddr/addrerr"
 )
@@ -69,6 +70,10 @@ func (host *parsedHost) getPort() Port {
 
 func (host *parsedHost) getService() string {
 	return host.labelsQualifier.getService()
+}
+
+func (host *parsedHost) getZone() Zone {
+	return host.labelsQualifier.getZone()
 }
 
 func (host *parsedHost) getNetworkPrefixLen() PrefixLen {

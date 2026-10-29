@@ -59,6 +59,17 @@ type HostNameParams interface {
 	// AllowsService allows a host name to specify a service, which typically maps to a port.
 	AllowsService() bool
 
+	// AllowsHostZone allows a host name to specify a zone, separate from the zone that can be specified with an IPv6 address.
+	AllowsHostZone() bool
+
+	// AllowsReservedCharsInSquareBrackets indicates whether an IPv6-address zone can include the space character and other reserved chars.
+	// Regardless, hex encoding can be used instead without this option.  For instance, a space can be specified with hex encoding, '%32'.
+	// Characters not reserved include all digis, all letters both upper and lowercase, underscore, tilde, hyphen, and period.  All other characters are reserved.
+	AllowsReservedCharsInSquareBrackets() bool
+
+	// RequiresSquareBracketedIPv6 indicates whether an IPv6 literal address must be encapsualted within square brackets '[' and ']'
+	RequiresSquareBracketedIPv6() bool
+
 	// ExpectsPort indicates whether a port should be inferred from a host like 1:2:3:4::80 that is ambiguous if a port might have been appended.
 	// The final segment would normally be considered part of the address, but can be interpreted as a port instead.
 	ExpectsPort() bool
@@ -75,7 +86,7 @@ type hostNameParameters struct {
 	preferredVersion IPVersion
 
 	noEmpty, noBracketedIPv4, noBracketedIPv6,
-	noNormalizeToLower, noIPAddress, noPort, noService, expectPort bool
+	noNormalizeToLower, noIPAddress, noPort, noService, allowHostZone, allowReservedCharsInSquareBrackets, requireSquareBracketedIPv6, expectPort bool //TODO I am leaning towards reversing the default behaviour to hostZone false, not noHostZone false
 }
 
 // AllowsEmpty determines if an empty host string is considered valid.
@@ -118,6 +129,23 @@ func (params *hostNameParameters) AllowsPort() bool {
 // AllowsService allows a host name to specify a service, which typically maps to a port.
 func (params *hostNameParameters) AllowsService() bool {
 	return !params.noService
+}
+
+// AllowsHostZone allows a host name to specify a zone, separate from the zone that can be specified with an IPv6 address.
+func (params *hostNameParameters) AllowsHostZone() bool {
+	return params.allowHostZone
+}
+
+// AllowsReservedCharsInSquareBrackets indicates whether a zone can include the space character and other reserved chars.
+// Regardless, hex encoding can be used instead without this option.  For instance, a space can be specified with hex encoding, '%32'.
+// Characters not reserved include all digis, all letters both upper and lowercase, underscore, tilde, hyphen, and period.  All other characters are reserved.
+func (params *hostNameParameters) AllowsReservedCharsInSquareBrackets() bool {
+	return params.allowReservedCharsInSquareBrackets
+}
+
+// RequiresSquareBracketedIPv6 indicates whether an IPv6 literal address must be encapsualted within square brackets '[' and ']'
+func (params *hostNameParameters) RequiresSquareBracketedIPv6() bool {
+	return params.requireSquareBracketedIPv6
 }
 
 // ExpectsPort indicates whether a port should be inferred from a host like 1:2:3:4::80 that is ambiguous if a port might have been appended.
@@ -231,6 +259,25 @@ func (builder *HostNameParamsBuilder) AllowPort(allow bool) *HostNameParamsBuild
 // AllowService dictates whether to allow a host name to specify a service, which typically maps to a port.
 func (builder *HostNameParamsBuilder) AllowService(allow bool) *HostNameParamsBuilder {
 	builder.hostNameParameters.noService = !allow
+	return builder
+}
+
+// AllowHostZone dictates whether to allow a host name to specify a zone.
+func (builder *HostNameParamsBuilder) AllowHostZone(allow bool) *HostNameParamsBuilder {
+	builder.hostNameParameters.allowHostZone = allow
+	return builder
+}
+
+func (builder *HostNameParamsBuilder) RequireSquareBracketedIPv6(require bool) *HostNameParamsBuilder {
+	builder.hostNameParameters.requireSquareBracketedIPv6 = require
+	return builder
+}
+
+// AllowReservedCharsInSquareBrackets indicates whether a zone can include the space character and other reserved chars.
+// Regardless, hex encoding can be used instead without this option.  For instance, a space can be specified with hex encoding, '%32'.
+// Characters not reserved include all digis, all letters both upper and lowercase, underscore, tilde, hyphen, and period.  All other characters are reserved.
+func (builder *HostNameParamsBuilder) AllowReservedCharsInSquareBrackets(allow bool) *HostNameParamsBuilder {
+	builder.hostNameParameters.allowReservedCharsInSquareBrackets = allow
 	return builder
 }
 

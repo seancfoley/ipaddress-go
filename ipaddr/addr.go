@@ -45,6 +45,8 @@ const (
 	SegmentSqlWildcardStr       = "%"
 	SegmentSqlSingleWildcard    = '_'
 	SegmentSqlSingleWildcardStr = "_"
+
+	ZoneSeparator = SegmentSqlWildcard // if we allow zones, then typically '%' denotes a zone, not an SQL wildcard
 )
 
 var segmentWildcardStr = SegmentWildcardStr

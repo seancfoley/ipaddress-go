@@ -26,7 +26,7 @@ import (
 )
 
 func main() {
-	path := "ipaddr/"
+	path := "../../ipaddr/"
 	mappings, err := readPropertiesFile(path + "IPAddressResources.properties")
 	if err != nil {
 		log.Fatal(err)

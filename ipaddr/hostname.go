@@ -489,7 +489,7 @@ func (host *HostName) ToAddresses() (addrs []*IPAddress, err addrerr.AddressErro
 	return data.resolvedAddrs, nil
 }
 
-// IsValid returns whether this represents a valid host name or IP address format.
+// IsValid returns whether this represents a valid host name or IP address format.  Call Validate to receive an error when validation fails.
 func (host *HostName) IsValid() bool {
 	return host.init().Validate() == nil
 }
@@ -523,6 +523,17 @@ func (host *HostName) GetService() string {
 	return ""
 }
 
+// GetZone returns the host zone if a host zone was supplied separately from an IPv6 address.  Otherwise it returns NoZone, which is an empty string.
+// A host zone can be specified for any address.  For IPv6 address hosts, it must be separated from the address (by either a bracket, port, or service name), otherwise it is stored as a zone with the address.
+// This also allows an IPv6 address host to specify two zones, one with the address and one with the host.
+func (host *HostName) GetZone() Zone {
+	host = host.init()
+	if host.IsValid() {
+		return host.parsedHost.getZone()
+	}
+	return ""
+}
+
 // ToNormalizedString provides a normalized string which is lowercase for host strings, and which is the normalized string for addresses.
 func (host *HostName) ToNormalizedString() string {
 	if str := host.normalizedString; str != nil {
@@ -544,12 +555,13 @@ func (host *HostName) ToQualifiedString() string {
 func (host *HostName) toNormalizedString(wildcard, addTrailingDot bool) string {
 	if host.IsValid() {
 		var builder strings.Builder
+		parsedHost := host.parsedHost
 		if host.IsAddress() {
 			toNormalizedHostString(host.AsAddress(), wildcard, &builder)
 		} else if host.IsAddressString() {
 			builder.WriteString(host.AsAddressString().ToNormalizedString())
 		} else {
-			builder.WriteString(host.parsedHost.getHost())
+			builder.WriteString(parsedHost.getHost())
 			if addTrailingDot {
 				builder.WriteByte(LabelSeparator)
 			}
@@ -559,27 +571,32 @@ func (host *HostName) toNormalizedString(wildcard, addTrailingDot bool) string {
 			 *
 			 * Also note that ports and prefix/mask cannot appear at the same time, so this does not interfere with the port code below.
 			 */
-			networkPrefixLength := host.parsedHost.getEquivalentPrefixLen()
+			networkPrefixLength := parsedHost.getEquivalentPrefixLen()
 			if networkPrefixLength != nil {
 				builder.WriteByte(PrefixLenSeparator)
 				toUnsignedString(uint64(networkPrefixLength.bitCount()), 10, &builder)
 			} else {
-				mask := host.parsedHost.getMask()
+				mask := parsedHost.getMask()
 				if mask != nil {
 					builder.WriteByte(PrefixLenSeparator)
 					builder.WriteString(mask.ToNormalizedString())
 				}
 			}
 		}
-		port := host.parsedHost.getPort()
+		port := parsedHost.getPort()
 		if port != nil {
 			toNormalizedPortString(port.portNum(), &builder)
 		} else {
-			service := host.parsedHost.getService()
+			service := parsedHost.getService()
 			if service != "" {
 				builder.WriteByte(PortSeparator)
 				builder.WriteString(service)
 			}
+		}
+		hostZone := parsedHost.getZone()
+		if hostZone != NoZone {
+			builder.WriteByte(SegmentSqlWildcard)
+			builder.WriteString(hostZone.String())
 		}
 		return builder.String()
 	}
@@ -659,7 +676,8 @@ func (host *HostName) Equal(other *HostName) bool {
 			return parsedHost.getEquivalentPrefixLen().Equal(otherParsedHost.getEquivalentPrefixLen()) &&
 				parsedHost.getMask().Equal(otherParsedHost.getMask()) &&
 				parsedHost.getPort().Equal(otherParsedHost.getPort()) &&
-				parsedHost.getService() == otherParsedHost.getService()
+				parsedHost.getService() == otherParsedHost.getService() &&
+				parsedHost.getZone() == otherParsedHost.getZone()
 		}
 		return false
 	}
@@ -922,8 +940,8 @@ func (host *HostName) Compare(other *HostName) int {
 						}
 						//fall through to compare ports
 					}
-				} //end non-address host compare
-			}
+				}
+			} //end non-address host compare
 
 			//two equivalent address strings or two equivalent hosts, now check port and service names
 			portOne := parsedHost.getPort()
@@ -944,6 +962,20 @@ func (host *HostName) Compare(other *HostName) int {
 					return 1
 				}
 			} else if serviceTwo != "" {
+				return -1
+			}
+			hostZoneOne := parsedHost.getZone()
+			hostZoneTwo := otherParsedHost.getZone()
+			if hostZoneOne != NoZone {
+				if hostZoneTwo != NoZone {
+					ret := strings.Compare(hostZoneOne.String(), hostZoneTwo.String())
+					if ret != 0 {
+						return ret
+					}
+				} else {
+					return 1
+				}
+			} else if hostZoneTwo != "" {
 				return -1
 			}
 			return 0

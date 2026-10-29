@@ -592,6 +592,176 @@ func (t hostTester) run() {
 	t.testHostAddressPortZone(":::123", "::", port123, "")
 	t.testHostAddressPortZone("[::]:123", "::", port123, "")
 
+	portNum8094 := ipaddr.PortInt(8094)
+	port8094 := ToPort(portNum8094)
+
+	t.testHostAddress("2.0.0.1:8094", "2.0.0.1", "2.0.0.1", port8094, "")
+
+	t.hostTest(true, "::%bla bla") // spaces ok with regular IPv6 address zone
+
+	t.testHostAddress("[2001:db8::1%eth0]", "2001:db8::1", "2001:db8::1%eth0", nil, "eth0")
+	t.testHostAddress("2001:db8::1%eth0", "2001:db8::1", "2001:db8::1%eth0", nil, "eth0")
+	t.testHostHostAddressHostZone("2001:db8::1%eth0", "2001:db8::1", "2001:db8::1%eth0", "eth0", "")
+	t.testHostHostAddressHostZone("[2001:db8::1%eth0]", "2001:db8::1", "2001:db8::1%eth0", "eth0", "")
+
+	// host zones
+
+	opts := new(addrstrparam.HostNameParamsBuilder).AllowHostZone(true).ToParams()
+
+	t.testHostAddressPortHostZoneParams(opts, "2.0.0.1:8094%eth0", "2.0.0.1", port8094, "", "eth0")
+	t.testHostAddressPortHostZoneParams(opts, "[2.0.0.1]:8094%eth0", "2.0.0.1", port8094, "", "eth0")
+	t.testHostAddressPortHostZoneParams(opts, "[2001:db8::1]:8094%br-interface", "2001:db8::1", port8094, "", "br-interface")
+
+	t.testHostHostAddressServiceHostZoneParams(opts, "2.0.0.1:abc%eth0", "2.0.0.1", "2.0.0.1", "abc", "", "eth0")
+	t.testHostHostAddressServiceHostZoneParams(opts, "[2.0.0.1]:abc%eth0", "2.0.0.1", "2.0.0.1", "abc", "", "eth0")
+	t.testHostHostAddressServiceHostZoneParams(opts, "[2001:db8::1]:abc%br-interface", "2001:db8::1", "2001:db8::1", "abc", "", "br-interface")
+
+	t.testHostHostAddressPortHostZoneParams(opts, "[2001:db8::1%eth0]:8094%br-interface", "2001:db8::1", "2001:db8::1%eth0", port8094, "eth0", "br-interface")
+	t.testHostHostAddressPortHostZoneParams(opts, "[2001:db8::1%eth0]%br-interface", "2001:db8::1", "2001:db8::1%eth0", nil, "eth0", "br-interface")
+	t.testHostHostAddressServiceHostZoneParams(opts, "[2001:db8::1%eth0]:abc%br-interface", "2001:db8::1", "2001:db8::1%eth0", "abc", "eth0", "br-interface")
+
+	t.testHostHostAddressServiceHostZoneParams(opts, "2001:db8::1%eth0:abc%br-interface", "2001:db8::1", "2001:db8::1%eth0", "abc", "eth0", "br-interface")
+	t.testHostHostAddressPortHostZoneParams(opts, "2001:db8::1%eth0:8094%br-interface", "2001:db8::1", "2001:db8::1%eth0", port8094, "eth0", "br-interface")
+
+	t.testHostAddressHostZoneParams(opts, "1.2.3.4%eth0", "1.2.3.4", "", "eth0")
+	t.testHostAddressHostZoneParams(opts, "[1.2.3.4]%eth0", "1.2.3.4", "", "eth0")
+
+	t.testHostAddressHostZoneParams(opts, "[2001:db8::1]%eth0", "2001:db8::1", "", "eth0")
+
+	// ensure the above do not parse without the option specified
+
+	t.hostTest(false, "2.0.0.1:8094%eth0")
+	t.hostTest(false, "[2.0.0.1]:8094%eth0")
+	t.hostTest(false, "[2001:db8::1]:8094%br-interface")
+
+	t.hostTest(false, "2.0.0.1:abc%eth0")
+	t.hostTest(false, "[2.0.0.1]:abc%eth0")
+	t.hostTest(false, "[2001:db8::1]:abc%br-interface")
+
+	t.hostTest(false, "[2001:db8::1%eth0]:8094%br-interface")
+	t.hostTest(false, "[2001:db8::1%eth0]%br-interface")
+	t.hostTest(false, "[2001:db8::1%eth0]:abc%br-interface")
+
+	t.hostTest(false, "2001:db8::1%eth0:abc%br-interface")
+	t.hostTest(false, "2001:db8::1%eth0:8094%br-interface")
+
+	t.hostTest(false, "1.2.3.4%eth0")
+	t.hostTest(false, "[1.2.3.4]%eth0")
+
+	t.hostTest(false, "[2001:db8::1]%eth0")
+
+	// host zones with spaces; IPv6 address zones within host brackets cannot have spaces, see https://www.rfc-editor.org/info/rfc6874/#section-2
+
+	t.testHostHostAddressHostZone("2001:db8::1%eth 0", "2001:db8::1", "2001:db8::1%eth 0", "eth 0", "")
+
+	t.testHostAddressPortHostZoneParams(opts, "2.0.0.1:8094%eth 0", "2.0.0.1", port8094, "", "eth 0")
+	t.testHostAddressPortHostZoneParams(opts, "[2.0.0.1]:8094%eth 0", "2.0.0.1", port8094, "", "eth 0")
+	t.testHostAddressPortHostZoneParams(opts, "[2001:db8::1]:8094%br interface", "2001:db8::1", port8094, "", "br interface")
+
+	t.testHostHostAddressServiceHostZoneParams(opts, "2.0.0.1:abc%eth 0", "2.0.0.1", "2.0.0.1", "abc", "", "eth 0")
+	t.testHostHostAddressServiceHostZoneParams(opts, "[2.0.0.1]:abc%eth 0", "2.0.0.1", "2.0.0.1", "abc", "", "eth 0")
+	t.testHostHostAddressServiceHostZoneParams(opts, "[2001:db8::1]:abc%br interface", "2001:db8::1", "2001:db8::1", "abc", "", "br interface")
+
+	t.testHostHostAddressPortHostZoneParams(opts, "[2001:db8::1%eth0]:8094%br interface", "2001:db8::1", "2001:db8::1%eth0", port8094, "eth0", "br interface")
+	t.testHostHostAddressPortHostZoneParams(opts, "[2001:db8::1%eth0]%br interface", "2001:db8::1", "2001:db8::1%eth0", nil, "eth0", "br interface")
+	t.testHostHostAddressPortHostZoneParams(opts, "[2001:db8::1%eth%200]%br interface", "2001:db8::1", "2001:db8::1%eth 0", nil, "eth 0", "br interface")
+	t.testHostHostAddressPortHostZoneParams(opts, "[2001:db8::1%25eth%200]%br interface", "2001:db8::1", "2001:db8::1%eth 0", nil, "eth 0", "br interface")
+	t.testHostHostAddressServiceHostZoneParams(opts, "[2001:db8::1%eth0]:abc%br interface", "2001:db8::1", "2001:db8::1%eth0", "abc", "eth0", "br interface")
+
+	t.testHostHostAddressServiceHostZoneParams(opts, "2001:db8::1%eth0:abc%br interface", "2001:db8::1", "2001:db8::1%eth0", "abc", "eth0", "br interface")
+	t.testHostHostAddressPortHostZoneParams(opts, "2001:db8::1%eth0:8094%br interface", "2001:db8::1", "2001:db8::1%eth0", port8094, "eth0", "br interface")
+
+	t.testHostAddressHostZoneParams(opts, "1.2.3.4%eth 0", "1.2.3.4", "", "eth 0")
+	t.testHostAddressHostZoneParams(opts, "[1.2.3.4]%eth 0", "1.2.3.4", "", "eth 0")
+
+	t.testHostAddressHostZoneParams(opts, "[2001:db8::1]%eth 0", "2001:db8::1", "", "eth 0")
+
+	// ensure the above do not parse without the option specified
+
+	t.hostTest(false, "2.0.0.1:8094%eth 0")
+	t.hostTest(false, "[2.0.0.1]:8094%eth 0")
+	t.hostTest(false, "[2001:db8::1]:8094%br interface")
+
+	t.hostTest(false, "2.0.0.1:abc%eth 0")
+	t.hostTest(false, "[2.0.0.1]:abc%eth 0")
+	t.hostTest(false, "[2001:db8::1]:abc%br interface")
+
+	t.hostTest(false, "[2001:db8::1%eth0]:8094%br interface")
+	t.hostTest(false, "[2001:db8::1%eth0]%br interface")
+	t.hostTest(false, "[2001:db8::1%eth%200]%br interface")
+	t.hostTest(false, "[2001:db8::1%25eth%200]%br interface")
+	t.hostTest(false, "[2001:db8::1%eth0]:abc%br interface")
+
+	t.hostTest(false, "2001:db8::1%eth0:abc%br interface")
+	t.hostTest(false, "2001:db8::1%eth0:8094%br interface")
+
+	t.hostTest(false, "1.2.3.4%eth 0")
+	t.hostTest(false, "[1.2.3.4]%eth 0")
+
+	t.hostTest(false, "1.2.3.4%eth 0:abc")
+	t.hostTest(false, "[1.2.3.4]%eth 0:abc")
+
+	t.hostTest(false, "[2001:db8::1]%eth 0")
+
+	t.hostTest(false, "a.b.com%eth0")
+	t.hostTest(false, "a.b.com:89%eth0")
+	t.hostTest(false, "a.b.com:service%eth0")
+
+	t.hostTestOpts(opts, false, "a.b.com%eth0")
+	t.hostTestOpts(opts, false, "a.b.com:89%eth0")
+	t.hostTestOpts(opts, false, "a.b.com:service%eth0")
+
+	t.testHostHostAddressServiceHostZoneParams(opts, "2001:db8::1%eth 0:abc%br interface", "2001:db8::1", "2001:db8::1%eth 0", "abc", "eth 0", "br interface")
+	t.testHostHostAddressPortHostZoneParams(opts, "2001:db8::1%eth 0:8094%br interface", "2001:db8::1", "2001:db8::1%eth 0", port8094, "eth 0", "br interface")
+
+	opts = new(addrstrparam.HostNameParamsBuilder).AllowReservedCharsInSquareBrackets(true).AllowHostZone(true).ToParams()
+
+	t.testHostHostAddressPortHostZoneParams(opts, "[2001:db8::1%eth 0]:8094%br interface", "2001:db8::1", "2001:db8::1%eth 0", port8094, "eth 0", "br interface")
+	t.testHostHostAddressPortHostZoneParams(opts, "[2001:db8::1%eth 0]%br interface", "2001:db8::1", "2001:db8::1%eth 0", nil, "eth 0", "br interface")
+	t.testHostHostAddressServiceHostZoneParams(opts, "[2001:db8::1%eth 0]:abc%br interface", "2001:db8::1", "2001:db8::1%eth 0", "abc", "eth 0", "br interface")
+
+	// ensure the above do not parse without the proper options specified
+
+	t.hostTest(false, "[2001:db8::1%eth 0]:8094%br interface")
+	t.hostTest(false, "[2001:db8::1%eth 0]%br interface")
+	t.hostTest(false, "[2001:db8::1%eth 0]:abc%br interface")
+
+	t.hostTest(false, "2001:db8::1%eth 0:abc%br interface")
+	t.hostTest(false, "2001:db8::1%eth 0:8094%br interface")
+
+	t.hostTest(false, "[2001:db8::1%eth 0]:8094%brinterface")
+	t.hostTest(false, "[2001:db8::1%eth 0]%brinterface")
+	t.hostTest(false, "[2001:db8::1%eth 0]:abc%brinterface")
+
+	t.hostTest(false, "2001:db8::1%eth 0:abc%brinterface") //allowHostZone is false, so when we hit '%', we end up at line 2017 of validate.go
+	t.hostTest(false, "2001:db8::1%eth 0:8094%brinterface")
+
+	t.hostTest(false, "[2001:db8::1%eth 0]:8094")
+	t.hostTest(false, "[2001:db8::1%eth 0]")
+	t.hostTest(false, "[2001:db8::1%eth 0]:abc")
+
+	t.hostTest(true, "2001:db8::1%eth0:abc")
+	t.hostTest(true, "2001:db8::1%eth0:8094")
+	t.hostTest(true, "2001:db8::1%eth 0")
+	t.hostTest(true, "2001:db8::1%eth 0:abc")
+	t.hostTest(true, "2001:db8::1%eth 0:8094")
+	t.hostTest(true, "2001:db8::1%eth 0")
+	t.hostTest(true, "2001:db8::1:8094")
+	t.hostTest(true, "2001:db8::1 ")
+
+	opts = new(addrstrparam.HostNameParamsBuilder).RequireSquareBracketedIPv6(true).ToParams()
+
+	t.hostTestOpts(opts, false, "2001:db8::1%eth0:abc")
+	t.hostTestOpts(opts, false, "2001:db8::1%eth0:8094")
+	t.hostTestOpts(opts, false, "2001:db8::1%eth0")
+	t.hostTestOpts(opts, false, "2001:db8::1:8094")
+	t.hostTestOpts(opts, false, "2001:db8::1:abc")
+	t.hostTestOpts(opts, false, "2001:db8::1")
+	t.hostTestOpts(opts, false, "2001:db8::1%eth0:8094%brinterface")
+	t.hostTestOpts(opts, false, "2001:db8::1%eth 0:abc")
+	t.hostTestOpts(opts, false, "2001:db8::1%eth 0:8094")
+	t.hostTestOpts(opts, false, "2001:db8::1%eth 0")
+
 	t.testHostInetSocketAddress("1.2.3.4:80", "1.2.3.4", portNum80)
 	t.testHostInetSocketAddress(":::123", "::", portNum123)
 	t.testHostInetSocketAddress("[::]:123", "::", portNum123)
@@ -617,7 +787,6 @@ func (t hostTester) run() {
 		return nil
 	}, nil)
 	t.testHostInetSocketAddressSA("1.2.3.4:http", nil, nil)
-
 }
 
 func (t hostTester) testSelf(host string, isSelf bool) {
@@ -790,13 +959,18 @@ func (t hostTester) testURL(url string) {
 }
 
 func (t hostTester) hostTest_inet_aton(pass bool, x string) {
-	addr := t.createInetAtonHost(x)
-	t.hostTestDouble(pass, addr, false)
+	host := t.createInetAtonHost(x)
+	t.hostTestDouble(pass, host, false)
 }
 
 func (t hostTester) hostTest(pass bool, x string) {
-	addr := t.createHost(x)
-	t.hostTestDouble(pass, addr, true)
+	host := t.createHost(x)
+	t.hostTestDouble(pass, host, true)
+}
+
+func (t hostTester) hostTestOpts(opts addrstrparam.HostNameParams, pass bool, x string) {
+	host := t.createParamsHost(x, opts)
+	t.hostTestDouble(pass, host, true)
 }
 
 var iint uint64
@@ -904,8 +1078,19 @@ func (t hostTester) testHostAddressPortZone(host, hostExpected string, portExpec
 	t.testHostAddress(host, hostExpected, hostExpected, portExpected, expectedZone)
 }
 
-func (t hostTester) testHostAddressPortZonePref(host, hostExpected string, portExpected ipaddr.Port, expectedZone ipaddr.Zone, prefixLength ipaddr.PrefixLen) {
-	t.testHostAddressPref(host, hostExpected, hostExpected, portExpected, expectedZone, prefixLength)
+func (t hostTester) testHostAddressPortHostZoneParams(params addrstrparam.HostNameParams, host, hostExpected string, portExpected ipaddr.Port, expectedAddrZone, expectedHostZone ipaddr.Zone) {
+	hostName := t.createParamsHost(host, params)
+	t.testHostAll(hostName, hostExpected, hostExpected, portExpected, "", expectedAddrZone, expectedHostZone, nil)
+}
+
+func (t hostTester) testHostHostAddressPortHostZoneParams(params addrstrparam.HostNameParams, host, hostExpected, addrExpected string, portExpected ipaddr.Port, expectedAddrZone, expectedHostZone ipaddr.Zone) {
+	hostName := t.createParamsHost(host, params)
+	t.testHostAll(hostName, hostExpected, addrExpected, portExpected, "", expectedAddrZone, expectedHostZone, nil)
+}
+
+func (t hostTester) testHostHostAddressServiceHostZoneParams(params addrstrparam.HostNameParams, host, hostExpected, addrExpected string, serviceExpected string, expectedAddrZone, expectedHostZone ipaddr.Zone) {
+	hostName := t.createParamsHost(host, params)
+	t.testHostAll(hostName, hostExpected, addrExpected, nil, serviceExpected, expectedAddrZone, expectedHostZone, nil)
 }
 
 func (t hostTester) testHostPortZone(host, hostExpected string, portExpected ipaddr.Port, expectedZone ipaddr.Zone) {
@@ -916,24 +1101,43 @@ func (t hostTester) testHostAddress(host, hostExpected, addrExpected string, por
 	t.testHostPortServZonePref(host, hostExpected, addrExpected, portExpected, "", expectedZone, nil)
 }
 
+func (t hostTester) testHostAddressHostZoneParams(params addrstrparam.HostNameParams, host, hostExpected string, expectedZone, expectedHostZone ipaddr.Zone) {
+	hostName := t.createParamsHost(host, params)
+	t.testHostAll(hostName, hostExpected, hostExpected, nil, "", expectedZone, expectedHostZone, nil)
+}
+
+func (t hostTester) testHostHostAddressHostZone(host, hostExpected, addressExpected string, expectedZone, expectedHostZone ipaddr.Zone) {
+	hostName := t.createHost(host)
+	t.testHostAll(hostName, hostExpected, addressExpected, nil, "", expectedZone, expectedHostZone, nil)
+}
+
 func (t hostTester) testHostAddressPref(host, hostExpected, addrExpected string, portExpected ipaddr.Port, expectedZone ipaddr.Zone, prefixLengthExpected ipaddr.PrefixLen) {
 	t.testHostPortServZonePref(host, hostExpected, addrExpected, portExpected, "", expectedZone, prefixLengthExpected)
 }
 
 func (t hostTester) testHostPortServZonePref(host, hostExpected, addrExpected string, portExpected ipaddr.Port, serviceExpected string, expectedZone ipaddr.Zone, prefixLengthExpected ipaddr.PrefixLen) {
 	hostName := t.createHost(host)
-	t.testHostAll(hostName, hostExpected, addrExpected, portExpected, serviceExpected, expectedZone, prefixLengthExpected)
+	t.testHostAll(hostName, hostExpected, addrExpected, portExpected, serviceExpected, expectedZone, "", prefixLengthExpected)
 }
 
 func (t hostTester) testHostPortServZone(hostName *ipaddr.HostName, hostExpected, addrExpected string, portExpected ipaddr.Port, serviceExpected string, expectedZone ipaddr.Zone) {
-	t.testHostAll(hostName, hostExpected, addrExpected, portExpected, serviceExpected, expectedZone, nil)
+	t.testHostAll(hostName, hostExpected, addrExpected, portExpected, serviceExpected, expectedZone, "", nil)
 }
 
 func addressesEqual(one, two *ipaddr.IPAddress) bool {
 	return one.Equal(two)
 }
 
-func (t hostTester) testHostAll(hostName *ipaddr.HostName, hostExpected, addrExpected string, portExpected ipaddr.Port, serviceExpected string, expectedZone ipaddr.Zone, prefixLengthExpected ipaddr.PrefixLen) {
+func (t hostTester) testHostAll(
+	hostName *ipaddr.HostName,
+	hostExpected,
+	addrExpected string,
+	portExpected ipaddr.Port,
+	serviceExpected string,
+	expectedZone ipaddr.Zone,
+	expectedHostZone ipaddr.Zone,
+	prefixLengthExpected ipaddr.PrefixLen) {
+
 	h := hostName.GetHost()
 	var addressExpected *ipaddr.IPAddress
 	if addrExpected != "" {
@@ -945,6 +1149,7 @@ func (t hostTester) testHostAll(hostName *ipaddr.HostName, hostExpected, addrExp
 	if addrHost != nil && addrHost.IsIPv6() {
 		zone = addrHost.ToIPv6().GetZone()
 	}
+	hostZone := hostName.GetZone()
 	prefLength := hostName.GetNetworkPrefixLen()
 	if h != hostExpected {
 		t.addFailure(newHostFailure("failed: host is "+h, hostName))
@@ -952,6 +1157,8 @@ func (t hostTester) testHostAll(hostName *ipaddr.HostName, hostExpected, addrExp
 		t.addFailure(newHostFailure("failed: port is "+port.String(), hostName))
 	} else if zone != expectedZone {
 		t.addFailure(newHostFailure("failed:  zone is "+zone.String(), hostName))
+	} else if hostZone != expectedHostZone {
+		t.addFailure(newHostFailure("failed:  host zone is "+hostZone.String(), hostName))
 	} else if !addressesEqual(addrHost, addressExpected) {
 		t.addFailure(newHostFailure(fmt.Sprintf("failed: address is %v", addrHost), hostName))
 	} else if !prefLength.Equal(prefixLengthExpected) {

@@ -42,9 +42,10 @@ type parsedHostIdentifierStringQualifier struct {
 	isZoned bool
 }
 
-func (parsedQual *parsedHostIdentifierStringQualifier) clearPortOrService() {
+func (parsedQual *parsedHostIdentifierStringQualifier) clearPortServiceZone() {
 	parsedQual.port = nil
 	parsedQual.service = ""
+	parsedQual.zone = NoZone
 }
 
 func (parsedQual *parsedHostIdentifierStringQualifier) clearPrefixOrMask() {
