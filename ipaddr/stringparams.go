@@ -495,9 +495,7 @@ func (params *ipAddressStringParams) getSegmentsStringLength(part AddressDivisio
 	if divCount != 0 {
 		prefLen := part.GetPrefixLen()
 		var isPrefBlock bool
-		if prefLen.IsNil() || params.preferWildcards() {
-			isPrefBlock = false
-		} else {
+		if !prefLen.IsNil() && !params.preferWildcards() {
 			isPrefBlock = part.IsPrefixBlock()
 		}
 		for i := 0; i < divCount; i++ {
@@ -560,12 +558,12 @@ func (params *ipAddressStringParams) appendSegmentsMultiPart(builder *strings.Bu
 		separator := params.separator
 
 		var isPrefBlock bool
-		if prefLen.IsNil() || params.preferWildcards() {
-			isPrefBlock = false
-		} else if previousPart == nil || prefLen.bitCount() > 0 {
-			isPrefBlock = part.IsPrefixBlock()
-		} else {
-			isPrefBlock = part.IsFullRange() && previousPart.IsPrefixBlock()
+		if !prefLen.IsNil() && !params.preferWildcards() {
+			if previousPart == nil || prefLen.bitCount() > 0 {
+				isPrefBlock = part.IsPrefixBlock()
+			} else {
+				isPrefBlock = part.IsFullRange() && previousPart.IsPrefixBlock()
+			}
 		}
 		for {
 			segIndex := i
