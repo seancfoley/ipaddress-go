@@ -72,7 +72,7 @@ type sectionResult struct {
 
 	address, hostAddress *IPAddress
 
-	joinHostError, joinAddressError /* inet_aton, single seg */, mixedError, maskError addrerr.IncompatibleAddressError
+	joinHostError, joinAddressError /* inet_aton, single seg */, mixedError, mixedHostError, maskError addrerr.IncompatibleAddressError
 }
 
 func (res *sectionResult) withoutAddressException() bool {
@@ -280,6 +280,8 @@ func (parseData *parsedIPAddress) getProviderHostAddress() (*IPAddress, addrerr.
 	addrs := parseData.getCachedAddresses(true)
 	if addrs.mixedError != nil {
 		return nil, addrs.mixedError
+	} else if addrs.mixedHostError != nil {
+		return nil, addrs.mixedHostError
 	} else if addrs.joinHostError != nil {
 		return nil, addrs.joinHostError
 	}
@@ -1445,9 +1447,9 @@ func (parseData *parsedIPAddress) createIPv6Sections(doSections, doRangeBoundari
 						segmentPrefixLength,
 						creator)
 				} else {
+					var mixedErr addrerr.IncompatibleAddressError
 					if doHostSegment {
-						hostSegments[normalizedSegmentIndex] = createIPv6RangeSegment(
-							&sections,
+						hostSegments[normalizedSegmentIndex], mixedErr = createIPv6RangeSegment(
 							ipv4Range,
 							originalOneLower,
 							originalOneUpper,
@@ -1455,9 +1457,11 @@ func (parseData *parsedIPAddress) createIPv6Sections(doSections, doRangeBoundari
 							originalTwoUpper,
 							nil,
 							creator)
+						if sections.mixedHostError == nil {
+							sections.mixedHostError = mixedErr
+						}
 					}
-					segments[normalizedSegmentIndex] = createIPv6RangeSegment(
-						&sections,
+					segments[normalizedSegmentIndex], mixedErr = createIPv6RangeSegment(
 						ipv4Range,
 						oneLower,
 						oneUpper,
@@ -1465,6 +1469,9 @@ func (parseData *parsedIPAddress) createIPv6Sections(doSections, doRangeBoundari
 						twoUpper,
 						segmentPrefixLength,
 						creator)
+					if sections.mixedError == nil {
+						sections.mixedError = mixedErr
+					}
 					isMultiple = true
 				}
 			}
@@ -1638,31 +1645,57 @@ func createIPv6Segment(value1, value2 SegInt, segmentPrefixLength PrefixLen, cre
 
 // create an IPv6 segment by joining two IPv4 segments
 func createIPv6RangeSegment(
-	//finalResult *translatedResult,
-	sections *sectionResult,
 	_ *SequentialRange[*IPv4Address], // this was only used to be put into any exceptions
 	upperRangeLower,
 	upperRangeUpper,
 	lowerRangeLower,
 	lowerRangeUpper SegInt,
 	segmentPrefixLength PrefixLen,
-	creator ipAddressCreator) *AddressDivision {
+	creator ipAddressCreator) (div *AddressDivision, mixedError addrerr.IncompatibleAddressError) {
 	shift := IPv4BitsPerSegment
 	if upperRangeLower != upperRangeUpper {
 		//if the high segment has a range, the low segment must match the full range,
 		//otherwise it is not possible to create an equivalent IPv6 range when joining two IPv4 ranges
-		if sections.mixedError == nil && lowerRangeLower != 0 || lowerRangeUpper != IPv4MaxValuePerSegment {
-			sections.mixedError = &incompatibleAddressError{
+		if segmentPrefixLength != nil && segmentPrefixLength.bitCount() < IPv4BitsPerSegment {
+			if !isPrefixSubnet(
+				func(index int) SegInt {
+					if index == 0 {
+						return upperRangeLower
+					}
+					return lowerRangeLower
+				},
+				func(index int) SegInt {
+					if index == 0 {
+						return upperRangeUpper
+					}
+					return lowerRangeUpper
+				},
+				2,
+				IPv4BytesPerSegment,
+				IPv4BitsPerSegment,
+				IPv4MaxValuePerSegment,
+				segmentPrefixLength.bitCount(),
+				zerosOrFullRange) {
+
+				mixedError = &incompatibleAddressError{
+					addressError: addressError{
+						key: "ipaddress.error.invalidMixedRange",
+					},
+				}
+			}
+		} else if lowerRangeLower != 0 || lowerRangeUpper != IPv4MaxValuePerSegment {
+			mixedError = &incompatibleAddressError{
 				addressError: addressError{
 					key: "ipaddress.error.invalidMixedRange",
 				},
 			}
 		}
 	}
-	return creator.createSegment(
+	div = creator.createSegment(
 		(upperRangeLower<<uint(shift))|lowerRangeLower,
 		(upperRangeUpper<<uint(shift))|lowerRangeUpper,
 		segmentPrefixLength)
+	return
 }
 
 func createRangeSeg(
