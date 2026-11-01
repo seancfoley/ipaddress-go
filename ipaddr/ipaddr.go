@@ -2273,7 +2273,7 @@ var FullStringParsingParameters = new(addrstrparam.IPAddressStringParamsBuilder)
 // ToFullString produces a string with no compressed segments and all segments of full length with leading zeros,
 // which is 4 characters for IPv6 segments and 3 characters for IPv4 segments.
 // To parse a the string returned from ToFullString, you must not parse leading zeros as octal segments.
-// Leading zeros indicating octals segments is the default parsing beahviour for IPv4 segments.
+// Leading zeros indicating octals segments is the default parsing behaviour for IPv4 segments.
 // You can do this by passing [FullStringParsingParameters] into [NewIPAddressStringParams] as the parameters argument.
 func (addr *IPAddress) ToFullString() string {
 	if addr == nil {
