@@ -109,8 +109,8 @@ var defaultIPAddrParameters = new(addrstrparam.IPAddressStringParamsBuilder).ToP
 //
 // Note that there is ambiguity when supporting both inet_aton octal and dotted-decimal leading zeros, like "010.010.010.010" which can
 // be interpreted as octal or decimal, thus it can be either "8.8.8.8" or "10.10.10.10", with the default behaviour using the former interpretation.
-// This behaviour can be controlled by [IPAddressStringParamsBuilder.GetIPv4AddressParamsBuilder] and
-// [IPv4AddressStringParametersBuilder.AllowLeadingZeros(boolean)], or by using the provided [FullStringParsingParameters].
+// This behaviour can be controlled by IPAddressStringParamsBuilder.GetIPv4AddressParamsBuilder and
+// IPv4AddressStringParametersBuilder.AllowLeadingZeros(boolean), or by using the provided [FullStringParsingParameters].
 //
 // Some Additional Formats:
 //   - empty strings are interpreted as the zero-address or the loopback
