@@ -1656,8 +1656,8 @@ func createIPv6RangeSegment(
 	if upperRangeLower != upperRangeUpper {
 		//if the high segment has a range, the low segment must match the full range,
 		//otherwise it is not possible to create an equivalent IPv6 range when joining two IPv4 ranges
-		if segmentPrefixLength != nil && segmentPrefixLength.bitCount() < IPv4BitsPerSegment {
-			if !isPrefixSubnet(
+		if lowerRangeLower != 0 || lowerRangeUpper != IPv4MaxValuePerSegment {
+			if segmentPrefixLength == nil || segmentPrefixLength.bitCount() > IPv4BitsPerSegment || !isPrefixSubnet(
 				func(index int) SegInt {
 					if index == 0 {
 						return upperRangeLower
@@ -1682,12 +1682,6 @@ func createIPv6RangeSegment(
 						key: "ipaddress.error.invalidMixedRange",
 					},
 				}
-			}
-		} else if lowerRangeLower != 0 || lowerRangeUpper != IPv4MaxValuePerSegment {
-			mixedError = &incompatibleAddressError{
-				addressError: addressError{
-					key: "ipaddress.error.invalidMixedRange",
-				},
 			}
 		}
 	}

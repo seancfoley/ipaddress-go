@@ -1187,6 +1187,11 @@ func (t ipAddressRangeTester) run() {
 	t.ipv6test(true, "-f:b:c:d:e:f:a:bb")
 
 	t.ipv6test(true, "1::0.10.0-240.0/116")
+	t.ipv6test(true, "1::0.10.1-2.0/120")
+	t.ipv6test(true, "1::0.10.0-240.*/115")
+	t.ipv6test(true, "1::0.10.0-241.*/115")
+	t.ipv6test(true, "1::0.10.0.*/115")
+	t.ipv6test(true, "1::0.10.1.*/115")
 	t.ipv6test(true, "1::0.10.0-255.*/116")
 	t.ipv6test(true, "1::a:*/116")
 
